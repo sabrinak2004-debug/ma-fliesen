@@ -34,7 +34,8 @@ export default function KalenderPage() {
 
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>("");
-  const [absenceName, setAbsenceName] = useState("");
+  const [absenceStart, setAbsenceStart] = useState<string>("");
+  const [absenceEnd, setAbsenceEnd] = useState<string>("");
   const [absenceType, setAbsenceType] = useState<AbsenceType>("VACATION");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,47 +99,51 @@ export default function KalenderPage() {
 
   function openDay(date: string) {
     setSelectedDate(date);
-    setAbsenceName("");
+    setAbsenceStart(date);
+    setAbsenceEnd(date);
     setAbsenceType("VACATION");
     setError(null);
     setOpen(true);
   }
 
-  async function saveAbsence() {
-    setError(null);
-    const name = absenceName.trim();
-    if (!name) {
-      setError("Bitte Mitarbeitername eingeben.");
+async function saveAbsence() {
+  setError(null);
+
+  if (!absenceStart || !absenceEnd) {
+    setError("Bitte Start- und Enddatum auswählen.");
+    return;
+  }
+
+  setSaving(true);
+  try {
+    const r = await fetch("/api/absences", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        startDate: absenceStart,
+        endDate: absenceEnd,
+        type: absenceType,
+      }),
+    });
+
+    const j = (await r.json()) as unknown;
+    if (!r.ok) {
+      const msg =
+        typeof j === "object" && j !== null && "error" in j && typeof (j as { error: unknown }).error === "string"
+          ? (j as { error: string }).error
+          : "Speichern fehlgeschlagen.";
+      setError(msg);
       return;
     }
-    if (!selectedDate) return;
 
-    setSaving(true);
-    try {
-      const r = await fetch("/api/absences", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName: name, absenceDate: selectedDate, type: absenceType }),
-      });
-
-      const j = (await r.json()) as unknown;
-      if (!r.ok) {
-        const msg =
-          typeof j === "object" && j !== null && "error" in j && typeof (j as { error: unknown }).error === "string"
-            ? (j as { error: string }).error
-            : "Speichern fehlgeschlagen.";
-        setError(msg);
-        return;
-      }
-
-      setOpen(false);
-      await load();
-    } catch {
-      setError("Netzwerkfehler beim Speichern.");
-    } finally {
-      setSaving(false);
-    }
+    setOpen(false);
+    await load();
+  } catch {
+    setError("Netzwerkfehler beim Speichern.");
+  } finally {
+    setSaving(false);
   }
+}
 
   return (
     <AppShell activeLabel="#wirkönnendas">
@@ -215,9 +220,30 @@ export default function KalenderPage() {
         )}
 
         <div style={{ marginBottom: 12 }}>
-          <div className="label">Abwesenheit eintragen</div>
-          <input className="input" placeholder="Mitarbeitername" value={absenceName} onChange={(e) => setAbsenceName(e.target.value)} />
-        </div>
+  <div className="label">Abwesenheit eintragen</div>
+
+  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+    <div>
+      <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>Start</div>
+      <input
+        className="input"
+        type="date"
+        value={absenceStart}
+        onChange={(e) => setAbsenceStart(e.target.value)}
+      />
+    </div>
+
+    <div>
+      <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>Ende</div>
+      <input
+        className="input"
+        type="date"
+        value={absenceEnd}
+        onChange={(e) => setAbsenceEnd(e.target.value)}
+      />
+    </div>
+  </div>
+</div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           <button

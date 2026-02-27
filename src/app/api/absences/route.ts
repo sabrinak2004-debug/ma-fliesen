@@ -2,9 +2,21 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 
+type AbsenceType = "VACATION" | "SICK";
+
 function dateOnly(yyyyMmDd: string) {
   // Date-only in UTC
   return new Date(`${yyyyMmDd}T00:00:00.000Z`);
+}
+
+function eachDayInclusive(from: Date, to: Date) {
+  const res: Date[] = [];
+  const cur = new Date(from);
+  while (cur <= to) {
+    res.push(new Date(cur));
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+  return res;
 }
 
 export async function GET(req: Request) {
@@ -25,11 +37,12 @@ export async function GET(req: Request) {
     to = new Date(Date.UTC(y, m, 1, 0, 0, 0));
   }
 
+  // ✅ NUR für eingeloggten User
   const absences = await prisma.absence.findMany({
     where: {
+      userId: session.userId,
       ...(from && to ? { absenceDate: { gte: from, lt: to } } : {}),
     },
-    include: { user: true },
     orderBy: [{ absenceDate: "asc" }],
   });
 
@@ -41,37 +54,38 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
   const body = (await req.json().catch(() => null)) as
-    | { fullName?: string; absenceDate?: string; type?: "VACATION" | "SICK" }
+    | {
+        // ❗kein fullName mehr nötig, wir nutzen session.userId
+        startDate?: string; // YYYY-MM-DD
+        endDate?: string;   // YYYY-MM-DD
+        type?: AbsenceType;
+      }
     | null;
 
-  if (!body?.fullName || !body?.absenceDate || !body?.type) {
+  if (!body?.startDate || !body?.endDate || !body?.type) {
     return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
   }
 
-  const user = await prisma.appUser.upsert({
-    where: { fullName: body.fullName },
-    update: { isActive: true },
-    create: { fullName: body.fullName, isActive: true },
+  const start = dateOnly(body.startDate);
+  const end = dateOnly(body.endDate);
+
+  if (end < start) {
+    return NextResponse.json({ error: "Enddatum darf nicht vor Startdatum liegen." }, { status: 400 });
+  }
+
+  const days = eachDayInclusive(start, end);
+
+  // ✅ createMany + skipDuplicates nutzt deinen Unique-Index (userId_absenceDate_type)
+  await prisma.absence.createMany({
+    data: days.map((d) => ({
+      userId: session.userId,
+      absenceDate: d,
+      type: body.type!,
+    })),
+    skipDuplicates: true,
   });
 
-  const absence = await prisma.absence.upsert({
-    where: {
-      userId_absenceDate_type: {
-        userId: user.id,
-        absenceDate: dateOnly(body.absenceDate),
-        type: body.type,
-      },
-    },
-    update: {},
-    create: {
-      userId: user.id,
-      absenceDate: dateOnly(body.absenceDate),
-      type: body.type,
-    },
-    include: { user: true },
-  });
-
-  return NextResponse.json({ absence });
+  return NextResponse.json({ ok: true, count: days.length });
 }
 
 export async function DELETE(req: Request) {
@@ -81,6 +95,12 @@ export async function DELETE(req: Request) {
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id fehlt" }, { status: 400 });
+
+  // ✅ Sicherheit: nur eigene löschen (Admin-Override kannst du später ergänzen)
+  const a = await prisma.absence.findUnique({ where: { id } });
+  if (!a || a.userId !== session.userId) {
+    return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
+  }
 
   await prisma.absence.delete({ where: { id } });
   return NextResponse.json({ ok: true });

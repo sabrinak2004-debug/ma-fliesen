@@ -2,6 +2,16 @@
 
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+
+<Image
+  src="/logo-ma-fliesen.jpng"
+  alt="MA Fliesen"
+  width={200}
+  height={80}
+  priority
+  style={{ marginBottom: 20 }}
+/>
 
 const ADMIN_NAMES = ["martin meinhold", "sandra meinhold"];
 
