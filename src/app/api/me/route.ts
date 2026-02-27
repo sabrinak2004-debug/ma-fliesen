@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 
 export async function GET() {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
-  return NextResponse.json(user);
+  const session = getSession();
+  return NextResponse.json({ session }, { status: 200 });
 }

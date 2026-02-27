@@ -1,25 +1,55 @@
+import crypto from "crypto";
 import { cookies } from "next/headers";
-import { prisma } from "./prisma";
 
-export type SessionUser = {
-  id: string;
+const COOKIE_NAME = "mafliesen_session";
+
+function hmac(input: string) {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) throw new Error("AUTH_SECRET fehlt in .env");
+  return crypto.createHmac("sha256", secret).update(input).digest("hex");
+}
+
+export type SessionData = {
+  userId: string;
   fullName: string;
   role: "EMPLOYEE" | "ADMIN";
 };
 
-export async function getSessionUser(): Promise<SessionUser | null> {
+export async function setSession(data: SessionData) {
+  const payload = JSON.stringify({ ...data, iat: Date.now() });
+  const sig = hmac(payload);
+  const value = Buffer.from(payload).toString("base64") + "." + sig;
+
   const cookieStore = await cookies();
-  const userId = cookieStore.get("session_user_id")?.value;
-  if (!userId) return null;
-
-  const user = await prisma.appUser.findUnique({
-    where: { id: userId },
-    select: { id: true, fullName: true, role: true },
+  cookieStore.set(COOKIE_NAME, value, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
   });
-
-  return user ?? null;
 }
 
-export function isAdmin(user: SessionUser | null) {
-  return user?.role === "ADMIN";
+export async function clearSession() {
+  const cookieStore = await cookies();
+  cookieStore.set(COOKIE_NAME, "", { path: "/", maxAge: 0 });
+}
+
+export async function getSession(): Promise<SessionData | null> {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(COOKIE_NAME)?.value;
+  if (!raw) return null;
+
+  const [b64, sig] = raw.split(".");
+  if (!b64 || !sig) return null;
+
+  const payload = Buffer.from(b64, "base64").toString("utf8");
+  const expected = hmac(payload);
+  if (sig !== expected) return null;
+
+  const parsed = JSON.parse(payload);
+  return {
+    userId: parsed.userId,
+    fullName: parsed.fullName,
+    role: parsed.role,
+  };
 }

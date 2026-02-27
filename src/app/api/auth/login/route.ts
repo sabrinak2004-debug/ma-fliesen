@@ -1,35 +1,61 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { setSession } from "@/lib/auth";
+import { Role } from "@prisma/client";
 
 export async function POST(req: Request) {
-  const { fullName } = await req.json();
-  const name = String(fullName ?? "").trim();
+  const body = await req.json().catch(() => null);
+  const fullName = (body?.fullName ?? "").trim();
+  const password = (body?.password ?? "").toString();
 
-  if (name.length < 3) {
-    return NextResponse.json({ error: "Name ungültig" }, { status: 400 });
+  if (!fullName) {
+    return NextResponse.json({ error: "Name fehlt" }, { status: 400 });
   }
 
-  const user =
-    (await prisma.appUser.findUnique({ where: { fullName: name } })) ??
-    (await prisma.appUser.create({
-      data: { fullName: name, role: "EMPLOYEE" },
-    }));
+  // User holen
+  let user = await prisma.appUser.findUnique({ where: { fullName } });
+
+  // Wenn nicht vorhanden: als Mitarbeiter anlegen (ohne Passwort)
+  if (!user) {
+    user = await prisma.appUser.create({
+      data: {
+        fullName,
+        role: Role.EMPLOYEE,
+        isActive: true,
+      },
+    });
+  }
 
   if (!user.isActive) {
-    return NextResponse.json({ error: "User ist deaktiviert" }, { status: 403 });
+    return NextResponse.json({ error: "User inaktiv" }, { status: 403 });
   }
 
-  const res = NextResponse.json({
-    id: user.id,
+  // Admin? -> Passwort nötig
+  if (user.role === Role.ADMIN) {
+    if (!password) {
+      return NextResponse.json({ requiresPassword: true }, { status: 200 });
+    }
+    if (!user.passwordHash) {
+      return NextResponse.json({ error: "Admin-Passwort nicht initialisiert" }, { status: 500 });
+    }
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) {
+      return NextResponse.json({ error: "Falsches Passwort", requiresPassword: true }, { status: 401 });
+    }
+  }
+
+  // Session setzen
+  setSession({
+    userId: user.id,
     fullName: user.fullName,
     role: user.role,
   });
+await setSession({
+  userId: user.id,
+  fullName: user.fullName,
+  role: user.role,
+});
 
-  res.cookies.set("session_user_id", user.id, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-  });
-
-  return res;
+  return NextResponse.json({ ok: true, role: user.role }, { status: 200 });
 }
