@@ -4,24 +4,13 @@ import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
-<Image
-  src="/logo-ma-fliesen.jpng"
-  alt="MA Fliesen"
-  width={200}
-  height={80}
-  priority
-  style={{ marginBottom: 20 }}
-/>
-
 const ADMIN_NAMES = ["martin meinhold", "sandra meinhold"];
 
 function normName(v: string) {
   return v.trim().toLowerCase();
 }
 
-type LoginResponse =
-  | { ok: true }
-  | { ok: false; error: string };
+type LoginResponse = { ok: true } | { ok: false; error: string };
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,7 +45,6 @@ export default function LoginPage() {
 
       const data = (await res.json()) as unknown;
 
-      // safe parse
       const parsed: LoginResponse =
         typeof data === "object" && data !== null && "ok" in data
           ? (data as LoginResponse)
@@ -79,12 +67,22 @@ export default function LoginPage() {
     <div style={{ padding: "40px 0" }}>
       <div className="container-app">
         <div className="card card-olive" style={{ padding: 20, width: "min(620px, 100%)", margin: "0 auto" }}>
-          <div className="brand" style={{ marginBottom: 14 }}>
-            <div className="brand-badge">M</div>
-            <div>
-              <div style={{ fontWeight: 900, fontSize: 18 }}>MA Fliesen</div>
-              <div style={{ color: "var(--muted)" }}>Zeiterfassung</div>
-            </div>
+          {/* ✅ Logo */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+            <Image
+              src="/logo-ma-fliesen.jpeg"
+              alt="MA Fliesen"
+              width={220}
+              height={80}
+              priority
+              style={{ objectFit: "contain" }}
+            />
+          </div>
+
+          {/* optional: Brand Text */}
+          <div style={{ textAlign: "center", marginBottom: 10 }}>
+            <div style={{ fontWeight: 900, fontSize: 18 }}>ma-fliesen</div>
+            <div style={{ color: "var(--muted)" }}>WorkHub</div>
           </div>
 
           <div className="hr" style={{ margin: "14px 0" }} />
