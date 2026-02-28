@@ -26,7 +26,7 @@ export default function AppShell({
             <div className="brand" style={{ display: "flex", alignItems: "center", gap: 12 }}>
   <Image
     src="/logo-ma-fliesen.jpeg"
-    alt="MA Fliesen Logo"
+    alt="ma-fliesen Logo"
     width={120}
     height={40}
     priority
@@ -34,7 +34,7 @@ export default function AppShell({
   />
 
   <div>
-    <div style={{ fontWeight: 900, lineHeight: 1.05 }}>MA Fliesen</div>
+    <div style={{ fontWeight: 900, lineHeight: 1.05 }}>ma-fliesen</div>
     <div style={{ color: "var(--muted-2)", fontSize: 12, marginTop: 2 }}>
       {activeLabel ?? "#wirkönnendas"}
     </div>

@@ -18,6 +18,14 @@ type Absence = {
   user?: { id: string; fullName: string }; // optional
 };
 
+type OverviewResponse = {
+  isAdmin?: boolean;
+};
+
+function isOverviewResponse(x: unknown): x is OverviewResponse {
+  return typeof x === "object" && x !== null && ("isAdmin" in x || Object.keys(x as object).length >= 0);
+}
+
 function monthKey(d: Date) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -33,26 +41,35 @@ function safeNumber(x: unknown) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function lastDayOfMonth(ym: string) {
+  const [y, m] = ym.split("-").map(Number);
+  const last = new Date(y, m, 0); // Tag 0 des Folgemonats = letzter Tag des Monats
+  return String(last.getDate()).padStart(2, "0");
+}
+
 export default function UebersichtPage() {
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [absences, setAbsences] = useState<Absence[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // aktueller Monat (wie bei dir bisher)
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // aktueller Monat
   const ym = useMemo(() => monthKey(new Date()), []);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        // ✅ Monat an API übergeben (weniger Daten, schneller)
-        const [re, ra] = await Promise.all([
+        const [re, ra, ro] = await Promise.all([
           fetch(`/api/entries?month=${encodeURIComponent(ym)}`),
           fetch(`/api/absences?month=${encodeURIComponent(ym)}`),
+          fetch(`/api/overview?month=${encodeURIComponent(ym)}`),
         ]);
 
         const je = (await re.json()) as unknown;
         const ja = (await ra.json()) as unknown;
+        const jo = (await ro.json()) as unknown;
 
         const e =
           typeof je === "object" &&
@@ -72,13 +89,19 @@ export default function UebersichtPage() {
 
         setEntries(e);
         setAbsences(a);
+
+        // ✅ kein any: isAdmin sicher auslesen
+        if (isOverviewResponse(jo)) {
+          setIsAdmin(Boolean(jo.isAdmin));
+        } else {
+          setIsAdmin(false);
+        }
       } finally {
         setLoading(false);
       }
     })();
   }, [ym]);
 
-  // Falls deine API noch keinen month-filter macht, sind wir trotzdem safe:
   const monthEntries = useMemo(() => entries.filter((e) => e.workDate?.startsWith(ym)), [entries, ym]);
   const monthAbsences = useMemo(() => absences.filter((a) => a.absenceDate?.startsWith(ym)), [absences, ym]);
 
@@ -87,24 +110,16 @@ export default function UebersichtPage() {
     [monthEntries]
   );
 
-  const totalKm = useMemo(
-    () => monthEntries.reduce((s, e) => s + safeNumber(e.distanceKm), 0),
-    [monthEntries]
-  );
+  const totalKm = useMemo(() => monthEntries.reduce((s, e) => s + safeNumber(e.distanceKm), 0), [monthEntries]);
 
   const vacDays = useMemo(() => monthAbsences.filter((a) => a.type === "VACATION").length, [monthAbsences]);
   const sickDays = useMemo(() => monthAbsences.filter((a) => a.type === "SICK").length, [monthAbsences]);
 
-  // Soll: 160h (später kannst du das aus env oder config ziehen)
   const targetMinutes = 160 * 60;
   const progress = Math.min(1, targetMinutes === 0 ? 0 : totalMinutes / targetMinutes);
 
-  // Gruppierung nach Mitarbeiter (funktioniert auch, wenn user in Response fehlt → "Ich")
   const byEmployee = useMemo(() => {
-    const map = new Map<
-      string,
-      { name: string; minutes: number; km: number; entries: number; vac: number; sick: number }
-    >();
+    const map = new Map<string, { name: string; minutes: number; km: number; entries: number; vac: number; sick: number }>();
 
     for (const e of monthEntries) {
       const key = e.user?.id ?? "me";
@@ -128,11 +143,38 @@ export default function UebersichtPage() {
     return Array.from(map.values()).sort((x, y) => y.minutes - x.minutes);
   }, [monthEntries, monthAbsences]);
 
-  // Zeige "Nach Mitarbeiter" nur, wenn es mehr als 1 Person gibt (Admin-View)
   const showByEmployee = byEmployee.length > 1;
 
+  const handleExport = () => {
+    const from = `${ym}-01`;
+    const to = `${ym}-${lastDayOfMonth(ym)}`;
+    window.open(`/api/admin/export?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, "_blank");
+  };
+
   return (
-    <AppShell activeLabel="#wirkönnendas">
+    <AppShell activeLabel="#wirkönndas">
+      {/* ✅ Admin Export Button */}
+      {isAdmin ? (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <button
+            onClick={handleExport}
+            className="card"
+            style={{
+              padding: "10px 14px",
+              cursor: "pointer",
+              fontWeight: 900,
+              borderRadius: 12,
+              border: "1px solid rgba(184,207,58,0.35)",
+              background: "rgba(184,207,58,0.12)",
+              color: "var(--accent)",
+            }}
+            title="Exportiert alle Einträge als CSV (Admin)"
+          >
+            ⬇️ Export (CSV)
+          </button>
+        </div>
+      ) : null}
+
       {/* KPI Cards */}
       <div className="kpi-grid" style={{ marginBottom: 14 }}>
         <div className="card kpi">
@@ -171,7 +213,9 @@ export default function UebersichtPage() {
 
       {/* Progress */}
       <div className="card card-olive" style={{ padding: 18, marginBottom: 14 }}>
-        <div className="section-title" style={{ marginBottom: 10 }}>Monatsfortschritt</div>
+        <div className="section-title" style={{ marginBottom: 10 }}>
+          Monatsfortschritt
+        </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ color: "var(--muted)" }}>
             Noch {Math.max(0, (targetMinutes - totalMinutes) / 60).toFixed(1)}h bis zum Monatssoll
@@ -180,14 +224,7 @@ export default function UebersichtPage() {
         </div>
 
         <div className="card" style={{ padding: 10 }}>
-          <div
-            style={{
-              height: 10,
-              borderRadius: 999,
-              background: "rgba(255,255,255,0.08)",
-              overflow: "hidden",
-            }}
-          >
+          <div style={{ height: 10, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
             <div
               style={{
                 width: `${progress * 100}%`,
@@ -199,9 +236,11 @@ export default function UebersichtPage() {
         </div>
       </div>
 
-      {/* Absences list (exakt aufgezählt) */}
+      {/* Absences list */}
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
-        <div className="section-title" style={{ marginBottom: 12 }}>Abwesenheiten (dieser Monat)</div>
+        <div className="section-title" style={{ marginBottom: 12 }}>
+          Abwesenheiten (dieser Monat)
+        </div>
 
         {loading ? (
           <div style={{ color: "var(--muted)" }}>Lade...</div>
@@ -213,11 +252,7 @@ export default function UebersichtPage() {
               .slice()
               .sort((a, b) => a.absenceDate.localeCompare(b.absenceDate))
               .map((a) => (
-                <div
-                  key={a.id}
-                  className="list-item"
-                  style={{ display: "flex", justifyContent: "space-between", gap: 12 }}
-                >
+                <div key={a.id} className="list-item" style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <span
                       style={{
@@ -225,15 +260,13 @@ export default function UebersichtPage() {
                         height: 10,
                         borderRadius: 999,
                         display: "inline-block",
-                        background:
-                          a.type === "SICK" ? "rgba(224, 75, 69, 0.95)" : "rgba(90, 167, 255, 0.95)",
+                        background: a.type === "SICK" ? "rgba(224, 75, 69, 0.95)" : "rgba(90, 167, 255, 0.95)",
                       }}
                     />
                     <span style={{ fontWeight: 700 }}>{a.absenceDate}</span>
                     <span style={{ color: "var(--muted)" }}>{a.type === "SICK" ? "Krank" : "Urlaub"}</span>
                   </div>
 
-                  {/* nur sichtbar, wenn Admin-API user liefert */}
                   {a.user?.fullName ? <span style={{ color: "var(--muted)" }}>{a.user.fullName}</span> : null}
                 </div>
               ))}
@@ -241,10 +274,12 @@ export default function UebersichtPage() {
         )}
       </div>
 
-      {/* By employee (Admin view) */}
+      {/* By employee */}
       {showByEmployee ? (
         <div className="card" style={{ padding: 18 }}>
-          <div className="section-title" style={{ marginBottom: 12 }}>Nach Mitarbeiter</div>
+          <div className="section-title" style={{ marginBottom: 12 }}>
+            Nach Mitarbeiter
+          </div>
 
           {loading ? (
             <div style={{ color: "var(--muted)" }}>Lade...</div>

@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { AbsenceType, Role } from "@prisma/client";
 
-type AbsenceType = "VACATION" | "SICK";
+type AbsenceBody = {
+  startDate?: unknown; // YYYY-MM-DD
+  endDate?: unknown;   // YYYY-MM-DD
+  type?: unknown;      // "VACATION" | "SICK"
+};
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function getString(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
 
 function dateOnly(yyyyMmDd: string) {
-  // Date-only in UTC
   return new Date(`${yyyyMmDd}T00:00:00.000Z`);
 }
 
@@ -19,9 +31,16 @@ function eachDayInclusive(from: Date, to: Date) {
   return res;
 }
 
+function isAbsenceType(v: string): v is AbsenceType {
+  return v === "VACATION" || v === "SICK";
+}
+
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+
+  const isAdmin = session.role === Role.ADMIN;
+  const userWhere = isAdmin ? {} : { userId: session.userId };
 
   const url = new URL(req.url);
   const month = url.searchParams.get("month"); // optional "YYYY-MM"
@@ -32,17 +51,17 @@ export async function GET(req: Request) {
   if (month && /^\d{4}-\d{2}$/.test(month)) {
     const [yStr, mStr] = month.split("-");
     const y = Number(yStr);
-    const m = Number(mStr); // 1..12
+    const m = Number(mStr);
     from = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
     to = new Date(Date.UTC(y, m, 1, 0, 0, 0));
   }
 
-  // ✅ NUR für eingeloggten User
   const absences = await prisma.absence.findMany({
     where: {
-      userId: session.userId,
+      ...userWhere,
       ...(from && to ? { absenceDate: { gte: from, lt: to } } : {}),
     },
+    include: isAdmin ? { user: true } : undefined,
     orderBy: [{ absenceDate: "asc" }],
   });
 
@@ -53,21 +72,21 @@ export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
-  const body = (await req.json().catch(() => null)) as
-    | {
-        // ❗kein fullName mehr nötig, wir nutzen session.userId
-        startDate?: string; // YYYY-MM-DD
-        endDate?: string;   // YYYY-MM-DD
-        type?: AbsenceType;
-      }
-    | null;
+  // Mitarbeiter/Admin: erstellt erstmal nur für sich selbst (sicher).
+  // Wenn du später willst, dass Admin für andere einträgt: erweitern wir Body um targetUserId/fullName.
+  const raw = (await req.json().catch(() => null)) as unknown;
+  const body: AbsenceBody = isRecord(raw) ? (raw as AbsenceBody) : {};
 
-  if (!body?.startDate || !body?.endDate || !body?.type) {
+  const startDate = getString(body.startDate);
+  const endDate = getString(body.endDate);
+  const typeStr = getString(body.type);
+
+  if (!startDate || !endDate || !typeStr || !isAbsenceType(typeStr)) {
     return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
   }
 
-  const start = dateOnly(body.startDate);
-  const end = dateOnly(body.endDate);
+  const start = dateOnly(startDate);
+  const end = dateOnly(endDate);
 
   if (end < start) {
     return NextResponse.json({ error: "Enddatum darf nicht vor Startdatum liegen." }, { status: 400 });
@@ -75,12 +94,11 @@ export async function POST(req: Request) {
 
   const days = eachDayInclusive(start, end);
 
-  // ✅ createMany + skipDuplicates nutzt deinen Unique-Index (userId_absenceDate_type)
   await prisma.absence.createMany({
     data: days.map((d) => ({
       userId: session.userId,
       absenceDate: d,
-      type: body.type!,
+      type: typeStr,
     })),
     skipDuplicates: true,
   });
@@ -92,13 +110,17 @@ export async function DELETE(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
+  const isAdmin = session.role === Role.ADMIN;
+
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id fehlt" }, { status: 400 });
 
-  // ✅ Sicherheit: nur eigene löschen (Admin-Override kannst du später ergänzen)
   const a = await prisma.absence.findUnique({ where: { id } });
-  if (!a || a.userId !== session.userId) {
+  if (!a) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+
+  // Employee: nur eigene löschen. Admin: darf alle löschen.
+  if (!isAdmin && a.userId !== session.userId) {
     return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
   }
 

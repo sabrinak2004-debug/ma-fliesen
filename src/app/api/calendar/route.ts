@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { Role } from "@prisma/client";
 
 function toIsoDateUTC(d: Date) {
   const y = d.getUTCFullYear();
@@ -12,6 +13,9 @@ function toIsoDateUTC(d: Date) {
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+
+  const isAdmin = session.role === Role.ADMIN;
+  const userWhere = isAdmin ? {} : { userId: session.userId };
 
   const url = new URL(req.url);
   const month = url.searchParams.get("month"); // YYYY-MM
@@ -25,24 +29,22 @@ export async function GET(req: Request) {
   const from = new Date(Date.UTC(y, m - 1, 1));
   const to = new Date(Date.UTC(y, m, 1));
 
-  // ✅ NUR eingeloggter User
   const [entries, absences] = await Promise.all([
     prisma.workEntry.findMany({
-      where: { userId: session.userId, workDate: { gte: from, lt: to } },
+      where: { ...userWhere, workDate: { gte: from, lt: to } },
       orderBy: [{ workDate: "asc" }, { startTime: "asc" }],
     }),
     prisma.absence.findMany({
-      where: { userId: session.userId, absenceDate: { gte: from, lt: to } },
+      where: { ...userWhere, absenceDate: { gte: from, lt: to } },
       orderBy: [{ absenceDate: "asc" }],
     }),
   ]);
 
-  // ✅ Dein Kalender-Frontend erwartet: { ok: true, days: CalendarDay[] }
+  // Frontend erwartet: { ok: true, days: CalendarDay[] }
   const workSet = new Set(entries.map((e) => toIsoDateUTC(e.workDate)));
   const vacSet = new Set(absences.filter((a) => a.type === "VACATION").map((a) => toIsoDateUTC(a.absenceDate)));
   const sickSet = new Set(absences.filter((a) => a.type === "SICK").map((a) => toIsoDateUTC(a.absenceDate)));
 
-  // alle Tage im Monat ausgeben (damit Grid sauber markiert)
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => {
     const dd = String(i + 1).padStart(2, "0");

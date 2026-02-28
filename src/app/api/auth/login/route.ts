@@ -4,58 +4,89 @@ import { prisma } from "@/lib/prisma";
 import { setSession } from "@/lib/auth";
 import { Role } from "@prisma/client";
 
+type Body =
+  | { fullName?: unknown; password?: unknown }      // normal login
+  | { fullName?: unknown; newPassword?: unknown };  // first-time setup (Employee)
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function getString(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
+
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
-  const fullName = (body?.fullName ?? "").trim();
-  const password = (body?.password ?? "").toString();
+  const raw = (await req.json().catch(() => null)) as unknown;
+
+  const fullName = isRecord(raw) ? getString((raw as Body).fullName).trim() : "";
+  const password = isRecord(raw) ? getString((raw as Body as { password?: unknown }).password) : "";
+  const newPassword = isRecord(raw) ? getString((raw as Body as { newPassword?: unknown }).newPassword) : "";
 
   if (!fullName) {
-    return NextResponse.json({ error: "Name fehlt" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Name fehlt" }, { status: 400 });
   }
 
-  // User holen
-  let user = await prisma.appUser.findUnique({ where: { fullName } });
+  // ✅ Nur hinterlegte Mitarbeiter dürfen rein
+  const user = await prisma.appUser.findUnique({ where: { fullName } });
 
-  // Wenn nicht vorhanden: als Mitarbeiter anlegen (ohne Passwort)
   if (!user) {
-    user = await prisma.appUser.create({
-      data: {
-        fullName,
-        role: Role.EMPLOYEE,
-        isActive: true,
-      },
-    });
+    return NextResponse.json({ ok: false, error: "Kein Zugriff. Name ist nicht hinterlegt." }, { status: 403 });
   }
-
   if (!user.isActive) {
-    return NextResponse.json({ error: "User inaktiv" }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "User inaktiv" }, { status: 403 });
   }
 
-  // Admin? -> Passwort nötig
+  // ✅ EMPLOYEE: Setup wenn passwordHash fehlt
+  if (user.role === Role.EMPLOYEE) {
+    const needsSetup = !user.passwordHash;
+
+    if (needsSetup) {
+      if (!newPassword) {
+        return NextResponse.json({ ok: false, error: "Passwort-Setup erforderlich." }, { status: 400 });
+      }
+      if (newPassword.length < 6) {
+        return NextResponse.json({ ok: false, error: "Passwort muss mind. 6 Zeichen haben." }, { status: 400 });
+      }
+      const hash = await bcrypt.hash(newPassword, 12);
+      await prisma.appUser.update({
+        where: { id: user.id },
+        data: { passwordHash: hash },
+      });
+    } else {
+      if (!password) {
+        return NextResponse.json({ ok: false, error: "Passwort fehlt" }, { status: 400 });
+      }
+      if (!user.passwordHash) {
+        return NextResponse.json({ ok: false, error: "Passwort nicht initialisiert." }, { status: 500 });
+      }
+      const ok = await bcrypt.compare(password, user.passwordHash);
+      if (!ok) {
+        return NextResponse.json({ ok: false, error: "Falsches Passwort" }, { status: 401 });
+      }
+    }
+  }
+
+  // ✅ ADMIN: immer Passwort prüfen
   if (user.role === Role.ADMIN) {
     if (!password) {
-      return NextResponse.json({ requiresPassword: true }, { status: 200 });
+      return NextResponse.json({ ok: false, error: "Passwort fehlt" }, { status: 400 });
     }
     if (!user.passwordHash) {
-      return NextResponse.json({ error: "Admin-Passwort nicht initialisiert" }, { status: 500 });
+      return NextResponse.json({ ok: false, error: "Admin-Passwort nicht initialisiert" }, { status: 500 });
     }
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
-      return NextResponse.json({ error: "Falsches Passwort", requiresPassword: true }, { status: 401 });
+      return NextResponse.json({ ok: false, error: "Falsches Passwort" }, { status: 401 });
     }
   }
 
-  // Session setzen
-  setSession({
+  // ✅ Session setzen (nur einmal)
+  await setSession({
     userId: user.id,
     fullName: user.fullName,
     role: user.role,
   });
-await setSession({
-  userId: user.id,
-  fullName: user.fullName,
-  role: user.role,
-});
 
   return NextResponse.json({ ok: true, role: user.role }, { status: 200 });
 }
