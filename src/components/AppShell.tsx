@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
+
+type SessionData = {
+  userId: string;
+  fullName: string;
+  role: "EMPLOYEE" | "ADMIN";
+};
 
 export default function AppShell({
   children,
@@ -17,6 +23,16 @@ export default function AppShell({
   activeLabel?: string;
 }) {
   const pathname = usePathname();
+  const [session, setSession] = useState<SessionData | null>(null);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((data) => setSession(data.session ?? null))
+      .catch(() => setSession(null));
+  }, []);
+
+  const isAdmin = session?.role === "ADMIN";
 
   return (
     <div style={{ padding: "18px 0 42px" }}>
@@ -24,22 +40,22 @@ export default function AppShell({
         <div className="topbar" style={{ padding: 14, marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
             <div className="brand" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-  <Image
-    src="/logo-ma-fliesen.jpeg"
-    alt="ma-fliesen Logo"
-    width={120}
-    height={40}
-    priority
-    style={{ objectFit: "contain" }}
-  />
+              <Image
+                src="/logo-ma-fliesen.jpeg"
+                alt="ma-fliesen Logo"
+                width={120}
+                height={40}
+                priority
+                style={{ objectFit: "contain" }}
+              />
 
-  <div>
-    <div style={{ fontWeight: 900, lineHeight: 1.05 }}>ma-fliesen</div>
-    <div style={{ color: "var(--muted-2)", fontSize: 12, marginTop: 2 }}>
-      {activeLabel ?? "#wirkönnendas"}
-    </div>
-  </div>
-</div>
+              <div>
+                <div style={{ fontWeight: 900, lineHeight: 1.05 }}>ma-fliesen</div>
+                <div style={{ color: "var(--muted-2)", fontSize: 12, marginTop: 2 }}>
+                  {activeLabel ?? "#wirkönnendas"}
+                </div>
+              </div>
+            </div>
 
             <div className="nav-pills">
               <Link className={`pill ${isActive(pathname, "/erfassung") ? "pill-active" : ""}`} href="/erfassung">
@@ -51,6 +67,12 @@ export default function AppShell({
               <Link className={`pill ${isActive(pathname, "/uebersicht") ? "pill-active" : ""}`} href="/uebersicht">
                 ▦ Übersicht
               </Link>
+
+              {isAdmin && (
+                <Link className={`pill ${isActive(pathname, "/admin/wochenplan") ? "pill-active" : ""}`} href="/admin/wochenplan">
+                  🧑‍💼 Wochenplan
+                </Link>
+              )}
             </div>
           </div>
         </div>

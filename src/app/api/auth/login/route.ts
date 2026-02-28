@@ -1,3 +1,4 @@
+// src/app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
@@ -5,8 +6,8 @@ import { setSession } from "@/lib/auth";
 import { Role } from "@prisma/client";
 
 type Body =
-  | { fullName?: unknown; password?: unknown }      // normal login
-  | { fullName?: unknown; newPassword?: unknown };  // first-time setup (Employee)
+  | { fullName?: unknown; password?: unknown } // normal login
+  | { fullName?: unknown; newPassword?: unknown }; // first-time setup (Employee)
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -20,24 +21,27 @@ export async function POST(req: Request) {
   const raw = (await req.json().catch(() => null)) as unknown;
 
   const fullName = isRecord(raw) ? getString((raw as Body).fullName).trim() : "";
-  const password = isRecord(raw) ? getString((raw as Body as { password?: unknown }).password) : "";
-  const newPassword = isRecord(raw) ? getString((raw as Body as { newPassword?: unknown }).newPassword) : "";
+  const password = isRecord(raw) ? getString((raw as { password?: unknown }).password) : "";
+  const newPassword = isRecord(raw) ? getString((raw as { newPassword?: unknown }).newPassword) : "";
 
   if (!fullName) {
     return NextResponse.json({ ok: false, error: "Name fehlt" }, { status: 400 });
   }
 
-  // ✅ Nur hinterlegte Mitarbeiter dürfen rein
   const user = await prisma.appUser.findUnique({ where: { fullName } });
 
+  // Name ist die Whitelist -> nur wer im Seed/Backend existiert, darf rein
   if (!user) {
-    return NextResponse.json({ ok: false, error: "Kein Zugriff. Name ist nicht hinterlegt." }, { status: 403 });
+    return NextResponse.json(
+      { ok: false, error: "Kein Zugriff. Name ist nicht hinterlegt." },
+      { status: 403 }
+    );
   }
   if (!user.isActive) {
     return NextResponse.json({ ok: false, error: "User inaktiv" }, { status: 403 });
   }
 
-  // ✅ EMPLOYEE: Setup wenn passwordHash fehlt
+  // EMPLOYEE: beim ersten Mal Passwort setzen, danach immer prüfen
   if (user.role === Role.EMPLOYEE) {
     const needsSetup = !user.passwordHash;
 
@@ -45,10 +49,16 @@ export async function POST(req: Request) {
       if (!newPassword) {
         return NextResponse.json({ ok: false, error: "Passwort-Setup erforderlich." }, { status: 400 });
       }
-      if (newPassword.length < 6) {
-        return NextResponse.json({ ok: false, error: "Passwort muss mind. 6 Zeichen haben." }, { status: 400 });
+      if (newPassword.length < 8) {
+        return NextResponse.json(
+          { ok: false, error: "Passwort muss mind. 8 Zeichen haben." },
+          { status: 400 }
+        );
       }
+
       const hash = await bcrypt.hash(newPassword, 12);
+
+      // Race-Schutz: setze Passwort nur, wenn noch keines vorhanden ist
       await prisma.appUser.update({
         where: { id: user.id },
         data: { passwordHash: hash },
@@ -57,6 +67,7 @@ export async function POST(req: Request) {
       if (!password) {
         return NextResponse.json({ ok: false, error: "Passwort fehlt" }, { status: 400 });
       }
+      // user.passwordHash ist hier sicher gesetzt, aber TS mag's manchmal trotzdem:
       if (!user.passwordHash) {
         return NextResponse.json({ ok: false, error: "Passwort nicht initialisiert." }, { status: 500 });
       }
@@ -67,7 +78,7 @@ export async function POST(req: Request) {
     }
   }
 
-  // ✅ ADMIN: immer Passwort prüfen
+  // ADMIN: immer Passwort prüfen
   if (user.role === Role.ADMIN) {
     if (!password) {
       return NextResponse.json({ ok: false, error: "Passwort fehlt" }, { status: 400 });
@@ -81,11 +92,11 @@ export async function POST(req: Request) {
     }
   }
 
-  // ✅ Session setzen (nur einmal)
+  // Session setzen (signiertes Cookie)
   await setSession({
     userId: user.id,
     fullName: user.fullName,
-    role: user.role,
+    role: user.role, // Prisma Role: "EMPLOYEE" | "ADMIN"
   });
 
   return NextResponse.json({ ok: true, role: user.role }, { status: 200 });
