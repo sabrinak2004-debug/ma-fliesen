@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -13,16 +13,17 @@ datasource db {
 }
 
 model AppUser {
-  id        String   @id @default(uuid())
-  fullName  String   @unique
-  role      Role     @default(EMPLOYEE)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  fullName     String   @unique
+  role         Role     @default(EMPLOYEE)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
   passwordHash String?
 
   entries        WorkEntry[]
   absences       Absence[]
   monthlyTargets MonthlyTarget[]
+  planEntries    PlanEntry[]
 }
 
 model WorkEntry {
@@ -44,6 +45,24 @@ model WorkEntry {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, workDate, startTime, endTime])
+}
+
+model PlanEntry {
+  id     String  @id @default(uuid())
+  userId String
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workDate      DateTime @db.Date
+  startHHMM     String
+  endHHMM       String
+  activity      String
+  location      String
+  travelMinutes Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, workDate])
 }
 
 model Absence {

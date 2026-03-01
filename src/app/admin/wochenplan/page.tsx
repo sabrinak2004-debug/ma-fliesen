@@ -6,7 +6,15 @@ import Link from "next/link";
 
 type User = { id: string; fullName: string };
 
-type Entry = {
+/**
+ * Admin-Wochenplan = PLAN-Einträge (keine Zeiterfassung!)
+ * -> wird in /api/admin/plan-entries gelesen/geschrieben/gelöscht
+ *
+ * Erwartete Felder vom Backend:
+ * - id, userId, workDate (ISO), startHHMM, endHHMM, activity, location, travelMinutes
+ * - optional: user { id, fullName }
+ */
+type PlanEntry = {
   id: string;
   userId: string;
   workDate: string; // ISO
@@ -15,7 +23,7 @@ type Entry = {
   activity: string;
   location: string;
   travelMinutes: number;
-  workMinutes: number;
+  // falls du das mitlieferst (wie bisher)
   user?: { id: string; fullName: string };
 };
 
@@ -50,6 +58,7 @@ function startOfWeek(d: Date) {
   date.setHours(0, 0, 0, 0);
   return date;
 }
+
 function fmtYMD(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -89,7 +98,7 @@ function ymdFromISO(iso: string) {
 export default function AdminWochenplanPage() {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
   const [users, setUsers] = useState<User[]>([]);
-  const [entries, setEntries] = useState<Entry[]>([]);
+  const [entries, setEntries] = useState<PlanEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -107,24 +116,26 @@ export default function AdminWochenplanPage() {
     location: "",
     travelMinutes: 0,
   });
-  
-const weekLabel = useMemo(() => {
-  const end = new Date(weekStart);
-  end.setDate(end.getDate() + 6);
 
-  const kw = getISOWeek(weekStart);
+  const weekLabel = useMemo(() => {
+    const end = new Date(weekStart);
+    end.setDate(end.getDate() + 6);
 
-  return {
-    kw,
-    dateRange: `${fmtDEshort(weekStart)} – ${fmtDE(end)}`,
-  };
-}, [weekStart]);
+    const kw = getISOWeek(weekStart);
+
+    return {
+      kw,
+      dateRange: `${fmtDEshort(weekStart)} – ${fmtDE(end)}`,
+    };
+  }, [weekStart]);
+
   async function loadData() {
     setLoading(true);
 
     const [uRes, eRes] = await Promise.all([
       fetch("/api/admin/users"),
-      fetch(`/api/admin/work-entries?weekStart=${fmtYMD(weekStart)}`),
+      // ✅ Admin-WOCHENPLAN liest Plan-Einträge (nicht WorkEntries)
+      fetch(`/api/admin/plan-entries?weekStart=${fmtYMD(weekStart)}`),
     ]);
 
     if (uRes.status === 403 || eRes.status === 403) {
@@ -148,7 +159,7 @@ const weekLabel = useMemo(() => {
 
   // Grid-Mapping (wie Spreadsheet)
   const gridMap = useMemo(() => {
-    const m = new Map<string, Entry[]>();
+    const m = new Map<string, PlanEntry[]>();
 
     for (const e of entries) {
       const dayKey = ymdFromISO(e.workDate);
@@ -190,7 +201,7 @@ const weekLabel = useMemo(() => {
     setModalOpen(true);
   }
 
-  function openEdit(entry: Entry, row: (typeof ROWS)[number]) {
+  function openEdit(entry: PlanEntry, row: (typeof ROWS)[number]) {
     const isRep = (entry.activity ?? "").trim().toUpperCase().startsWith("REP:");
     const isSub = (entry.activity ?? "").trim().toUpperCase().startsWith("SUB:");
 
@@ -221,7 +232,8 @@ const weekLabel = useMemo(() => {
       travelMinutes: Number(form.travelMinutes || 0),
     };
 
-    const res = await fetch("/api/admin/work-entries", {
+    // ✅ Admin-WOCHENPLAN schreibt Plan-Einträge (nicht WorkEntries)
+    const res = await fetch("/api/admin/plan-entries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -239,11 +251,14 @@ const weekLabel = useMemo(() => {
 
   async function remove() {
     if (!editId) return;
-    const res = await fetch(`/api/admin/work-entries?id=${editId}`, { method: "DELETE" });
+
+    // ✅ Admin-WOCHENPLAN löscht Plan-Einträge (nicht WorkEntries)
+    const res = await fetch(`/api/admin/plan-entries?id=${editId}`, { method: "DELETE" });
     if (!res.ok) {
       alert("Löschen fehlgeschlagen");
       return;
     }
+
     setModalOpen(false);
     await loadData();
   }
@@ -262,25 +277,22 @@ const weekLabel = useMemo(() => {
         }}
       >
         <div>
-  <div style={{ fontSize: 22, fontWeight: 900 }}>Wochenplanung</div>
+          <div style={{ fontSize: 22, fontWeight: 900 }}>Wochenplanung</div>
 
-  <div style={{ marginTop: 4 }}>
-    <div style={{ fontSize: 18, fontWeight: 800 }}>
-      KW {weekLabel.kw}
-    </div>
-    <div style={{ color: UI.muted, fontSize: 13 }}>
-      {weekLabel.dateRange}
-    </div>
-  </div>
-</div>
-        
+          <div style={{ marginTop: 4 }}>
+            <div style={{ fontSize: 18, fontWeight: 800 }}>KW {weekLabel.kw}</div>
+            <div style={{ color: UI.muted, fontSize: 13 }}>{weekLabel.dateRange}</div>
+          </div>
+        </div>
+
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <Link
-          href="/erfassung"
-          className="pill"
-          style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+            href="/erfassung"
+            className="pill"
+            style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+          >
             ⟵ Home
-            </Link>
+          </Link>
 
           <button
             className="pill"
@@ -408,7 +420,14 @@ const weekLabel = useMemo(() => {
                             verticalAlign: "top",
                           }}
                         >
-                          <div style={{ minHeight: 74, display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div
+                            style={{
+                              minHeight: 74,
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 8,
+                            }}
+                          >
                             {cellEntries.map((e) => (
                               <div
                                 key={e.id}
