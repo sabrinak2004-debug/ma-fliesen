@@ -5,7 +5,7 @@ import type { Prisma } from "@prisma/client";
 
 function parseYMD(ymd: string) {
   const [y, m, d] = ymd.split("-").map(Number);
-  return new Date(y, m - 1, d, 0, 0, 0, 0);
+  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
 }
 
 function timeToDbTime(hhmm: string) {

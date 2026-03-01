@@ -92,7 +92,10 @@ function fmtDEshort(d: Date) {
 
 function ymdFromISO(iso: string) {
   const d = new Date(iso);
-  return fmtYMD(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
 }
 
 export default function AdminWochenplanPage() {
