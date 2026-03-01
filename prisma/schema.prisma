@@ -26,6 +26,7 @@ model AppUser {
   planEntries    PlanEntry[]
   calendarEvents CalendarEvent[]
   dayNotes       DayNote[]
+  adminNotes      AdminNote[]
 }
 
 model DayNote {
@@ -101,6 +102,20 @@ model PlanEntry {
   updatedAt     DateTime @updatedAt
 
   @@index([userId, workDate])
+}
+
+model AdminNote {
+  id        String   @id @default(uuid())
+  userId    String
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workDate  DateTime @db.Date
+  note      String   @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, workDate], name: "userId_workDate")
 }
 
 model Absence {

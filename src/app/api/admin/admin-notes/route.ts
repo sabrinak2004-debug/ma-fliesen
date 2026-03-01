@@ -11,14 +11,7 @@ type PostBody = {
   id?: string;
   userId: string;
   workDate: string; // YYYY-MM-DD
-  startHHMM: string; // "07:00"
-  endHHMM: string; // "16:00"
-  activity: string;
-  location?: string;
-  travelMinutes?: number;
-
-  // ✅ bleibt am PlanEntry:
-  noteEmployee?: string;
+  note: string; // darf auch leer sein (optional)
 };
 
 export async function GET(req: Request) {
@@ -26,20 +19,20 @@ export async function GET(req: Request) {
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const url = new URL(req.url);
-  const weekStart = url.searchParams.get("weekStart"); // Montag YYYY-MM-DD
+  const weekStart = url.searchParams.get("weekStart");
   if (!weekStart) return NextResponse.json({ error: "weekStart missing" }, { status: 400 });
 
   const start = parseYMD(weekStart);
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 7);
 
-  const entries = await prisma.planEntry.findMany({
+  const notes = await prisma.adminNote.findMany({
     where: { workDate: { gte: start, lt: end } },
     include: { user: { select: { id: true, fullName: true } } },
-    orderBy: [{ workDate: "asc" }, { startHHMM: "asc" }],
+    orderBy: [{ workDate: "asc" }, { createdAt: "asc" }],
   });
 
-  return NextResponse.json({ entries });
+  return NextResponse.json({ notes });
 }
 
 export async function POST(req: Request) {
@@ -47,32 +40,40 @@ export async function POST(req: Request) {
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = (await req.json()) as Partial<PostBody>;
+  const { id, userId, workDate, note } = body ?? {};
 
-  const { id, userId, workDate, startHHMM, endHHMM, activity, location, travelMinutes, noteEmployee } = body ?? {};
-
-  // PlanEntry-Felder (Admin-Notiz ist NICHT mehr hier)
-  if (!userId || !workDate || !startHHMM || !endHHMM || !activity) {
+  if (!userId || !workDate) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
   const data = {
     userId: String(userId),
     workDate: parseYMD(String(workDate)),
-    startHHMM: String(startHHMM),
-    endHHMM: String(endHHMM),
-    activity: String(activity),
-    location: location ? String(location) : "",
-    travelMinutes: Number(travelMinutes ?? 0),
-
-    // ✅ Mitarbeiter-Notiz am PlanEntry
-    noteEmployee: noteEmployee ? String(noteEmployee) : null,
+    note: typeof note === "string" ? note : "",
   };
 
-  const saved = id
-    ? await prisma.planEntry.update({ where: { id: String(id) }, data })
-    : await prisma.planEntry.create({ data });
+  // Wenn id vorhanden -> Update
+  if (id) {
+    const saved = await prisma.adminNote.update({
+      where: { id: String(id) },
+      data: { note: data.note, workDate: data.workDate, userId: data.userId },
+    });
+    return NextResponse.json({ ok: true, note: saved });
+  }
 
-  return NextResponse.json({ ok: true, entry: saved });
+  // Sonst: 1 Notiz pro (userId, workDate) -> Upsert über Unique
+  const saved = await prisma.adminNote.upsert({
+    where: {
+      userId_workDate: {
+        userId: data.userId,
+        workDate: data.workDate,
+      },
+    },
+    create: data,
+    update: { note: data.note },
+  });
+
+  return NextResponse.json({ ok: true, note: saved });
 }
 
 export async function DELETE(req: Request) {
@@ -83,6 +84,6 @@ export async function DELETE(req: Request) {
   const id = url.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id missing" }, { status: 400 });
 
-  await prisma.planEntry.delete({ where: { id: String(id) } });
+  await prisma.adminNote.delete({ where: { id: String(id) } });
   return NextResponse.json({ ok: true });
 }

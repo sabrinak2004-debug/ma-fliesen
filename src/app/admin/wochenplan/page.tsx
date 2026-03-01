@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 
 type User = { id: string; fullName: string };
@@ -15,12 +16,84 @@ type PlanEntry = {
   location: string;
   travelMinutes: number;
 
-  // ✅ neu:
+  // ✅ Mitarbeiter-Notiz bleibt am Plan-Eintrag
   noteEmployee?: string | null;
-  noteAdmin?: string | null;
 
   user?: { id: string; fullName: string };
 };
+
+/**
+ * ✅ Admin-Notiz ist ein SEPARATER Datensatz (separates Speichern/Löschen)
+ * Erwartete Felder im Backend:
+ * - id
+ * - userId
+ * - workDate (YYYY-MM-DD / ISO Date)
+ * - note
+ */
+type AdminNote = {
+  id: string;
+  userId: string;
+  workDate: string; // ISO
+  note: string;
+
+  user?: { id: string; fullName: string };
+};
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function getStringProp(obj: unknown, key: string): string | null {
+  if (!isRecord(obj)) return null;
+  const v = obj[key];
+  return typeof v === "string" ? v : null;
+}
+
+function getArrayProp<T>(obj: unknown, key: string, itemGuard: (x: unknown) => x is T): T[] {
+  if (!isRecord(obj)) return [];
+  const val = obj[key];
+  if (!Array.isArray(val)) return [];
+  const out: T[] = [];
+  for (const item of val) {
+    if (itemGuard(item)) out.push(item);
+  }
+  return out;
+}
+
+function isUser(x: unknown): x is User {
+  return isRecord(x) && typeof x.id === "string" && typeof x.fullName === "string";
+}
+
+function isPlanEntry(x: unknown): x is PlanEntry {
+  return (
+    isRecord(x) &&
+    typeof x.id === "string" &&
+    typeof x.userId === "string" &&
+    typeof x.workDate === "string" &&
+    typeof x.startHHMM === "string" &&
+    typeof x.endHHMM === "string" &&
+    typeof x.activity === "string" &&
+    typeof x.location === "string" &&
+    typeof x.travelMinutes === "number" &&
+    (x.noteEmployee === undefined || x.noteEmployee === null || typeof x.noteEmployee === "string") &&
+    (x.user === undefined ||
+      x.user === null ||
+      (isRecord(x.user) && typeof x.user.id === "string" && typeof x.user.fullName === "string"))
+  );
+}
+
+function isAdminNote(x: unknown): x is AdminNote {
+  return (
+    isRecord(x) &&
+    typeof x.id === "string" &&
+    typeof x.userId === "string" &&
+    typeof x.workDate === "string" &&
+    typeof x.note === "string" &&
+    (x.user === undefined ||
+      x.user === null ||
+      (isRecord(x.user) && typeof x.user.id === "string" && typeof x.user.fullName === "string"))
+  );
+}
 
 const ROWS = [
   { label: "Montag", offset: 0, type: "DAY" as const },
@@ -62,7 +135,7 @@ function fmtYMD(d: Date) {
 
 function getISOWeek(date: Date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7; // Sonntag=7
+  const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
@@ -85,16 +158,139 @@ function ymdFromISO(iso: string) {
   return `${y}-${m}-${dd}`;
 }
 
+/* -------------------- Scroll-Modal (Header/Footer fix, Body scroll) -------------------- */
+function useLockBodyScroll(locked: boolean) {
+  useEffect(() => {
+    if (!locked) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [locked]);
+}
+
+function Modal({
+  open,
+  title,
+  onClose,
+  children,
+  footer,
+  maxWidth = 720,
+  zIndex = 50,
+}: {
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  footer?: ReactNode;
+  maxWidth?: number;
+  zIndex?: number;
+}) {
+  useLockBodyScroll(open);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.55)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+        zIndex,
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth,
+          maxHeight: "85vh",
+          background: "rgba(0,0,0,0.55)",
+          border: `1px solid ${UI.cellBorder}`,
+          borderRadius: 16,
+          backdropFilter: "blur(10px)",
+          color: UI.text,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            padding: 16,
+            borderBottom: `1px solid ${UI.cellBorder}`,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "flex-start",
+          }}
+        >
+          <div style={{ fontSize: 18, fontWeight: 900 }}>{title}</div>
+          <button className="pill" onClick={onClose} type="button" aria-label="Schließen">
+            ✕
+          </button>
+        </div>
+
+        <div style={{ padding: 16, overflowY: "auto", overscrollBehavior: "contain" }}>{children}</div>
+
+        {footer ? (
+          <div
+            style={{
+              padding: 16,
+              borderTop: `1px solid ${UI.cellBorder}`,
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 8,
+            }}
+          >
+            {footer}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------- Page -------------------- */
 export default function AdminWochenplanPage() {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
   const [users, setUsers] = useState<User[]>([]);
   const [entries, setEntries] = useState<PlanEntry[]>([]);
+  const [adminNotes, setAdminNotes] = useState<AdminNote[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
+  // Plan-Entry Modal
+  const [entryModalOpen, setEntryModalOpen] = useState(false);
+  const [editEntryId, setEditEntryId] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
+  // Admin-Note Modal (SEPARAT)
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [editNoteId, setEditNoteId] = useState<string | null>(null);
+
+  const [savingEntry, setSavingEntry] = useState(false);
+  const [deletingEntry, setDeletingEntry] = useState(false);
+  const [savingNote, setSavingNote] = useState(false);
+  const [deletingNote, setDeletingNote] = useState(false);
+
+  const [entryForm, setEntryForm] = useState({
     userId: "",
     rowLabel: "",
     specialTag: "" as "" | "REP" | "SUB",
@@ -104,10 +300,14 @@ export default function AdminWochenplanPage() {
     activity: "",
     location: "",
     travelMinutes: 0,
-
-    // ✅ neu:
     noteEmployee: "",
-    noteAdmin: "",
+  });
+
+  const [noteForm, setNoteForm] = useState({
+    userId: "",
+    rowLabel: "",
+    dateYMD: "",
+    note: "",
   });
 
   const weekLabel = useMemo(() => {
@@ -120,31 +320,25 @@ export default function AdminWochenplanPage() {
   async function loadData() {
     setLoading(true);
 
-    const [uRes, eRes] = await Promise.all([
+    const [uRes, eRes, nRes] = await Promise.all([
       fetch("/api/admin/users"),
       fetch(`/api/admin/plan-entries?weekStart=${fmtYMD(weekStart)}`),
+      fetch(`/api/admin/admin-notes?weekStart=${fmtYMD(weekStart)}`),
     ]);
 
-    if (uRes.status === 403 || eRes.status === 403) {
+    if (uRes.status === 403 || eRes.status === 403 || nRes.status === 403) {
       setLoading(false);
       alert("Kein Zugriff (Admin benötigt).");
       return;
     }
 
-    const uJson: unknown = await uRes.json();
-    const eJson: unknown = await eRes.json();
+    const uJson: unknown = await uRes.json().catch(() => ({}));
+    const eJson: unknown = await eRes.json().catch(() => ({}));
+    const nJson: unknown = await nRes.json().catch(() => ({}));
 
-    setUsers(
-      typeof uJson === "object" && uJson !== null && "users" in uJson && Array.isArray((uJson as { users: unknown }).users)
-        ? ((uJson as { users: User[] }).users)
-        : []
-    );
-
-    setEntries(
-      typeof eJson === "object" && eJson !== null && "entries" in eJson && Array.isArray((eJson as { entries: unknown }).entries)
-        ? ((eJson as { entries: PlanEntry[] }).entries)
-        : []
-    );
+    setUsers(getArrayProp<User>(uJson, "users", isUser));
+    setEntries(getArrayProp<PlanEntry>(eJson, "entries", isPlanEntry));
+    setAdminNotes(getArrayProp<AdminNote>(nJson, "notes", isAdminNote));
 
     setLoading(false);
   }
@@ -154,7 +348,7 @@ export default function AdminWochenplanPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
 
-  const gridMap = useMemo(() => {
+  const entryGridMap = useMemo(() => {
     const m = new Map<string, PlanEntry[]>();
     for (const e of entries) {
       const dayKey = ymdFromISO(e.workDate);
@@ -168,14 +362,34 @@ export default function AdminWochenplanPage() {
     return m;
   }, [entries]);
 
-  function openCreate(userId: string, row: (typeof ROWS)[number]) {
+  const noteMap = useMemo(() => {
+    const m = new Map<string, AdminNote[]>();
+    for (const n of adminNotes) {
+      const dayKey = ymdFromISO(n.workDate);
+      const key = `${dayKey}_${n.userId}`;
+      m.set(key, [...(m.get(key) ?? []), n]);
+    }
+    return m;
+  }, [adminNotes]);
+
+  function closeEntryModal() {
+    setEntryModalOpen(false);
+    setEditEntryId(null);
+  }
+
+  function closeNoteModal() {
+    setNoteModalOpen(false);
+    setEditNoteId(null);
+  }
+
+  function openCreateEntry(userId: string, row: (typeof ROWS)[number]) {
     const date =
       row.type === "DAY"
         ? new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + (row.offset ?? 0))
         : weekStart;
 
-    setEditId(null);
-    setForm({
+    setEditEntryId(null);
+    setEntryForm({
       userId,
       rowLabel: row.label,
       specialTag: row.type === "SPECIAL" ? (row.tag as "REP" | "SUB") : "",
@@ -186,17 +400,16 @@ export default function AdminWochenplanPage() {
       location: "",
       travelMinutes: 0,
       noteEmployee: "",
-      noteAdmin: "",
     });
-    setModalOpen(true);
+    setEntryModalOpen(true);
   }
 
-  function openEdit(entry: PlanEntry, row: (typeof ROWS)[number]) {
+  function openEditEntry(entry: PlanEntry, row: (typeof ROWS)[number]) {
     const isRep = (entry.activity ?? "").trim().toUpperCase().startsWith("REP:");
     const isSub = (entry.activity ?? "").trim().toUpperCase().startsWith("SUB:");
 
-    setEditId(entry.id);
-    setForm({
+    setEditEntryId(entry.id);
+    setEntryForm({
       userId: entry.userId,
       rowLabel: row.label,
       specialTag: isRep ? "REP" : isSub ? "SUB" : "",
@@ -207,58 +420,140 @@ export default function AdminWochenplanPage() {
       location: entry.location ?? "",
       travelMinutes: entry.travelMinutes ?? 0,
       noteEmployee: entry.noteEmployee ?? "",
-      noteAdmin: entry.noteAdmin ?? "",
     });
-    setModalOpen(true);
+    setEntryModalOpen(true);
   }
 
-  async function save() {
-    const payload = {
-      id: editId ?? undefined,
-      userId: form.userId,
-      workDate: form.dateYMD,
-      startHHMM: form.startHHMM,
-      endHHMM: form.endHHMM,
-      activity: form.activity,
-      location: form.location,
-      travelMinutes: Number(form.travelMinutes || 0),
-
-      // ✅ neu:
-      noteEmployee: form.noteEmployee,
-      noteAdmin: form.noteAdmin,
-    };
-
-    const res = await fetch("/api/admin/plan-entries", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+  function openCreateNote(userId: string, dateYMD: string, rowLabel: string) {
+    setEditNoteId(null);
+    setNoteForm({
+      userId,
+      rowLabel,
+      dateYMD,
+      note: "",
     });
-
-    if (!res.ok) {
-      const err: unknown = await res.json().catch(() => ({}));
-      const msg =
-        typeof err === "object" && err !== null && "error" in err && typeof (err as { error: unknown }).error === "string"
-          ? (err as { error: string }).error
-          : "unknown";
-      alert(`Speichern fehlgeschlagen: ${msg}`);
-      return;
-    }
-
-    setModalOpen(false);
-    await loadData();
+    setNoteModalOpen(true);
   }
 
-  async function remove() {
-    if (!editId) return;
+  function openEditNote(note: AdminNote, rowLabel: string) {
+    setEditNoteId(note.id);
+    setNoteForm({
+      userId: note.userId,
+      rowLabel,
+      dateYMD: ymdFromISO(note.workDate),
+      note: note.note ?? "",
+    });
+    setNoteModalOpen(true);
+  }
 
-    const res = await fetch(`/api/admin/plan-entries?id=${editId}`, { method: "DELETE" });
-    if (!res.ok) {
-      alert("Löschen fehlgeschlagen");
-      return;
+  async function saveEntry() {
+    if (!entryForm.userId) return alert("Bitte Mitarbeiter wählen.");
+    if (!entryForm.dateYMD) return alert("Bitte Datum wählen.");
+    if (!entryForm.startHHMM || !entryForm.endHHMM) return alert("Bitte Start/Ende angeben.");
+
+    setSavingEntry(true);
+    try {
+      const payload = {
+        id: editEntryId ?? undefined,
+        userId: entryForm.userId,
+        workDate: entryForm.dateYMD,
+        startHHMM: entryForm.startHHMM,
+        endHHMM: entryForm.endHHMM,
+        activity: entryForm.activity,
+        location: entryForm.location,
+        travelMinutes: Number(entryForm.travelMinutes || 0),
+        noteEmployee: entryForm.noteEmployee,
+      };
+
+      const res = await fetch("/api/admin/plan-entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err: unknown = await res.json().catch(() => ({}));
+        const msg = getStringProp(err, "error") ?? "unknown";
+        alert(`Speichern fehlgeschlagen: ${msg}`);
+        return;
+      }
+
+      closeEntryModal();
+      await loadData();
+    } finally {
+      setSavingEntry(false);
     }
+  }
 
-    setModalOpen(false);
-    await loadData();
+  async function deleteEntry() {
+    if (!editEntryId) return;
+    const ok = window.confirm("Plan-Eintrag wirklich löschen?");
+    if (!ok) return;
+
+    setDeletingEntry(true);
+    try {
+      const res = await fetch(`/api/admin/plan-entries?id=${editEntryId}`, { method: "DELETE" });
+      if (!res.ok) {
+        alert("Löschen fehlgeschlagen");
+        return;
+      }
+      closeEntryModal();
+      await loadData();
+    } finally {
+      setDeletingEntry(false);
+    }
+  }
+
+  async function saveNote() {
+    if (!noteForm.userId) return alert("Bitte Mitarbeiter wählen.");
+    if (!noteForm.dateYMD) return alert("Bitte Datum wählen.");
+
+    setSavingNote(true);
+    try {
+      const payload = {
+        id: editNoteId ?? undefined,
+        userId: noteForm.userId,
+        workDate: noteForm.dateYMD,
+        note: noteForm.note,
+      };
+
+      const res = await fetch("/api/admin/admin-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err: unknown = await res.json().catch(() => ({}));
+        const msg = getStringProp(err, "error") ?? "unknown";
+        alert(`Notiz speichern fehlgeschlagen: ${msg}`);
+        return;
+      }
+
+      closeNoteModal();
+      await loadData();
+    } finally {
+      setSavingNote(false);
+    }
+  }
+
+  async function deleteNote() {
+    if (!editNoteId) return;
+    const ok = window.confirm("Admin-Notiz wirklich löschen?");
+    if (!ok) return;
+
+    setDeletingNote(true);
+    try {
+      const res = await fetch(`/api/admin/admin-notes?id=${editNoteId}`, { method: "DELETE" });
+      if (!res.ok) {
+        alert("Notiz löschen fehlgeschlagen");
+        return;
+      }
+      closeNoteModal();
+      await loadData();
+    } finally {
+      setDeletingNote(false);
+    }
   }
 
   return (
@@ -363,10 +658,12 @@ export default function AdminWochenplanPage() {
 
             <tbody>
               {ROWS.map((row) => {
-                const rowKey =
+                const rowDayYMD =
                   row.type === "DAY"
                     ? fmtYMD(new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + (row.offset ?? 0)))
-                    : (row.tag as string);
+                    : null;
+
+                const rowKey = row.type === "DAY" ? (rowDayYMD as string) : (row.tag as string);
 
                 return (
                   <tr key={row.label}>
@@ -386,66 +683,102 @@ export default function AdminWochenplanPage() {
                     </td>
 
                     {users.map((u) => {
-                      const key = `${rowKey}_${u.id}`;
-                      const cellEntries = gridMap.get(key) ?? [];
+                      const entryCellKey = `${rowKey}_${u.id}`;
+                      const cellEntries = entryGridMap.get(entryCellKey) ?? [];
+
+                      const notesKey = rowDayYMD ? `${rowDayYMD}_${u.id}` : "";
+                      const cellNotes = rowDayYMD ? noteMap.get(notesKey) ?? [] : [];
 
                       return (
-                        <td key={key} style={{ border: `1px solid ${UI.cellBorder}`, padding: 10, verticalAlign: "top" }}>
-                          <div style={{ minHeight: 74, display: "flex", flexDirection: "column", gap: 8 }}>
-                            {cellEntries.map((e) => (
-                              <div
-                                key={e.id}
-                                onClick={() => openEdit(e, row)}
-                                style={{
-                                  border: `1px solid ${UI.cardBorder}`,
-                                  borderRadius: 10,
-                                  padding: "10px 12px",
-                                  cursor: "pointer",
-                                  background: UI.cardBg,
-                                  color: UI.text,
-                                }}
-                                title="Zum Bearbeiten klicken"
-                              >
-                                <div style={{ fontWeight: 900, fontSize: 13 }}>
-                                  {e.user?.fullName ? `${e.user.fullName}: ` : ""}
-                                  {e.activity}
-                                </div>
-
-                                {(e.location || e.startHHMM || e.endHHMM) && (
+                        <td
+                          key={`${row.label}_${u.id}`}
+                          style={{ border: `1px solid ${UI.cellBorder}`, padding: 10, verticalAlign: "top" }}
+                        >
+                          <div style={{ minHeight: 74, display: "flex", flexDirection: "column", gap: 10 }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              {cellEntries.map((e) => (
+                                <div
+                                  key={e.id}
+                                  onClick={() => openEditEntry(e, row)}
+                                  style={{
+                                    border: `1px solid ${UI.cardBorder}`,
+                                    borderRadius: 10,
+                                    padding: "10px 12px",
+                                    cursor: "pointer",
+                                    background: UI.cardBg,
+                                    color: UI.text,
+                                  }}
+                                  title="Plan-Eintrag bearbeiten"
+                                >
+                                  <div style={{ fontWeight: 900, fontSize: 13 }}>{e.activity}</div>
                                   <div style={{ fontSize: 12, color: UI.muted, marginTop: 4 }}>
                                     {e.startHHMM}–{e.endHHMM}
                                     {e.location ? ` · ${e.location}` : ""}
                                   </div>
-                                )}
 
-                                {e.noteEmployee ? (
-                                  <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
-                                    📝 MA: {e.noteEmployee}
-                                  </div>
-                                ) : null}
+                                  {e.noteEmployee ? (
+                                    <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>📝 MA: {e.noteEmployee}</div>
+                                  ) : null}
+                                </div>
+                              ))}
 
-                                {e.noteAdmin ? (
-                                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 6 }}>
-                                    🔒 Admin: {e.noteAdmin}
+                              <button
+                                onClick={() => openCreateEntry(u.id, row)}
+                                style={{
+                                  border: `1px dashed ${UI.cardBorder}`,
+                                  borderRadius: 10,
+                                  padding: "8px 12px",
+                                  background: UI.addBg,
+                                  cursor: "pointer",
+                                  textAlign: "left",
+                                  color: UI.muted,
+                                }}
+                              >
+                                + Eintrag (Plan)
+                              </button>
+                            </div>
+
+                            {row.type === "DAY" && rowDayYMD ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {cellNotes.map((n) => (
+                                  <div
+                                    key={n.id}
+                                    onClick={() => openEditNote(n, row.label)}
+                                    style={{
+                                      border: `1px solid rgba(255,255,255,0.12)`,
+                                      borderRadius: 10,
+                                      padding: "10px 12px",
+                                      cursor: "pointer",
+                                      background: "rgba(255,255,255,0.04)",
+                                      color: "rgba(255,255,255,0.85)",
+                                    }}
+                                    title="Admin-Notiz bearbeiten"
+                                  >
+                                    <div style={{ fontWeight: 900, fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
+                                      🔒 Admin-Notiz
+                                    </div>
+                                    <div style={{ fontSize: 12, marginTop: 6, color: "rgba(255,255,255,0.70)" }}>
+                                      {n.note.trim() ? n.note : "(leer)"}
+                                    </div>
                                   </div>
-                                ) : null}
+                                ))}
+
+                                <button
+                                  onClick={() => openCreateNote(u.id, rowDayYMD, row.label)}
+                                  style={{
+                                    border: `1px dashed rgba(255,255,255,0.18)`,
+                                    borderRadius: 10,
+                                    padding: "8px 12px",
+                                    background: "rgba(255,255,255,0.03)",
+                                    cursor: "pointer",
+                                    textAlign: "left",
+                                    color: "rgba(255,255,255,0.60)",
+                                  }}
+                                >
+                                  + Notiz (Admin)
+                                </button>
                               </div>
-                            ))}
-
-                            <button
-                              onClick={() => openCreate(u.id, row)}
-                              style={{
-                                border: `1px dashed ${UI.cardBorder}`,
-                                borderRadius: 10,
-                                padding: "8px 12px",
-                                background: UI.addBg,
-                                cursor: "pointer",
-                                textAlign: "left",
-                                color: UI.muted,
-                              }}
-                            >
-                              + Eintragen
-                            </button>
+                            ) : null}
                           </div>
                         </td>
                       );
@@ -458,234 +791,277 @@ export default function AdminWochenplanPage() {
         </div>
       )}
 
-      {modalOpen ? (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.55)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-            zIndex: 50,
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: 640,
-              background: "rgba(0,0,0,0.55)",
-              border: `1px solid ${UI.cellBorder}`,
-              borderRadius: 16,
-              padding: 16,
-              backdropFilter: "blur(10px)",
-              color: UI.text,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 900 }}>{editId ? "Eintrag bearbeiten" : "Eintrag anlegen"}</div>
-                <div style={{ fontSize: 13, color: UI.muted }}>
-                  {form.rowLabel} · {users.find((x) => x.id === form.userId)?.fullName ?? ""}
-                </div>
-              </div>
-              <button className="pill" onClick={() => setModalOpen(false)}>
-                ✕
+      {/* -------------------- MODAL: PLAN-EINTRAG -------------------- */}
+      <Modal
+        open={entryModalOpen}
+        title={`${editEntryId ? "Eintrag bearbeiten" : "Eintrag anlegen"} — ${entryForm.rowLabel} · ${
+          users.find((x) => x.id === entryForm.userId)?.fullName ?? ""
+        }`}
+        onClose={closeEntryModal}
+        footer={
+          <>
+            {editEntryId ? (
+              <button className="pill" onClick={deleteEntry} disabled={savingEntry || deletingEntry}>
+                {deletingEntry ? "Lösche…" : "Löschen"}
+              </button>
+            ) : (
+              <div />
+            )}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="pill" onClick={closeEntryModal} disabled={savingEntry || deletingEntry}>
+                Schließen
+              </button>
+              <button className="pill pill-active" onClick={saveEntry} disabled={savingEntry || deletingEntry}>
+                {savingEntry ? "Speichere…" : "Speichern"}
               </button>
             </div>
+          </>
+        }
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datum</div>
+            <input
+              type="date"
+              value={entryForm.dateYMD}
+              onChange={(e) => setEntryForm((p) => ({ ...p, dateYMD: e.target.value }))}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${UI.cellBorder}`,
+                borderRadius: 10,
+                background: "rgba(0,0,0,0.25)",
+                color: UI.text,
+              }}
+            />
+          </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 14 }}>
-              <div>
-                <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datum</div>
-                <input
-                  type="date"
-                  value={form.dateYMD}
-                  onChange={(e) => setForm((p) => ({ ...p, dateYMD: e.target.value }))}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: `1px solid ${UI.cellBorder}`,
-                    borderRadius: 10,
-                    background: "rgba(0,0,0,0.25)",
-                    color: UI.text,
-                  }}
-                />
+          <div>
+            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Mitarbeiter</div>
+            <select
+              value={entryForm.userId}
+              onChange={(e) => setEntryForm((p) => ({ ...p, userId: e.target.value }))}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${UI.cellBorder}`,
+                borderRadius: 10,
+                background: "rgba(0,0,0,0.25)",
+                color: UI.text,
+              }}
+            >
+              {users.map((u) => (
+                <option key={u.id} value={u.id} style={{ color: "black" }}>
+                  {u.fullName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Start</div>
+            <input
+              type="time"
+              value={entryForm.startHHMM}
+              onChange={(e) => setEntryForm((p) => ({ ...p, startHHMM: e.target.value }))}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${UI.cellBorder}`,
+                borderRadius: 10,
+                background: "rgba(0,0,0,0.25)",
+                color: UI.text,
+              }}
+            />
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Ende</div>
+            <input
+              type="time"
+              value={entryForm.endHHMM}
+              onChange={(e) => setEntryForm((p) => ({ ...p, endHHMM: e.target.value }))}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${UI.cellBorder}`,
+                borderRadius: 10,
+                background: "rgba(0,0,0,0.25)",
+                color: UI.text,
+              }}
+            />
+          </div>
+
+          <div style={{ gridColumn: "1 / -1" }}>
+            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Tätigkeit</div>
+            <input
+              value={entryForm.activity}
+              onChange={(e) => setEntryForm((p) => ({ ...p, activity: e.target.value }))}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${UI.cellBorder}`,
+                borderRadius: 10,
+                background: "rgba(0,0,0,0.25)",
+                color: UI.text,
+              }}
+            />
+            {entryForm.specialTag ? (
+              <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
+                Lass den Prefix <b>{entryForm.specialTag}:</b> stehen, sonst erscheint es nicht in der Spezial-Zeile.
               </div>
+            ) : null}
+          </div>
 
-              <div>
-                <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Mitarbeiter</div>
-                <select
-                  value={form.userId}
-                  onChange={(e) => setForm((p) => ({ ...p, userId: e.target.value }))}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: `1px solid ${UI.cellBorder}`,
-                    borderRadius: 10,
-                    background: "rgba(0,0,0,0.25)",
-                    color: UI.text,
-                  }}
-                >
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id} style={{ color: "black" }}>
-                      {u.fullName}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Ort</div>
+            <input
+              value={entryForm.location}
+              onChange={(e) => setEntryForm((p) => ({ ...p, location: e.target.value }))}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${UI.cellBorder}`,
+                borderRadius: 10,
+                background: "rgba(0,0,0,0.25)",
+                color: UI.text,
+              }}
+            />
+          </div>
 
-              <div>
-                <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Start</div>
-                <input
-                  value={form.startHHMM}
-                  onChange={(e) => setForm((p) => ({ ...p, startHHMM: e.target.value }))}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: `1px solid ${UI.cellBorder}`,
-                    borderRadius: 10,
-                    background: "rgba(0,0,0,0.25)",
-                    color: UI.text,
-                  }}
-                />
-              </div>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Fahrzeit (Minuten)</div>
+            <input
+              type="number"
+              min={0}
+              value={entryForm.travelMinutes}
+              onChange={(e) => setEntryForm((p) => ({ ...p, travelMinutes: Number(e.target.value || 0) }))}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${UI.cellBorder}`,
+                borderRadius: 10,
+                background: "rgba(0,0,0,0.25)",
+                color: UI.text,
+              }}
+            />
+          </div>
 
-              <div>
-                <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Ende</div>
-                <input
-                  value={form.endHHMM}
-                  onChange={(e) => setForm((p) => ({ ...p, endHHMM: e.target.value }))}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: `1px solid ${UI.cellBorder}`,
-                    borderRadius: 10,
-                    background: "rgba(0,0,0,0.25)",
-                    color: UI.text,
-                  }}
-                />
-              </div>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Notiz (für Mitarbeiter)</div>
+            <textarea
+              value={entryForm.noteEmployee}
+              onChange={(e) => setEntryForm((p) => ({ ...p, noteEmployee: e.target.value }))}
+              rows={3}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${UI.cellBorder}`,
+                borderRadius: 10,
+                background: "rgba(0,0,0,0.25)",
+                color: UI.text,
+                resize: "vertical",
+              }}
+            />
+            <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>Diese Notiz sehen Mitarbeiter im Kalender/Modal.</div>
+          </div>
 
-              <div style={{ gridColumn: "1 / -1" }}>
-                <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Tätigkeit</div>
-                <input
-                  value={form.activity}
-                  onChange={(e) => setForm((p) => ({ ...p, activity: e.target.value }))}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: `1px solid ${UI.cellBorder}`,
-                    borderRadius: 10,
-                    background: "rgba(0,0,0,0.25)",
-                    color: UI.text,
-                  }}
-                />
-                {form.specialTag ? (
-                  <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
-                    Lass den Prefix <b>{form.specialTag}:</b> stehen, sonst erscheint es nicht in der Spezial-Zeile.
-                  </div>
-                ) : null}
-              </div>
-
-              <div style={{ gridColumn: "1 / -1" }}>
-                <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Ort</div>
-                <input
-                  value={form.location}
-                  onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: `1px solid ${UI.cellBorder}`,
-                    borderRadius: 10,
-                    background: "rgba(0,0,0,0.25)",
-                    color: UI.text,
-                  }}
-                />
-              </div>
-
-              <div style={{ gridColumn: "1 / -1" }}>
-                <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Fahrzeit (Minuten)</div>
-                <input
-                  type="number"
-                  value={form.travelMinutes}
-                  onChange={(e) => setForm((p) => ({ ...p, travelMinutes: Number(e.target.value) }))}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: `1px solid ${UI.cellBorder}`,
-                    borderRadius: 10,
-                    background: "rgba(0,0,0,0.25)",
-                    color: UI.text,
-                  }}
-                />
-              </div>
-
-              {/* ✅ NEU: Notizen */}
-              <div style={{ gridColumn: "1 / -1" }}>
-                <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Notiz (für Mitarbeiter)</div>
-                <textarea
-                  value={form.noteEmployee}
-                  onChange={(e) => setForm((p) => ({ ...p, noteEmployee: e.target.value }))}
-                  rows={3}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: `1px solid ${UI.cellBorder}`,
-                    borderRadius: 10,
-                    background: "rgba(0,0,0,0.25)",
-                    color: UI.text,
-                    resize: "vertical",
-                  }}
-                />
-                <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
-                  Diese Notiz sehen Mitarbeiter im Kalender/Modal.
-                </div>
-              </div>
-
-              <div style={{ gridColumn: "1 / -1" }}>
-                <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Interne Admin-Notiz (nur für Admin)</div>
-                <textarea
-                  value={form.noteAdmin}
-                  onChange={(e) => setForm((p) => ({ ...p, noteAdmin: e.target.value }))}
-                  rows={3}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: `1px solid ${UI.cellBorder}`,
-                    borderRadius: 10,
-                    background: "rgba(0,0,0,0.25)",
-                    color: UI.text,
-                    resize: "vertical",
-                  }}
-                />
-                <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
-                  Bleibt intern und wird niemals an Mitarbeiter ausgeliefert.
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 16 }}>
-              {editId ? (
-                <button className="pill" onClick={remove}>
-                  Löschen
-                </button>
-              ) : (
-                <div />
-              )}
-
-              <div style={{ display: "flex", gap: 8 }}>
-                <button className="pill" onClick={() => setModalOpen(false)}>
-                  Abbrechen
-                </button>
-                <button className="pill pill-active" onClick={save}>
-                  Speichern
-                </button>
-              </div>
-            </div>
+          <div style={{ gridColumn: "1 / -1", fontSize: 12, color: UI.muted }}>
+            ✅ Admin-Notiz wird <b>nicht</b> hier gespeichert — dafür gibt es separat “+ Notiz (Admin)” im Wochenplan.
           </div>
         </div>
-      ) : null}
+      </Modal>
+
+      {/* -------------------- MODAL: ADMIN-NOTIZ (SEPARAT) -------------------- */}
+      <Modal
+        open={noteModalOpen}
+        title={`${editNoteId ? "Admin-Notiz bearbeiten" : "Admin-Notiz anlegen"} — ${noteForm.rowLabel} · ${
+          users.find((x) => x.id === noteForm.userId)?.fullName ?? ""
+        }`}
+        onClose={closeNoteModal}
+        zIndex={60}
+        footer={
+          <>
+            {editNoteId ? (
+              <button className="pill" onClick={deleteNote} disabled={savingNote || deletingNote}>
+                {deletingNote ? "Lösche…" : "Löschen"}
+              </button>
+            ) : (
+              <div />
+            )}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="pill" onClick={closeNoteModal} disabled={savingNote || deletingNote}>
+                Schließen
+              </button>
+              <button className="pill pill-active" onClick={saveNote} disabled={savingNote || deletingNote}>
+                {savingNote ? "Speichere…" : "Speichern"}
+              </button>
+            </div>
+          </>
+        }
+      >
+        <div style={{ display: "grid", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datum</div>
+              <input
+                type="date"
+                value={noteForm.dateYMD}
+                onChange={(e) => setNoteForm((p) => ({ ...p, dateYMD: e.target.value }))}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  border: `1px solid ${UI.cellBorder}`,
+                  borderRadius: 10,
+                  background: "rgba(0,0,0,0.25)",
+                  color: UI.text,
+                }}
+              />
+            </div>
+
+            <div>
+              <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Mitarbeiter</div>
+              <select
+                value={noteForm.userId}
+                onChange={(e) => setNoteForm((p) => ({ ...p, userId: e.target.value }))}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  border: `1px solid ${UI.cellBorder}`,
+                  borderRadius: 10,
+                  background: "rgba(0,0,0,0.25)",
+                  color: UI.text,
+                }}
+              >
+                {users.map((u) => (
+                  <option key={u.id} value={u.id} style={{ color: "black" }}>
+                    {u.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Interne Admin-Notiz (nur für Admin)</div>
+            <textarea
+              value={noteForm.note}
+              onChange={(e) => setNoteForm((p) => ({ ...p, note: e.target.value }))}
+              rows={10}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${UI.cellBorder}`,
+                borderRadius: 10,
+                background: "rgba(0,0,0,0.25)",
+                color: UI.text,
+                resize: "vertical",
+              }}
+            />
+            <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>Bleibt intern und wird niemals an Mitarbeiter ausgeliefert.</div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
