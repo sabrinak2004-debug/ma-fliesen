@@ -1,4 +1,3 @@
-// src/app/admin/wochenplan/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -6,14 +5,6 @@ import Link from "next/link";
 
 type User = { id: string; fullName: string };
 
-/**
- * Admin-Wochenplan = PLAN-Einträge (keine Zeiterfassung!)
- * -> wird in /api/admin/plan-entries gelesen/geschrieben/gelöscht
- *
- * Erwartete Felder vom Backend:
- * - id, userId, workDate (ISO), startHHMM, endHHMM, activity, location, travelMinutes
- * - optional: user { id, fullName }
- */
 type PlanEntry = {
   id: string;
   userId: string;
@@ -23,7 +14,11 @@ type PlanEntry = {
   activity: string;
   location: string;
   travelMinutes: number;
-  // falls du das mitlieferst (wie bisher)
+
+  // ✅ neu:
+  noteEmployee?: string | null;
+  noteAdmin?: string | null;
+
   user?: { id: string; fullName: string };
 };
 
@@ -38,7 +33,6 @@ const ROWS = [
   { label: "Subunternehmer", offset: null, type: "SPECIAL" as const, tag: "SUB" },
 ];
 
-// Dark/Green Theme UI (passt zum Look deines Portals)
 const UI = {
   tableBg: "rgba(0,0,0,0.22)",
   headerBg: "rgba(0,0,0,0.38)",
@@ -68,7 +62,7 @@ function fmtYMD(d: Date) {
 
 function getISOWeek(date: Date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7; // Sonntag = 7
+  const dayNum = d.getUTCDay() || 7; // Sonntag=7
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
@@ -76,18 +70,11 @@ function getISOWeek(date: Date) {
 }
 
 function fmtDE(d: Date) {
-  return d.toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 function fmtDEshort(d: Date) {
-  return d.toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-  });
+  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
 }
 
 function ymdFromISO(iso: string) {
@@ -104,7 +91,6 @@ export default function AdminWochenplanPage() {
   const [entries, setEntries] = useState<PlanEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
 
@@ -118,18 +104,17 @@ export default function AdminWochenplanPage() {
     activity: "",
     location: "",
     travelMinutes: 0,
+
+    // ✅ neu:
+    noteEmployee: "",
+    noteAdmin: "",
   });
 
   const weekLabel = useMemo(() => {
     const end = new Date(weekStart);
     end.setDate(end.getDate() + 6);
-
     const kw = getISOWeek(weekStart);
-
-    return {
-      kw,
-      dateRange: `${fmtDEshort(weekStart)} – ${fmtDE(end)}`,
-    };
+    return { kw, dateRange: `${fmtDEshort(weekStart)} – ${fmtDE(end)}` };
   }, [weekStart]);
 
   async function loadData() {
@@ -137,7 +122,6 @@ export default function AdminWochenplanPage() {
 
     const [uRes, eRes] = await Promise.all([
       fetch("/api/admin/users"),
-      // ✅ Admin-WOCHENPLAN liest Plan-Einträge (nicht WorkEntries)
       fetch(`/api/admin/plan-entries?weekStart=${fmtYMD(weekStart)}`),
     ]);
 
@@ -147,46 +131,47 @@ export default function AdminWochenplanPage() {
       return;
     }
 
-    const uJson = await uRes.json();
-    const eJson = await eRes.json();
+    const uJson: unknown = await uRes.json();
+    const eJson: unknown = await eRes.json();
 
-    setUsers(uJson.users ?? []);
-    setEntries(eJson.entries ?? []);
+    setUsers(
+      typeof uJson === "object" && uJson !== null && "users" in uJson && Array.isArray((uJson as { users: unknown }).users)
+        ? ((uJson as { users: User[] }).users)
+        : []
+    );
+
+    setEntries(
+      typeof eJson === "object" && eJson !== null && "entries" in eJson && Array.isArray((eJson as { entries: unknown }).entries)
+        ? ((eJson as { entries: PlanEntry[] }).entries)
+        : []
+    );
+
     setLoading(false);
   }
 
   useEffect(() => {
-    loadData();
+    void loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
 
-  // Grid-Mapping (wie Spreadsheet)
   const gridMap = useMemo(() => {
     const m = new Map<string, PlanEntry[]>();
-
     for (const e of entries) {
       const dayKey = ymdFromISO(e.workDate);
-
       const trimmed = (e.activity ?? "").trim().toUpperCase();
       let rowKey = dayKey;
       if (trimmed.startsWith("REP:")) rowKey = "REP";
       if (trimmed.startsWith("SUB:")) rowKey = "SUB";
-
       const key = `${rowKey}_${e.userId}`;
       m.set(key, [...(m.get(key) ?? []), e]);
     }
-
     return m;
   }, [entries]);
 
   function openCreate(userId: string, row: (typeof ROWS)[number]) {
     const date =
       row.type === "DAY"
-        ? new Date(
-            weekStart.getFullYear(),
-            weekStart.getMonth(),
-            weekStart.getDate() + (row.offset ?? 0)
-          )
+        ? new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + (row.offset ?? 0))
         : weekStart;
 
     setEditId(null);
@@ -200,6 +185,8 @@ export default function AdminWochenplanPage() {
       activity: row.type === "SPECIAL" ? `${row.tag}: ` : "",
       location: "",
       travelMinutes: 0,
+      noteEmployee: "",
+      noteAdmin: "",
     });
     setModalOpen(true);
   }
@@ -219,6 +206,8 @@ export default function AdminWochenplanPage() {
       activity: entry.activity ?? "",
       location: entry.location ?? "",
       travelMinutes: entry.travelMinutes ?? 0,
+      noteEmployee: entry.noteEmployee ?? "",
+      noteAdmin: entry.noteAdmin ?? "",
     });
     setModalOpen(true);
   }
@@ -233,9 +222,12 @@ export default function AdminWochenplanPage() {
       activity: form.activity,
       location: form.location,
       travelMinutes: Number(form.travelMinutes || 0),
+
+      // ✅ neu:
+      noteEmployee: form.noteEmployee,
+      noteAdmin: form.noteAdmin,
     };
 
-    // ✅ Admin-WOCHENPLAN schreibt Plan-Einträge (nicht WorkEntries)
     const res = await fetch("/api/admin/plan-entries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -243,8 +235,12 @@ export default function AdminWochenplanPage() {
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert(`Speichern fehlgeschlagen: ${err?.error ?? "unknown"}`);
+      const err: unknown = await res.json().catch(() => ({}));
+      const msg =
+        typeof err === "object" && err !== null && "error" in err && typeof (err as { error: unknown }).error === "string"
+          ? (err as { error: string }).error
+          : "unknown";
+      alert(`Speichern fehlgeschlagen: ${msg}`);
       return;
     }
 
@@ -255,7 +251,6 @@ export default function AdminWochenplanPage() {
   async function remove() {
     if (!editId) return;
 
-    // ✅ Admin-WOCHENPLAN löscht Plan-Einträge (nicht WorkEntries)
     const res = await fetch(`/api/admin/plan-entries?id=${editId}`, { method: "DELETE" });
     if (!res.ok) {
       alert("Löschen fehlgeschlagen");
@@ -268,7 +263,6 @@ export default function AdminWochenplanPage() {
 
   return (
     <div style={{ padding: 14 }}>
-      {/* Header */}
       <div
         style={{
           display: "flex",
@@ -281,7 +275,6 @@ export default function AdminWochenplanPage() {
       >
         <div>
           <div style={{ fontSize: 22, fontWeight: 900 }}>Wochenplanung</div>
-
           <div style={{ marginTop: 4 }}>
             <div style={{ fontSize: 18, fontWeight: 800 }}>KW {weekLabel.kw}</div>
             <div style={{ color: UI.muted, fontSize: 13 }}>{weekLabel.dateRange}</div>
@@ -289,11 +282,7 @@ export default function AdminWochenplanPage() {
         </div>
 
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <Link
-            href="/erfassung"
-            className="pill"
-            style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
-          >
+          <Link href="/erfassung" className="pill" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
             ⟵ Home
           </Link>
 
@@ -353,15 +342,7 @@ export default function AdminWochenplanPage() {
           <table style={{ borderCollapse: "collapse", minWidth: 1200, width: "100%" }}>
             <thead>
               <tr style={{ background: UI.headerBg }}>
-                <th
-                  style={{
-                    border: `1px solid ${UI.cellBorder}`,
-                    padding: 12,
-                    width: 180,
-                    textAlign: "left",
-                  }}
-                ></th>
-
+                <th style={{ border: `1px solid ${UI.cellBorder}`, padding: 12, width: 180, textAlign: "left" }} />
                 {users.map((u) => (
                   <th
                     key={u.id}
@@ -384,13 +365,7 @@ export default function AdminWochenplanPage() {
               {ROWS.map((row) => {
                 const rowKey =
                   row.type === "DAY"
-                    ? fmtYMD(
-                        new Date(
-                          weekStart.getFullYear(),
-                          weekStart.getMonth(),
-                          weekStart.getDate() + (row.offset ?? 0)
-                        )
-                      )
+                    ? fmtYMD(new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + (row.offset ?? 0)))
                     : (row.tag as string);
 
                 return (
@@ -415,22 +390,8 @@ export default function AdminWochenplanPage() {
                       const cellEntries = gridMap.get(key) ?? [];
 
                       return (
-                        <td
-                          key={key}
-                          style={{
-                            border: `1px solid ${UI.cellBorder}`,
-                            padding: 10,
-                            verticalAlign: "top",
-                          }}
-                        >
-                          <div
-                            style={{
-                              minHeight: 74,
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 8,
-                            }}
-                          >
+                        <td key={key} style={{ border: `1px solid ${UI.cellBorder}`, padding: 10, verticalAlign: "top" }}>
+                          <div style={{ minHeight: 74, display: "flex", flexDirection: "column", gap: 8 }}>
                             {cellEntries.map((e) => (
                               <div
                                 key={e.id}
@@ -445,7 +406,6 @@ export default function AdminWochenplanPage() {
                                 }}
                                 title="Zum Bearbeiten klicken"
                               >
-                                {/* Name im UI sichtbar (Backend bleibt relation über e.user) */}
                                 <div style={{ fontWeight: 900, fontSize: 13 }}>
                                   {e.user?.fullName ? `${e.user.fullName}: ` : ""}
                                   {e.activity}
@@ -457,6 +417,18 @@ export default function AdminWochenplanPage() {
                                     {e.location ? ` · ${e.location}` : ""}
                                   </div>
                                 )}
+
+                                {e.noteEmployee ? (
+                                  <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
+                                    📝 MA: {e.noteEmployee}
+                                  </div>
+                                ) : null}
+
+                                {e.noteAdmin ? (
+                                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 6 }}>
+                                    🔒 Admin: {e.noteAdmin}
+                                  </div>
+                                ) : null}
                               </div>
                             ))}
 
@@ -486,7 +458,6 @@ export default function AdminWochenplanPage() {
         </div>
       )}
 
-      {/* Modal */}
       {modalOpen ? (
         <div
           style={{
@@ -514,9 +485,7 @@ export default function AdminWochenplanPage() {
           >
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
               <div>
-                <div style={{ fontSize: 18, fontWeight: 900 }}>
-                  {editId ? "Eintrag bearbeiten" : "Eintrag anlegen"}
-                </div>
+                <div style={{ fontSize: 18, fontWeight: 900 }}>{editId ? "Eintrag bearbeiten" : "Eintrag anlegen"}</div>
                 <div style={{ fontSize: 13, color: UI.muted }}>
                   {form.rowLabel} · {users.find((x) => x.id === form.userId)?.fullName ?? ""}
                 </div>
@@ -650,6 +619,49 @@ export default function AdminWochenplanPage() {
                     color: UI.text,
                   }}
                 />
+              </div>
+
+              {/* ✅ NEU: Notizen */}
+              <div style={{ gridColumn: "1 / -1" }}>
+                <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Notiz (für Mitarbeiter)</div>
+                <textarea
+                  value={form.noteEmployee}
+                  onChange={(e) => setForm((p) => ({ ...p, noteEmployee: e.target.value }))}
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    border: `1px solid ${UI.cellBorder}`,
+                    borderRadius: 10,
+                    background: "rgba(0,0,0,0.25)",
+                    color: UI.text,
+                    resize: "vertical",
+                  }}
+                />
+                <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
+                  Diese Notiz sehen Mitarbeiter im Kalender/Modal.
+                </div>
+              </div>
+
+              <div style={{ gridColumn: "1 / -1" }}>
+                <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Interne Admin-Notiz (nur für Admin)</div>
+                <textarea
+                  value={form.noteAdmin}
+                  onChange={(e) => setForm((p) => ({ ...p, noteAdmin: e.target.value }))}
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    border: `1px solid ${UI.cellBorder}`,
+                    borderRadius: 10,
+                    background: "rgba(0,0,0,0.25)",
+                    color: UI.text,
+                    resize: "vertical",
+                  }}
+                />
+                <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
+                  Bleibt intern und wird niemals an Mitarbeiter ausgeliefert.
+                </div>
               </div>
             </div>
 

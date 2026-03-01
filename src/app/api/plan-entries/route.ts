@@ -1,4 +1,3 @@
-// src/app/api/plan-entries/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
@@ -8,14 +7,9 @@ function parseYMD(ymd: string) {
   return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
 }
 
-/**
- * Wir kennen das genaue Shape von SessionData nicht,
- * deshalb lesen wir userId robust und typesafe aus.
- */
 function extractUserId(session: unknown): string | null {
   if (!session || typeof session !== "object") return null;
 
-  // Fall 1: session.user.id
   if ("user" in session) {
     const user = (session as { user?: unknown }).user;
     if (
@@ -28,19 +22,11 @@ function extractUserId(session: unknown): string | null {
     }
   }
 
-  // Fall 2: session.userId
-  if (
-    "userId" in session &&
-    typeof (session as { userId?: unknown }).userId === "string"
-  ) {
+  if ("userId" in session && typeof (session as { userId?: unknown }).userId === "string") {
     return (session as { userId: string }).userId;
   }
 
-  // Fall 3: session.id (manche Auth-Systeme)
-  if (
-    "id" in session &&
-    typeof (session as { id?: unknown }).id === "string"
-  ) {
+  if ("id" in session && typeof (session as { id?: unknown }).id === "string") {
     return (session as { id: string }).id;
   }
 
@@ -67,11 +53,21 @@ export async function GET(req: Request) {
   const end = parseYMD(to);
 
   const entries = await prisma.planEntry.findMany({
-    where: {
-      userId,
-      workDate: { gte: start, lt: end },
-    },
+    where: { userId, workDate: { gte: start, lt: end } },
     orderBy: [{ startHHMM: "asc" }],
+
+    // ✅ wichtig: nur Felder ausgeben, die Mitarbeiter sehen darf
+    select: {
+      id: true,
+      userId: true,
+      workDate: true,
+      startHHMM: true,
+      endHHMM: true,
+      activity: true,
+      location: true,
+      travelMinutes: true,
+      noteEmployee: true, // ✅
+    },
   });
 
   return NextResponse.json({ entries });

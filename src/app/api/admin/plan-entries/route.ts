@@ -10,12 +10,16 @@ function parseYMD(ymd: string) {
 type PostBody = {
   id?: string;
   userId: string;
-  workDate: string;   // YYYY-MM-DD
-  startHHMM: string;  // "07:00"
-  endHHMM: string;    // "16:00"
+  workDate: string; // YYYY-MM-DD
+  startHHMM: string; // "07:00"
+  endHHMM: string; // "16:00"
   activity: string;
   location?: string;
   travelMinutes?: number;
+
+  // ✅ neu:
+  noteEmployee?: string;
+  noteAdmin?: string;
 };
 
 export async function GET(req: Request) {
@@ -24,12 +28,11 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const weekStart = url.searchParams.get("weekStart"); // Montag YYYY-MM-DD
-
   if (!weekStart) return NextResponse.json({ error: "weekStart missing" }, { status: 400 });
 
   const start = parseYMD(weekStart);
   const end = new Date(start);
-  end.setDate(end.getDate() + 7);
+  end.setUTCDate(end.getUTCDate() + 7);
 
   const entries = await prisma.planEntry.findMany({
     where: { workDate: { gte: start, lt: end } },
@@ -46,7 +49,18 @@ export async function POST(req: Request) {
 
   const body = (await req.json()) as Partial<PostBody>;
 
-  const { id, userId, workDate, startHHMM, endHHMM, activity, location, travelMinutes } = body;
+  const {
+    id,
+    userId,
+    workDate,
+    startHHMM,
+    endHHMM,
+    activity,
+    location,
+    travelMinutes,
+    noteEmployee,
+    noteAdmin,
+  } = body ?? {};
 
   if (!userId || !workDate || !startHHMM || !endHHMM || !activity) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
@@ -60,6 +74,10 @@ export async function POST(req: Request) {
     activity: String(activity),
     location: location ? String(location) : "",
     travelMinutes: Number(travelMinutes ?? 0),
+
+    // ✅ neu:
+    noteEmployee: noteEmployee ? String(noteEmployee) : null,
+    noteAdmin: noteAdmin ? String(noteAdmin) : null,
   };
 
   const saved = id

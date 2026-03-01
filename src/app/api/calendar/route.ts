@@ -15,6 +15,7 @@ type PlanPreviewItem = {
   endHHMM: string;
   activity: string;
   location: string;
+  noteEmployee: string | null;
 };
 
 export async function GET(req: Request) {
@@ -42,12 +43,10 @@ export async function GET(req: Request) {
       orderBy: [{ workDate: "asc" }, { startTime: "asc" }],
     }),
     prisma.absence.findMany({
-      // ✅ bleibt wie bei dir (tagesbasiert über absenceDate)
       where: { ...userWhere, absenceDate: { gte: from, lt: to } },
       orderBy: [{ absenceDate: "asc" }],
     }),
     prisma.planEntry.findMany({
-      // ✅ PlanEntries im Monat
       where: { ...userWhere, workDate: { gte: from, lt: to } },
       select: {
         workDate: true,
@@ -55,23 +54,18 @@ export async function GET(req: Request) {
         endHHMM: true,
         activity: true,
         location: true,
+        noteEmployee: true, // ✅ nur Mitarbeiter-Notiz
       },
       orderBy: [{ workDate: "asc" }, { startHHMM: "asc" }],
     }),
   ]);
 
-  // Frontend erwartet: { ok: true, days: CalendarDay[] }
-
-  // bisher:
   const workSet = new Set(entries.map((e) => toIsoDateUTC(e.workDate)));
   const vacSet = new Set(
     absences.filter((a) => a.type === "VACATION").map((a) => toIsoDateUTC(a.absenceDate))
   );
-  const sickSet = new Set(
-    absences.filter((a) => a.type === "SICK").map((a) => toIsoDateUTC(a.absenceDate))
-  );
+  const sickSet = new Set(absences.filter((a) => a.type === "SICK").map((a) => toIsoDateUTC(a.absenceDate)));
 
-  // ✅ neu: Plan map + set
   const planMap = new Map<string, PlanPreviewItem[]>();
   for (const p of planEntries) {
     const key = toIsoDateUTC(p.workDate);
@@ -81,6 +75,7 @@ export async function GET(req: Request) {
       endHHMM: p.endHHMM,
       activity: p.activity ?? "",
       location: p.location ?? "",
+      noteEmployee: p.noteEmployee ?? null,
     });
     planMap.set(key, list);
   }
@@ -96,25 +91,20 @@ export async function GET(req: Request) {
       plans.length === 0
         ? null
         : plans
-            .slice(0, 2) // max 2 Einträge in der Vorschau
+            .slice(0, 2)
             .map((x) => {
               const base = `${x.startHHMM}–${x.endHHMM} ${x.activity}`.trim();
-              return x.location ? `${base} · ${x.location}` : base;
+              const withLoc = x.location ? `${base} · ${x.location}` : base;
+              return x.noteEmployee ? `${withLoc} · 📝 ${x.noteEmployee}` : withLoc;
             })
             .join(" | ");
 
     return {
       date,
-
-      // ✅ wichtig: Einfärben soll Plan direkt anzeigen:
-      // - Für Mitarbeiter: hasWork kann ruhig "WorkEntry ODER PlanEntry" sein
-      // - Für Admin: bleibt aggregiert (über userWhere = {})
       hasWork: workSet.has(date) || planSet.has(date),
-
       hasVacation: vacSet.has(date),
       hasSick: sickSet.has(date),
 
-      // ✅ neu:
       hasPlan: planSet.has(date),
       planPreview,
     };

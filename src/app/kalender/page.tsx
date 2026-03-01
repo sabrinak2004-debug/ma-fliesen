@@ -1,4 +1,3 @@
-// src/app/kalender/page.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -11,7 +10,6 @@ type CalendarDay = {
   hasVacation: boolean;
   hasSick: boolean;
 
-  // ✅ neu:
   hasPlan: boolean;
   planPreview: string | null;
 };
@@ -20,16 +18,18 @@ type CalendarResponse = { ok: true; days: CalendarDay[] } | { ok: false; error: 
 
 type AbsenceType = "VACATION" | "SICK";
 
-// ✅ PlanEntry DTO (für Anzeige im Modal)
 type PlanEntry = {
   id: string;
   userId: string;
-  workDate: string; // kommt als ISO-String zurück
+  workDate: string;
   startHHMM: string;
   endHHMM: string;
   activity: string;
   location: string;
   travelMinutes: number;
+
+  // ✅ neu:
+  noteEmployee?: string | null;
 };
 
 function monthKey(d: Date) {
@@ -55,9 +55,6 @@ function addDaysYMD(ymd: string, diff: number) {
 }
 
 function fmtDateTitle(ymd: string) {
-  // ymd = YYYY-MM-DD
-  // als Date interpretieren: new Date("YYYY-MM-DD") ist UTC-Interpretation → kann je nach TZ verrutschen
-  // deshalb robust parsen:
   const [y, m, d] = ymd.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
   return dt.toLocaleDateString("de-DE", {
@@ -76,12 +73,10 @@ export default function KalenderPage() {
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>("");
 
-  // ✅ Einsatzplan für den ausgewählten Tag
   const [dayPlans, setDayPlans] = useState<PlanEntry[]>([]);
   const [plansLoading, setPlansLoading] = useState(false);
   const [plansError, setPlansError] = useState<string | null>(null);
 
-  // Abwesenheiten (Urlaub/Krank) wie gehabt
   const [absenceStart, setAbsenceStart] = useState<string>("");
   const [absenceEnd, setAbsenceEnd] = useState<string>("");
   const [absenceType, setAbsenceType] = useState<AbsenceType>("VACATION");
@@ -114,24 +109,21 @@ export default function KalenderPage() {
   }
 
   useEffect(() => {
-    load();
+    void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ym]);
 
   const dayMap = useMemo(() => new Map(data.map((d) => [d.date, d])), [data]);
 
-  // Kalender Grid (Mo-So)
   const grid = useMemo(() => {
     const [y, m] = ym.split("-").map(Number);
     const first = new Date(y, m - 1, 1);
     const last = new Date(y, m, 0);
 
-    // Monday-first: JS Sunday=0 -> shift
-    const firstDay = (first.getDay() + 6) % 7; // 0=Mo
+    const firstDay = (first.getDay() + 6) % 7;
     const daysInMonth = last.getDate();
 
     const cells: Array<{ date: string; day: number; inMonth: boolean }> = [];
-
     for (let i = 0; i < firstDay; i++) cells.push({ date: "", day: 0, inMonth: false });
 
     for (let d = 1; d <= daysInMonth; d++) {
@@ -140,9 +132,7 @@ export default function KalenderPage() {
       cells.push({ date, day: d, inMonth: true });
     }
 
-    // fill to 6 rows
     while (cells.length < 42) cells.push({ date: "", day: 0, inMonth: false });
-
     return cells;
   }, [ym]);
 
@@ -152,11 +142,7 @@ export default function KalenderPage() {
 
     try {
       const to = addDaysYMD(date, 1);
-
-      const r = await fetch(
-        `/api/plan-entries?from=${encodeURIComponent(date)}&to=${encodeURIComponent(to)}`
-      );
-
+      const r = await fetch(`/api/plan-entries?from=${encodeURIComponent(date)}&to=${encodeURIComponent(to)}`);
       const j: unknown = await r.json();
 
       if (!r.ok) {
@@ -177,7 +163,7 @@ export default function KalenderPage() {
         j !== null &&
         "entries" in j &&
         Array.isArray((j as { entries: unknown }).entries)
-          ? ((j as { entries: PlanEntry[] }).entries)
+          ? (j as { entries: PlanEntry[] }).entries
           : [];
 
       setDayPlans(entries);
@@ -192,13 +178,11 @@ export default function KalenderPage() {
   function openDay(date: string) {
     setSelectedDate(date);
 
-    // Abwesenheit-UI wie gehabt
     setAbsenceStart(date);
     setAbsenceEnd(date);
     setAbsenceType("VACATION");
     setError(null);
 
-    // Plan-UI reset + laden
     setDayPlans([]);
     setPlansError(null);
     setPlansLoading(false);
@@ -220,11 +204,7 @@ export default function KalenderPage() {
       const r = await fetch("/api/absences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          startDate: absenceStart,
-          endDate: absenceEnd,
-          type: absenceType,
-        }),
+        body: JSON.stringify({ startDate: absenceStart, endDate: absenceEnd, type: absenceType }),
       });
 
       const j: unknown = await r.json();
@@ -253,15 +233,7 @@ export default function KalenderPage() {
   return (
     <AppShell activeLabel="#wirkönnendas">
       <div className="card card-olive" style={{ padding: 18 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            marginBottom: 14,
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
           <button className="btn" onClick={() => setCursor((d) => addMonths(d, -1))}>
             ‹
           </button>
@@ -285,67 +257,69 @@ export default function KalenderPage() {
               const info = c.inMonth && c.date ? dayMap.get(c.date) : undefined;
 
               const border =
-  info?.hasSick ? "rgba(224, 75, 69, 0.65)" :
-  info?.hasVacation ? "rgba(90, 167, 255, 0.65)" :
-  info?.hasPlan ? "rgba(184, 207, 58, 0.65)" :
-  "var(--border)";
+                info?.hasSick
+                  ? "rgba(224, 75, 69, 0.65)"
+                  : info?.hasVacation
+                  ? "rgba(90, 167, 255, 0.65)"
+                  : info?.hasPlan
+                  ? "rgba(184, 207, 58, 0.65)"
+                  : "var(--border)";
 
-const bg =
-  info?.hasSick ? "rgba(224, 75, 69, 0.18)" :
-  info?.hasVacation ? "rgba(90, 167, 255, 0.14)" :
-  info?.hasPlan ? "rgba(184, 207, 58, 0.10)" :
-  "rgba(255,255,255,0.02)";
+              const bg =
+                info?.hasSick
+                  ? "rgba(224, 75, 69, 0.18)"
+                  : info?.hasVacation
+                  ? "rgba(90, 167, 255, 0.14)"
+                  : info?.hasPlan
+                  ? "rgba(184, 207, 58, 0.10)"
+                  : "rgba(255,255,255,0.02)";
 
               return (
                 <button
-  key={idx}
-  className="card"
-  disabled={!c.inMonth}
-  onClick={() => c.inMonth && c.date && openDay(c.date)}
-  style={{
-    height: 78,
-    borderColor: border,
-    background: bg,
-    borderRadius: 16,
-    opacity: c.inMonth ? 1 : 0.25,
-    cursor: c.inMonth ? "pointer" : "default",
-    textAlign: "left",
-    padding: 10,
+                  key={idx}
+                  className="card"
+                  disabled={!c.inMonth}
+                  onClick={() => c.inMonth && c.date && openDay(c.date)}
+                  style={{
+                    height: 78,
+                    borderColor: border,
+                    background: bg,
+                    borderRadius: 16,
+                    opacity: c.inMonth ? 1 : 0.25,
+                    cursor: c.inMonth ? "pointer" : "default",
+                    textAlign: "left",
+                    padding: 10,
 
-    // ✅ neu:
-    overflow: "hidden",
-    display: "flex",
-    flexDirection: "column",
-  }}
->
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
                   <div style={{ fontWeight: 900 }}>{c.inMonth ? c.day : ""}</div>
 
-{info?.hasPlan && info.planPreview ? (
-  <div
-    style={{
-      marginTop: 6,
-      fontSize: 11,
-      lineHeight: "14px",
-      color: "var(--muted)",
+                  {info?.hasPlan && info.planPreview ? (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: 11,
+                        lineHeight: "14px",
+                        color: "var(--muted)",
 
-      // ✅ neu: wirkliches Clipping + sauberes Umbruch-Verhalten
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-      display: "-webkit-box",
-      WebkitLineClamp: 3,
-      WebkitBoxOrient: "vertical",
-      whiteSpace: "normal",
-      wordBreak: "break-word",
-      overflowWrap: "anywhere",
-
-      // ✅ neu: damit der Textbereich nicht „pushen“ kann
-      minHeight: 0,
-    }}
-    title={info.planPreview}
-  >
-    {info.planPreview}
-  </div>
-) : null}                
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: "vertical",
+                        whiteSpace: "normal",
+                        wordBreak: "break-word",
+                        overflowWrap: "anywhere",
+                        minHeight: 0,
+                      }}
+                      title={info.planPreview}
+                    >
+                      {info.planPreview}
+                    </div>
+                  ) : null}
                 </button>
               );
             })
@@ -365,12 +339,7 @@ const bg =
         </div>
       </div>
 
-      <Modal
-        open={open}
-        title={selectedDate ? fmtDateTitle(selectedDate) : "Tag"}
-        onClose={() => setOpen(false)}
-      >
-        {/* ✅ Einsatzplan oben */}
+      <Modal open={open} title={selectedDate ? fmtDateTitle(selectedDate) : "Tag"} onClose={() => setOpen(false)}>
         <div style={{ marginBottom: 14 }}>
           <div className="label">Dein Einsatzplan</div>
 
@@ -393,12 +362,17 @@ const bg =
                   <div style={{ fontWeight: 900 }}>
                     {p.startHHMM}–{p.endHHMM} · {p.activity}
                   </div>
+
                   <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>
                     {p.location ? `📍 ${p.location}` : "📍 (kein Ort angegeben)"}
-                    {typeof p.travelMinutes === "number" && p.travelMinutes > 0
-                      ? ` · 🚗 ${p.travelMinutes} Min Fahrzeit`
-                      : ""}
+                    {typeof p.travelMinutes === "number" && p.travelMinutes > 0 ? ` · 🚗 ${p.travelMinutes} Min Fahrzeit` : ""}
                   </div>
+
+                  {p.noteEmployee ? (
+                    <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                      📝 {p.noteEmployee}
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -407,7 +381,6 @@ const bg =
           <div style={{ height: 1, background: "var(--border)", marginTop: 14, opacity: 0.7 }} />
         </div>
 
-        {/* Abwesenheiten wie gehabt */}
         {error && (
           <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
             <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
@@ -422,52 +395,28 @@ const bg =
               <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                 Start
               </div>
-              <input
-                className="input"
-                type="date"
-                value={absenceStart}
-                onChange={(e) => setAbsenceStart(e.target.value)}
-              />
+              <input className="input" type="date" value={absenceStart} onChange={(e) => setAbsenceStart(e.target.value)} />
             </div>
 
             <div>
               <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                 Ende
               </div>
-              <input
-                className="input"
-                type="date"
-                value={absenceEnd}
-                onChange={(e) => setAbsenceEnd(e.target.value)}
-              />
+              <input className="input" type="date" value={absenceEnd} onChange={(e) => setAbsenceEnd(e.target.value)} />
             </div>
           </div>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-          <button
-            className={`btn ${absenceType === "VACATION" ? "btn-accent" : ""}`}
-            type="button"
-            onClick={() => setAbsenceType("VACATION")}
-          >
+          <button className={`btn ${absenceType === "VACATION" ? "btn-accent" : ""}`} type="button" onClick={() => setAbsenceType("VACATION")}>
             🌴 Urlaub
           </button>
-          <button
-            className={`btn ${absenceType === "SICK" ? "btn-danger" : ""}`}
-            type="button"
-            onClick={() => setAbsenceType("SICK")}
-          >
+          <button className={`btn ${absenceType === "SICK" ? "btn-danger" : ""}`} type="button" onClick={() => setAbsenceType("SICK")}>
             🤒 Krank
           </button>
         </div>
 
-        <button
-          className="btn btn-accent"
-          type="button"
-          onClick={saveAbsence}
-          disabled={saving}
-          style={{ width: "100%" }}
-        >
+        <button className="btn btn-accent" type="button" onClick={saveAbsence} disabled={saving} style={{ width: "100%" }}>
           {saving ? "Speichert..." : "Eintragen"}
         </button>
       </Modal>

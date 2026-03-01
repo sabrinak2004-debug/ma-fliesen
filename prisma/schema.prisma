@@ -48,9 +48,9 @@ model WorkEntry {
 }
 
 model PlanEntry {
-  id     String  @id @default(uuid())
-  userId String
-  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(uuid())
+  userId        String
+  user          AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   workDate      DateTime @db.Date
   startHHMM     String
@@ -59,8 +59,12 @@ model PlanEntry {
   location      String
   travelMinutes Int      @default(0)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // ✅ NEU:
+  noteEmployee  String?  // sichtbar für Mitarbeiter
+  noteAdmin     String?  // nur intern für Admin
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([userId, workDate])
 }
