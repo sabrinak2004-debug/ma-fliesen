@@ -24,6 +24,40 @@ model AppUser {
   absences       Absence[]
   monthlyTargets MonthlyTarget[]
   planEntries    PlanEntry[]
+  calendarEvents CalendarEvent[]
+  dayNotes       DayNote[]
+}
+
+model DayNote {
+  id       String   @id @default(uuid())
+  userId   String
+  user     AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  noteDate DateTime @db.Date
+  note     String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, noteDate])
+  @@index([userId, noteDate])
+}
+
+model CalendarEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String
+  startAt   DateTime
+  endAt     DateTime
+  location  String?
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, startAt])
 }
 
 model WorkEntry {
