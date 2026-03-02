@@ -1,3 +1,4 @@
+// src/app/admin/wochenplan/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -37,6 +38,18 @@ type AdminNote = {
   note: string;
 
   user?: { id: string; fullName: string };
+};
+
+/** ✅ NEU: PlanEntry-Dokumente (Baustellenzettel etc.) */
+type PlanEntryDocument = {
+  id: string;
+  planEntryId: string;
+  title: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string;
+  uploadedBy?: { id: string; fullName: string };
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -92,6 +105,24 @@ function isAdminNote(x: unknown): x is AdminNote {
     (x.user === undefined ||
       x.user === null ||
       (isRecord(x.user) && typeof x.user.id === "string" && typeof x.user.fullName === "string"))
+  );
+}
+
+function isPlanEntryDocument(x: unknown): x is PlanEntryDocument {
+  return (
+    isRecord(x) &&
+    typeof x.id === "string" &&
+    typeof x.planEntryId === "string" &&
+    typeof x.title === "string" &&
+    typeof x.fileName === "string" &&
+    typeof x.mimeType === "string" &&
+    typeof x.sizeBytes === "number" &&
+    typeof x.createdAt === "string" &&
+    (x.uploadedBy === undefined ||
+      x.uploadedBy === null ||
+      (isRecord(x.uploadedBy) &&
+        typeof x.uploadedBy.id === "string" &&
+        typeof x.uploadedBy.fullName === "string"))
   );
 }
 
@@ -281,6 +312,15 @@ export default function AdminWochenplanPage() {
   const [entryModalOpen, setEntryModalOpen] = useState(false);
   const [editEntryId, setEditEntryId] = useState<string | null>(null);
 
+  // ✅ NEU: Dokumente im PlanEntry-Modal
+  const [docs, setDocs] = useState<PlanEntryDocument[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [docsError, setDocsError] = useState<string | null>(null);
+  const [docTitle, setDocTitle] = useState<string>("Baustellenzettel");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+
   // Admin-Note Modal (SEPARAT)
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [editNoteId, setEditNoteId] = useState<string | null>(null);
@@ -372,9 +412,100 @@ export default function AdminWochenplanPage() {
     return m;
   }, [adminNotes]);
 
+  async function loadDocs(planEntryId: string) {
+    setDocsLoading(true);
+    setDocsError(null);
+    try {
+      const r = await fetch(`/api/admin/plan-entry-documents?planEntryId=${encodeURIComponent(planEntryId)}`);
+      const j: unknown = await r.json().catch(() => ({}));
+
+      if (!r.ok) {
+        const msg = getStringProp(j, "error") ?? "Dokumente konnten nicht geladen werden.";
+        setDocsError(msg);
+        setDocs([]);
+        return;
+      }
+
+      const list =
+        isRecord(j) && Array.isArray(j.documents)
+          ? (j.documents as unknown[]).filter(isPlanEntryDocument)
+          : [];
+
+      setDocs(list);
+    } catch {
+      setDocsError("Netzwerkfehler beim Laden der Dokumente.");
+      setDocs([]);
+    } finally {
+      setDocsLoading(false);
+    }
+  }
+
+  async function uploadDoc() {
+    if (!editEntryId) {
+      alert("Bitte erst den Plan-Eintrag speichern, dann Dokumente hochladen.");
+      return;
+    }
+    if (!selectedFile) {
+      alert("Bitte eine Datei auswählen.");
+      return;
+    }
+
+    setUploadingDoc(true);
+    setDocsError(null);
+    try {
+      const fd = new FormData();
+      fd.append("planEntryId", editEntryId);
+      fd.append("title", docTitle.trim() || "Dokument");
+      fd.append("file", selectedFile);
+
+      const r = await fetch("/api/admin/plan-entry-documents", { method: "POST", body: fd });
+      const j: unknown = await r.json().catch(() => ({}));
+
+      if (!r.ok) {
+        const msg = getStringProp(j, "error") ?? "Upload fehlgeschlagen.";
+        setDocsError(msg);
+        return;
+      }
+
+      setSelectedFile(null);
+      await loadDocs(editEntryId);
+    } catch {
+      setDocsError("Netzwerkfehler beim Upload.");
+    } finally {
+      setUploadingDoc(false);
+    }
+  }
+
+  async function deleteDoc(id: string) {
+    if (!editEntryId) return;
+    const ok = window.confirm("Dokument wirklich löschen?");
+    if (!ok) return;
+
+    setDeletingDocId(id);
+    try {
+      const r = await fetch(`/api/admin/plan-entry-documents?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (!r.ok) {
+        alert("Löschen fehlgeschlagen");
+        return;
+      }
+      await loadDocs(editEntryId);
+    } finally {
+      setDeletingDocId(null);
+    }
+  }
+
   function closeEntryModal() {
     setEntryModalOpen(false);
     setEditEntryId(null);
+
+    // ✅ reset docs state
+    setDocs([]);
+    setDocsError(null);
+    setDocsLoading(false);
+    setSelectedFile(null);
+    setUploadingDoc(false);
+    setDeletingDocId(null);
+    setDocTitle("Baustellenzettel");
   }
 
   function closeNoteModal() {
@@ -401,6 +532,13 @@ export default function AdminWochenplanPage() {
       travelMinutes: 0,
       noteEmployee: "",
     });
+
+    // ✅ docs für neuen Eintrag leer
+    setDocs([]);
+    setDocsError(null);
+    setSelectedFile(null);
+    setDocTitle("Baustellenzettel");
+
     setEntryModalOpen(true);
   }
 
@@ -421,7 +559,9 @@ export default function AdminWochenplanPage() {
       travelMinutes: entry.travelMinutes ?? 0,
       noteEmployee: entry.noteEmployee ?? "",
     });
+
     setEntryModalOpen(true);
+    void loadDocs(entry.id);
   }
 
   function openCreateNote(userId: string, dateYMD: string, rowLabel: string) {
@@ -577,7 +717,11 @@ export default function AdminWochenplanPage() {
         </div>
 
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <Link href="/erfassung" className="pill" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+          <Link
+            href="/erfassung"
+            className="pill"
+            style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+          >
             ⟵ Home
           </Link>
 
@@ -660,7 +804,9 @@ export default function AdminWochenplanPage() {
               {ROWS.map((row) => {
                 const rowDayYMD =
                   row.type === "DAY"
-                    ? fmtYMD(new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + (row.offset ?? 0)))
+                    ? fmtYMD(
+                        new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + (row.offset ?? 0))
+                      )
                     : null;
 
                 const rowKey = row.type === "DAY" ? (rowDayYMD as string) : (row.tag as string);
@@ -966,6 +1112,139 @@ export default function AdminWochenplanPage() {
             <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>Diese Notiz sehen Mitarbeiter im Kalender/Modal.</div>
           </div>
 
+          {/* -------------------- DOKUMENTE (Admin) -------------------- */}
+          <div style={{ gridColumn: "1 / -1" }}>
+            <div style={{ height: 1, background: UI.cellBorder, margin: "10px 0", opacity: 0.9 }} />
+
+            <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8 }}>📎 Dokumente (Baustellenzettel etc.)</div>
+
+            {!editEntryId ? (
+              <div style={{ fontSize: 12, color: UI.muted }}>
+                Speichere zuerst den Plan-Eintrag – danach kannst du Dokumente hochladen.
+              </div>
+            ) : (
+              <>
+                {docsError ? (
+                  <div style={{ fontSize: 12, color: "rgba(255,120,120,0.95)", marginBottom: 8 }}>{docsError}</div>
+                ) : null}
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Titel</div>
+                    <input
+                      value={docTitle}
+                      onChange={(e) => setDocTitle(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        border: `1px solid ${UI.cellBorder}`,
+                        borderRadius: 10,
+                        background: "rgba(0,0,0,0.25)",
+                        color: UI.text,
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datei</div>
+                    <input
+                      type="file"
+                      accept=".pdf,image/*"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] ?? null;
+                        setSelectedFile(f);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        border: `1px solid ${UI.cellBorder}`,
+                        borderRadius: 10,
+                        background: "rgba(0,0,0,0.25)",
+                        color: UI.text,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <button className="pill pill-active" type="button" onClick={uploadDoc} disabled={uploadingDoc}>
+                  {uploadingDoc ? "Upload..." : "Dokument hochladen"}
+                </button>
+
+                <div style={{ marginTop: 12 }}>
+                  {docsLoading ? (
+                    <div style={{ fontSize: 12, color: UI.muted }}>Lade Dokumente...</div>
+                  ) : docs.length === 0 ? (
+                    <div style={{ fontSize: 12, color: UI.muted }}>Noch keine Dokumente.</div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {docs.map((d) => (
+                        <div
+                          key={d.id}
+                          style={{
+                            border: `1px solid ${UI.cardBorder}`,
+                            borderRadius: 10,
+                            padding: "10px 12px",
+                            background: "rgba(255,255,255,0.04)",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: 10,
+                          }}
+                        >
+                          <div style={{ minWidth: 0 }}>
+                            <div
+                              style={{
+                                fontWeight: 900,
+                                fontSize: 13,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {d.title}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: UI.muted,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {d.fileName}
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                            <a
+                              className="pill"
+                              href={`/api/plan-entry-documents/file?id=${encodeURIComponent(d.id)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ textDecoration: "none" }}
+                            >
+                              Öffnen
+                            </a>
+
+                            <button
+                              className="pill"
+                              type="button"
+                              onClick={() => deleteDoc(d.id)}
+                              disabled={deletingDocId === d.id}
+                            >
+                              {deletingDocId === d.id ? "Lösche..." : "Löschen"}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
           <div style={{ gridColumn: "1 / -1", fontSize: 12, color: UI.muted }}>
             ✅ Admin-Notiz wird <b>nicht</b> hier gespeichert — dafür gibt es separat “+ Notiz (Admin)” im Wochenplan.
           </div>
@@ -1058,7 +1337,9 @@ export default function AdminWochenplanPage() {
                 resize: "vertical",
               }}
             />
-            <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>Bleibt intern und wird niemals an Mitarbeiter ausgeliefert.</div>
+            <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
+              Bleibt intern und wird niemals an Mitarbeiter ausgeliefert.
+            </div>
           </div>
         </div>
       </Modal>

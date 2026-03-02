@@ -1,8 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -26,7 +22,10 @@ model AppUser {
   planEntries    PlanEntry[]
   calendarEvents CalendarEvent[]
   dayNotes       DayNote[]
-  adminNotes      AdminNote[]
+  adminNotes     AdminNote[]
+
+  // ✅ NEU: Upload-Relation
+  uploadedPlanEntryDocuments PlanEntryDocument[] @relation("UploadedBy")
 }
 
 model DayNote {
@@ -94,14 +93,40 @@ model PlanEntry {
   location      String
   travelMinutes Int      @default(0)
 
-  // ✅ NEU:
-  noteEmployee  String?  // sichtbar für Mitarbeiter
-  noteAdmin     String?  // nur intern für Admin
+  noteEmployee  String?
+  noteAdmin     String?
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([userId, workDate])
+
+  // ✅ NEU:
+  documents PlanEntryDocument[]
+}
+
+model PlanEntryDocument {
+  id          String   @id @default(uuid())
+
+  planEntryId String
+  planEntry   PlanEntry @relation(fields: [planEntryId], references: [id], onDelete: Cascade)
+
+  // Wer hat hochgeladen? (Admin)
+  uploadedById String
+  uploadedBy   AppUser  @relation("UploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  title        String
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+
+  // ✅ Datei direkt in DB
+  data         Bytes
+
+  createdAt    DateTime @default(now())
+
+  @@index([planEntryId])
+  @@index([uploadedById])
 }
 
 model AdminNote {

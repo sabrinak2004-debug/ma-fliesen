@@ -358,23 +358,38 @@ export default function KalenderPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {dayPlans.map((p) => (
-                <div key={p.id} className="card" style={{ padding: 12 }}>
-                  <div style={{ fontWeight: 900 }}>
-                    {p.startHHMM}–{p.endHHMM} · {p.activity}
-                  </div>
+  <div key={p.id} className="card" style={{ padding: 12 }}>
+    <div style={{ fontWeight: 900 }}>
+      {p.startHHMM}–{p.endHHMM} · {p.activity}
+    </div>
 
-                  <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>
-                    {p.location ? `📍 ${p.location}` : "📍 (kein Ort angegeben)"}
-                    {typeof p.travelMinutes === "number" && p.travelMinutes > 0 ? ` · 🚗 ${p.travelMinutes} Min Fahrzeit` : ""}
-                  </div>
+    <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>
+      {p.location ? `📍 ${p.location}` : "📍 (kein Ort angegeben)"}
+      {typeof p.travelMinutes === "number" && p.travelMinutes > 0 ? ` · 🚗 ${p.travelMinutes} Min Fahrzeit` : ""}
+    </div>
 
-                  {p.noteEmployee ? (
-                    <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                      📝 {p.noteEmployee}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
+    {p.noteEmployee ? (
+      <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+        📝 {p.noteEmployee}
+      </div>
+    ) : null}
+
+    {/* ✅ NEU: Dokumente */}
+    <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <button
+        className="btn btn-accent"
+        type="button"
+        onClick={() => {
+          // Modal schließen und Dokumentseite öffnen
+          setOpen(false);
+          window.location.href = `/kalender/dokumente/${encodeURIComponent(p.id)}`;
+        }}
+      >
+        📎 Dokumente
+      </button>
+    </div>
+  </div>
+))}
             </div>
           )}
 
