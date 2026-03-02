@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import Modal from "@/components/Modal";
 
 type MeResponse =
   | { ok: true; user: { id: string; fullName: string; role: "ADMIN" | "EMPLOYEE" } }
@@ -91,9 +92,31 @@ function groupByMonthYear(entries: WorkEntry[]) {
   }));
 }
 
+type EditForm = {
+  id: string;
+  fullName: string;
+  workDate: string;
+  startTime: string;
+  endTime: string;
+  activity: string;
+  location: string;
+  distanceKm: string;
+  travelMinutes: string;
+};
+
+function minutesBetween(startHHMM: string, endHHMM: string) {
+  const [sh, sm] = startHHMM.split(":").map((x) => Number(x));
+  const [eh, em] = endHHMM.split(":").map((x) => Number(x));
+  if (!Number.isFinite(sh) || !Number.isFinite(sm) || !Number.isFinite(eh) || !Number.isFinite(em)) return 0;
+  const start = sh * 60 + sm;
+  const end = eh * 60 + em;
+  return Math.max(0, end - start);
+}
+
 export default function Page() {
   const [me, setMe] = useState<MeResponse | null>(null);
 
+  // Create-Form
   const [fullName, setFullName] = useState("");
   const [workDate, setWorkDate] = useState<string>(() => toIsoDateLocal(new Date()));
   const [startTime, setStartTime] = useState("08:00");
@@ -109,20 +132,17 @@ export default function Page() {
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(true);
 
-  const workMinutes = useMemo(() => {
-    const [sh, sm] = startTime.split(":").map((x) => Number(x));
-    const [eh, em] = endTime.split(":").map((x) => Number(x));
-    if (!Number.isFinite(sh) || !Number.isFinite(sm) || !Number.isFinite(eh) || !Number.isFinite(em)) return 0;
-    const start = sh * 60 + sm;
-    const end = eh * 60 + em;
-    return Math.max(0, end - start);
-  }, [startTime, endTime]);
+  // Edit Modal
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [edit, setEdit] = useState<EditForm | null>(null);
+
+  const workMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
 
   const monthHours = useMemo(() => {
     const month = workDate.slice(0, 7);
-    const mins = entries
-      .filter((e) => e.workDate.startsWith(month))
-      .reduce((sum, e) => sum + e.workMinutes, 0);
+    const mins = entries.filter((e) => e.workDate.startsWith(month)).reduce((sum, e) => sum + e.workMinutes, 0);
     return mins;
   }, [entries, workDate]);
 
@@ -147,7 +167,7 @@ export default function Page() {
 
       const list =
         typeof j === "object" && j !== null && "entries" in j && Array.isArray((j as { entries: unknown }).entries)
-          ? ((j as { entries: WorkEntry[] }).entries ?? [])
+          ? (((j as { entries: WorkEntry[] }).entries ?? []) as WorkEntry[])
           : [];
 
       setEntries(list);
@@ -162,6 +182,7 @@ export default function Page() {
 
   async function saveEntry() {
     setError(null);
+
     const name = fullName.trim();
     if (!name) return setError("Bitte Mitarbeitername eingeben.");
     if (!activity.trim()) return setError("Bitte Tätigkeit eingeben.");
@@ -214,10 +235,85 @@ export default function Page() {
     await loadEntries();
   }
 
-  /** ✅ statt "sortedEntries" jetzt Gruppen nach Monat/Jahr */
+  function openEditModal(e: WorkEntry) {
+    setEditError(null);
+    setEdit({
+      id: e.id,
+      fullName: e.user?.fullName ?? "",
+      workDate: toYMD(e.workDate),
+      startTime: e.startTime,
+      endTime: e.endTime,
+      activity: e.activity ?? "",
+      location: e.location ?? "",
+      distanceKm: e.distanceKm ?? "0",
+      travelMinutes: String(e.travelMinutes ?? 0),
+    });
+    setEditOpen(true);
+  }
+
+  async function saveEdit() {
+    if (!edit) return;
+
+    setEditError(null);
+    const name = edit.fullName.trim();
+    if (!name) return setEditError("Bitte Mitarbeitername eingeben.");
+    if (!edit.activity.trim()) return setEditError("Bitte Tätigkeit eingeben.");
+    if (!edit.workDate || !edit.startTime || !edit.endTime) return setEditError("Datum/Zeit fehlt.");
+
+    setEditSaving(true);
+    try {
+      const payload = {
+        id: edit.id,
+        fullName: name,
+        workDate: edit.workDate,
+        startTime: edit.startTime,
+        endTime: edit.endTime,
+        activity: edit.activity.trim(),
+        location: edit.location.trim(),
+        distanceKm: Number(edit.distanceKm.replace(",", ".")) || 0,
+        travelMinutes: Number(edit.travelMinutes) || 0,
+      };
+
+      const r = await fetch("/api/entries", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const j = (await r.json()) as unknown;
+
+      if (!r.ok) {
+        const msg =
+          typeof j === "object" && j !== null && "error" in j && typeof (j as { error: unknown }).error === "string"
+            ? (j as { error: string }).error
+            : "Bearbeiten fehlgeschlagen.";
+        setEditError(msg);
+        return;
+      }
+
+      const updated =
+        typeof j === "object" && j !== null && "entry" in j && typeof (j as { entry: unknown }).entry === "object"
+          ? ((j as { entry: WorkEntry }).entry as WorkEntry)
+          : null;
+
+      if (updated) {
+        // ✅ state lokal aktualisieren (ohne Full Reload)
+        setEntries((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      } else {
+        await loadEntries();
+      }
+
+      setEditOpen(false);
+      setEdit(null);
+    } catch {
+      setEditError("Netzwerkfehler beim Speichern.");
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
   const groupedEntries = useMemo(() => groupByMonthYear(entries), [entries]);
 
-  /** optional: aktuellen Monat standardmäßig offen */
   const currentMonthKey = useMemo(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -225,8 +321,14 @@ export default function Page() {
     return `${y}-${m}`;
   }, []);
 
+  const editWorkMinutes = useMemo(() => {
+    if (!edit) return 0;
+    return minutesBetween(edit.startTime, edit.endTime);
+  }, [edit]);
+
   return (
     <AppShell activeLabel="#wirkönnendas">
+      {/* KPI */}
       <div className="kpi-grid" style={{ marginBottom: 14 }}>
         <div className="card kpi">
           <div>
@@ -246,6 +348,7 @@ export default function Page() {
         </div>
       </div>
 
+      {/* CREATE */}
       <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
         <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <span style={{ color: "var(--accent)" }}>＋</span> Stunden erfassen
@@ -343,8 +446,11 @@ export default function Page() {
         </div>
       </div>
 
+      {/* LIST */}
       <div className="card" style={{ padding: 18 }}>
-        <div className="section-title" style={{ marginBottom: 12 }}>Alle Einträge</div>
+        <div className="section-title" style={{ marginBottom: 12 }}>
+          Alle Einträge
+        </div>
 
         {loadingEntries ? (
           <div style={{ color: "var(--muted)" }}>Lade...</div>
@@ -407,13 +513,28 @@ export default function Page() {
                               </div>
                             </div>
 
-                            <div className="entry-actions">
+                            <div className="entry-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                               <div className="entry-hours">
                                 <span className="entry-hours-number">{formatHoursDE(e.workMinutes)}</span>
                                 <span className="entry-hours-unit">h</span>
                               </div>
 
-                              <button className="icon-btn danger" onClick={() => deleteEntry(e.id)} aria-label="Löschen">
+                              {/* ✅ Bearbeiten */}
+                              <button
+                                className="icon-btn"
+                                onClick={() => openEditModal(e)}
+                                aria-label="Bearbeiten"
+                                title="Bearbeiten"
+                              >
+                                ✏️
+                              </button>
+
+                              <button
+                                className="icon-btn danger"
+                                onClick={() => deleteEntry(e.id)}
+                                aria-label="Löschen"
+                                title="Löschen"
+                              >
                                 🗑
                               </button>
                             </div>
@@ -449,6 +570,137 @@ export default function Page() {
           </div>
         )}
       </div>
+
+      {/* ✅ EDIT MODAL */}
+      <Modal
+        open={editOpen}
+        title="Eintrag bearbeiten"
+        onClose={() => {
+          setEditOpen(false);
+          setEdit(null);
+          setEditError(null);
+        }}
+        footer={
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => {
+                setEditOpen(false);
+                setEdit(null);
+                setEditError(null);
+              }}
+            >
+              Abbrechen
+            </button>
+            <button className="btn btn-accent" type="button" onClick={saveEdit} disabled={editSaving}>
+              {editSaving ? "Speichert..." : "Änderungen speichern"}
+            </button>
+          </div>
+        }
+      >
+        {!edit ? null : (
+          <div style={{ display: "grid", gap: 12 }}>
+            {editError ? (
+              <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
+                <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{editError}</span>
+              </div>
+            ) : null}
+
+            <div>
+              <div className="label">Mitarbeitername</div>
+              <input
+                className="input"
+                value={edit.fullName}
+                onChange={(e) => setEdit((p) => (p ? { ...p, fullName: e.target.value } : p))}
+              />
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+                Hinweis: Nur Admin kann effektiv umzuordnen – sonst wird die Zuordnung serverseitig beibehalten.
+              </div>
+            </div>
+
+            <div className="row">
+              <div>
+                <div className="label">Datum</div>
+                <input
+                  className="input"
+                  type="date"
+                  value={edit.workDate}
+                  onChange={(e) => setEdit((p) => (p ? { ...p, workDate: e.target.value } : p))}
+                />
+              </div>
+              <div />
+            </div>
+
+            <div className="row">
+              <div>
+                <div className="label">Beginn</div>
+                <input
+                  className="input"
+                  type="time"
+                  value={edit.startTime}
+                  onChange={(e) => setEdit((p) => (p ? { ...p, startTime: e.target.value } : p))}
+                />
+              </div>
+              <div>
+                <div className="label">Ende</div>
+                <input
+                  className="input"
+                  type="time"
+                  value={edit.endTime}
+                  onChange={(e) => setEdit((p) => (p ? { ...p, endTime: e.target.value } : p))}
+                />
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ color: "var(--muted)" }}>Arbeitszeit (berechnet)</div>
+                <div style={{ fontWeight: 900, color: "var(--accent)" }}>{(editWorkMinutes / 60).toFixed(2)} Std.</div>
+              </div>
+            </div>
+
+            <div>
+              <div className="label">Ausgeführte Tätigkeit</div>
+              <textarea
+                className="textarea"
+                value={edit.activity}
+                onChange={(e) => setEdit((p) => (p ? { ...p, activity: e.target.value } : p))}
+              />
+            </div>
+
+            <div>
+              <div className="label">Einsatzort</div>
+              <input
+                className="input"
+                value={edit.location}
+                onChange={(e) => setEdit((p) => (p ? { ...p, location: e.target.value } : p))}
+              />
+            </div>
+
+            <div className="row">
+              <div>
+                <div className="label">Entfernung (km)</div>
+                <input
+                  className="input"
+                  inputMode="decimal"
+                  value={edit.distanceKm}
+                  onChange={(e) => setEdit((p) => (p ? { ...p, distanceKm: e.target.value } : p))}
+                />
+              </div>
+              <div>
+                <div className="label">Fahrzeit (Min.)</div>
+                <input
+                  className="input"
+                  inputMode="numeric"
+                  value={edit.travelMinutes}
+                  onChange={(e) => setEdit((p) => (p ? { ...p, travelMinutes: e.target.value } : p))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </AppShell>
   );
 }

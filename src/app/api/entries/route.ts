@@ -24,6 +24,8 @@ function toHHMMUTC(d: Date) {
 }
 
 type EntryBody = {
+  id?: unknown;
+
   fullName?: unknown;
   workDate?: unknown; // YYYY-MM-DD
   startTime?: unknown; // HH:MM
@@ -51,12 +53,12 @@ function getNumber(v: unknown): number {
 
 type EntryDTO = {
   id: string;
-  workDate: string;     // YYYY-MM-DD
-  startTime: string;    // HH:MM
-  endTime: string;      // HH:MM
+  workDate: string; // YYYY-MM-DD
+  startTime: string; // HH:MM
+  endTime: string; // HH:MM
   activity: string;
   location: string;
-  distanceKm: string;   // string fürs UI
+  distanceKm: string; // string fürs UI
   travelMinutes: number;
   workMinutes: number;
   user: { id: string; fullName: string };
@@ -173,6 +175,107 @@ export async function POST(req: Request) {
     travelMinutes: created.travelMinutes ?? 0,
     workMinutes: created.workMinutes ?? 0,
     user: { id: created.user.id, fullName: created.user.fullName },
+  };
+
+  return NextResponse.json({ entry });
+}
+
+/**
+ * ✅ UPDATE / Bearbeiten
+ * Erwartet JSON:
+ * {
+ *   id: string,
+ *   fullName?: string (nur Admin, optional um User zu wechseln),
+ *   workDate: YYYY-MM-DD,
+ *   startTime: HH:MM,
+ *   endTime: HH:MM,
+ *   activity: string,
+ *   location?: string,
+ *   distanceKm?: number|string,
+ *   travelMinutes?: number|string
+ * }
+ */
+export async function PATCH(req: Request) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+
+  const isAdmin = session.role === Role.ADMIN;
+
+  const raw = (await req.json().catch(() => null)) as unknown;
+  const body: EntryBody = isRecord(raw) ? (raw as EntryBody) : {};
+
+  const id = getString(body.id).trim();
+  if (!id) return NextResponse.json({ error: "id fehlt" }, { status: 400 });
+
+  const existing = await prisma.workEntry.findUnique({
+    where: { id },
+    include: { user: { select: { id: true, fullName: true, isActive: true } } },
+  });
+
+  if (!existing) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+
+  if (!isAdmin && existing.userId !== session.userId) {
+    return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
+  }
+
+  const workDate = getString(body.workDate);
+  const startTime = getString(body.startTime);
+  const endTime = getString(body.endTime);
+  const activity = getString(body.activity).trim();
+  const location = getString(body.location).trim();
+
+  if (!workDate || !startTime || !endTime || !activity) {
+    return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
+  }
+
+  const start = timeOnly(startTime);
+  const end = timeOnly(endTime);
+  const diffMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+
+  const distanceKmNum = getNumber(body.distanceKm);
+  const travelMinutesNum = Math.max(0, Math.round(getNumber(body.travelMinutes)));
+
+  let targetUserId = existing.userId;
+
+  // optional: Admin kann Eintrag einem anderen MA zuordnen (über fullName)
+  if (isAdmin) {
+    const fullName = getString(body.fullName).trim();
+    if (fullName) {
+      const u = await prisma.appUser.findUnique({ where: { fullName } });
+      if (!u || !u.isActive) {
+        return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
+      }
+      targetUserId = u.id;
+    }
+  }
+
+  const updated = await prisma.workEntry.update({
+    where: { id },
+    data: {
+      userId: targetUserId,
+      workDate: dateOnly(workDate),
+      startTime: timeOnly(startTime),
+      endTime: timeOnly(endTime),
+      activity,
+      location,
+      distanceKm: new Prisma.Decimal(distanceKmNum),
+      travelMinutes: travelMinutesNum,
+      workMinutes: diffMin,
+    },
+    include: { user: { select: { id: true, fullName: true } } },
+  });
+
+  const entry: EntryDTO = {
+    id: updated.id,
+    workDate: toIsoDateUTC(updated.workDate),
+    startTime: toHHMMUTC(updated.startTime),
+    endTime: toHHMMUTC(updated.endTime),
+    activity: updated.activity ?? "",
+    location: updated.location ?? "",
+    distanceKm: (updated.distanceKm ?? new Prisma.Decimal(0)).toString(),
+    travelMinutes: updated.travelMinutes ?? 0,
+    workMinutes: updated.workMinutes ?? 0,
+    user: { id: updated.user.id, fullName: updated.user.fullName },
   };
 
   return NextResponse.json({ entry });

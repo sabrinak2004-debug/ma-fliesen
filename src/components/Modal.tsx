@@ -33,27 +33,35 @@ export default function Modal({
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
+  // ✅ always keep latest onClose without re-running "open" effect
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCloseRef.current();
     };
 
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
 
-    // Focus the panel for accessibility
-    setTimeout(() => panelRef.current?.focus(), 0);
+    // ✅ Focus only once when opening (NOT on every re-render)
+    setTimeout(() => {
+      panelRef.current?.focus();
+    }, 0);
 
     // Prevent background scrolling
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = prev;
     };
-  }, [open, onClose]);
+  }, [open]); // ✅ only depend on "open"
 
   if (!open) return null;
 
@@ -75,7 +83,7 @@ export default function Modal({
       onMouseDown={(e) => {
         if (disableBackdropClose) return;
         // close only if clicking backdrop (not the panel)
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) onCloseRef.current();
       }}
     >
       <div
@@ -111,7 +119,7 @@ export default function Modal({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => onCloseRef.current()}
             aria-label="Schließen"
             style={{
               width: 34,
