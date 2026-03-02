@@ -69,8 +69,20 @@ export default function AppShell({
               </Link>
 
               {isAdmin && (
-                <Link className={`pill ${isActive(pathname, "/admin/wochenplan") ? "pill-active" : ""}`} href="/admin/wochenplan">
+                <Link
+                  className={`pill ${isActive(pathname, "/admin/wochenplan") ? "pill-active" : ""}`}
+                  href="/admin/wochenplan"
+                >
                   🧑‍💼 Wochenplan
+                </Link>
+              )}
+
+              {isAdmin && (
+                <Link
+                  className={`pill ${isActive(pathname, "/admin/password-reset") ? "pill-active" : ""}`}
+                  href="/admin/password-reset"
+                >
+                  🔐 Passwort-Reset
                 </Link>
               )}
             </div>

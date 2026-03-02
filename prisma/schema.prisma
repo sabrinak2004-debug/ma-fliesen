@@ -15,6 +15,8 @@ model AppUser {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   passwordHash String?
+  passwordUpdatedAt DateTime?
+
 
   entries        WorkEntry[]
   absences       Absence[]
@@ -23,9 +25,40 @@ model AppUser {
   calendarEvents CalendarEvent[]
   dayNotes       DayNote[]
   adminNotes     AdminNote[]
+  PasswordResetTokens PasswordResetToken[]
+  PasswordResetRequests PasswordResetRequest[]
 
   // ✅ NEU: Upload-Relation
   uploadedPlanEntryDocuments PlanEntryDocument[] @relation("UploadedBy")
+}
+
+model PasswordResetRequest {
+  id        String   @id @default(uuid())
+  userId    String
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status    String   @default("OPEN") // "OPEN" | "DONE"
+  createdAt DateTime @default(now())
+  doneAt    DateTime?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Wir speichern nur den HASH des Tokens (Sicherheitsbest practice)
+  tokenHash String   @unique
+
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model DayNote {

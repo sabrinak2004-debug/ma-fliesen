@@ -14,8 +14,14 @@ type PrecheckResponse =
 
 type LoginResponse = { ok: true; role?: Role } | { ok: false; error: string };
 
+type ForgotResponse = { ok: true } | { ok: false; error: string };
+
 function wait(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
 }
 
 export default function LoginPage() {
@@ -26,9 +32,18 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState("");
   const [newPassword2, setNewPassword2] = useState("");
 
+  // ✅ Passwort anzeigen (Toggle)
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showNewPassword2, setShowNewPassword2] = useState(false);
+
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ✅ Passwort vergessen
+  const [forgotBusy, setForgotBusy] = useState(false);
+  const [forgotInfo, setForgotInfo] = useState<string | null>(null);
 
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [role, setRole] = useState<Role | null>(null);
@@ -46,6 +61,7 @@ export default function LoginPage() {
     (async () => {
       // Reset UI state bei Namensänderung
       setError(null);
+      setForgotInfo(null);
       setAllowed(null);
       setRole(null);
       setNeedsSetup(false);
@@ -54,6 +70,11 @@ export default function LoginPage() {
       setPassword("");
       setNewPassword("");
       setNewPassword2("");
+
+      // Toggle zurücksetzen
+      setShowPassword(false);
+      setShowNewPassword(false);
+      setShowNewPassword2(false);
 
       if (nameTrim.length < 3) return;
 
@@ -86,6 +107,7 @@ export default function LoginPage() {
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setForgotInfo(null);
 
     if (!nameTrim) {
       setError("Bitte Namen eingeben.");
@@ -149,6 +171,51 @@ export default function LoginPage() {
     }
   }
 
+  async function requestForgotPassword() {
+    setError(null);
+    setForgotInfo(null);
+
+    if (nameTrim.length < 3) {
+      setForgotInfo("Bitte zuerst deinen Namen eingeben.");
+      return;
+    }
+
+    // Wenn gerade geprüft wird: kurz warten
+    if (checking || allowed === null) {
+      setForgotInfo("Bitte kurz warten – Zugriff wird geprüft.");
+      return;
+    }
+
+    // Optional: wenn Name nicht hinterlegt, trotzdem keine Details leaken
+    setForgotBusy(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName: nameTrim }),
+      });
+
+      const data = (await res.json()) as unknown;
+
+      const parsed: ForgotResponse =
+        isRecord(data) && typeof data.ok === "boolean"
+          ? (data as ForgotResponse)
+          : { ok: false, error: "Unerwartete Antwort vom Server." };
+
+      if (!res.ok || !parsed.ok) {
+        setForgotInfo(!parsed.ok ? parsed.error : "Anfrage fehlgeschlagen.");
+        return;
+      }
+
+      // Wichtig: immer gleiche Erfolgsmeldung (keine Info-Leaks)
+      setForgotInfo("Anfrage wurde erstellt. Bitte wende dich an den Admin – er sendet dir einen Reset-Link.");
+    } catch {
+      setForgotInfo("Netzwerkfehler. Bitte später erneut versuchen.");
+    } finally {
+      setForgotBusy(false);
+    }
+  }
+
   const statusText = useMemo(() => {
     if (nameTrim.length < 3) return "";
     if (checking) return "Prüfe Zugriff...";
@@ -159,6 +226,21 @@ export default function LoginPage() {
     }
     return "";
   }, [nameTrim.length, checking, allowed, role]);
+
+  const eyeBtnStyle: React.CSSProperties = {
+    position: "absolute",
+    right: 10,
+    top: "50%",
+    transform: "translateY(-50%)",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    padding: 6,
+    borderRadius: 8,
+    color: "var(--muted-2)",
+    lineHeight: 1,
+    fontSize: 16,
+  };
 
   return (
     <div style={{ padding: "40px 0" }}>
@@ -200,25 +282,48 @@ export default function LoginPage() {
               <>
                 <div style={{ marginBottom: 12 }}>
                   <div className="label">Passwort festlegen (nur beim ersten Mal)</div>
-                  <input
-                    className="input"
-                    type="password"
-                    placeholder="Neues Passwort (mind. 6 Zeichen)"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    autoComplete="new-password"
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      className="input"
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="Neues Passwort (mind. 6 Zeichen)"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      autoComplete="new-password"
+                      style={{ paddingRight: 44 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword((p) => !p)}
+                      aria-label={showNewPassword ? "Passwort verbergen" : "Passwort anzeigen"}
+                      style={eyeBtnStyle}
+                    >
+                      {showNewPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
                 </div>
+
                 <div style={{ marginBottom: 12 }}>
                   <div className="label">Passwort wiederholen</div>
-                  <input
-                    className="input"
-                    type="password"
-                    placeholder="Passwort wiederholen"
-                    value={newPassword2}
-                    onChange={(e) => setNewPassword2(e.target.value)}
-                    autoComplete="new-password"
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      className="input"
+                      type={showNewPassword2 ? "text" : "password"}
+                      placeholder="Passwort wiederholen"
+                      value={newPassword2}
+                      onChange={(e) => setNewPassword2(e.target.value)}
+                      autoComplete="new-password"
+                      style={{ paddingRight: 44 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword2((p) => !p)}
+                      aria-label={showNewPassword2 ? "Passwort verbergen" : "Passwort anzeigen"}
+                      style={eyeBtnStyle}
+                    >
+                      {showNewPassword2 ? "🙈" : "👁️"}
+                    </button>
+                  </div>
                 </div>
               </>
             ) : null}
@@ -227,20 +332,55 @@ export default function LoginPage() {
             {allowed && !needsSetup ? (
               <div style={{ marginBottom: 12 }}>
                 <div className="label">Passwort</div>
-                <input
-                  className="input"
-                  type="password"
-                  placeholder="Passwort"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                />
+                <div style={{ position: "relative" }}>
+                  <input
+                    className="input"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Passwort"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    style={{ paddingRight: 44 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    aria-label={showPassword ? "Passwort verbergen" : "Passwort anzeigen"}
+                    style={eyeBtnStyle}
+                  >
+                    {showPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
+
+                {/* ✅ Passwort vergessen: nur anzeigen, wenn normales Passwortfeld sichtbar ist */}
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                  <button
+                    type="button"
+                    onClick={requestForgotPassword}
+                    disabled={forgotBusy}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "var(--muted-2)",
+                      cursor: forgotBusy ? "not-allowed" : "pointer",
+                      fontSize: 12,
+                      textDecoration: "underline",
+                      padding: 0,
+                    }}
+                  >
+                    {forgotBusy ? "Anfrage wird erstellt..." : "Passwort vergessen?"}
+                  </button>
+                </div>
               </div>
             ) : null}
 
-            {error && (
+            {(error || forgotInfo) && (
               <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
-                <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
+                {error ? (
+                  <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
+                ) : (
+                  <span style={{ color: "var(--muted-2)", fontWeight: 700 }}>{forgotInfo}</span>
+                )}
               </div>
             )}
 
