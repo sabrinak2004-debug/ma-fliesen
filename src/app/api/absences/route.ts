@@ -21,6 +21,13 @@ function dateOnly(yyyyMmDd: string) {
   return new Date(`${yyyyMmDd}T00:00:00.000Z`);
 }
 
+function toIsoDateUTC(d: Date) {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function eachDayInclusive(from: Date, to: Date) {
   const res: Date[] = [];
   const cur = new Date(from);
@@ -34,6 +41,13 @@ function eachDayInclusive(from: Date, to: Date) {
 function isAbsenceType(v: string): v is AbsenceType {
   return v === "VACATION" || v === "SICK";
 }
+
+type AbsenceDTO = {
+  id: string;
+  absenceDate: string; // YYYY-MM-DD
+  type: "VACATION" | "SICK";
+  user: { id: string; fullName: string };
+};
 
 export async function GET(req: Request) {
   const session = await getSession();
@@ -56,14 +70,23 @@ export async function GET(req: Request) {
     to = new Date(Date.UTC(y, m, 1, 0, 0, 0));
   }
 
-  const absences = await prisma.absence.findMany({
+  const rows = await prisma.absence.findMany({
     where: {
       ...userWhere,
       ...(from && to ? { absenceDate: { gte: from, lt: to } } : {}),
     },
-    include: isAdmin ? { user: true } : undefined,
+    // ✅ IMMER include user, damit Name immer da ist (auch für Employee)
+    include: { user: { select: { id: true, fullName: true } } },
     orderBy: [{ absenceDate: "asc" }],
   });
+
+  // ✅ Date sauber als YYYY-MM-DD ausgeben
+  const absences: AbsenceDTO[] = rows.map((a) => ({
+    id: a.id,
+    absenceDate: toIsoDateUTC(a.absenceDate),
+    type: a.type === "SICK" ? "SICK" : "VACATION",
+    user: { id: a.user.id, fullName: a.user.fullName },
+  }));
 
   return NextResponse.json({ absences });
 }
@@ -72,8 +95,6 @@ export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
-  // Mitarbeiter/Admin: erstellt erstmal nur für sich selbst (sicher).
-  // Wenn du später willst, dass Admin für andere einträgt: erweitern wir Body um targetUserId/fullName.
   const raw = (await req.json().catch(() => null)) as unknown;
   const body: AbsenceBody = isRecord(raw) ? (raw as AbsenceBody) : {};
 
@@ -119,7 +140,6 @@ export async function DELETE(req: Request) {
   const a = await prisma.absence.findUnique({ where: { id } });
   if (!a) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
 
-  // Employee: nur eigene löschen. Admin: darf alle löschen.
   if (!isAdmin && a.userId !== session.userId) {
     return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
   }

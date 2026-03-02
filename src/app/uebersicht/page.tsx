@@ -16,7 +16,7 @@ type Absence = {
   id: string;
   absenceDate: string; // YYYY-MM-DD
   type: "VACATION" | "SICK";
-  user?: { id: string; fullName: string }; // optional
+  user: { id: string; fullName: string };
 };
 
 type OverviewResponse = {
