@@ -43,7 +43,52 @@ function formatDateDE(yyyyMmDd: string) {
 
 function formatHoursDE(workMinutes: number) {
   const hours = workMinutes / 60;
-  return new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(hours);
+  return new Intl.NumberFormat("de-DE", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(hours);
+}
+
+/** Gruppierung Monat/Jahr */
+function toYMD(dateStr: string) {
+  return dateStr.length >= 10 ? dateStr.slice(0, 10) : dateStr;
+}
+function monthKeyFromWorkDate(workDate: string) {
+  return toYMD(workDate).slice(0, 7); // YYYY-MM
+}
+function monthLabelDE(monthKey: string) {
+  const [yStr, mStr] = monthKey.split("-");
+  const y = Number(yStr);
+  const m = Number(mStr);
+  const d = new Date(Date.UTC(y, (m || 1) - 1, 1));
+  return new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" })
+    .format(d)
+    .replace(/^./, (c) => c.toUpperCase());
+}
+function sortMonthKeysDesc(a: string, b: string) {
+  return a === b ? 0 : a > b ? -1 : 1;
+}
+function sortEntriesDesc(a: WorkEntry, b: WorkEntry) {
+  const da = toYMD(a.workDate);
+  const db = toYMD(b.workDate);
+  if (da !== db) return da > db ? -1 : 1;
+  if (a.startTime !== b.startTime) return a.startTime > b.startTime ? -1 : 1;
+  return 0;
+}
+function groupByMonthYear(entries: WorkEntry[]) {
+  const map = new Map<string, WorkEntry[]>();
+  for (const e of entries) {
+    const key = monthKeyFromWorkDate(e.workDate);
+    const arr = map.get(key) ?? [];
+    arr.push(e);
+    map.set(key, arr);
+  }
+  const keys = Array.from(map.keys()).sort(sortMonthKeysDesc);
+  return keys.map((k) => ({
+    key: k,
+    label: monthLabelDE(k),
+    entries: (map.get(k) ?? []).slice().sort(sortEntriesDesc),
+  }));
 }
 
 export default function Page() {
@@ -169,14 +214,16 @@ export default function Page() {
     await loadEntries();
   }
 
-  const sortedEntries = useMemo(() => {
-    return entries
-      .slice()
-      .sort((a, b) => {
-        if (a.workDate !== b.workDate) return a.workDate < b.workDate ? 1 : -1;
-        return a.startTime < b.startTime ? 1 : -1;
-      });
-  }, [entries]);
+  /** ✅ statt "sortedEntries" jetzt Gruppen nach Monat/Jahr */
+  const groupedEntries = useMemo(() => groupByMonthYear(entries), [entries]);
+
+  /** optional: aktuellen Monat standardmäßig offen */
+  const currentMonthKey = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    return `${y}-${m}`;
+  }, []);
 
   return (
     <AppShell activeLabel="#wirkönnendas">
@@ -212,7 +259,12 @@ export default function Page() {
 
         <div style={{ marginBottom: 12 }}>
           <div className="label">Mitarbeitername</div>
-          <input className="input" placeholder="Vor- und Nachname" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          <input
+            className="input"
+            placeholder="Vor- und Nachname"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
         </div>
 
         <div className="row" style={{ marginBottom: 12 }}>
@@ -243,12 +295,22 @@ export default function Page() {
 
         <div style={{ marginBottom: 12 }}>
           <div className="label">Ausgeführte Tätigkeit</div>
-          <textarea className="textarea" placeholder="z.B. Fliesen verlegen, Verfugen..." value={activity} onChange={(e) => setActivity(e.target.value)} />
+          <textarea
+            className="textarea"
+            placeholder="z.B. Fliesen verlegen, Verfugen..."
+            value={activity}
+            onChange={(e) => setActivity(e.target.value)}
+          />
         </div>
 
         <div style={{ marginBottom: 12 }}>
           <div className="label">Einsatzort</div>
-          <input className="input" placeholder="z.B. Musterstraße 5, München" value={location} onChange={(e) => setLocation(e.target.value)} />
+          <input
+            className="input"
+            placeholder="z.B. Musterstraße 5, München"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
         </div>
 
         <div className="row" style={{ marginBottom: 12 }}>
@@ -286,67 +348,104 @@ export default function Page() {
 
         {loadingEntries ? (
           <div style={{ color: "var(--muted)" }}>Lade...</div>
-        ) : sortedEntries.length === 0 ? (
+        ) : groupedEntries.length === 0 ? (
           <div className="card" style={{ padding: 18, textAlign: "center", color: "var(--muted)" }}>
             <div style={{ fontSize: 40, opacity: 0.55 }}>🕒</div>
             Noch keine Einträge vorhanden
           </div>
         ) : (
-          <div className="entry-grid">
-            {sortedEntries.map((e) => {
-              const hasDistance = Number(e.distanceKm) > 0;
-              const hasTravel = e.travelMinutes > 0;
-
-              return (
-                <div key={e.id} className="entry-card">
-                  <div className="entry-accent" />
-                  <div className="entry-content">
-                    <div className="entry-top">
-                      <div className="entry-title">
-                        <div className="entry-name">{e.user?.fullName ?? "Unbekannt"}</div>
-                        <div className="entry-sub">
-                          <span>{formatDateDE(e.workDate)}</span>
-                          <span className="entry-dot">•</span>
-                          <span>{e.startTime}–{e.endTime} Uhr</span>
-                        </div>
-                      </div>
-
-                      <div className="entry-actions">
-                        <div className="entry-hours">
-                          <span className="entry-hours-number">{formatHoursDE(e.workMinutes)}</span>
-                          <span className="entry-hours-unit">h</span>
-                        </div>
-
-                        <button className="icon-btn danger" onClick={() => deleteEntry(e.id)} aria-label="Löschen">
-                          🗑
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="entry-body">
-                      <div className="entry-line">
-                        <span className="entry-icon">🧱</span>
-                        <span className="entry-text">{e.activity}</span>
-                      </div>
-
-                      {e.location ? (
-                        <div className="entry-line">
-                          <span className="entry-icon">📍</span>
-                          <span className="entry-text">{e.location}</span>
-                        </div>
-                      ) : null}
-
-                      {(hasDistance || hasTravel) ? (
-                        <div className="entry-chips">
-                          {hasDistance ? <span className="chip">🚗 {e.distanceKm} km</span> : null}
-                          {hasTravel ? <span className="chip">⏱ {e.travelMinutes} Min</span> : null}
-                        </div>
-                      ) : null}
-                    </div>
+          <div style={{ display: "grid", gap: 12 }}>
+            {groupedEntries.map((g) => (
+              <details
+                key={g.key}
+                open={g.key === currentMonthKey}
+                style={{
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(0,0,0,0.20)",
+                  overflow: "hidden",
+                }}
+              >
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    listStyle: "none",
+                    padding: "14px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    userSelect: "none",
+                  }}
+                >
+                  <div style={{ fontWeight: 800, fontSize: 15 }}>
+                    {g.label}
+                    <span style={{ opacity: 0.7, fontWeight: 600, marginLeft: 8 }}>({g.entries.length})</span>
                   </div>
+
+                  <div style={{ opacity: 0.7, fontSize: 12 }}>Ein-/Ausklappen</div>
+                </summary>
+
+                <div className="entry-grid" style={{ padding: "0 0 12px 0" }}>
+                  {g.entries.map((e) => {
+                    const hasDistance = Number(e.distanceKm) > 0;
+                    const hasTravel = e.travelMinutes > 0;
+
+                    return (
+                      <div key={e.id} className="entry-card" style={{ margin: "0 12px" }}>
+                        <div className="entry-accent" />
+                        <div className="entry-content">
+                          <div className="entry-top">
+                            <div className="entry-title">
+                              <div className="entry-name">{e.user?.fullName ?? "Unbekannt"}</div>
+                              <div className="entry-sub">
+                                <span>{formatDateDE(e.workDate)}</span>
+                                <span className="entry-dot">•</span>
+                                <span>
+                                  {e.startTime}–{e.endTime} Uhr
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="entry-actions">
+                              <div className="entry-hours">
+                                <span className="entry-hours-number">{formatHoursDE(e.workMinutes)}</span>
+                                <span className="entry-hours-unit">h</span>
+                              </div>
+
+                              <button className="icon-btn danger" onClick={() => deleteEntry(e.id)} aria-label="Löschen">
+                                🗑
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="entry-body">
+                            <div className="entry-line">
+                              <span className="entry-icon">🧱</span>
+                              <span className="entry-text">{e.activity}</span>
+                            </div>
+
+                            {e.location ? (
+                              <div className="entry-line">
+                                <span className="entry-icon">📍</span>
+                                <span className="entry-text">{e.location}</span>
+                              </div>
+                            ) : null}
+
+                            {hasDistance || hasTravel ? (
+                              <div className="entry-chips">
+                                {hasDistance ? <span className="chip">🚗 {e.distanceKm} km</span> : null}
+                                {hasTravel ? <span className="chip">⏱ {e.travelMinutes} Min</span> : null}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </details>
+            ))}
           </div>
         )}
       </div>
