@@ -94,7 +94,6 @@ function groupByMonthYear(entries: WorkEntry[]) {
 
 type EditForm = {
   id: string;
-  fullName: string;
   workDate: string;
   startTime: string;
   endTime: string;
@@ -102,6 +101,7 @@ type EditForm = {
   location: string;
   distanceKm: string;
   travelMinutes: string;
+  userFullName: string; // ✅ nur Anzeige im Modal
 };
 
 function minutesBetween(startHHMM: string, endHHMM: string) {
@@ -113,11 +113,38 @@ function minutesBetween(startHHMM: string, endHHMM: string) {
   return Math.max(0, end - start);
 }
 
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+type SessionData = {
+  userId: string;
+  fullName: string;
+  role: "EMPLOYEE" | "ADMIN";
+};
+
+function isSessionData(v: unknown): v is SessionData {
+  if (!isRecord(v)) return false;
+  const userId = v.userId;
+  const fullName = v.fullName;
+  const role = v.role;
+  return (
+    typeof userId === "string" &&
+    typeof fullName === "string" &&
+    (role === "EMPLOYEE" || role === "ADMIN")
+  );
+}
+
+type MeApiResponse = { session: SessionData | null };
+
+function isMeApiResponse(v: unknown): v is MeApiResponse {
+  return isRecord(v) && "session" in v && (v.session === null || isSessionData(v.session));
+}
+
 export default function Page() {
   const [me, setMe] = useState<MeResponse | null>(null);
 
-  // Create-Form
-  const [fullName, setFullName] = useState("");
+  // Create-Form (ohne fullName)
   const [workDate, setWorkDate] = useState<string>(() => toIsoDateLocal(new Date()));
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("16:30");
@@ -146,18 +173,30 @@ export default function Page() {
     return mins;
   }, [entries, workDate]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch("/api/me");
-        const j = (await r.json()) as unknown;
-        if (typeof j === "object" && j !== null && "ok" in j) setMe(j as MeResponse);
-        else setMe({ ok: false });
-      } catch {
+useEffect(() => {
+  (async () => {
+    try {
+      const r = await fetch("/api/me");
+      const j: unknown = await r.json().catch(() => ({}));
+
+      if (!isMeApiResponse(j) || !j.session) {
         setMe({ ok: false });
+        return;
       }
-    })();
-  }, []);
+
+      setMe({
+        ok: true,
+        user: {
+          id: j.session.userId,
+          fullName: j.session.fullName,
+          role: j.session.role,
+        },
+      });
+    } catch {
+      setMe({ ok: false });
+    }
+  })();
+}, []);
 
   async function loadEntries() {
     setLoadingEntries(true);
@@ -183,14 +222,14 @@ export default function Page() {
   async function saveEntry() {
     setError(null);
 
-    const name = fullName.trim();
-    if (!name) return setError("Bitte Mitarbeitername eingeben.");
     if (!activity.trim()) return setError("Bitte Tätigkeit eingeben.");
+
+    // ✅ Falls nicht eingeloggt/Session fehlt
+    if (!me || !me.ok) return setError("Bitte neu einloggen.");
 
     setSaving(true);
     try {
       const payload = {
-        fullName: name,
         workDate,
         startTime,
         endTime,
@@ -239,7 +278,7 @@ export default function Page() {
     setEditError(null);
     setEdit({
       id: e.id,
-      fullName: e.user?.fullName ?? "",
+      userFullName: e.user?.fullName ?? "Unbekannt",
       workDate: toYMD(e.workDate),
       startTime: e.startTime,
       endTime: e.endTime,
@@ -255,8 +294,6 @@ export default function Page() {
     if (!edit) return;
 
     setEditError(null);
-    const name = edit.fullName.trim();
-    if (!name) return setEditError("Bitte Mitarbeitername eingeben.");
     if (!edit.activity.trim()) return setEditError("Bitte Tätigkeit eingeben.");
     if (!edit.workDate || !edit.startTime || !edit.endTime) return setEditError("Datum/Zeit fehlt.");
 
@@ -264,7 +301,6 @@ export default function Page() {
     try {
       const payload = {
         id: edit.id,
-        fullName: name,
         workDate: edit.workDate,
         startTime: edit.startTime,
         endTime: edit.endTime,
@@ -297,7 +333,6 @@ export default function Page() {
           : null;
 
       if (updated) {
-        // ✅ state lokal aktualisieren (ohne Full Reload)
         setEntries((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
       } else {
         await loadEntries();
@@ -325,6 +360,8 @@ export default function Page() {
     if (!edit) return 0;
     return minutesBetween(edit.startTime, edit.endTime);
   }, [edit]);
+
+  const meName = me && me.ok ? me.user.fullName : "";
 
   return (
     <AppShell activeLabel="#wirkönnendas">
@@ -360,14 +397,22 @@ export default function Page() {
           </div>
         )}
 
+        {/* ✅ Name nur anzeigen (automatisch aus Session), kein Input mehr */}
         <div style={{ marginBottom: 12 }}>
-          <div className="label">Mitarbeitername</div>
-          <input
+          <div className="label">Mitarbeiter</div>
+          <div
             className="input"
-            placeholder="Vor- und Nachname"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-          />
+            style={{
+              display: "flex",
+              alignItems: "center",
+              opacity: meName ? 1 : 0.7,
+            }}
+          >
+            {meName || "—"}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+            Der Eintrag wird automatisch deinem Konto zugeordnet.
+          </div>
         </div>
 
         <div className="row" style={{ marginBottom: 12 }}>
@@ -419,11 +464,21 @@ export default function Page() {
         <div className="row" style={{ marginBottom: 12 }}>
           <div>
             <div className="label">Entfernung (km)</div>
-            <input className="input" inputMode="decimal" value={distanceKm} onChange={(e) => setDistanceKm(e.target.value)} />
+            <input
+              className="input"
+              inputMode="decimal"
+              value={distanceKm}
+              onChange={(e) => setDistanceKm(e.target.value)}
+            />
           </div>
           <div>
             <div className="label">Fahrzeit (Min.)</div>
-            <input className="input" inputMode="numeric" value={travelMinutes} onChange={(e) => setTravelMinutes(e.target.value)} />
+            <input
+              className="input"
+              inputMode="numeric"
+              value={travelMinutes}
+              onChange={(e) => setTravelMinutes(e.target.value)}
+            />
           </div>
         </div>
 
@@ -519,22 +574,11 @@ export default function Page() {
                                 <span className="entry-hours-unit">h</span>
                               </div>
 
-                              {/* ✅ Bearbeiten */}
-                              <button
-                                className="icon-btn"
-                                onClick={() => openEditModal(e)}
-                                aria-label="Bearbeiten"
-                                title="Bearbeiten"
-                              >
+                              <button className="icon-btn" onClick={() => openEditModal(e)} aria-label="Bearbeiten" title="Bearbeiten">
                                 ✏️
                               </button>
 
-                              <button
-                                className="icon-btn danger"
-                                onClick={() => deleteEntry(e.id)}
-                                aria-label="Löschen"
-                                title="Löschen"
-                              >
+                              <button className="icon-btn danger" onClick={() => deleteEntry(e.id)} aria-label="Löschen" title="Löschen">
                                 🗑
                               </button>
                             </div>
@@ -608,14 +652,12 @@ export default function Page() {
             ) : null}
 
             <div>
-              <div className="label">Mitarbeitername</div>
-              <input
-                className="input"
-                value={edit.fullName}
-                onChange={(e) => setEdit((p) => (p ? { ...p, fullName: e.target.value } : p))}
-              />
+              <div className="label">Mitarbeiter</div>
+              <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+                {edit.userFullName}
+              </div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-                Hinweis: Nur Admin kann effektiv umzuordnen – sonst wird die Zuordnung serverseitig beibehalten.
+                Zuordnung wird serverseitig automatisch verwaltet.
               </div>
             </div>
 

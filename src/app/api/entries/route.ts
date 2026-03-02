@@ -26,7 +26,9 @@ function toHHMMUTC(d: Date) {
 type EntryBody = {
   id?: unknown;
 
-  fullName?: unknown;
+  // ✅ NEU: optional userId (nur Admin sinnvoll)
+  userId?: unknown;
+
   workDate?: unknown; // YYYY-MM-DD
   startTime?: unknown; // HH:MM
   endTime?: unknown; // HH:MM
@@ -136,12 +138,14 @@ export async function POST(req: Request) {
   const distanceKmNum = getNumber(body.distanceKm);
   const travelMinutesNum = Math.max(0, Math.round(getNumber(body.travelMinutes)));
 
+  // ✅ DEFAULT: immer Session-User
   let targetUserId = session.userId;
 
+  // ✅ Admin darf optional userId mitgeben (z.B. später per Dropdown)
   if (isAdmin) {
-    const fullName = getString(body.fullName).trim();
-    if (fullName) {
-      const u = await prisma.appUser.findUnique({ where: { fullName } });
+    const requestedUserId = getString(body.userId).trim();
+    if (requestedUserId) {
+      const u = await prisma.appUser.findUnique({ where: { id: requestedUserId } });
       if (!u || !u.isActive) {
         return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
       }
@@ -185,7 +189,7 @@ export async function POST(req: Request) {
  * Erwartet JSON:
  * {
  *   id: string,
- *   fullName?: string (nur Admin, optional um User zu wechseln),
+ *   userId?: string (nur Admin, optional um User zu wechseln),
  *   workDate: YYYY-MM-DD,
  *   startTime: HH:MM,
  *   endTime: HH:MM,
@@ -237,11 +241,11 @@ export async function PATCH(req: Request) {
 
   let targetUserId = existing.userId;
 
-  // optional: Admin kann Eintrag einem anderen MA zuordnen (über fullName)
+  // ✅ Admin darf optional umhängen via userId
   if (isAdmin) {
-    const fullName = getString(body.fullName).trim();
-    if (fullName) {
-      const u = await prisma.appUser.findUnique({ where: { fullName } });
+    const requestedUserId = getString(body.userId).trim();
+    if (requestedUserId) {
+      const u = await prisma.appUser.findUnique({ where: { id: requestedUserId } });
       if (!u || !u.isActive) {
         return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
       }
