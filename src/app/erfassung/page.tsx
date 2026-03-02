@@ -7,40 +7,50 @@ type MeResponse =
   | { ok: true; user: { id: string; fullName: string; role: "ADMIN" | "EMPLOYEE" } }
   | { ok: false };
 
-type EntryUser = { id: string; fullName: string };
-
 type WorkEntry = {
   id: string;
-  workDate: string;     // YYYY-MM-DD
-  startTime: string;    // HH:MM:SS
-  endTime: string;      // HH:MM:SS
+  workDate: string; // YYYY-MM-DD
+  startTime: string; // HH:MM
+  endTime: string; // HH:MM
   activity: string;
   location: string;
-  distanceKm: string;   // Decimal kommt als string
+  distanceKm: string;
   travelMinutes: number;
   workMinutes: number;
-  user: EntryUser;
+  user: { id: string; fullName: string };
 };
 
-function minutesToHoursString(min: number) {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  const mm = String(m).padStart(2, "0");
-  return `${h}.${Math.round((m / 60) * 10)}h`.replace(".0h", ".0h"); // optisch wie Prototype (z.B. 8.5h)
-}
-
-function toIsoDate(d: Date) {
+function toIsoDateLocal(d: Date) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
-export default function ErfassungPage() {
+function formatDateDE(yyyyMmDd: string) {
+  const parts = yyyyMmDd.split("-");
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const d = Number(parts[2]);
+  const dt = new Date(y, (m || 1) - 1, d || 1);
+  return dt.toLocaleDateString("de-DE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function formatHoursDE(workMinutes: number) {
+  const hours = workMinutes / 60;
+  return new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(hours);
+}
+
+export default function Page() {
   const [me, setMe] = useState<MeResponse | null>(null);
 
   const [fullName, setFullName] = useState("");
-  const [workDate, setWorkDate] = useState<string>(() => toIsoDate(new Date()));
+  const [workDate, setWorkDate] = useState<string>(() => toIsoDateLocal(new Date()));
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("16:30");
   const [activity, setActivity] = useState("");
@@ -55,7 +65,6 @@ export default function ErfassungPage() {
   const [loadingEntries, setLoadingEntries] = useState(true);
 
   const workMinutes = useMemo(() => {
-    // einfache Berechnung (HH:MM)
     const [sh, sm] = startTime.split(":").map((x) => Number(x));
     const [eh, em] = endTime.split(":").map((x) => Number(x));
     if (!Number.isFinite(sh) || !Number.isFinite(sm) || !Number.isFinite(eh) || !Number.isFinite(em)) return 0;
@@ -74,10 +83,14 @@ export default function ErfassungPage() {
 
   useEffect(() => {
     (async () => {
-      const r = await fetch("/api/me");
-      const j = (await r.json()) as unknown;
-      if (typeof j === "object" && j !== null && "ok" in j) setMe(j as MeResponse);
-      else setMe({ ok: false });
+      try {
+        const r = await fetch("/api/me");
+        const j = (await r.json()) as unknown;
+        if (typeof j === "object" && j !== null && "ok" in j) setMe(j as MeResponse);
+        else setMe({ ok: false });
+      } catch {
+        setMe({ ok: false });
+      }
     })();
   }, []);
 
@@ -112,9 +125,9 @@ export default function ErfassungPage() {
     try {
       const payload = {
         fullName: name,
-        workDate,          // YYYY-MM-DD
-        startTime,         // HH:MM
-        endTime,           // HH:MM
+        workDate,
+        startTime,
+        endTime,
         activity: activity.trim(),
         location: location.trim(),
         distanceKm: Number(distanceKm.replace(",", ".")) || 0,
@@ -128,6 +141,7 @@ export default function ErfassungPage() {
       });
 
       const j = (await r.json()) as unknown;
+
       if (!r.ok) {
         const msg =
           typeof j === "object" && j !== null && "error" in j && typeof (j as { error: unknown }).error === "string"
@@ -137,7 +151,6 @@ export default function ErfassungPage() {
         return;
       }
 
-      // reset wie Prototype: Tätigkeit/Ort leer lassen, Zeiten bleiben
       setActivity("");
       setLocation("");
       setDistanceKm("0");
@@ -155,6 +168,15 @@ export default function ErfassungPage() {
     await fetch(`/api/entries?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     await loadEntries();
   }
+
+  const sortedEntries = useMemo(() => {
+    return entries
+      .slice()
+      .sort((a, b) => {
+        if (a.workDate !== b.workDate) return a.workDate < b.workDate ? 1 : -1;
+        return a.startTime < b.startTime ? 1 : -1;
+      });
+  }, [entries]);
 
   return (
     <AppShell activeLabel="#wirkönnendas">
@@ -215,9 +237,7 @@ export default function ErfassungPage() {
         <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
             <div style={{ color: "var(--muted)" }}>Arbeitszeit (berechnet)</div>
-            <div style={{ fontWeight: 900, color: "var(--accent)" }}>
-              {(workMinutes / 60).toFixed(2)} Std.
-            </div>
+            <div style={{ fontWeight: 900, color: "var(--accent)" }}>{(workMinutes / 60).toFixed(2)} Std.</div>
           </div>
         </div>
 
@@ -243,12 +263,16 @@ export default function ErfassungPage() {
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-          <button className="btn" type="button" onClick={() => {
-            setActivity("");
-            setLocation("");
-            setDistanceKm("0");
-            setTravelMinutes("0");
-          }}>
+          <button
+            className="btn"
+            type="button"
+            onClick={() => {
+              setActivity("");
+              setLocation("");
+              setDistanceKm("0");
+              setTravelMinutes("0");
+            }}
+          >
             Abbrechen
           </button>
           <button className="btn btn-accent" type="button" onClick={saveEntry} disabled={saving}>
@@ -262,51 +286,67 @@ export default function ErfassungPage() {
 
         {loadingEntries ? (
           <div style={{ color: "var(--muted)" }}>Lade...</div>
-        ) : entries.length === 0 ? (
+        ) : sortedEntries.length === 0 ? (
           <div className="card" style={{ padding: 18, textAlign: "center", color: "var(--muted)" }}>
             <div style={{ fontSize: 40, opacity: 0.55 }}>🕒</div>
             Noch keine Einträge vorhanden
           </div>
         ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            {entries
-              .slice()
-              .sort((a, b) => (a.workDate < b.workDate ? 1 : -1))
-              .map((e) => (
-                <div key={e.id} className="list-item">
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                    <div>
-                      <div style={{ fontWeight: 900, textTransform: "lowercase" }}>
-                        {e.user?.fullName ?? "unbekannt"} <span style={{ color: "var(--muted)" }}>· {e.workDate}</span>
-                      </div>
-                      <div style={{ color: "var(--muted)", marginTop: 6 }}>
-                        🕘 {e.startTime.slice(0, 5)} – {e.endTime.slice(0, 5)} Uhr
-                      </div>
-                      <div style={{ color: "var(--muted)", marginTop: 6 }}>
-                        🧱 {e.activity}
-                      </div>
-                      {e.location && (
-                        <div style={{ color: "var(--muted)", marginTop: 6 }}>
-                          📍 {e.location}
+          <div className="entry-grid">
+            {sortedEntries.map((e) => {
+              const hasDistance = Number(e.distanceKm) > 0;
+              const hasTravel = e.travelMinutes > 0;
+
+              return (
+                <div key={e.id} className="entry-card">
+                  <div className="entry-accent" />
+                  <div className="entry-content">
+                    <div className="entry-top">
+                      <div className="entry-title">
+                        <div className="entry-name">{e.user?.fullName ?? "Unbekannt"}</div>
+                        <div className="entry-sub">
+                          <span>{formatDateDE(e.workDate)}</span>
+                          <span className="entry-dot">•</span>
+                          <span>{e.startTime}–{e.endTime} Uhr</span>
                         </div>
-                      )}
-                      <div style={{ color: "var(--muted-2)", marginTop: 10 }}>
-                        {Number(e.distanceKm) > 0 ? `🚗 ${e.distanceKm} km` : ""}{" "}
-                        {e.travelMinutes > 0 ? `   ⏱ Fahrzeit: ${e.travelMinutes} Min.` : ""}
+                      </div>
+
+                      <div className="entry-actions">
+                        <div className="entry-hours">
+                          <span className="entry-hours-number">{formatHoursDE(e.workMinutes)}</span>
+                          <span className="entry-hours-unit">h</span>
+                        </div>
+
+                        <button className="icon-btn danger" onClick={() => deleteEntry(e.id)} aria-label="Löschen">
+                          🗑
+                        </button>
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
-                      <div style={{ fontWeight: 900, color: "var(--accent)", fontSize: 18 }}>
-                        {(e.workMinutes / 60).toFixed(1)}h
+                    <div className="entry-body">
+                      <div className="entry-line">
+                        <span className="entry-icon">🧱</span>
+                        <span className="entry-text">{e.activity}</span>
                       </div>
-                      <button className="btn btn-danger" onClick={() => deleteEntry(e.id)} aria-label="Löschen">
-                        🗑
-                      </button>
+
+                      {e.location ? (
+                        <div className="entry-line">
+                          <span className="entry-icon">📍</span>
+                          <span className="entry-text">{e.location}</span>
+                        </div>
+                      ) : null}
+
+                      {(hasDistance || hasTravel) ? (
+                        <div className="entry-chips">
+                          {hasDistance ? <span className="chip">🚗 {e.distanceKm} km</span> : null}
+                          {hasTravel ? <span className="chip">⏱ {e.travelMinutes} Min</span> : null}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+            })}
           </div>
         )}
       </div>

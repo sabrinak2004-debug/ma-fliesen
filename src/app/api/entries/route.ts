@@ -10,10 +10,21 @@ function timeOnly(hhmm: string) {
   return new Date(`1970-01-01T${hhmm}:00.000Z`);
 }
 
-type EntryBody = {
-  // Admin kann für andere buchen (optional)
-  fullName?: unknown;
+function toIsoDateUTC(d: Date) {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
+function toHHMMUTC(d: Date) {
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+type EntryBody = {
+  fullName?: unknown;
   workDate?: unknown; // YYYY-MM-DD
   startTime?: unknown; // HH:MM
   endTime?: unknown; // HH:MM
@@ -26,11 +37,9 @@ type EntryBody = {
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
-
 function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
-
 function getNumber(v: unknown): number {
   if (typeof v === "number") return Number.isFinite(v) ? v : 0;
   if (typeof v === "string") {
@@ -39,6 +48,19 @@ function getNumber(v: unknown): number {
   }
   return 0;
 }
+
+type EntryDTO = {
+  id: string;
+  workDate: string;     // YYYY-MM-DD
+  startTime: string;    // HH:MM
+  endTime: string;      // HH:MM
+  activity: string;
+  location: string;
+  distanceKm: string;   // string fürs UI
+  travelMinutes: number;
+  workMinutes: number;
+  user: { id: string; fullName: string };
+};
 
 export async function GET(req: Request) {
   const session = await getSession();
@@ -61,14 +83,27 @@ export async function GET(req: Request) {
     to = new Date(Date.UTC(y, m, 1, 0, 0, 0));
   }
 
-  const entries = await prisma.workEntry.findMany({
+  const rows = await prisma.workEntry.findMany({
     where: {
       ...userWhere,
       ...(from && to ? { workDate: { gte: from, lt: to } } : {}),
     },
-    include: isAdmin ? { user: true } : undefined,
+    include: { user: { select: { id: true, fullName: true } } },
     orderBy: [{ workDate: "desc" }, { startTime: "desc" }],
   });
+
+  const entries: EntryDTO[] = rows.map((e) => ({
+    id: e.id,
+    workDate: toIsoDateUTC(e.workDate),
+    startTime: toHHMMUTC(e.startTime),
+    endTime: toHHMMUTC(e.endTime),
+    activity: e.activity ?? "",
+    location: e.location ?? "",
+    distanceKm: (e.distanceKm ?? new Prisma.Decimal(0)).toString(),
+    travelMinutes: e.travelMinutes ?? 0,
+    workMinutes: e.workMinutes ?? 0,
+    user: { id: e.user.id, fullName: e.user.fullName },
+  }));
 
   return NextResponse.json({ entries });
 }
@@ -86,13 +121,12 @@ export async function POST(req: Request) {
   const startTime = getString(body.startTime);
   const endTime = getString(body.endTime);
   const activity = getString(body.activity).trim();
-  const location = getString(body.location);
+  const location = getString(body.location).trim();
 
   if (!workDate || !startTime || !endTime || !activity) {
     return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
   }
 
-  // Work minutes berechnen
   const start = timeOnly(startTime);
   const end = timeOnly(endTime);
   const diffMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
@@ -100,7 +134,6 @@ export async function POST(req: Request) {
   const distanceKmNum = getNumber(body.distanceKm);
   const travelMinutesNum = Math.max(0, Math.round(getNumber(body.travelMinutes)));
 
-  // Ziel-User bestimmen
   let targetUserId = session.userId;
 
   if (isAdmin) {
@@ -114,7 +147,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const entry = await prisma.workEntry.create({
+  const created = await prisma.workEntry.create({
     data: {
       userId: targetUserId,
       workDate: dateOnly(workDate),
@@ -126,8 +159,21 @@ export async function POST(req: Request) {
       travelMinutes: travelMinutesNum,
       workMinutes: diffMin,
     },
-    include: isAdmin ? { user: true } : undefined,
+    include: { user: { select: { id: true, fullName: true } } },
   });
+
+  const entry: EntryDTO = {
+    id: created.id,
+    workDate: toIsoDateUTC(created.workDate),
+    startTime: toHHMMUTC(created.startTime),
+    endTime: toHHMMUTC(created.endTime),
+    activity: created.activity ?? "",
+    location: created.location ?? "",
+    distanceKm: (created.distanceKm ?? new Prisma.Decimal(0)).toString(),
+    travelMinutes: created.travelMinutes ?? 0,
+    workMinutes: created.workMinutes ?? 0,
+    user: { id: created.user.id, fullName: created.user.fullName },
+  };
 
   return NextResponse.json({ entry });
 }
@@ -145,7 +191,6 @@ export async function DELETE(req: Request) {
   const e = await prisma.workEntry.findUnique({ where: { id } });
   if (!e) return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
 
-  // Employee darf nur eigene löschen, Admin darf alle.
   if (!isAdmin && e.userId !== session.userId) {
     return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
   }
