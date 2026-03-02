@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import Modal from "@/components/Modal";
 
 type WorkEntry = {
   id: string;
@@ -47,6 +48,12 @@ function lastDayOfMonth(ym: string) {
   return String(last.getDate()).padStart(2, "0");
 }
 
+function currentYear(): string {
+  return String(new Date().getFullYear());
+}
+
+type ExportMode = "MONTH" | "YEAR" | "RANGE";
+
 export default function UebersichtPage() {
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [absences, setAbsences] = useState<Absence[]>([]);
@@ -56,6 +63,23 @@ export default function UebersichtPage() {
 
   // aktueller Monat
   const ym = useMemo(() => monthKey(new Date()), []);
+
+  // ===== Export Modal State =====
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportMode, setExportMode] = useState<ExportMode>("MONTH");
+
+  const [exportMonth, setExportMonth] = useState<string>(ym); // YYYY-MM
+  const [exportYear, setExportYear] = useState<string>(currentYear()); // YYYY
+
+  const [rangeFrom, setRangeFrom] = useState<string>(`${ym}-01`); // YYYY-MM-DD
+  const [rangeTo, setRangeTo] = useState<string>(`${ym}-${lastDayOfMonth(ym)}`); // YYYY-MM-DD
+
+  const years = useMemo(() => {
+    const now = new Date().getFullYear();
+    const arr: string[] = [];
+    for (let y = now - 2; y <= now + 1; y++) arr.push(String(y));
+    return arr;
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -145,11 +169,85 @@ export default function UebersichtPage() {
 
   const showByEmployee = byEmployee.length > 1;
 
-  const handleExport = () => {
-    const from = `${ym}-01`;
-    const to = `${ym}-${lastDayOfMonth(ym)}`;
-    window.open(`/api/admin/export?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, "_blank");
+  // ✅ Download helper (same tab => kein Popup-Blocker)
+  const startDownload = (url: string) => {
+    window.location.href = url;
   };
+
+  const openExportModal = () => {
+    // Defaults sinnvoll setzen (aktueller Monat)
+    setExportMode("MONTH");
+    setExportMonth(ym);
+    setExportYear(currentYear());
+    setRangeFrom(`${ym}-01`);
+    setRangeTo(`${ym}-${lastDayOfMonth(ym)}`);
+    setExportOpen(true);
+  };
+
+  const rangeError = useMemo(() => {
+    if (exportMode !== "RANGE") return "";
+    if (!rangeFrom || !rangeTo) return "Bitte Von und Bis auswählen.";
+    if (rangeFrom > rangeTo) return "Von-Datum darf nicht nach dem Bis-Datum liegen.";
+    return "";
+  }, [exportMode, rangeFrom, rangeTo]);
+
+  const doExport = () => {
+    if (exportMode === "MONTH") {
+      startDownload(`/api/admin/export?scope=month&month=${encodeURIComponent(exportMonth)}`);
+      setExportOpen(false);
+      return;
+    }
+
+    if (exportMode === "YEAR") {
+      startDownload(`/api/admin/export?scope=year&year=${encodeURIComponent(exportYear)}`);
+      setExportOpen(false);
+      return;
+    }
+
+    // RANGE
+    if (rangeError) return;
+    startDownload(`/api/admin/export?from=${encodeURIComponent(rangeFrom)}&to=${encodeURIComponent(rangeTo)}`);
+    setExportOpen(false);
+  };
+
+  const exportFooter = (
+    <>
+      <button
+        type="button"
+        onClick={() => setExportOpen(false)}
+        style={{
+          padding: "10px 14px",
+          cursor: "pointer",
+          fontWeight: 900,
+          borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.12)",
+          background: "rgba(255,255,255,0.06)",
+          color: "rgba(255,255,255,0.9)",
+        }}
+      >
+        Abbrechen
+      </button>
+
+      <button
+        type="button"
+        onClick={doExport}
+        disabled={exportMode === "RANGE" && Boolean(rangeError)}
+        style={{
+          padding: "10px 14px",
+          cursor: exportMode === "RANGE" && rangeError ? "not-allowed" : "pointer",
+          fontWeight: 1000,
+          borderRadius: 12,
+          border: "1px solid rgba(184,207,58,0.35)",
+          background: exportMode === "RANGE" && rangeError ? "rgba(184,207,58,0.06)" : "rgba(184,207,58,0.12)",
+          color: "var(--accent)",
+          opacity: exportMode === "RANGE" && rangeError ? 0.7 : 1,
+        }}
+        title="Download starten"
+      >
+        Download starten
+      </button>
+    </>
+  );
 
   return (
     <AppShell activeLabel="#wirkönndas">
@@ -157,7 +255,7 @@ export default function UebersichtPage() {
       {isAdmin ? (
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
           <button
-            onClick={handleExport}
+            onClick={openExportModal}
             className="card"
             style={{
               padding: "10px 14px",
@@ -168,12 +266,149 @@ export default function UebersichtPage() {
               background: "rgba(184,207,58,0.12)",
               color: "var(--accent)",
             }}
-            title="Exportiert alle Einträge als CSV (Admin)"
+            title="Export (Admin)"
           >
-            ⬇️ Export (CSV)
+            ⬇️ Export
           </button>
         </div>
       ) : null}
+
+      {/* ✅ Export Modal */}
+      <Modal open={exportOpen} onClose={() => setExportOpen(false)} title="Export (Admin)" footer={exportFooter} maxWidth={720}>
+        <div style={{ display: "grid", gap: 12 }}>
+          {/* Mode Buttons */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {([
+              { key: "MONTH", label: "Monat (CSV)" },
+              { key: "YEAR", label: "Jahr (ZIP)" },
+              { key: "RANGE", label: "Zeitraum (CSV)" },
+            ] as Array<{ key: ExportMode; label: string }>).map((m) => (
+              <button
+                key={m.key}
+                type="button"
+                onClick={() => setExportMode(m.key)}
+                style={{
+                  borderRadius: 999,
+                  padding: "8px 12px",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background: exportMode === m.key ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
+                  color: "rgba(255,255,255,0.92)",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 900,
+                }}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          {/* MONTH */}
+          {exportMode === "MONTH" ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>Monat auswählen</div>
+              <input
+                type="month"
+                value={exportMonth}
+                onChange={(e) => setExportMonth(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  background: "rgba(0,0,0,0.25)",
+                  color: "rgba(255,255,255,0.92)",
+                }}
+              />
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                Download: <b>eine CSV</b> für <b>{exportMonth}</b>
+              </div>
+            </div>
+          ) : null}
+
+          {/* YEAR */}
+          {exportMode === "YEAR" ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>Jahr auswählen</div>
+              <select
+                value={exportYear}
+                onChange={(e) => setExportYear(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  background: "rgba(0,0,0,0.25)",
+                  color: "rgba(255,255,255,0.92)",
+                }}
+              >
+                {years.map((y) => (
+                  <option key={y} value={y} style={{ color: "black" }}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                Download: <b>ZIP</b> mit <b>12 CSVs</b> (pro Monat eine Datei)
+              </div>
+            </div>
+          ) : null}
+
+          {/* RANGE */}
+          {exportMode === "RANGE" ? (
+            <div style={{ display: "grid", gap: 10 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>Zeitraum auswählen</div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div style={{ display: "grid", gap: 6 }}>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Von</div>
+                  <input
+                    type="date"
+                    value={rangeFrom}
+                    onChange={(e) => setRangeFrom(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.18)",
+                      background: "rgba(0,0,0,0.25)",
+                      color: "rgba(255,255,255,0.92)",
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gap: 6 }}>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Bis</div>
+                  <input
+                    type="date"
+                    value={rangeTo}
+                    onChange={(e) => setRangeTo(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.18)",
+                      background: "rgba(0,0,0,0.25)",
+                      color: "rgba(255,255,255,0.92)",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {rangeError ? (
+                <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>
+                  {rangeError}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                  Download: CSV für <b>{rangeFrom}</b> bis <b>{rangeTo}</b>
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+      </Modal>
 
       {/* KPI Cards */}
       <div className="kpi-grid" style={{ marginBottom: 14 }}>
