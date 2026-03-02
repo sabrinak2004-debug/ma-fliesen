@@ -9,7 +9,7 @@ type WorkEntry = {
   workDate: string; // YYYY-MM-DD
   distanceKm: number | string | null;
   workMinutes: number;
-  user?: { id: string; fullName: string }; // optional (falls API include user liefert)
+  user?: { id: string; fullName: string };
 };
 
 type Absence = {
@@ -19,12 +19,36 @@ type Absence = {
   user: { id: string; fullName: string };
 };
 
+type AbsenceDayGroup = {
+  date: string; // YYYY-MM-DD
+  items: Absence[];
+};
+
+type AbsenceUserSummary = {
+  user: { id: string; fullName: string };
+  sickDays: number;
+  vacationDays: number;
+  totalDays: number;
+};
+
+type AbsencesApiResponse = {
+  absences?: Absence[];
+  groupsByDay?: AbsenceDayGroup[];
+  summaryByUser?: AbsenceUserSummary[];
+  range?: { from: string; to: string };
+};
+
 type OverviewResponse = {
   isAdmin?: boolean;
 };
 
 function isOverviewResponse(x: unknown): x is OverviewResponse {
   return typeof x === "object" && x !== null && ("isAdmin" in x || Object.keys(x as object).length >= 0);
+}
+
+function isAbsencesApiResponse(x: unknown): x is AbsencesApiResponse {
+  if (typeof x !== "object" || x === null) return false;
+  return true;
 }
 
 function monthKey(d: Date) {
@@ -44,7 +68,7 @@ function safeNumber(x: unknown) {
 
 function lastDayOfMonth(ym: string) {
   const [y, m] = ym.split("-").map(Number);
-  const last = new Date(y, m, 0); // Tag 0 des Folgemonats = letzter Tag des Monats
+  const last = new Date(y, m, 0);
   return String(last.getDate()).padStart(2, "0");
 }
 
@@ -54,9 +78,94 @@ function currentYear(): string {
 
 type ExportMode = "MONTH" | "YEAR" | "RANGE";
 
+function formatDateDE(yyyyMmDd: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(yyyyMmDd)) return yyyyMmDd;
+  const [y, m, d] = yyyyMmDd.split("-");
+  return `${d}.${m}.${y}`;
+}
+
+function typeLabel(t: "VACATION" | "SICK") {
+  return t === "SICK" ? "Krank" : "Urlaub";
+}
+
+function typeColor(t: "VACATION" | "SICK") {
+  return t === "SICK" ? "rgba(224, 75, 69, 0.95)" : "rgba(90, 167, 255, 0.95)";
+}
+
+function badgeStyle(t: "VACATION" | "SICK"): React.CSSProperties {
+  return {
+    fontSize: 12,
+    fontWeight: 900,
+    padding: "6px 10px",
+    borderRadius: 999,
+    border: `1px solid ${t === "SICK" ? "rgba(224, 75, 69, 0.35)" : "rgba(90, 167, 255, 0.35)"}`,
+    background: t === "SICK" ? "rgba(224, 75, 69, 0.10)" : "rgba(90, 167, 255, 0.10)",
+    color: "rgba(255,255,255,0.92)",
+    whiteSpace: "nowrap",
+  };
+}
+
+function chipStyle(bg: string, border: string): React.CSSProperties {
+  return {
+    fontSize: 12,
+    fontWeight: 900,
+    padding: "6px 10px",
+    borderRadius: 999,
+    border: `1px solid ${border}`,
+    background: bg,
+    color: "rgba(255,255,255,0.92)",
+    whiteSpace: "nowrap",
+  };
+}
+
+function inputStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.18)",
+    background: "rgba(0,0,0,0.25)",
+    color: "rgba(255,255,255,0.92)",
+    outline: "none",
+  };
+}
+
+function selectStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.18)",
+    background: "rgba(0,0,0,0.25)",
+    color: "rgba(255,255,255,0.92)",
+    outline: "none",
+  };
+}
+
+type AbsFilterType = "ALL" | "SICK" | "VACATION";
+type AbsRange = "MONTH" | "TODAY" | "WEEK";
+
+function startOfTodayUTC() {
+  const d = new Date();
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0));
+}
+
+function isoUTCDate(d: Date) {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function toUTCDateFromISO(ymd: string) {
+  return new Date(`${ymd}T00:00:00.000Z`);
+}
+
 export default function UebersichtPage() {
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [absences, setAbsences] = useState<Absence[]>([]);
+  const [absenceGroupsByDay, setAbsenceGroupsByDay] = useState<AbsenceDayGroup[]>([]);
+  const [absenceSummaryByUser, setAbsenceSummaryByUser] = useState<AbsenceUserSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -81,6 +190,11 @@ export default function UebersichtPage() {
     return arr;
   }, []);
 
+  // ✅ Abwesenheiten Filter State
+  const [absQuery, setAbsQuery] = useState<string>("");
+  const [absType, setAbsType] = useState<AbsFilterType>("ALL");
+  const [absRange, setAbsRange] = useState<AbsRange>("MONTH");
+
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -103,18 +217,22 @@ export default function UebersichtPage() {
             ? (((je as { entries: WorkEntry[] }).entries ?? []) as WorkEntry[])
             : [];
 
-        const a =
-          typeof ja === "object" &&
-          ja !== null &&
-          "absences" in ja &&
-          Array.isArray((ja as { absences: unknown }).absences)
-            ? (((ja as { absences: Absence[] }).absences ?? []) as Absence[])
-            : [];
+        let a: Absence[] = [];
+        let groups: AbsenceDayGroup[] = [];
+        let summary: AbsenceUserSummary[] = [];
+
+        if (isAbsencesApiResponse(ja)) {
+          const r = ja as AbsencesApiResponse;
+          a = Array.isArray(r.absences) ? r.absences : [];
+          groups = Array.isArray(r.groupsByDay) ? r.groupsByDay : [];
+          summary = Array.isArray(r.summaryByUser) ? r.summaryByUser : [];
+        }
 
         setEntries(e);
         setAbsences(a);
+        setAbsenceGroupsByDay(groups);
+        setAbsenceSummaryByUser(summary);
 
-        // ✅ kein any: isAdmin sicher auslesen
         if (isOverviewResponse(jo)) {
           setIsAdmin(Boolean(jo.isAdmin));
         } else {
@@ -136,46 +254,109 @@ export default function UebersichtPage() {
 
   const totalKm = useMemo(() => monthEntries.reduce((s, e) => s + safeNumber(e.distanceKm), 0), [monthEntries]);
 
-  const vacDays = useMemo(() => monthAbsences.filter((a) => a.type === "VACATION").length, [monthAbsences]);
-  const sickDays = useMemo(() => monthAbsences.filter((a) => a.type === "SICK").length, [monthAbsences]);
+  const vacDays = useMemo(() => {
+    if (absenceSummaryByUser.length > 0) {
+      return absenceSummaryByUser.reduce((s, u) => s + (Number.isFinite(u.vacationDays) ? u.vacationDays : 0), 0);
+    }
+    return monthAbsences.filter((a) => a.type === "VACATION").length;
+  }, [absenceSummaryByUser, monthAbsences]);
+
+  const sickDays = useMemo(() => {
+    if (absenceSummaryByUser.length > 0) {
+      return absenceSummaryByUser.reduce((s, u) => s + (Number.isFinite(u.sickDays) ? u.sickDays : 0), 0);
+    }
+    return monthAbsences.filter((a) => a.type === "SICK").length;
+  }, [absenceSummaryByUser, monthAbsences]);
 
   const targetMinutes = 160 * 60;
   const progress = Math.min(1, targetMinutes === 0 ? 0 : totalMinutes / targetMinutes);
 
   const byEmployee = useMemo(() => {
-    const map = new Map<string, { name: string; minutes: number; km: number; entries: number; vac: number; sick: number }>();
+    type Acc = {
+      userId: string;
+      name: string;
+      minutes: number;
+      km: number;
+      entries: number;
+      vac: number;
+      sick: number;
+    };
+
+    const map = new Map<string, Acc>();
 
     for (const e of monthEntries) {
       const key = e.user?.id ?? "me";
       const name = e.user?.fullName ?? "Ich";
-      const cur = map.get(key) ?? { name, minutes: 0, km: 0, entries: 0, vac: 0, sick: 0 };
+      const cur =
+        map.get(key) ?? {
+          userId: key,
+          name,
+          minutes: 0,
+          km: 0,
+          entries: 0,
+          vac: 0,
+          sick: 0,
+        };
+
       cur.minutes += Number.isFinite(e.workMinutes) ? e.workMinutes : 0;
       cur.km += safeNumber(e.distanceKm);
       cur.entries += 1;
+
       map.set(key, cur);
     }
 
-    for (const a of monthAbsences) {
-      const key = a.user?.id ?? "me";
-      const name = a.user?.fullName ?? "Ich";
-      const cur = map.get(key) ?? { name, minutes: 0, km: 0, entries: 0, vac: 0, sick: 0 };
-      if (a.type === "VACATION") cur.vac += 1;
-      if (a.type === "SICK") cur.sick += 1;
-      map.set(key, cur);
+    if (absenceSummaryByUser.length > 0) {
+      for (const s of absenceSummaryByUser) {
+        const key = s.user.id;
+        const name = s.user.fullName;
+        const cur =
+          map.get(key) ?? {
+            userId: key,
+            name,
+            minutes: 0,
+            km: 0,
+            entries: 0,
+            vac: 0,
+            sick: 0,
+          };
+
+        cur.vac += Number.isFinite(s.vacationDays) ? s.vacationDays : 0;
+        cur.sick += Number.isFinite(s.sickDays) ? s.sickDays : 0;
+
+        map.set(key, cur);
+      }
+    } else {
+      for (const a of monthAbsences) {
+        const key = a.user?.id ?? "me";
+        const name = a.user?.fullName ?? "Ich";
+        const cur =
+          map.get(key) ?? {
+            userId: key,
+            name,
+            minutes: 0,
+            km: 0,
+            entries: 0,
+            vac: 0,
+            sick: 0,
+          };
+
+        if (a.type === "VACATION") cur.vac += 1;
+        if (a.type === "SICK") cur.sick += 1;
+
+        map.set(key, cur);
+      }
     }
 
     return Array.from(map.values()).sort((x, y) => y.minutes - x.minutes);
-  }, [monthEntries, monthAbsences]);
+  }, [monthEntries, monthAbsences, absenceSummaryByUser]);
 
   const showByEmployee = byEmployee.length > 1;
 
-  // ✅ Download helper (same tab => kein Popup-Blocker)
   const startDownload = (url: string) => {
     window.location.href = url;
   };
 
   const openExportModal = () => {
-    // Defaults sinnvoll setzen (aktueller Monat)
     setExportMode("MONTH");
     setExportMonth(ym);
     setExportYear(currentYear());
@@ -204,7 +385,6 @@ export default function UebersichtPage() {
       return;
     }
 
-    // RANGE
     if (rangeError) return;
     startDownload(`/api/admin/export?from=${encodeURIComponent(rangeFrom)}&to=${encodeURIComponent(rangeTo)}`);
     setExportOpen(false);
@@ -249,6 +429,84 @@ export default function UebersichtPage() {
     </>
   );
 
+  // ===== Filtered Day Groups =====
+  const filteredGroupsByDay = useMemo(() => {
+    const baseGroups =
+      (absenceGroupsByDay ?? [])
+        .filter((g) => g.date?.startsWith(ym))
+        .slice()
+        .sort((a, b) => a.date.localeCompare(b.date)) ?? [];
+
+    // Fallback, falls API groupsByDay leer
+    const fallbackGroups = (() => {
+      if (baseGroups.length > 0) return baseGroups as AbsenceDayGroup[];
+      const map = new Map<string, Absence[]>();
+      for (const a of monthAbsences) {
+        const arr = map.get(a.absenceDate) ?? [];
+        arr.push(a);
+        map.set(a.absenceDate, arr);
+      }
+      return Array.from(map.entries())
+        .sort(([d1], [d2]) => d1.localeCompare(d2))
+        .map(([date, items]) => ({
+          date,
+          items: items.slice().sort((x, y) => x.user.fullName.localeCompare(y.user.fullName)),
+        })) as AbsenceDayGroup[];
+    })();
+
+    const q = absQuery.trim().toLowerCase();
+
+    // Zeitfilter (TODAY / WEEK / MONTH)
+    const today = startOfTodayUTC();
+    const todayIso = isoUTCDate(today);
+    const weekStart = new Date(today);
+    weekStart.setUTCDate(weekStart.getUTCDate() - 6); // letzte 7 Tage inkl. heute
+
+    const rangeFiltered = fallbackGroups.filter((g) => {
+      if (absRange === "MONTH") return true;
+      const d = toUTCDateFromISO(g.date);
+      if (absRange === "TODAY") return g.date === todayIso;
+      // WEEK
+      return d >= weekStart && d <= today;
+    });
+
+    // Typ + Suche filtert auf Item Ebene, danach leere Tage entfernen
+    const mapped = rangeFiltered
+      .map((g) => {
+        const items = (g.items ?? []).filter((a) => {
+          if (absType !== "ALL" && a.type !== absType) return false;
+          if (q && !a.user.fullName.toLowerCase().includes(q)) return false;
+          return true;
+        });
+        return { date: g.date, items };
+      })
+      .filter((g) => g.items.length > 0);
+
+    return mapped;
+  }, [absenceGroupsByDay, monthAbsences, ym, absQuery, absType, absRange]);
+
+  const filteredAbsenceCounts = useMemo(() => {
+    let sick = 0;
+    let vac = 0;
+    let total = 0;
+
+    for (const g of filteredGroupsByDay) {
+      for (const a of g.items) {
+        total += 1;
+        if (a.type === "SICK") sick += 1;
+        if (a.type === "VACATION") vac += 1;
+      }
+    }
+
+    return { total, sick, vac };
+  }, [filteredGroupsByDay]);
+
+  const resetAbsFilters = () => {
+    setAbsQuery("");
+    setAbsType("ALL");
+    setAbsRange("MONTH");
+  };
+
   return (
     <AppShell activeLabel="#wirkönndas">
       {/* ✅ Admin Export Button */}
@@ -276,7 +534,6 @@ export default function UebersichtPage() {
       {/* ✅ Export Modal */}
       <Modal open={exportOpen} onClose={() => setExportOpen(false)} title="Export (Admin)" footer={exportFooter} maxWidth={720}>
         <div style={{ display: "grid", gap: 12 }}>
-          {/* Mode Buttons */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {([
               { key: "MONTH", label: "Monat (CSV)" },
@@ -303,7 +560,6 @@ export default function UebersichtPage() {
             ))}
           </div>
 
-          {/* MONTH */}
           {exportMode === "MONTH" ? (
             <div style={{ display: "grid", gap: 8 }}>
               <div style={{ fontSize: 12, color: "var(--muted)" }}>Monat auswählen</div>
@@ -326,7 +582,6 @@ export default function UebersichtPage() {
             </div>
           ) : null}
 
-          {/* YEAR */}
           {exportMode === "YEAR" ? (
             <div style={{ display: "grid", gap: 8 }}>
               <div style={{ fontSize: 12, color: "var(--muted)" }}>Jahr auswählen</div>
@@ -355,7 +610,6 @@ export default function UebersichtPage() {
             </div>
           ) : null}
 
-          {/* RANGE */}
           {exportMode === "RANGE" ? (
             <div style={{ display: "grid", gap: 10 }}>
               <div style={{ fontSize: 12, color: "var(--muted)" }}>Zeitraum auswählen</div>
@@ -397,9 +651,7 @@ export default function UebersichtPage() {
               </div>
 
               {rangeError ? (
-                <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>
-                  {rangeError}
-                </div>
+                <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>{rangeError}</div>
               ) : (
                 <div style={{ fontSize: 12, color: "var(--muted)" }}>
                   Download: CSV für <b>{rangeFrom}</b> bis <b>{rangeTo}</b>
@@ -471,40 +723,152 @@ export default function UebersichtPage() {
         </div>
       </div>
 
-      {/* Absences list */}
+      {/* ✅ Abwesenheiten + Filter */}
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
-        <div className="section-title" style={{ marginBottom: 12 }}>
-          Abwesenheiten (dieser Monat)
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+          <div className="section-title">Abwesenheiten (dieser Monat)</div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={chipStyle("rgba(255,255,255,0.06)", "rgba(255,255,255,0.12)")}>
+              Gefiltert: {filteredAbsenceCounts.total}
+            </span>
+            <span style={chipStyle("rgba(224, 75, 69, 0.10)", "rgba(224, 75, 69, 0.35)")}>
+              🌡 {filteredAbsenceCounts.sick}
+            </span>
+            <span style={chipStyle("rgba(90, 167, 255, 0.10)", "rgba(90, 167, 255, 0.35)")}>
+              🌴 {filteredAbsenceCounts.vac}
+            </span>
+          </div>
+        </div>
+
+        {/* Filter Controls */}
+        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr auto", gap: 10 }}>
+          <input
+            value={absQuery}
+            onChange={(e) => setAbsQuery(e.target.value)}
+            placeholder="Name suchen…"
+            style={inputStyle()}
+          />
+
+          <select value={absType} onChange={(e) => setAbsType(e.target.value as AbsFilterType)} style={selectStyle()}>
+            <option value="ALL">Alle Typen</option>
+            <option value="SICK">Nur Krank</option>
+            <option value="VACATION">Nur Urlaub</option>
+          </select>
+
+          <select value={absRange} onChange={(e) => setAbsRange(e.target.value as AbsRange)} style={selectStyle()}>
+            <option value="MONTH">Dieser Monat</option>
+            <option value="WEEK">Letzte 7 Tage</option>
+            <option value="TODAY">Heute</option>
+          </select>
+
+          <button
+            type="button"
+            onClick={resetAbsFilters}
+            style={{
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.18)",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.92)",
+              cursor: "pointer",
+              fontWeight: 900,
+              whiteSpace: "nowrap",
+            }}
+            title="Filter zurücksetzen"
+          >
+            ↺ Reset
+          </button>
         </div>
 
         {loading ? (
-          <div style={{ color: "var(--muted)" }}>Lade...</div>
-        ) : monthAbsences.length === 0 ? (
-          <div style={{ color: "var(--muted)" }}>Keine Abwesenheiten erfasst.</div>
+          <div style={{ color: "var(--muted)", marginTop: 12 }}>Lade...</div>
+        ) : filteredGroupsByDay.length === 0 ? (
+          <div style={{ color: "var(--muted)", marginTop: 12 }}>Keine Abwesenheiten für diese Filter.</div>
         ) : (
-          <div style={{ display: "grid", gap: 8 }}>
-            {monthAbsences
-              .slice()
-              .sort((a, b) => a.absenceDate.localeCompare(b.absenceDate))
-              .map((a) => (
-                <div key={a.id} className="list-item" style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 999,
-                        display: "inline-block",
-                        background: a.type === "SICK" ? "rgba(224, 75, 69, 0.95)" : "rgba(90, 167, 255, 0.95)",
-                      }}
-                    />
-                    <span style={{ fontWeight: 700 }}>{a.absenceDate}</span>
-                    <span style={{ color: "var(--muted)" }}>{a.type === "SICK" ? "Krank" : "Urlaub"}</span>
-                  </div>
+          <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+            {filteredGroupsByDay.map((g) => {
+              const sick = g.items.filter((x) => x.type === "SICK").length;
+              const vac = g.items.filter((x) => x.type === "VACATION").length;
+              const total = g.items.length;
 
-                  {a.user?.fullName ? <span style={{ color: "var(--muted)" }}>{a.user.fullName}</span> : null}
-                </div>
-              ))}
+              return (
+                <details
+                  key={g.date}
+                  open
+                  className="list-item"
+                  style={{
+                    padding: 0,
+                    overflow: "hidden",
+                    borderRadius: 14,
+                  }}
+                >
+                  <summary
+                    style={{
+                      listStyle: "none",
+                      cursor: "pointer",
+                      padding: "12px 12px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: 900 }}>{formatDateDE(g.date)}</span>
+                      <span style={{ color: "var(--muted)" }}>
+                        {total} {total === 1 ? "Abwesenheit" : "Abwesenheiten"}
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                      {sick > 0 ? (
+                        <span style={chipStyle("rgba(224, 75, 69, 0.10)", "rgba(224, 75, 69, 0.35)")}>🌡 {sick}</span>
+                      ) : null}
+                      {vac > 0 ? (
+                        <span style={chipStyle("rgba(90, 167, 255, 0.10)", "rgba(90, 167, 255, 0.35)")}>🌴 {vac}</span>
+                      ) : null}
+                    </div>
+                  </summary>
+
+                  <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 8 }}>
+                    {g.items
+                      .slice()
+                      .sort((a, b) => a.user.fullName.localeCompare(b.user.fullName))
+                      .map((a) => (
+                        <div
+                          key={a.id}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: 12,
+                            padding: "10px 10px",
+                            borderRadius: 12,
+                            border: "1px solid rgba(255,255,255,0.08)",
+                            background: "rgba(255,255,255,0.03)",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <span
+                              style={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: 999,
+                                display: "inline-block",
+                                background: typeColor(a.type),
+                              }}
+                            />
+                            <span style={badgeStyle(a.type)}>{typeLabel(a.type)}</span>
+                          </div>
+
+                          <div style={{ fontWeight: 900, color: "rgba(255,255,255,0.92)" }}>{a.user.fullName}</div>
+                        </div>
+                      ))}
+                  </div>
+                </details>
+              );
+            })}
           </div>
         )}
       </div>
@@ -521,7 +885,7 @@ export default function UebersichtPage() {
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
               {byEmployee.map((p) => (
-                <div key={p.name} className="list-item">
+                <div key={p.userId} className="list-item">
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -552,9 +916,7 @@ export default function UebersichtPage() {
                       </div>
                     </div>
 
-                    <div style={{ fontWeight: 900, color: "var(--accent)", fontSize: 18 }}>
-                      {toHours(p.minutes).toFixed(1)}h
-                    </div>
+                    <div style={{ fontWeight: 900, color: "var(--accent)", fontSize: 18 }}>{toHours(p.minutes).toFixed(1)}h</div>
                   </div>
                 </div>
               ))}
