@@ -15,6 +15,29 @@ type SessionData = {
   role: "EMPLOYEE" | "ADMIN";
 };
 
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function isSessionData(v: unknown): v is SessionData {
+  if (!isRecord(v)) return false;
+  const userId = v["userId"];
+  const fullName = v["fullName"];
+  const role = v["role"];
+  return (
+    typeof userId === "string" &&
+    typeof fullName === "string" &&
+    (role === "EMPLOYEE" || role === "ADMIN")
+  );
+}
+
+function parseMe(j: unknown): SessionData | null {
+  if (!isRecord(j)) return null;
+  const s = j["session"];
+  if (s === null) return null;
+  return isSessionData(s) ? s : null;
+}
+
 export default function AppShell({
   children,
   activeLabel,
@@ -26,10 +49,17 @@ export default function AppShell({
   const [session, setSession] = useState<SessionData | null>(null);
 
   useEffect(() => {
+    let alive = true;
     fetch("/api/me")
       .then((r) => r.json())
-      .then((data) => setSession(data.session ?? null))
+      .then((j: unknown) => {
+        if (!alive) return;
+        setSession(parseMe(j));
+      })
       .catch(() => setSession(null));
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const isAdmin = session?.role === "ADMIN";
@@ -61,9 +91,11 @@ export default function AppShell({
               <Link className={`pill ${isActive(pathname, "/erfassung") ? "pill-active" : ""}`} href="/erfassung">
                 ⊞ Erfassung
               </Link>
+
               <Link className={`pill ${isActive(pathname, "/kalender") ? "pill-active" : ""}`} href="/kalender">
-                🗓 Kalender
+                {isAdmin ? "🗓 Termine" : "🗓 Kalender"}
               </Link>
+
               <Link className={`pill ${isActive(pathname, "/uebersicht") ? "pill-active" : ""}`} href="/uebersicht">
                 ▦ Übersicht
               </Link>

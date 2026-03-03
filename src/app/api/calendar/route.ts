@@ -10,6 +10,12 @@ function toIsoDateUTC(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
+function toHHMMUTC(d: Date) {
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
 type PlanPreviewItem = {
   startHHMM: string;
   endHHMM: string;
@@ -20,7 +26,7 @@ type PlanPreviewItem = {
 
 export async function GET(req: Request) {
   const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+  if (!session?.userId) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
   const url = new URL(req.url);
   const month = url.searchParams.get("month"); // YYYY-MM
@@ -34,10 +40,65 @@ export async function GET(req: Request) {
   const from = new Date(Date.UTC(y, m - 1, 1));
   const to = new Date(Date.UTC(y, m, 1));
 
+  const me = await prisma.appUser.findUnique({
+    where: { id: session.userId },
+    select: { role: true, isActive: true },
+  });
+
+  if (!me || !me.isActive) return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
+
+  // ✅ ADMIN: nur Termine (CalendarEvent) – keine Abwesenheiten / PlanEntries etc.
+  if (me.role === Role.ADMIN) {
+    const events = await prisma.calendarEvent.findMany({
+      where: { userId: session.userId, startAt: { gte: from, lt: to } },
+      orderBy: [{ startAt: "asc" }],
+      select: { startAt: true, endAt: true, title: true, location: true },
+    });
+
+    const eventMap = new Map<string, Array<{ start: Date; end: Date; title: string; location: string | null }>>();
+    for (const e of events) {
+      const key = toIsoDateUTC(e.startAt);
+      const list = eventMap.get(key) ?? [];
+      list.push({ start: e.startAt, end: e.endAt, title: e.title, location: e.location ?? null });
+      eventMap.set(key, list);
+    }
+
+    const eventSet = new Set(eventMap.keys());
+    const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+
+    const days = Array.from({ length: daysInMonth }, (_, i) => {
+      const dd = String(i + 1).padStart(2, "0");
+      const date = `${month}-${dd}`;
+
+      const list = eventMap.get(date) ?? [];
+      const preview =
+        list.length === 0
+          ? null
+          : list
+              .slice(0, 2)
+              .map((x) => {
+                const base = `${toHHMMUTC(x.start)}–${toHHMMUTC(x.end)} ${x.title}`.trim();
+                return x.location ? `${base} · ${x.location}` : base;
+              })
+              .join(" | ");
+
+      return {
+        date,
+        hasWork: false,
+        hasVacation: false,
+        hasSick: false,
+        // Wir nutzen hasPlan/planPreview als "Termin vorhanden"
+        hasPlan: eventSet.has(date),
+        planPreview: preview,
+      };
+    });
+
+    return NextResponse.json({ ok: true, days });
+  }
+
   /**
-   * ✅ WICHTIG:
-   * Admin-Kalender soll NICHT alle Mitarbeiter zeigen, sondern nur den Admin selbst.
-   * Daher: immer auf session.userId filtern – auch für Admin.
+   * ✅ EMPLOYEE: wie bisher
+   * Admin-Kalender soll NICHT alle Mitarbeiter zeigen, sondern nur den eingeloggten User.
    */
   const userWhere = { userId: session.userId };
 
@@ -106,7 +167,6 @@ export async function GET(req: Request) {
       hasWork: workSet.has(date) || planSet.has(date),
       hasVacation: vacSet.has(date),
       hasSick: sickSet.has(date),
-
       hasPlan: planSet.has(date),
       planPreview,
     };

@@ -9,8 +9,8 @@ type CalendarDay = {
   hasWork: boolean;
   hasVacation: boolean;
   hasSick: boolean;
-  hasPlan: boolean;
-  planPreview: string | null;
+  hasPlan: boolean; // ✅ wird bei Admin als "hat Termine" genutzt
+  planPreview: string | null; // ✅ wird bei Admin als Termin-Preview genutzt
 };
 
 type CalendarResponse = { ok: true; days: CalendarDay[] } | { ok: false; error: string };
@@ -49,18 +49,24 @@ type SessionDTO = {
   role: "EMPLOYEE" | "ADMIN";
 };
 
-type MeApiResponse = { session: SessionDTO | null };
+type CalendarEventDTO = {
+  id: string;
+  date: string; // YYYY-MM-DD
+  startHHMM: string;
+  endHHMM: string;
+  title: string;
+  location: string | null;
+  notes: string | null;
+};
 
 // ---------- helpers (no any) ----------
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
-
 function getStringField(obj: Record<string, unknown>, key: string): string | null {
   const v = obj[key];
   return typeof v === "string" ? v : null;
 }
-
 function getBooleanField(obj: Record<string, unknown>, key: string): boolean | null {
   const v = obj[key];
   return typeof v === "boolean" ? v : null;
@@ -179,19 +185,56 @@ function parseMeResponse(j: unknown): SessionDTO | null {
   return isSessionDTO(session) ? session : null;
 }
 
+function isCalendarEventDTO(v: unknown): v is CalendarEventDTO {
+  if (!isRecord(v)) return false;
+  const id = getStringField(v, "id");
+  const date = getStringField(v, "date");
+  const startHHMM = getStringField(v, "startHHMM");
+  const endHHMM = getStringField(v, "endHHMM");
+  const title = getStringField(v, "title");
+
+  const locRaw = v["location"];
+  const notesRaw = v["notes"];
+  const location = locRaw === null || typeof locRaw === "string" ? locRaw : undefined;
+  const notes = notesRaw === null || typeof notesRaw === "string" ? notesRaw : undefined;
+
+  return (
+    typeof id === "string" &&
+    typeof date === "string" &&
+    typeof startHHMM === "string" &&
+    typeof endHHMM === "string" &&
+    typeof title === "string" &&
+    (location === null || typeof location === "string") &&
+    (notes === null || typeof notes === "string")
+  );
+}
+
+function parseAppointmentsResponse(j: unknown): CalendarEventDTO[] {
+  if (!isRecord(j)) return [];
+  const ok = j["ok"];
+  if (ok !== true) return [];
+  const events = j["events"];
+  if (!Array.isArray(events)) return [];
+  return events.filter(isCalendarEventDTO);
+}
+
+function extractErrorMessage(j: unknown, fallback: string) {
+  if (!isRecord(j)) return fallback;
+  const e = j["error"];
+  return typeof e === "string" && e.trim() ? e : fallback;
+}
+
 // ---------- date helpers ----------
 function monthKey(d: Date) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   return `${yyyy}-${mm}`;
 }
-
 function addMonths(d: Date, diff: number) {
   const x = new Date(d);
   x.setMonth(x.getMonth() + diff);
   return x;
 }
-
 function addDaysYMD(ymd: string, diff: number) {
   const [y, m, d] = ymd.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
@@ -201,7 +244,6 @@ function addDaysYMD(ymd: string, diff: number) {
   const dd = String(dt.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
-
 function fmtDateTitle(ymd: string) {
   const [y, m, d] = ymd.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
@@ -212,7 +254,6 @@ function fmtDateTitle(ymd: string) {
     year: "numeric",
   });
 }
-
 function dateInRange(date: string, start: string, end: string) {
   return start <= date && date <= end;
 }
@@ -263,12 +304,6 @@ function blockLabel(b: AbsenceBlock) {
   return `${icon} ${name} (${span})`;
 }
 
-function extractErrorMessage(j: unknown, fallback: string) {
-  if (!isRecord(j)) return fallback;
-  const e = j["error"];
-  return typeof e === "string" && e.trim() ? e : fallback;
-}
-
 export default function KalenderPage() {
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const [data, setData] = useState<CalendarDay[]>([]);
@@ -276,33 +311,48 @@ export default function KalenderPage() {
 
   const [session, setSession] = useState<SessionDTO | null>(null);
 
+  // EMPLOYEE only:
   const [monthAbsences, setMonthAbsences] = useState<AbsenceDTO[]>([]);
   const [absLoading, setAbsLoading] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>("");
 
+  // EMPLOYEE only:
   const [dayPlans, setDayPlans] = useState<PlanEntry[]>([]);
   const [plansLoading, setPlansLoading] = useState(false);
   const [plansError, setPlansError] = useState<string | null>(null);
 
+  // EMPLOYEE only:
   const [absenceStart, setAbsenceStart] = useState<string>("");
   const [absenceEnd, setAbsenceEnd] = useState<string>("");
   const [absenceType, setAbsenceType] = useState<AbsenceType>("VACATION");
-
   const [editingBlock, setEditingBlock] = useState<AbsenceBlock | null>(null);
+
+  // ADMIN only:
+  const [dayAppointments, setDayAppointments] = useState<CalendarEventDTO[]>([]);
+  const [apptLoading, setApptLoading] = useState(false);
+  const [apptError, setApptError] = useState<string | null>(null);
+
+  const [apptEditingId, setApptEditingId] = useState<string | null>(null);
+  const [apptTitle, setApptTitle] = useState<string>("");
+  const [apptStart, setApptStart] = useState<string>("08:00");
+  const [apptEnd, setApptEnd] = useState<string>("09:00");
+  const [apptLocation, setApptLocation] = useState<string>("");
+  const [apptNotes, setApptNotes] = useState<string>("");
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const ym = useMemo(() => monthKey(cursor), [cursor]);
+  const isAdmin = session?.role === "ADMIN";
 
   const title = useMemo(() => {
     const m = cursor.toLocaleString("de-DE", { month: "long" });
     return `${m.charAt(0).toUpperCase()}${m.slice(1)} ${cursor.getFullYear()}`;
   }, [cursor]);
 
-  // Session laden (für Admin: Absences mit userId filtern)
+  // Session laden
   useEffect(() => {
     let alive = true;
     fetch("/api/me")
@@ -335,12 +385,6 @@ export default function KalenderPage() {
     setAbsLoading(true);
     try {
       const qs = new URLSearchParams({ month: ym });
-
-      // ✅ Admin-Kalender: nur eigene Abwesenheiten laden
-      if (session?.role === "ADMIN" && session.userId) {
-        qs.set("userId", session.userId);
-      }
-
       const r = await fetch(`/api/absences?${qs.toString()}`);
       const j: unknown = await r.json();
 
@@ -356,21 +400,26 @@ export default function KalenderPage() {
   }
 
   async function reloadMonthAll() {
+    // ✅ Admin: nur Kalender (Termine werden über /api/calendar in hasPlan/preview markiert)
+    if (isAdmin) {
+      await loadCalendar();
+      return;
+    }
     await Promise.all([loadCalendar(), loadAbsencesMonth()]);
   }
 
   useEffect(() => {
     void reloadMonthAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ym, session?.role, session?.userId]);
+  }, [ym, session?.role]);
 
   const dayMap = useMemo(() => new Map(data.map((d) => [d.date, d])), [data]);
-  const blocks = useMemo(() => buildBlocks(monthAbsences), [monthAbsences]);
+  const blocks = useMemo(() => (isAdmin ? [] : buildBlocks(monthAbsences)), [monthAbsences, isAdmin]);
 
   const blocksForSelectedDay = useMemo(() => {
-    if (!selectedDate) return [];
+    if (!selectedDate || isAdmin) return [];
     return blocks.filter((b) => dateInRange(selectedDate, b.start, b.end));
-  }, [blocks, selectedDate]);
+  }, [blocks, selectedDate, isAdmin]);
 
   const grid = useMemo(() => {
     const [y, m] = ym.split("-").map(Number);
@@ -393,6 +442,7 @@ export default function KalenderPage() {
     return cells;
   }, [ym]);
 
+  // EMPLOYEE: Plan laden
   async function loadPlansForDay(date: string) {
     setPlansLoading(true);
     setPlansError(null);
@@ -417,23 +467,67 @@ export default function KalenderPage() {
     }
   }
 
+  // ADMIN: Termine laden
+  async function loadAppointmentsForDay(date: string) {
+    setApptLoading(true);
+    setApptError(null);
+    try {
+      const r = await fetch(`/api/admin/appointments?date=${encodeURIComponent(date)}`);
+      const j: unknown = await r.json();
+      if (!r.ok) {
+        setDayAppointments([]);
+        setApptError(extractErrorMessage(j, "Termine konnten nicht geladen werden."));
+        return;
+      }
+      setDayAppointments(parseAppointmentsResponse(j));
+    } catch {
+      setDayAppointments([]);
+      setApptError("Netzwerkfehler beim Laden der Termine.");
+    } finally {
+      setApptLoading(false);
+    }
+  }
+
+  function resetAppointmentForm(date: string) {
+    setApptEditingId(null);
+    setApptTitle("");
+    setApptStart("08:00");
+    setApptEnd("09:00");
+    setApptLocation("");
+    setApptNotes("");
+    setApptError(null);
+    setError(null);
+
+    // kleine UX: Wenn man einen Tag öffnet, Start/Ende sinnvoll
+    void date;
+  }
+
   function openDay(date: string) {
     setSelectedDate(date);
+    setOpen(true);
+    setError(null);
 
+    if (isAdmin) {
+      resetAppointmentForm(date);
+      setDayAppointments([]);
+      void loadAppointmentsForDay(date);
+      return;
+    }
+
+    // EMPLOYEE state init:
     setEditingBlock(null);
     setAbsenceStart(date);
     setAbsenceEnd(date);
     setAbsenceType("VACATION");
-    setError(null);
 
     setDayPlans([]);
     setPlansError(null);
     setPlansLoading(false);
 
-    setOpen(true);
     void loadPlansForDay(date);
   }
 
+  // EMPLOYEE: Abwesenheit bearbeiten
   function startEdit(block: AbsenceBlock) {
     setEditingBlock(block);
     setAbsenceStart(block.start);
@@ -441,7 +535,6 @@ export default function KalenderPage() {
     setAbsenceType(block.type);
     setError(null);
   }
-
   function cancelEdit() {
     setEditingBlock(null);
     if (selectedDate) {
@@ -452,6 +545,7 @@ export default function KalenderPage() {
     setError(null);
   }
 
+  // EMPLOYEE: speichern
   async function saveAbsence() {
     setError(null);
 
@@ -537,6 +631,106 @@ export default function KalenderPage() {
       }
     } catch {
       setError("Netzwerkfehler beim Löschen.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ADMIN: Termin speichern (create/update)
+  async function saveAppointment() {
+    if (!selectedDate) return;
+
+    setError(null);
+    setApptError(null);
+
+    const title = apptTitle.trim();
+    if (!title) {
+      setApptError("Bitte Titel eingeben.");
+      return;
+    }
+    if (!/^\d{2}:\d{2}$/.test(apptStart) || !/^\d{2}:\d{2}$/.test(apptEnd)) {
+      setApptError("Start/Ende muss HH:MM sein.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (apptEditingId) {
+        const r = await fetch(`/api/admin/appointments/${encodeURIComponent(apptEditingId)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            date: selectedDate,
+            startHHMM: apptStart,
+            endHHMM: apptEnd,
+            title,
+            location: apptLocation.trim(),
+            notes: apptNotes.trim(),
+          }),
+        });
+        const j: unknown = await r.json();
+        if (!r.ok) {
+          setApptError(extractErrorMessage(j, "Speichern fehlgeschlagen."));
+          return;
+        }
+      } else {
+        const r = await fetch(`/api/admin/appointments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            date: selectedDate,
+            startHHMM: apptStart,
+            endHHMM: apptEnd,
+            title,
+            location: apptLocation.trim(),
+            notes: apptNotes.trim(),
+          }),
+        });
+        const j: unknown = await r.json();
+        if (!r.ok) {
+          setApptError(extractErrorMessage(j, "Speichern fehlgeschlagen."));
+          return;
+        }
+      }
+
+      // reload day + month markers
+      await Promise.all([loadAppointmentsForDay(selectedDate), reloadMonthAll()]);
+      resetAppointmentForm(selectedDate);
+    } catch {
+      setApptError("Netzwerkfehler beim Speichern.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function editAppointment(a: CalendarEventDTO) {
+    setApptEditingId(a.id);
+    setApptTitle(a.title);
+    setApptStart(a.startHHMM);
+    setApptEnd(a.endHHMM);
+    setApptLocation(a.location ?? "");
+    setApptNotes(a.notes ?? "");
+    setApptError(null);
+    setError(null);
+  }
+
+  async function deleteAppointment(id: string) {
+    if (!selectedDate) return;
+    setApptError(null);
+    setSaving(true);
+    try {
+      const r = await fetch(`/api/admin/appointments/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const j: unknown = await r.json();
+      if (!r.ok) {
+        setApptError(extractErrorMessage(j, "Löschen fehlgeschlagen."));
+        return;
+      }
+
+      if (apptEditingId === id) resetAppointmentForm(selectedDate);
+
+      await Promise.all([loadAppointmentsForDay(selectedDate), reloadMonthAll()]);
+    } catch {
+      setApptError("Netzwerkfehler beim Löschen.");
     } finally {
       setSaving(false);
     }
@@ -637,148 +831,281 @@ export default function KalenderPage() {
         </div>
 
         <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 14, color: "var(--muted)" }}>
-          <div>
-            <span className="badge-dot dot-work" /> Arbeit
-          </div>
-          <div>
-            <span className="badge-dot dot-vac" /> Urlaub
-          </div>
-          <div>
-            <span className="badge-dot dot-sick" /> Krank
-          </div>
-          {absLoading ? <div style={{ marginLeft: "auto", fontSize: 12, opacity: 0.8 }}>Abwesenheiten laden…</div> : null}
+          {isAdmin ? (
+            <div>
+              <span className="badge-dot dot-work" /> Termine
+            </div>
+          ) : (
+            <>
+              <div>
+                <span className="badge-dot dot-work" /> Arbeit
+              </div>
+              <div>
+                <span className="badge-dot dot-vac" /> Urlaub
+              </div>
+              <div>
+                <span className="badge-dot dot-sick" /> Krank
+              </div>
+              {absLoading ? <div style={{ marginLeft: "auto", fontSize: 12, opacity: 0.8 }}>Abwesenheiten laden…</div> : null}
+            </>
+          )}
         </div>
       </div>
 
       <Modal open={open} title={selectedDate ? fmtDateTitle(selectedDate) : "Tag"} onClose={() => setOpen(false)}>
-        <div style={{ marginBottom: 14 }}>
-          <div className="label">Dein Einsatzplan</div>
-
-          {plansLoading ? (
-            <div className="card" style={{ padding: 12, opacity: 0.85 }}>
-              Lädt Plan...
-            </div>
-          ) : plansError ? (
-            <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
-              <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{plansError}</span>
-            </div>
-          ) : dayPlans.length === 0 ? (
-            <div className="card" style={{ padding: 12, opacity: 0.85 }}>
-              Kein Einsatz für diesen Tag geplant.
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {dayPlans.map((p) => (
-                <div key={p.id} className="card" style={{ padding: 12 }}>
-                  <div style={{ fontWeight: 900 }}>
-                    {p.startHHMM}–{p.endHHMM} · {p.activity}
-                  </div>
-
-                  <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>
-                    {p.location ? `📍 ${p.location}` : "📍 (kein Ort angegeben)"}
-                    {typeof p.travelMinutes === "number" && p.travelMinutes > 0 ? ` · 🚗 ${p.travelMinutes} Min Fahrzeit` : ""}
-                  </div>
-
-                  {p.noteEmployee ? (
-                    <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                      📝 {p.noteEmployee}
-                    </div>
-                  ) : null}
-
-                  <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button
-                      className="btn btn-accent"
-                      type="button"
-                      onClick={() => {
-                        setOpen(false);
-                        window.location.href = `/kalender/dokumente/${encodeURIComponent(p.id)}`;
-                      }}
-                    >
-                      📎 Dokumente
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div style={{ marginTop: 14 }}>
-            <div className="label">Deine Abwesenheit</div>
-
-            {blocksForSelectedDay.length === 0 ? (
-              <div className="card" style={{ padding: 12, opacity: 0.85 }}>
-                Keine Abwesenheit eingetragen.
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {blocksForSelectedDay.map((b) => (
-                  <div key={`${b.type}-${b.start}-${b.end}`} className="card" style={{ padding: 12 }}>
-                    <div style={{ fontWeight: 900 }}>{blockLabel(b)}</div>
-                    <div style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                      <button className="btn" type="button" onClick={() => startEdit(b)} disabled={saving}>
-                        ✏️ Bearbeiten
-                      </button>
-                      <button className="btn btn-danger" type="button" onClick={() => void deleteBlock(b)} disabled={saving}>
-                        🗑️ Löschen
-                      </button>
-                    </div>
-                  </div>
-                ))}
+        {/* ================= ADMIN MODAL ================= */}
+        {isAdmin ? (
+          <>
+            {apptError && (
+              <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
+                <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{apptError}</span>
               </div>
             )}
-          </div>
 
-          <div style={{ height: 1, background: "var(--border)", marginTop: 14, opacity: 0.7 }} />
-        </div>
+            <div style={{ marginBottom: 14 }}>
+              <div className="label">Deine Termine</div>
 
-        {error && (
-          <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
-            <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
-          </div>
-        )}
+              {apptLoading ? (
+                <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                  Lädt Termine...
+                </div>
+              ) : dayAppointments.length === 0 ? (
+                <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                  Keine Termine für diesen Tag.
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {dayAppointments.map((a) => (
+                    <div key={a.id} className="card" style={{ padding: 12 }}>
+                      <div style={{ fontWeight: 900 }}>
+                        {a.startHHMM}–{a.endHHMM} · {a.title}
+                      </div>
+                      {a.location ? (
+                        <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>📍 {a.location}</div>
+                      ) : null}
+                      {a.notes ? (
+                        <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>📝 {a.notes}</div>
+                      ) : null}
 
-        <div style={{ marginBottom: 12 }}>
-          <div className="label">{editingBlock ? "Abwesenheit bearbeiten" : "Abwesenheit eintragen"}</div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div>
-              <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                Start
-              </div>
-              <input className="input" type="date" value={absenceStart} onChange={(e) => setAbsenceStart(e.target.value)} />
+                      <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <button className="btn" type="button" onClick={() => editAppointment(a)} disabled={saving}>
+                          ✏️ Bearbeiten
+                        </button>
+                        <button
+                          className="btn btn-danger"
+                          type="button"
+                          onClick={() => void deleteAppointment(a.id)}
+                          disabled={saving}
+                        >
+                          🗑️ Löschen
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div>
-              <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                Ende
+            <div style={{ height: 1, background: "var(--border)", marginTop: 14, opacity: 0.7 }} />
+
+            <div style={{ marginTop: 14 }}>
+              <div className="label">{apptEditingId ? "Termin bearbeiten" : "Termin eintragen"}</div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                <div>
+                  <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                    Start
+                  </div>
+                  <input className="input" type="time" value={apptStart} onChange={(e) => setApptStart(e.target.value)} />
+                </div>
+                <div>
+                  <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                    Ende
+                  </div>
+                  <input className="input" type="time" value={apptEnd} onChange={(e) => setApptEnd(e.target.value)} />
+                </div>
               </div>
-              <input className="input" type="date" value={absenceEnd} onChange={(e) => setAbsenceEnd(e.target.value)} />
+
+              <div style={{ marginBottom: 10 }}>
+                <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                  Titel
+                </div>
+                <input className="input" value={apptTitle} onChange={(e) => setApptTitle(e.target.value)} placeholder="z. B. Kundentermin" />
+              </div>
+
+              <div style={{ marginBottom: 10 }}>
+                <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                  Ort (optional)
+                </div>
+                <input className="input" value={apptLocation} onChange={(e) => setApptLocation(e.target.value)} placeholder="z. B. Baustelle / Adresse" />
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                  Notiz (optional)
+                </div>
+                <textarea
+                  className="input"
+                  value={apptNotes}
+                  onChange={(e) => setApptNotes(e.target.value)}
+                  rows={3}
+                  style={{ resize: "vertical" }}
+                  placeholder="z. B. Ansprechpartner, Material, …"
+                />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: apptEditingId ? "1fr 1fr" : "1fr", gap: 10 }}>
+                {apptEditingId ? (
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => selectedDate && resetAppointmentForm(selectedDate)}
+                    disabled={saving}
+                    style={{ width: "100%" }}
+                  >
+                    Abbrechen
+                  </button>
+                ) : null}
+
+                <button className="btn btn-accent" type="button" onClick={saveAppointment} disabled={saving} style={{ width: "100%" }}>
+                  {saving ? "Speichert..." : apptEditingId ? "Änderungen speichern" : "Eintragen"}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-          <button className={`btn ${absenceType === "VACATION" ? "btn-accent" : ""}`} type="button" onClick={() => setAbsenceType("VACATION")}>
-            🌴 Urlaub
-          </button>
-          <button className={`btn ${absenceType === "SICK" ? "btn-danger" : ""}`} type="button" onClick={() => setAbsenceType("SICK")}>
-            🤒 Krank
-          </button>
-        </div>
-
-        {editingBlock ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <button className="btn" type="button" onClick={cancelEdit} disabled={saving} style={{ width: "100%" }}>
-              Abbrechen
-            </button>
-            <button className="btn btn-accent" type="button" onClick={saveAbsence} disabled={saving} style={{ width: "100%" }}>
-              {saving ? "Speichert..." : "Änderungen speichern"}
-            </button>
-          </div>
+          </>
         ) : (
-          <button className="btn btn-accent" type="button" onClick={saveAbsence} disabled={saving} style={{ width: "100%" }}>
-            {saving ? "Speichert..." : "Eintragen"}
-          </button>
+          /* ================= EMPLOYEE MODAL (dein bisheriges) ================= */
+          <>
+            <div style={{ marginBottom: 14 }}>
+              <div className="label">Dein Einsatzplan</div>
+
+              {plansLoading ? (
+                <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                  Lädt Plan...
+                </div>
+              ) : plansError ? (
+                <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
+                  <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{plansError}</span>
+                </div>
+              ) : dayPlans.length === 0 ? (
+                <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                  Kein Einsatz für diesen Tag geplant.
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {dayPlans.map((p) => (
+                    <div key={p.id} className="card" style={{ padding: 12 }}>
+                      <div style={{ fontWeight: 900 }}>
+                        {p.startHHMM}–{p.endHHMM} · {p.activity}
+                      </div>
+
+                      <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>
+                        {p.location ? `📍 ${p.location}` : "📍 (kein Ort angegeben)"}
+                        {typeof p.travelMinutes === "number" && p.travelMinutes > 0 ? ` · 🚗 ${p.travelMinutes} Min Fahrzeit` : ""}
+                      </div>
+
+                      {p.noteEmployee ? (
+                        <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                          📝 {p.noteEmployee}
+                        </div>
+                      ) : null}
+
+                      <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <button
+                          className="btn btn-accent"
+                          type="button"
+                          onClick={() => {
+                            setOpen(false);
+                            window.location.href = `/kalender/dokumente/${encodeURIComponent(p.id)}`;
+                          }}
+                        >
+                          📎 Dokumente
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ marginTop: 14 }}>
+                <div className="label">Deine Abwesenheit</div>
+
+                {blocksForSelectedDay.length === 0 ? (
+                  <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                    Keine Abwesenheit eingetragen.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {blocksForSelectedDay.map((b) => (
+                      <div key={`${b.type}-${b.start}-${b.end}`} className="card" style={{ padding: 12 }}>
+                        <div style={{ fontWeight: 900 }}>{blockLabel(b)}</div>
+                        <div style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                          <button className="btn" type="button" onClick={() => startEdit(b)} disabled={saving}>
+                            ✏️ Bearbeiten
+                          </button>
+                          <button className="btn btn-danger" type="button" onClick={() => void deleteBlock(b)} disabled={saving}>
+                            🗑️ Löschen
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ height: 1, background: "var(--border)", marginTop: 14, opacity: 0.7 }} />
+            </div>
+
+            {error && (
+              <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
+                <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
+              </div>
+            )}
+
+            <div style={{ marginBottom: 12 }}>
+              <div className="label">{editingBlock ? "Abwesenheit bearbeiten" : "Abwesenheit eintragen"}</div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                    Start
+                  </div>
+                  <input className="input" type="date" value={absenceStart} onChange={(e) => setAbsenceStart(e.target.value)} />
+                </div>
+
+                <div>
+                  <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                    Ende
+                  </div>
+                  <input className="input" type="date" value={absenceEnd} onChange={(e) => setAbsenceEnd(e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+              <button className={`btn ${absenceType === "VACATION" ? "btn-accent" : ""}`} type="button" onClick={() => setAbsenceType("VACATION")}>
+                🌴 Urlaub
+              </button>
+              <button className={`btn ${absenceType === "SICK" ? "btn-danger" : ""}`} type="button" onClick={() => setAbsenceType("SICK")}>
+                🤒 Krank
+              </button>
+            </div>
+
+            {editingBlock ? (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <button className="btn" type="button" onClick={cancelEdit} disabled={saving} style={{ width: "100%" }}>
+                  Abbrechen
+                </button>
+                <button className="btn btn-accent" type="button" onClick={saveAbsence} disabled={saving} style={{ width: "100%" }}>
+                  {saving ? "Speichert..." : "Änderungen speichern"}
+                </button>
+              </div>
+            ) : (
+              <button className="btn btn-accent" type="button" onClick={saveAbsence} disabled={saving} style={{ width: "100%" }}>
+                {saving ? "Speichert..." : "Eintragen"}
+              </button>
+            )}
+          </>
         )}
       </Modal>
     </AppShell>
