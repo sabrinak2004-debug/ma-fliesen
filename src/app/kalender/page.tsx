@@ -1089,8 +1089,8 @@ export default function KalenderPage() {
                         alignItems: "center",
                         justifyContent: "center",
                         fontWeight: 900,
-                        background: w.isToday ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.02)",
-                        border: w.isToday ? "1px solid rgba(255,255,255,0.18)" : "1px solid rgba(255,255,255,0.08)",
+                        background: w.isToday ? "rgb(127, 142, 42)" : "rgba(109, 144, 110, 0.02)",
+                        border: w.isToday ? "1px solid hsla(151, 76%, 25%, 0.18)" : "1px solid rgba(255,255,255,0.08)",
                       }}
                     >
                       {w.dayNum}
@@ -1208,8 +1208,8 @@ export default function KalenderPage() {
                               width: 8,
                               height: 8,
                               borderRadius: 999,
-                              background: "rgba(255,255,255,0.65)",
-                              boxShadow: "0 0 0 3px rgba(255,255,255,0.06)",
+                              background: "rgba(226, 255, 62, 0.95)",
+                              boxShadow: "0 0 0 3px rgba(226, 255, 62, 0.36)",
                             }}
                             title="Heute"
                           />
