@@ -283,6 +283,15 @@ function startOfWeekMonday(d: Date) {
   return x;
 }
 
+function getISOWeek(date: Date): number {
+  const tmp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  // Donnerstag entscheidet über die ISO-Woche
+  tmp.setUTCDate(tmp.getUTCDate() + 4 - (tmp.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((tmp.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return weekNo;
+}
+
 function buildBlocks(absences: AbsenceDTO[]): AbsenceBlock[] {
   const rows = absences
     .slice()
@@ -471,6 +480,21 @@ export default function KalenderPage() {
     const m = cursor.toLocaleString("de-DE", { month: "long" });
     return `${m.charAt(0).toUpperCase()}${m.slice(1)} ${cursor.getFullYear()}`;
   }, [cursor, viewMode]);
+
+const weekMeta = useMemo(() => {
+  if (viewMode !== "WEEK") return null;
+
+  const ws = startOfWeekMonday(cursor);
+  const we = new Date(ws);
+  we.setDate(we.getDate() + 6);
+
+  const kw = getISOWeek(ws);
+
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+  return { kw, ws, we, rangeLabel: `${fmt(ws)} – ${fmt(we)}` };
+}, [cursor, viewMode]);
 
   const todayYMD = useMemo(() => toYMDLocal(new Date()), []);
 
@@ -999,7 +1023,15 @@ export default function KalenderPage() {
           </button>
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <div style={{ fontWeight: 900, fontSize: 20 }}>{title}</div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+  <div style={{ fontWeight: 900, fontSize: 20 }}>{title}</div>
+
+  {viewMode === "WEEK" && weekMeta ? (
+    <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 800 }}>
+      KW {weekMeta.kw}
+    </div>
+  ) : null}
+</div>
 
             {/* ✅ Monat/Woche Toggle */}
             <div style={segmentedWrap}>
