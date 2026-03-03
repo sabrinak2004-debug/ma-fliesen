@@ -62,6 +62,12 @@ type CalendarEventDTO = {
 // UI-only Kategorien (werden NICHT in DB gespeichert)
 type EventCategory = "KUNDE" | "BAUSTELLE" | "INTERN" | "PRIVAT";
 
+// Admin Modal Mode: steuert, ob Datum wählbar ist
+type AdminApptMode = "create-global" | "create-from-day" | "edit";
+
+// UI View mode
+type CalendarViewMode = "MONTH" | "WEEK";
+
 // ---------- helpers (no any) ----------
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -259,6 +265,23 @@ function fmtDateTitle(ymd: string) {
 function dateInRange(date: string, start: string, end: string) {
   return start <= date && date <= end;
 }
+function toYMDLocal(d: Date) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+function ymdToDateLocal(ymd: string) {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function startOfWeekMonday(d: Date) {
+  const x = new Date(d);
+  const day = (x.getDay() + 6) % 7; // Mo=0
+  x.setDate(x.getDate() - day);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
 
 function buildBlocks(absences: AbsenceDTO[]): AbsenceBlock[] {
   const rows = absences
@@ -344,7 +367,6 @@ function categoryLabel(c: EventCategory) {
 }
 
 function categoryDotStyle(c: EventCategory): React.CSSProperties {
-  // Keine festen Farben im Theme? -> wir nutzen nur transparente Akzente, wirkt wie Apple "Cal chips".
   const base: React.CSSProperties = {
     width: 10,
     height: 10,
@@ -360,8 +382,36 @@ function categoryDotStyle(c: EventCategory): React.CSSProperties {
   return { ...base, background: "rgba(224, 75, 69, 0.95)" };
 }
 
+function pillStyle(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    padding: "4px 10px",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.04)",
+    color: "var(--muted)",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    lineHeight: "16px",
+  };
+}
+
+function smallDot(color: string): React.CSSProperties {
+  return {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    background: color,
+    boxShadow: "0 0 0 3px rgba(255,255,255,0.03)",
+    flex: "0 0 auto",
+  };
+}
+
 export default function KalenderPage() {
   const [cursor, setCursor] = useState<Date>(() => new Date());
+  const [viewMode, setViewMode] = useState<CalendarViewMode>("MONTH");
+
   const [data, setData] = useState<CalendarDay[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -390,9 +440,12 @@ export default function KalenderPage() {
   const [apptLoading, setApptLoading] = useState(false);
   const [apptError, setApptError] = useState<string | null>(null);
 
+  const [adminMode, setAdminMode] = useState<AdminApptMode>("create-from-day");
+
   const [apptEditingId, setApptEditingId] = useState<string | null>(null);
   const [apptCategory, setApptCategory] = useState<EventCategory>("KUNDE"); // UI-only
   const [apptTitle, setApptTitle] = useState<string>("");
+  const [apptDate, setApptDate] = useState<string>(""); // ✅ Datum im Admin-Form (für global + edit)
   const [apptStart, setApptStart] = useState<string>("08:00");
   const [apptEnd, setApptEnd] = useState<string>("09:00");
   const [apptLocation, setApptLocation] = useState<string>("");
@@ -407,9 +460,19 @@ export default function KalenderPage() {
   const isAdmin = session?.role === "ADMIN";
 
   const title = useMemo(() => {
+    if (viewMode === "WEEK") {
+      const ws = startOfWeekMonday(cursor);
+      const we = new Date(ws);
+      we.setDate(we.getDate() + 6);
+      const fmt = (d: Date) =>
+        d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+      return `${fmt(ws)} – ${fmt(we)}`;
+    }
     const m = cursor.toLocaleString("de-DE", { month: "long" });
     return `${m.charAt(0).toUpperCase()}${m.slice(1)} ${cursor.getFullYear()}`;
-  }, [cursor]);
+  }, [cursor, viewMode]);
+
+  const todayYMD = useMemo(() => toYMDLocal(new Date()), []);
 
   // Session laden
   useEffect(() => {
@@ -502,6 +565,20 @@ export default function KalenderPage() {
     return cells;
   }, [ym]);
 
+  const weekDays = useMemo(() => {
+    const ws = startOfWeekMonday(cursor);
+    const out: Array<{ date: string; label: string; dayNum: string; isToday: boolean }> = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(ws);
+      d.setDate(ws.getDate() + i);
+      const ymd = toYMDLocal(d);
+      const label = d.toLocaleDateString("de-DE", { weekday: "short" });
+      const dayNum = d.toLocaleDateString("de-DE", { day: "2-digit" });
+      out.push({ date: ymd, label, dayNum, isToday: ymd === todayYMD });
+    }
+    return out;
+  }, [cursor, todayYMD]);
+
   // EMPLOYEE: Plan laden
   async function loadPlansForDay(date: string) {
     setPlansLoading(true);
@@ -539,7 +616,9 @@ export default function KalenderPage() {
         setApptError(extractErrorMessage(j, "Termine konnten nicht geladen werden."));
         return;
       }
-      const list = parseAppointmentsResponse(j).slice().sort((a, b) => (a.startHHMM < b.startHHMM ? -1 : a.startHHMM > b.startHHMM ? 1 : 0));
+      const list = parseAppointmentsResponse(j)
+        .slice()
+        .sort((a, b) => (a.startHHMM < b.startHHMM ? -1 : a.startHHMM > b.startHHMM ? 1 : 0));
       setDayAppointments(list);
     } catch {
       setDayAppointments([]);
@@ -553,6 +632,7 @@ export default function KalenderPage() {
     setApptEditingId(null);
     setApptCategory("KUNDE");
     setApptTitle("");
+    setApptDate("");
     setApptStart("08:00");
     setApptEnd("09:00");
     setApptLocation("");
@@ -567,7 +647,10 @@ export default function KalenderPage() {
     setError(null);
 
     if (isAdmin) {
+      // ✅ Klick auf Tag: Datum NICHT wählbar
+      setAdminMode("create-from-day");
       resetAppointmentForm();
+      setApptDate(date); // intern trotzdem gesetzt
       setDayAppointments([]);
       void loadAppointmentsForDay(date);
       return;
@@ -586,17 +669,22 @@ export default function KalenderPage() {
     void loadPlansForDay(date);
   }
 
-  // Admin: Floating + Button -> heutiges Datum öffnen + direkt Formular fokussieren
-  function openTodayNewEvent() {
+  // ✅ Admin: Floating + Button -> "global create" (Datum wählbar)
+  function openNewEventGlobal() {
     const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
-    const ymd = `${yyyy}-${mm}-${dd}`;
+    const ymd = toYMDLocal(now);
+
     setCursor(now);
-    setSelectedDate(ymd);
+    setSelectedDate(ymd); // Modal-Titel bleibt schön
     setOpen(true);
+
+    setAdminMode("create-global");
     resetAppointmentForm();
+
+    // Default Datum = heute (aber frei änderbar)
+    setApptDate(ymd);
+
+    // Agenda für heute laden (optional, fühlt sich nice an)
     void loadAppointmentsForDay(ymd);
   }
 
@@ -704,9 +792,20 @@ export default function KalenderPage() {
     }
   }
 
+  function effectiveAdminDate(): string {
+    // ✅ create-from-day: Datum fix = selectedDate
+    if (adminMode === "create-from-day") return selectedDate;
+    // ✅ create-global + edit: Datum kommt aus apptDate
+    return apptDate.trim();
+  }
+
   // ADMIN: Termin speichern (create/update)
   async function saveAppointment() {
-    if (!selectedDate) return;
+    const date = effectiveAdminDate();
+    if (!date) {
+      setApptError("Bitte Datum auswählen.");
+      return;
+    }
 
     setApptError(null);
     const title = apptTitle.trim();
@@ -726,7 +825,7 @@ export default function KalenderPage() {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            date: selectedDate,
+            date,
             startHHMM: apptStart,
             endHHMM: apptEnd,
             title,
@@ -744,7 +843,7 @@ export default function KalenderPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            date: selectedDate,
+            date,
             startHHMM: apptStart,
             endHHMM: apptEnd,
             title,
@@ -767,8 +866,15 @@ export default function KalenderPage() {
         }
       }
 
-      await Promise.all([loadAppointmentsForDay(selectedDate), reloadMonthAll()]);
+      // ✅ Wenn Datum geändert wurde (Edit / Global), Modal & Agenda auf neues Datum schalten
+      setSelectedDate(date);
+
+      await Promise.all([loadAppointmentsForDay(date), reloadMonthAll()]);
       resetAppointmentForm();
+
+      // Nach Save bleiben wir im "create-from-day" wenn man auf einem Tag ist,
+      // global bleibt global (fühlt sich wie Apple an)
+      if (adminMode === "edit") setAdminMode("create-from-day");
     } catch {
       setApptError("Netzwerkfehler beim Speichern.");
     } finally {
@@ -777,8 +883,10 @@ export default function KalenderPage() {
   }
 
   function editAppointment(a: CalendarEventDTO) {
+    setAdminMode("edit");
     setApptEditingId(a.id);
     setApptTitle(a.title);
+    setApptDate(a.date); // ✅ Datum beim Bearbeiten wählbar
     setApptStart(a.startHHMM);
     setApptEnd(a.endHHMM);
     setApptLocation(a.location ?? "");
@@ -843,31 +951,89 @@ export default function KalenderPage() {
     zIndex: 60,
   };
 
+  const segmentedWrap: React.CSSProperties = {
+    display: "inline-flex",
+    borderRadius: 14,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.04)",
+    padding: 4,
+    gap: 4,
+  };
+
+  const segBtn = (active: boolean): React.CSSProperties => ({
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: active ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.00)",
+    color: "var(--text)",
+    borderRadius: 12,
+    padding: "8px 10px",
+    cursor: "pointer",
+    fontWeight: 800,
+    fontSize: 12,
+  });
+
   return (
     <AppShell activeLabel="#wirkönnendas">
       <div className="card card-olive" style={{ padding: 18, position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
-          <button className="btn" onClick={() => setCursor((d) => addMonths(d, -1))}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            marginBottom: 14,
+          }}
+        >
+          <button
+            className="btn"
+            onClick={() => {
+              if (viewMode === "WEEK") {
+                const x = new Date(cursor);
+                x.setDate(x.getDate() - 7);
+                setCursor(x);
+              } else {
+                setCursor((d) => addMonths(d, -1));
+              }
+            }}
+          >
             ‹
           </button>
-          <div style={{ fontWeight: 900, fontSize: 20 }}>{title}</div>
-          <button className="btn" onClick={() => setCursor((d) => addMonths(d, 1))}>
+
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <div style={{ fontWeight: 900, fontSize: 20 }}>{title}</div>
+
+            {/* ✅ Monat/Woche Toggle */}
+            <div style={segmentedWrap}>
+              <button type="button" style={segBtn(viewMode === "MONTH")} onClick={() => setViewMode("MONTH")}>
+                Monat
+              </button>
+              <button type="button" style={segBtn(viewMode === "WEEK")} onClick={() => setViewMode("WEEK")}>
+                Woche
+              </button>
+            </div>
+          </div>
+
+          <button
+            className="btn"
+            onClick={() => {
+              if (viewMode === "WEEK") {
+                const x = new Date(cursor);
+                x.setDate(x.getDate() + 7);
+                setCursor(x);
+              } else {
+                setCursor((d) => addMonths(d, 1));
+              }
+            }}
+          >
             ›
           </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10 }}>
-          {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((w) => (
-            <div key={w} style={{ color: "var(--muted-2)", fontSize: 12, textAlign: "center" }}>
-              {w}
-            </div>
-          ))}
-
-          {loading ? (
-            <div style={{ gridColumn: "1 / -1", color: "var(--muted)" }}>Lade Kalender...</div>
-          ) : (
-            grid.map((c, idx) => {
-              const info = c.inMonth && c.date ? dayMap.get(c.date) : undefined;
+        {/* ===================== WEEK VIEW ===================== */}
+        {viewMode === "WEEK" ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10 }}>
+            {weekDays.map((w) => {
+              const info = dayMap.get(w.date);
+              const inThisMonth = monthKey(ymdToDateLocal(w.date)) === ym;
 
               const border =
                 info?.hasSick
@@ -880,51 +1046,92 @@ export default function KalenderPage() {
 
               const bg =
                 info?.hasSick
-                  ? "rgba(224, 75, 69, 0.18)"
+                  ? "rgba(224, 75, 69, 0.16)"
                   : info?.hasVacation
-                  ? "rgba(90, 167, 255, 0.14)"
+                  ? "rgba(90, 167, 255, 0.12)"
                   : info?.hasPlan
                   ? "rgba(184, 207, 58, 0.10)"
                   : "rgba(255,255,255,0.02)";
 
               return (
                 <button
-                  key={idx}
+                  key={w.date}
                   className="card"
-                  disabled={!c.inMonth}
-                  onClick={() => c.inMonth && c.date && openDay(c.date)}
+                  onClick={() => {
+                    // wenn Woche in Nachbarmonat geht: Cursor auf den Tag setzen -> lädt richtigen Monat automatisch
+                    const dt = ymdToDateLocal(w.date);
+                    setCursor(dt);
+                    openDay(w.date);
+                  }}
                   style={{
-                    height: 78,
+                    height: 110,
                     borderColor: border,
                     background: bg,
                     borderRadius: 16,
-                    opacity: c.inMonth ? 1 : 0.25,
-                    cursor: c.inMonth ? "pointer" : "default",
+                    opacity: inThisMonth ? 1 : 0.75,
                     textAlign: "left",
-                    padding: 10,
+                    padding: 12,
                     overflow: "hidden",
                     display: "flex",
                     flexDirection: "column",
+                    cursor: "pointer",
                   }}
+                  title={fmtDateTitle(w.date)}
                 >
-                  <div style={{ fontWeight: 900 }}>{c.inMonth ? c.day : ""}</div>
-
-                  {info?.hasPlan && info.planPreview ? (
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+                    <div style={{ fontSize: 12, color: "var(--muted)" }}>{w.label}</div>
                     <div
                       style={{
-                        marginTop: 6,
+                        width: 28,
+                        height: 28,
+                        borderRadius: 999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 900,
+                        background: w.isToday ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.02)",
+                        border: w.isToday ? "1px solid rgba(255,255,255,0.18)" : "1px solid rgba(255,255,255,0.08)",
+                      }}
+                    >
+                      {w.dayNum}
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    {info?.hasPlan ? (
+                      <span style={pillStyle()}>
+                        <span style={smallDot("rgba(184, 207, 58, 0.95)")} /> Termine
+                      </span>
+                    ) : null}
+
+                    {!isAdmin && info?.hasVacation ? (
+                      <span style={pillStyle()}>
+                        <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> Urlaub
+                      </span>
+                    ) : null}
+
+                    {!isAdmin && info?.hasSick ? (
+                      <span style={pillStyle()}>
+                        <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> Krank
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {isAdmin && info?.hasPlan && info.planPreview ? (
+                    <div
+                      style={{
+                        marginTop: 10,
                         fontSize: 11,
                         lineHeight: "14px",
                         color: "var(--muted)",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         display: "-webkit-box",
-                        WebkitLineClamp: 3,
+                        WebkitLineClamp: 2,
                         WebkitBoxOrient: "vertical",
                         whiteSpace: "normal",
                         wordBreak: "break-word",
                         overflowWrap: "anywhere",
-                        minHeight: 0,
                       }}
                       title={info.planPreview}
                     >
@@ -933,46 +1140,160 @@ export default function KalenderPage() {
                   ) : null}
                 </button>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+        ) : (
+          /* ===================== MONTH VIEW ===================== */
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10 }}>
+              {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((w) => (
+                <div key={w} style={{ color: "var(--muted-2)", fontSize: 12, textAlign: "center" }}>
+                  {w}
+                </div>
+              ))}
 
-        <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 14, color: "var(--muted)" }}>
-          {isAdmin ? (
-            <div>
-              <span className="badge-dot dot-work" /> Termine
+              {loading ? (
+                <div style={{ gridColumn: "1 / -1", color: "var(--muted)" }}>Lade Kalender...</div>
+              ) : (
+                grid.map((c, idx) => {
+                  const info = c.inMonth && c.date ? dayMap.get(c.date) : undefined;
+
+                  const border =
+                    info?.hasSick
+                      ? "rgba(224, 75, 69, 0.65)"
+                      : info?.hasVacation
+                      ? "rgba(90, 167, 255, 0.65)"
+                      : info?.hasPlan
+                      ? "rgba(184, 207, 58, 0.65)"
+                      : "var(--border)";
+
+                  const bg =
+                    info?.hasSick
+                      ? "rgba(224, 75, 69, 0.18)"
+                      : info?.hasVacation
+                      ? "rgba(90, 167, 255, 0.14)"
+                      : info?.hasPlan
+                      ? "rgba(184, 207, 58, 0.10)"
+                      : "rgba(255,255,255,0.02)";
+
+                  const isToday = c.date === todayYMD;
+
+                  return (
+                    <button
+                      key={idx}
+                      className="card"
+                      disabled={!c.inMonth}
+                      onClick={() => c.inMonth && c.date && openDay(c.date)}
+                      style={{
+                        height: 86,
+                        borderColor: isToday ? "rgba(255,255,255,0.22)" : border,
+                        background: bg,
+                        borderRadius: 16,
+                        opacity: c.inMonth ? 1 : 0.25,
+                        cursor: c.inMonth ? "pointer" : "default",
+                        textAlign: "left",
+                        padding: 10,
+                        overflow: "hidden",
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ fontWeight: 900 }}>{c.inMonth ? c.day : ""}</div>
+
+                        {/* Today indicator */}
+                        {isToday ? (
+                          <div
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: 999,
+                              background: "rgba(255,255,255,0.65)",
+                              boxShadow: "0 0 0 3px rgba(255,255,255,0.06)",
+                            }}
+                            title="Heute"
+                          />
+                        ) : null}
+                      </div>
+
+                      {/* Mini dots wie Apple */}
+                      <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "center" }}>
+                        {info?.hasPlan ? <span style={smallDot("rgba(184, 207, 58, 0.95)")} /> : null}
+                        {!isAdmin && info?.hasVacation ? <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> : null}
+                        {!isAdmin && info?.hasSick ? <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> : null}
+                      </div>
+
+                      {info?.hasPlan && info.planPreview ? (
+                        <div
+                          style={{
+                            marginTop: 8,
+                            fontSize: 11,
+                            lineHeight: "14px",
+                            color: "var(--muted)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                            overflowWrap: "anywhere",
+                            minHeight: 0,
+                          }}
+                          title={info.planPreview}
+                        >
+                          {info.planPreview}
+                        </div>
+                      ) : null}
+                    </button>
+                  );
+                })
+              )}
             </div>
-          ) : (
-            <>
-              <div>
-                <span className="badge-dot dot-work" /> Arbeit
-              </div>
-              <div>
-                <span className="badge-dot dot-vac" /> Urlaub
-              </div>
-              <div>
-                <span className="badge-dot dot-sick" /> Krank
-              </div>
-              {absLoading ? <div style={{ marginLeft: "auto", fontSize: 12, opacity: 0.8 }}>Abwesenheiten laden…</div> : null}
-            </>
-          )}
-        </div>
+
+            <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 14, color: "var(--muted)" }}>
+              {isAdmin ? (
+                <div>
+                  <span className="badge-dot dot-work" /> Termine
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <span className="badge-dot dot-work" /> Arbeit
+                  </div>
+                  <div>
+                    <span className="badge-dot dot-vac" /> Urlaub
+                  </div>
+                  <div>
+                    <span className="badge-dot dot-sick" /> Krank
+                  </div>
+                  {absLoading ? <div style={{ marginLeft: "auto", fontSize: 12, opacity: 0.8 }}>Abwesenheiten laden…</div> : null}
+                </>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ✅ Floating + Button (nur Admin) */}
       {isAdmin ? (
-        <button
-          type="button"
-          aria-label="Neuer Termin"
-          title="Neuer Termin"
-          onClick={openTodayNewEvent}
-          style={floatingStyle}
-        >
+        <button type="button" aria-label="Neuer Termin" title="Neuer Termin" onClick={openNewEventGlobal} style={floatingStyle}>
           +
         </button>
       ) : null}
 
-      <Modal open={open} title={selectedDate ? fmtDateTitle(selectedDate) : "Tag"} onClose={() => setOpen(false)} maxWidth={980}>
+      <Modal
+        open={open}
+        title={
+          isAdmin && adminMode === "create-global"
+            ? "Neuer Termin"
+            : selectedDate
+            ? fmtDateTitle(selectedDate)
+            : "Tag"
+        }
+        onClose={() => setOpen(false)}
+        maxWidth={980}
+      >
         {/* ================= ADMIN MODAL ================= */}
         {isAdmin ? (
           <>
@@ -986,8 +1307,27 @@ export default function KalenderPage() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
               <div>
                 <div style={{ fontWeight: 900, fontSize: 16 }}>Agenda</div>
-                <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 2 }}>Deine Termine für den Tag</div>
+                <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 2 }}>
+                  {selectedDate ? `Termine für ${selectedDate}` : "Deine Termine"}
+                </div>
               </div>
+
+              {/* Quick: Heute */}
+              <button
+                className="btn"
+                type="button"
+                onClick={() => {
+                  const ymd = toYMDLocal(new Date());
+                  setCursor(new Date());
+                  setSelectedDate(ymd);
+                  setAdminMode("create-from-day");
+                  resetAppointmentForm();
+                  setApptDate(ymd);
+                  void loadAppointmentsForDay(ymd);
+                }}
+              >
+                Heute
+              </button>
             </div>
 
             {apptLoading ? (
@@ -1020,7 +1360,16 @@ export default function KalenderPage() {
                             <div style={{ fontWeight: 900, fontSize: 14 }}>
                               {a.startHHMM}–{a.endHHMM}
                             </div>
-                            <div style={{ fontWeight: 900, fontSize: 16, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <div
+                              style={{
+                                fontWeight: 900,
+                                fontSize: 16,
+                                marginTop: 2,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
                               {a.title}
                             </div>
                           </div>
@@ -1063,24 +1412,15 @@ export default function KalenderPage() {
                         </div>
 
                         <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
-                          <span
-                            style={{
-                              fontSize: 12,
-                              padding: "4px 10px",
-                              borderRadius: 999,
-                              border: "1px solid rgba(255,255,255,0.10)",
-                              background: "rgba(255,255,255,0.04)",
-                              color: "var(--muted)",
-                            }}
-                          >
-                            {categoryLabel(cat)}
-                          </span>
+                          <span style={pillStyle()}>{categoryLabel(cat)}</span>
 
                           {a.location ? (
                             <span style={{ color: "var(--muted)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               📍 {a.location}
                             </span>
                           ) : null}
+
+                          <span style={pillStyle()}>{a.date}</span>
                         </div>
 
                         {a.notes ? (
@@ -1099,13 +1439,43 @@ export default function KalenderPage() {
 
             {/* Form */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
-              <div style={{ fontWeight: 900 }}>{apptEditingId ? "Termin bearbeiten" : "Termin eintragen"}</div>
+              <div style={{ fontWeight: 900 }}>
+                {apptEditingId ? "Termin bearbeiten" : adminMode === "create-global" ? "Neuer Termin" : "Termin eintragen"}
+              </div>
               {apptEditingId ? (
-                <button className="btn" type="button" onClick={resetAppointmentForm} disabled={saving}>
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() => {
+                    resetAppointmentForm();
+                    setAdminMode("create-from-day");
+                    setApptDate(selectedDate);
+                  }}
+                  disabled={saving}
+                >
                   Abbrechen
                 </button>
               ) : null}
             </div>
+
+            {/* ✅ Datum nur bei global create + edit */}
+            {(adminMode === "create-global" || adminMode === "edit") ? (
+              <div style={{ marginBottom: 10 }}>
+                <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                  Datum
+                </div>
+                <input className="input" type="date" value={apptDate} onChange={(e) => setApptDate(e.target.value)} />
+              </div>
+            ) : (
+              <div style={{ marginBottom: 10 }}>
+                <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                  Datum
+                </div>
+                <div style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.03)", color: "var(--muted)" }}>
+                  {selectedDate || "—"}
+                </div>
+              </div>
+            )}
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
               <div>
