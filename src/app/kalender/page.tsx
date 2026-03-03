@@ -18,6 +18,13 @@ type CalendarResponse = { ok: true; days: CalendarDay[] } | { ok: false; error: 
 
 type AbsenceType = "VACATION" | "SICK";
 
+type AbsenceDTO = {
+  id: string;
+  absenceDate: string; // YYYY-MM-DD
+  type: AbsenceType;
+  user: { id: string; fullName: string };
+};
+
 type PlanEntry = {
   id: string;
   userId: string;
@@ -28,10 +35,52 @@ type PlanEntry = {
   location: string;
   travelMinutes: number;
 
-  // ✅ neu:
   noteEmployee?: string | null;
 };
 
+type AbsenceBlock = {
+  type: AbsenceType;
+  start: string; // YYYY-MM-DD
+  end: string; // YYYY-MM-DD
+  idsByDate: Record<string, string>; // date -> absence id
+};
+
+// ---------- helpers (no any) ----------
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function getStringField(obj: Record<string, unknown>, key: string): string | null {
+  const v = obj[key];
+  return typeof v === "string" ? v : null;
+}
+
+function isAbsenceType(v: unknown): v is AbsenceType {
+  return v === "VACATION" || v === "SICK";
+}
+
+function isAbsenceDTO(v: unknown): v is AbsenceDTO {
+  if (!isRecord(v)) return false;
+  const id = getStringField(v, "id");
+  const absenceDate = getStringField(v, "absenceDate");
+  const type = v["type"];
+  const user = v["user"];
+
+  if (!id || !absenceDate || !isAbsenceType(type)) return false;
+  if (!isRecord(user)) return false;
+  const uid = getStringField(user, "id");
+  const fullName = getStringField(user, "fullName");
+  return !!uid && !!fullName;
+}
+
+function parseAbsencesResponse(j: unknown): AbsenceDTO[] {
+  if (!isRecord(j)) return [];
+  const abs = j["absences"];
+  if (!Array.isArray(abs)) return [];
+  return abs.filter(isAbsenceDTO);
+}
+
+// ---------- date helpers ----------
 function monthKey(d: Date) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -65,10 +114,69 @@ function fmtDateTitle(ymd: string) {
   });
 }
 
+function dateInRange(date: string, start: string, end: string) {
+  return start <= date && date <= end;
+}
+
+function buildBlocks(absences: AbsenceDTO[]): AbsenceBlock[] {
+  const rows = absences
+    .slice()
+    .sort((x, y) => (x.absenceDate < y.absenceDate ? -1 : x.absenceDate > y.absenceDate ? 1 : 0));
+
+  const blocks: AbsenceBlock[] = [];
+
+  const byType: Record<AbsenceType, AbsenceDTO[]> = { VACATION: [], SICK: [] };
+  for (const r of rows) byType[r.type].push(r);
+
+  (Object.keys(byType) as AbsenceType[]).forEach((type) => {
+    const list = byType[type];
+    if (list.length === 0) return;
+
+    let curStart = list[0].absenceDate;
+    let curEnd = list[0].absenceDate;
+    let idsByDate: Record<string, string> = { [list[0].absenceDate]: list[0].id };
+
+    for (let i = 1; i < list.length; i++) {
+      const d = list[i].absenceDate;
+      const expectedNext = addDaysYMD(curEnd, 1);
+      idsByDate[d] = list[i].id;
+
+      if (d === expectedNext) {
+        curEnd = d;
+      } else {
+        blocks.push({ type, start: curStart, end: curEnd, idsByDate });
+        curStart = d;
+        curEnd = d;
+        idsByDate = { [d]: list[i].id };
+      }
+    }
+    blocks.push({ type, start: curStart, end: curEnd, idsByDate });
+  });
+
+  blocks.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : a.type.localeCompare(b.type)));
+  return blocks;
+}
+
+function blockLabel(b: AbsenceBlock) {
+  const icon = b.type === "VACATION" ? "🌴" : "🤒";
+  const name = b.type === "VACATION" ? "Urlaub" : "Krank";
+  const span = b.start === b.end ? b.start : `${b.start}–${b.end}`;
+  return `${icon} ${name} (${span})`;
+}
+
+function extractErrorMessage(j: unknown, fallback: string) {
+  if (!isRecord(j)) return fallback;
+  const e = j["error"];
+  return typeof e === "string" && e.trim() ? e : fallback;
+}
+
 export default function KalenderPage() {
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const [data, setData] = useState<CalendarDay[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [monthAbsences, setMonthAbsences] = useState<AbsenceDTO[]>([]);
+  const [absLoading, setAbsLoading] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>("");
@@ -80,6 +188,9 @@ export default function KalenderPage() {
   const [absenceStart, setAbsenceStart] = useState<string>("");
   const [absenceEnd, setAbsenceEnd] = useState<string>("");
   const [absenceType, setAbsenceType] = useState<AbsenceType>("VACATION");
+
+  const [editingBlock, setEditingBlock] = useState<AbsenceBlock | null>(null);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,16 +201,14 @@ export default function KalenderPage() {
     return `${m.charAt(0).toUpperCase()}${m.slice(1)} ${cursor.getFullYear()}`;
   }, [cursor]);
 
-  async function load() {
+  async function loadCalendar() {
     setLoading(true);
     try {
       const r = await fetch(`/api/calendar?month=${encodeURIComponent(ym)}`);
       const j: unknown = await r.json();
 
       const parsed: CalendarResponse =
-        typeof j === "object" && j !== null && "ok" in j
-          ? (j as CalendarResponse)
-          : { ok: false, error: "Unerwartete Antwort." };
+        typeof j === "object" && j !== null && "ok" in j ? (j as CalendarResponse) : { ok: false, error: "Unerwartete Antwort." };
 
       if (parsed.ok) setData(parsed.days);
       else setData([]);
@@ -108,12 +217,37 @@ export default function KalenderPage() {
     }
   }
 
+  async function loadAbsencesMonth() {
+    setAbsLoading(true);
+    try {
+      const r = await fetch(`/api/absences?month=${encodeURIComponent(ym)}`);
+      const j: unknown = await r.json();
+      if (!r.ok) {
+        setMonthAbsences([]);
+        return;
+      }
+      setMonthAbsences(parseAbsencesResponse(j));
+    } finally {
+      setAbsLoading(false);
+    }
+  }
+
+  async function reloadMonthAll() {
+    await Promise.all([loadCalendar(), loadAbsencesMonth()]);
+  }
+
   useEffect(() => {
-    void load();
+    void reloadMonthAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ym]);
 
   const dayMap = useMemo(() => new Map(data.map((d) => [d.date, d])), [data]);
+  const blocks = useMemo(() => buildBlocks(monthAbsences), [monthAbsences]);
+
+  const blocksForSelectedDay = useMemo(() => {
+    if (!selectedDate) return [];
+    return blocks.filter((b) => dateInRange(selectedDate, b.start, b.end));
+  }, [blocks, selectedDate]);
 
   const grid = useMemo(() => {
     const [y, m] = ym.split("-").map(Number);
@@ -147,26 +281,17 @@ export default function KalenderPage() {
 
       if (!r.ok) {
         setDayPlans([]);
-        const msg =
-          typeof j === "object" &&
-          j !== null &&
-          "error" in j &&
-          typeof (j as { error: unknown }).error === "string"
-            ? (j as { error: string }).error
-            : "Plan konnte nicht geladen werden.";
-        setPlansError(msg);
+        setPlansError(extractErrorMessage(j, "Plan konnte nicht geladen werden."));
         return;
       }
 
-      const entries =
-        typeof j === "object" &&
-        j !== null &&
-        "entries" in j &&
-        Array.isArray((j as { entries: unknown }).entries)
-          ? (j as { entries: PlanEntry[] }).entries
-          : [];
+      if (!isRecord(j) || !Array.isArray(j["entries"])) {
+        setDayPlans([]);
+        return;
+      }
 
-      setDayPlans(entries);
+      // entries kommen aus deiner API typisiert; wir übernehmen wie bisher
+      setDayPlans(j["entries"] as PlanEntry[]);
     } catch {
       setDayPlans([]);
       setPlansError("Netzwerkfehler beim Laden des Plans.");
@@ -178,6 +303,7 @@ export default function KalenderPage() {
   function openDay(date: string) {
     setSelectedDate(date);
 
+    setEditingBlock(null);
     setAbsenceStart(date);
     setAbsenceEnd(date);
     setAbsenceType("VACATION");
@@ -191,6 +317,24 @@ export default function KalenderPage() {
     void loadPlansForDay(date);
   }
 
+  function startEdit(block: AbsenceBlock) {
+    setEditingBlock(block);
+    setAbsenceStart(block.start);
+    setAbsenceEnd(block.end);
+    setAbsenceType(block.type);
+    setError(null);
+  }
+
+  function cancelEdit() {
+    setEditingBlock(null);
+    if (selectedDate) {
+      setAbsenceStart(selectedDate);
+      setAbsenceEnd(selectedDate);
+      setAbsenceType("VACATION");
+    }
+    setError(null);
+  }
+
   async function saveAbsence() {
     setError(null);
 
@@ -198,9 +342,38 @@ export default function KalenderPage() {
       setError("Bitte Start- und Enddatum auswählen.");
       return;
     }
+    if (absenceEnd < absenceStart) {
+      setError("Ende darf nicht vor Start liegen.");
+      return;
+    }
 
     setSaving(true);
     try {
+      if (editingBlock) {
+        const r = await fetch("/api/absences", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            from: editingBlock.start,
+            to: editingBlock.end,
+            type: editingBlock.type,
+            newStartDate: absenceStart,
+            newEndDate: absenceEnd,
+            newType: absenceType,
+          }),
+        });
+
+        const j: unknown = await r.json();
+        if (!r.ok) {
+          setError(extractErrorMessage(j, "Speichern fehlgeschlagen."));
+          return;
+        }
+
+        await reloadMonthAll();
+        setEditingBlock(null);
+        return;
+      }
+
       const r = await fetch("/api/absences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -208,23 +381,45 @@ export default function KalenderPage() {
       });
 
       const j: unknown = await r.json();
-
       if (!r.ok) {
-        const msg =
-          typeof j === "object" &&
-          j !== null &&
-          "error" in j &&
-          typeof (j as { error: unknown }).error === "string"
-            ? (j as { error: string }).error
-            : "Speichern fehlgeschlagen.";
-        setError(msg);
+        setError(extractErrorMessage(j, "Speichern fehlgeschlagen."));
         return;
       }
 
       setOpen(false);
-      await load();
+      await reloadMonthAll();
     } catch {
       setError("Netzwerkfehler beim Speichern.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteBlock(block: AbsenceBlock) {
+    setError(null);
+    setSaving(true);
+    try {
+      const qs = new URLSearchParams({
+        from: block.start,
+        to: block.end,
+        type: block.type,
+      });
+
+      const r = await fetch(`/api/absences?${qs.toString()}`, { method: "DELETE" });
+      const j: unknown = await r.json();
+
+      if (!r.ok) {
+        setError(extractErrorMessage(j, "Löschen fehlgeschlagen."));
+        return;
+      }
+
+      await reloadMonthAll();
+
+      if (editingBlock && editingBlock.type === block.type && editingBlock.start === block.start && editingBlock.end === block.end) {
+        cancelEdit();
+      }
+    } catch {
+      setError("Netzwerkfehler beim Löschen.");
     } finally {
       setSaving(false);
     }
@@ -289,7 +484,6 @@ export default function KalenderPage() {
                     cursor: c.inMonth ? "pointer" : "default",
                     textAlign: "left",
                     padding: 10,
-
                     overflow: "hidden",
                     display: "flex",
                     flexDirection: "column",
@@ -304,7 +498,6 @@ export default function KalenderPage() {
                         fontSize: 11,
                         lineHeight: "14px",
                         color: "var(--muted)",
-
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         display: "-webkit-box",
@@ -336,6 +529,7 @@ export default function KalenderPage() {
           <div>
             <span className="badge-dot dot-sick" /> Krank
           </div>
+          {absLoading ? <div style={{ marginLeft: "auto", fontSize: 12, opacity: 0.8 }}>Abwesenheiten laden…</div> : null}
         </div>
       </div>
 
@@ -358,40 +552,64 @@ export default function KalenderPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {dayPlans.map((p) => (
-  <div key={p.id} className="card" style={{ padding: 12 }}>
-    <div style={{ fontWeight: 900 }}>
-      {p.startHHMM}–{p.endHHMM} · {p.activity}
-    </div>
+                <div key={p.id} className="card" style={{ padding: 12 }}>
+                  <div style={{ fontWeight: 900 }}>
+                    {p.startHHMM}–{p.endHHMM} · {p.activity}
+                  </div>
 
-    <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>
-      {p.location ? `📍 ${p.location}` : "📍 (kein Ort angegeben)"}
-      {typeof p.travelMinutes === "number" && p.travelMinutes > 0 ? ` · 🚗 ${p.travelMinutes} Min Fahrzeit` : ""}
-    </div>
+                  <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>
+                    {p.location ? `📍 ${p.location}` : "📍 (kein Ort angegeben)"}
+                    {typeof p.travelMinutes === "number" && p.travelMinutes > 0 ? ` · 🚗 ${p.travelMinutes} Min Fahrzeit` : ""}
+                  </div>
 
-    {p.noteEmployee ? (
-      <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-        📝 {p.noteEmployee}
-      </div>
-    ) : null}
+                  {p.noteEmployee ? (
+                    <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                      📝 {p.noteEmployee}
+                    </div>
+                  ) : null}
 
-    {/* ✅ NEU: Dokumente */}
-    <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-      <button
-        className="btn btn-accent"
-        type="button"
-        onClick={() => {
-          // Modal schließen und Dokumentseite öffnen
-          setOpen(false);
-          window.location.href = `/kalender/dokumente/${encodeURIComponent(p.id)}`;
-        }}
-      >
-        📎 Dokumente
-      </button>
-    </div>
-  </div>
-))}
+                  <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      className="btn btn-accent"
+                      type="button"
+                      onClick={() => {
+                        setOpen(false);
+                        window.location.href = `/kalender/dokumente/${encodeURIComponent(p.id)}`;
+                      }}
+                    >
+                      📎 Dokumente
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
+
+          <div style={{ marginTop: 14 }}>
+            <div className="label">Deine Abwesenheit</div>
+
+            {blocksForSelectedDay.length === 0 ? (
+              <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                Keine Abwesenheit eingetragen.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {blocksForSelectedDay.map((b) => (
+                  <div key={`${b.type}-${b.start}-${b.end}`} className="card" style={{ padding: 12 }}>
+                    <div style={{ fontWeight: 900 }}>{blockLabel(b)}</div>
+                    <div style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <button className="btn" type="button" onClick={() => startEdit(b)} disabled={saving}>
+                        ✏️ Bearbeiten
+                      </button>
+                      <button className="btn btn-danger" type="button" onClick={() => void deleteBlock(b)} disabled={saving}>
+                        🗑️ Löschen
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div style={{ height: 1, background: "var(--border)", marginTop: 14, opacity: 0.7 }} />
         </div>
@@ -403,7 +621,7 @@ export default function KalenderPage() {
         )}
 
         <div style={{ marginBottom: 12 }}>
-          <div className="label">Abwesenheit eintragen</div>
+          <div className="label">{editingBlock ? "Abwesenheit bearbeiten" : "Abwesenheit eintragen"}</div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
@@ -431,9 +649,20 @@ export default function KalenderPage() {
           </button>
         </div>
 
-        <button className="btn btn-accent" type="button" onClick={saveAbsence} disabled={saving} style={{ width: "100%" }}>
-          {saving ? "Speichert..." : "Eintragen"}
-        </button>
+        {editingBlock ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <button className="btn" type="button" onClick={cancelEdit} disabled={saving} style={{ width: "100%" }}>
+              Abbrechen
+            </button>
+            <button className="btn btn-accent" type="button" onClick={saveAbsence} disabled={saving} style={{ width: "100%" }}>
+              {saving ? "Speichert..." : "Änderungen speichern"}
+            </button>
+          </div>
+        ) : (
+          <button className="btn btn-accent" type="button" onClick={saveAbsence} disabled={saving} style={{ width: "100%" }}>
+            {saving ? "Speichert..." : "Eintragen"}
+          </button>
+        )}
       </Modal>
     </AppShell>
   );
