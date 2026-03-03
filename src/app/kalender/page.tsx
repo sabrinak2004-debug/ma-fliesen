@@ -9,8 +9,8 @@ type CalendarDay = {
   hasWork: boolean;
   hasVacation: boolean;
   hasSick: boolean;
-  hasPlan: boolean; // ✅ wird bei Admin als "hat Termine" genutzt
-  planPreview: string | null; // ✅ wird bei Admin als Termin-Preview genutzt
+  hasPlan: boolean; // Admin: "hat Termine"
+  planPreview: string | null; // Admin: Termin-Preview
 };
 
 type CalendarResponse = { ok: true; days: CalendarDay[] } | { ok: false; error: string };
@@ -59,6 +59,9 @@ type CalendarEventDTO = {
   notes: string | null;
 };
 
+// UI-only Kategorien (werden NICHT in DB gespeichert)
+type EventCategory = "KUNDE" | "BAUSTELLE" | "INTERN" | "PRIVAT";
+
 // ---------- helpers (no any) ----------
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -103,8 +106,7 @@ function parseCalendarResponse(j: unknown): CalendarResponse {
   if (okVal === true) {
     const days = j["days"];
     if (!Array.isArray(days)) return { ok: false, error: "Unerwartete Antwort." };
-    const parsedDays = days.filter(isCalendarDay);
-    return { ok: true, days: parsedDays };
+    return { ok: true, days: days.filter(isCalendarDay) };
   }
 
   const err = j["error"];
@@ -187,6 +189,7 @@ function parseMeResponse(j: unknown): SessionDTO | null {
 
 function isCalendarEventDTO(v: unknown): v is CalendarEventDTO {
   if (!isRecord(v)) return false;
+
   const id = getStringField(v, "id");
   const date = getStringField(v, "date");
   const startHHMM = getStringField(v, "startHHMM");
@@ -211,8 +214,7 @@ function isCalendarEventDTO(v: unknown): v is CalendarEventDTO {
 
 function parseAppointmentsResponse(j: unknown): CalendarEventDTO[] {
   if (!isRecord(j)) return [];
-  const ok = j["ok"];
-  if (ok !== true) return [];
+  if (j["ok"] !== true) return [];
   const events = j["events"];
   if (!Array.isArray(events)) return [];
   return events.filter(isCalendarEventDTO);
@@ -264,7 +266,6 @@ function buildBlocks(absences: AbsenceDTO[]): AbsenceBlock[] {
     .sort((x, y) => (x.absenceDate < y.absenceDate ? -1 : x.absenceDate > y.absenceDate ? 1 : 0));
 
   const blocks: AbsenceBlock[] = [];
-
   const byType: Record<AbsenceType, AbsenceDTO[]> = { VACATION: [], SICK: [] };
   for (const r of rows) byType[r.type].push(r);
 
@@ -304,6 +305,61 @@ function blockLabel(b: AbsenceBlock) {
   return `${icon} ${name} (${span})`;
 }
 
+// ---------- UI-only category persistence ----------
+const CAT_STORAGE_KEY = "mafliesen_admin_event_categories_v1";
+
+function isEventCategory(v: unknown): v is EventCategory {
+  return v === "KUNDE" || v === "BAUSTELLE" || v === "INTERN" || v === "PRIVAT";
+}
+
+function safeReadCategoryMap(): Record<string, EventCategory> {
+  try {
+    const raw = window.localStorage.getItem(CAT_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return {};
+    const out: Record<string, EventCategory> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof k === "string" && isEventCategory(v)) out[k] = v;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function safeWriteCategoryMap(map: Record<string, EventCategory>) {
+  try {
+    window.localStorage.setItem(CAT_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // ignore
+  }
+}
+
+function categoryLabel(c: EventCategory) {
+  if (c === "KUNDE") return "Kunde";
+  if (c === "BAUSTELLE") return "Baustelle";
+  if (c === "INTERN") return "Intern";
+  return "Privat";
+}
+
+function categoryDotStyle(c: EventCategory): React.CSSProperties {
+  // Keine festen Farben im Theme? -> wir nutzen nur transparente Akzente, wirkt wie Apple "Cal chips".
+  const base: React.CSSProperties = {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    flex: "0 0 auto",
+    marginTop: 4,
+    boxShadow: "0 0 0 3px rgba(255,255,255,0.03)",
+  };
+
+  if (c === "KUNDE") return { ...base, background: "rgba(184, 207, 58, 0.95)" };
+  if (c === "BAUSTELLE") return { ...base, background: "rgba(90, 167, 255, 0.95)" };
+  if (c === "INTERN") return { ...base, background: "rgba(255, 196, 0, 0.95)" };
+  return { ...base, background: "rgba(224, 75, 69, 0.95)" };
+}
+
 export default function KalenderPage() {
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const [data, setData] = useState<CalendarDay[]>([]);
@@ -335,11 +391,14 @@ export default function KalenderPage() {
   const [apptError, setApptError] = useState<string | null>(null);
 
   const [apptEditingId, setApptEditingId] = useState<string | null>(null);
+  const [apptCategory, setApptCategory] = useState<EventCategory>("KUNDE"); // UI-only
   const [apptTitle, setApptTitle] = useState<string>("");
   const [apptStart, setApptStart] = useState<string>("08:00");
   const [apptEnd, setApptEnd] = useState<string>("09:00");
   const [apptLocation, setApptLocation] = useState<string>("");
   const [apptNotes, setApptNotes] = useState<string>("");
+
+  const [categoryMap, setCategoryMap] = useState<Record<string, EventCategory>>({});
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -359,8 +418,7 @@ export default function KalenderPage() {
       .then((r) => r.json())
       .then((j: unknown) => {
         if (!alive) return;
-        const s = parseMeResponse(j);
-        setSession(s);
+        setSession(parseMeResponse(j));
       })
       .catch(() => setSession(null));
     return () => {
@@ -368,14 +426,24 @@ export default function KalenderPage() {
     };
   }, []);
 
+  // UI-only Categories (Admin): localStorage
+  useEffect(() => {
+    if (!isAdmin) return;
+    setCategoryMap(safeReadCategoryMap());
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    safeWriteCategoryMap(categoryMap);
+  }, [categoryMap, isAdmin]);
+
   async function loadCalendar() {
     setLoading(true);
     try {
       const r = await fetch(`/api/calendar?month=${encodeURIComponent(ym)}`);
       const j: unknown = await r.json();
       const parsed = parseCalendarResponse(j);
-      if (parsed.ok) setData(parsed.days);
-      else setData([]);
+      setData(parsed.ok ? parsed.days : []);
     } finally {
       setLoading(false);
     }
@@ -384,23 +452,15 @@ export default function KalenderPage() {
   async function loadAbsencesMonth() {
     setAbsLoading(true);
     try {
-      const qs = new URLSearchParams({ month: ym });
-      const r = await fetch(`/api/absences?${qs.toString()}`);
+      const r = await fetch(`/api/absences?${new URLSearchParams({ month: ym }).toString()}`);
       const j: unknown = await r.json();
-
-      if (!r.ok) {
-        setMonthAbsences([]);
-        return;
-      }
-
-      setMonthAbsences(parseAbsencesResponse(j));
+      setMonthAbsences(r.ok ? parseAbsencesResponse(j) : []);
     } finally {
       setAbsLoading(false);
     }
   }
 
   async function reloadMonthAll() {
-    // ✅ Admin: nur Kalender (Termine werden über /api/calendar in hasPlan/preview markiert)
     if (isAdmin) {
       await loadCalendar();
       return;
@@ -479,7 +539,8 @@ export default function KalenderPage() {
         setApptError(extractErrorMessage(j, "Termine konnten nicht geladen werden."));
         return;
       }
-      setDayAppointments(parseAppointmentsResponse(j));
+      const list = parseAppointmentsResponse(j).slice().sort((a, b) => (a.startHHMM < b.startHHMM ? -1 : a.startHHMM > b.startHHMM ? 1 : 0));
+      setDayAppointments(list);
     } catch {
       setDayAppointments([]);
       setApptError("Netzwerkfehler beim Laden der Termine.");
@@ -488,8 +549,9 @@ export default function KalenderPage() {
     }
   }
 
-  function resetAppointmentForm(date: string) {
+  function resetAppointmentForm() {
     setApptEditingId(null);
+    setApptCategory("KUNDE");
     setApptTitle("");
     setApptStart("08:00");
     setApptEnd("09:00");
@@ -497,9 +559,6 @@ export default function KalenderPage() {
     setApptNotes("");
     setApptError(null);
     setError(null);
-
-    // kleine UX: Wenn man einen Tag öffnet, Start/Ende sinnvoll
-    void date;
   }
 
   function openDay(date: string) {
@@ -508,13 +567,13 @@ export default function KalenderPage() {
     setError(null);
 
     if (isAdmin) {
-      resetAppointmentForm(date);
+      resetAppointmentForm();
       setDayAppointments([]);
       void loadAppointmentsForDay(date);
       return;
     }
 
-    // EMPLOYEE state init:
+    // EMPLOYEE init:
     setEditingBlock(null);
     setAbsenceStart(date);
     setAbsenceEnd(date);
@@ -525,6 +584,20 @@ export default function KalenderPage() {
     setPlansLoading(false);
 
     void loadPlansForDay(date);
+  }
+
+  // Admin: Floating + Button -> heutiges Datum öffnen + direkt Formular fokussieren
+  function openTodayNewEvent() {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const ymd = `${yyyy}-${mm}-${dd}`;
+    setCursor(now);
+    setSelectedDate(ymd);
+    setOpen(true);
+    resetAppointmentForm();
+    void loadAppointmentsForDay(ymd);
   }
 
   // EMPLOYEE: Abwesenheit bearbeiten
@@ -610,12 +683,7 @@ export default function KalenderPage() {
     setError(null);
     setSaving(true);
     try {
-      const qs = new URLSearchParams({
-        from: block.start,
-        to: block.end,
-        type: block.type,
-      });
-
+      const qs = new URLSearchParams({ from: block.start, to: block.end, type: block.type });
       const r = await fetch(`/api/absences?${qs.toString()}`, { method: "DELETE" });
       const j: unknown = await r.json();
 
@@ -640,9 +708,7 @@ export default function KalenderPage() {
   async function saveAppointment() {
     if (!selectedDate) return;
 
-    setError(null);
     setApptError(null);
-
     const title = apptTitle.trim();
     if (!title) {
       setApptError("Bitte Titel eingeben.");
@@ -691,11 +757,18 @@ export default function KalenderPage() {
           setApptError(extractErrorMessage(j, "Speichern fehlgeschlagen."));
           return;
         }
+
+        // nach Create: Kategorie UI-only -> id aus Response ziehen und local speichern
+        if (isRecord(j) && j["ok"] === true) {
+          const ev = j["event"];
+          if (isCalendarEventDTO(ev)) {
+            setCategoryMap((prev) => ({ ...prev, [ev.id]: apptCategory }));
+          }
+        }
       }
 
-      // reload day + month markers
       await Promise.all([loadAppointmentsForDay(selectedDate), reloadMonthAll()]);
-      resetAppointmentForm(selectedDate);
+      resetAppointmentForm();
     } catch {
       setApptError("Netzwerkfehler beim Speichern.");
     } finally {
@@ -710,6 +783,7 @@ export default function KalenderPage() {
     setApptEnd(a.endHHMM);
     setApptLocation(a.location ?? "");
     setApptNotes(a.notes ?? "");
+    setApptCategory(categoryMap[a.id] ?? "KUNDE"); // UI-only
     setApptError(null);
     setError(null);
   }
@@ -726,8 +800,13 @@ export default function KalenderPage() {
         return;
       }
 
-      if (apptEditingId === id) resetAppointmentForm(selectedDate);
+      setCategoryMap((prev) => {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      });
 
+      if (apptEditingId === id) resetAppointmentForm();
       await Promise.all([loadAppointmentsForDay(selectedDate), reloadMonthAll()]);
     } catch {
       setApptError("Netzwerkfehler beim Löschen.");
@@ -736,9 +815,37 @@ export default function KalenderPage() {
     }
   }
 
+  // wenn Admin im Formular Kategorie ändert, für Edit direkt local merken
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (!apptEditingId) return;
+    setCategoryMap((prev) => ({ ...prev, [apptEditingId]: apptCategory }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apptCategory]);
+
+  const floatingStyle: React.CSSProperties = {
+    position: "fixed",
+    right: 22,
+    bottom: 22,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(184, 207, 58, 0.95)",
+    color: "rgba(0,0,0,0.9)",
+    fontWeight: 900,
+    fontSize: 26,
+    boxShadow: "0 14px 40px rgba(0,0,0,0.35)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    zIndex: 60,
+  };
+
   return (
     <AppShell activeLabel="#wirkönnendas">
-      <div className="card card-olive" style={{ padding: 18 }}>
+      <div className="card card-olive" style={{ padding: 18, position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
           <button className="btn" onClick={() => setCursor((d) => addMonths(d, -1))}>
             ‹
@@ -852,7 +959,20 @@ export default function KalenderPage() {
         </div>
       </div>
 
-      <Modal open={open} title={selectedDate ? fmtDateTitle(selectedDate) : "Tag"} onClose={() => setOpen(false)}>
+      {/* ✅ Floating + Button (nur Admin) */}
+      {isAdmin ? (
+        <button
+          type="button"
+          aria-label="Neuer Termin"
+          title="Neuer Termin"
+          onClick={openTodayNewEvent}
+          style={floatingStyle}
+        >
+          +
+        </button>
+      ) : null}
+
+      <Modal open={open} title={selectedDate ? fmtDateTitle(selectedDate) : "Tag"} onClose={() => setOpen(false)} maxWidth={980}>
         {/* ================= ADMIN MODAL ================= */}
         {isAdmin ? (
           <>
@@ -862,116 +982,198 @@ export default function KalenderPage() {
               </div>
             )}
 
-            <div style={{ marginBottom: 14 }}>
-              <div className="label">Deine Termine</div>
-
-              {apptLoading ? (
-                <div className="card" style={{ padding: 12, opacity: 0.85 }}>
-                  Lädt Termine...
-                </div>
-              ) : dayAppointments.length === 0 ? (
-                <div className="card" style={{ padding: 12, opacity: 0.85 }}>
-                  Keine Termine für diesen Tag.
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {dayAppointments.map((a) => (
-                    <div key={a.id} className="card" style={{ padding: 12 }}>
-                      <div style={{ fontWeight: 900 }}>
-                        {a.startHHMM}–{a.endHHMM} · {a.title}
-                      </div>
-                      {a.location ? (
-                        <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>📍 {a.location}</div>
-                      ) : null}
-                      {a.notes ? (
-                        <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>📝 {a.notes}</div>
-                      ) : null}
-
-                      <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                        <button className="btn" type="button" onClick={() => editAppointment(a)} disabled={saving}>
-                          ✏️ Bearbeiten
-                        </button>
-                        <button
-                          className="btn btn-danger"
-                          type="button"
-                          onClick={() => void deleteAppointment(a.id)}
-                          disabled={saving}
-                        >
-                          🗑️ Löschen
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+            {/* Agenda */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+              <div>
+                <div style={{ fontWeight: 900, fontSize: 16 }}>Agenda</div>
+                <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 2 }}>Deine Termine für den Tag</div>
+              </div>
             </div>
 
-            <div style={{ height: 1, background: "var(--border)", marginTop: 14, opacity: 0.7 }} />
+            {apptLoading ? (
+              <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                Lädt Termine...
+              </div>
+            ) : dayAppointments.length === 0 ? (
+              <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                Keine Termine für diesen Tag.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+                {dayAppointments.map((a) => {
+                  const cat = categoryMap[a.id] ?? "KUNDE";
+                  return (
+                    <div
+                      key={a.id}
+                      className="card"
+                      style={{
+                        padding: 12,
+                        display: "flex",
+                        gap: 12,
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <div style={categoryDotStyle(cat)} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: 900, fontSize: 14 }}>
+                              {a.startHHMM}–{a.endHHMM}
+                            </div>
+                            <div style={{ fontWeight: 900, fontSize: 16, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {a.title}
+                            </div>
+                          </div>
 
-            <div style={{ marginTop: 14 }}>
-              <div className="label">{apptEditingId ? "Termin bearbeiten" : "Termin eintragen"}</div>
+                          {/* Mini actions */}
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button
+                              type="button"
+                              onClick={() => editAppointment(a)}
+                              disabled={saving}
+                              title="Bearbeiten"
+                              style={{
+                                border: "1px solid rgba(255,255,255,0.12)",
+                                background: "rgba(255,255,255,0.04)",
+                                color: "var(--text)",
+                                borderRadius: 12,
+                                padding: "8px 10px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void deleteAppointment(a.id)}
+                              disabled={saving}
+                              title="Löschen"
+                              style={{
+                                border: "1px solid rgba(224, 75, 69, 0.35)",
+                                background: "rgba(224, 75, 69, 0.10)",
+                                color: "rgba(224, 75, 69, 0.95)",
+                                borderRadius: 12,
+                                padding: "8px 10px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                <div>
-                  <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                    Start
-                  </div>
-                  <input className="input" type="time" value={apptStart} onChange={(e) => setApptStart(e.target.value)} />
+                        <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
+                          <span
+                            style={{
+                              fontSize: 12,
+                              padding: "4px 10px",
+                              borderRadius: 999,
+                              border: "1px solid rgba(255,255,255,0.10)",
+                              background: "rgba(255,255,255,0.04)",
+                              color: "var(--muted)",
+                            }}
+                          >
+                            {categoryLabel(cat)}
+                          </span>
+
+                          {a.location ? (
+                            <span style={{ color: "var(--muted)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              📍 {a.location}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        {a.notes ? (
+                          <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>
+                            📝 {a.notes}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div style={{ height: 1, background: "var(--border)", opacity: 0.7, margin: "12px 0" }} />
+
+            {/* Form */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
+              <div style={{ fontWeight: 900 }}>{apptEditingId ? "Termin bearbeiten" : "Termin eintragen"}</div>
+              {apptEditingId ? (
+                <button className="btn" type="button" onClick={resetAppointmentForm} disabled={saving}>
+                  Abbrechen
+                </button>
+              ) : null}
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <div>
+                <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                  Start
                 </div>
-                <div>
-                  <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                    Ende
-                  </div>
-                  <input className="input" type="time" value={apptEnd} onChange={(e) => setApptEnd(e.target.value)} />
+                <input className="input" type="time" value={apptStart} onChange={(e) => setApptStart(e.target.value)} />
+              </div>
+              <div>
+                <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                  Ende
                 </div>
+                <input className="input" type="time" value={apptEnd} onChange={(e) => setApptEnd(e.target.value)} />
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <div>
+                <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                  Kategorie (UI-only)
+                </div>
+                <select
+                  className="input"
+                  value={apptCategory}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "KUNDE" || v === "BAUSTELLE" || v === "INTERN" || v === "PRIVAT") setApptCategory(v);
+                  }}
+                >
+                  <option value="KUNDE">Kunde</option>
+                  <option value="BAUSTELLE">Baustelle</option>
+                  <option value="INTERN">Intern</option>
+                  <option value="PRIVAT">Privat</option>
+                </select>
               </div>
 
-              <div style={{ marginBottom: 10 }}>
+              <div>
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Titel
                 </div>
                 <input className="input" value={apptTitle} onChange={(e) => setApptTitle(e.target.value)} placeholder="z. B. Kundentermin" />
               </div>
-
-              <div style={{ marginBottom: 10 }}>
-                <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                  Ort (optional)
-                </div>
-                <input className="input" value={apptLocation} onChange={(e) => setApptLocation(e.target.value)} placeholder="z. B. Baustelle / Adresse" />
-              </div>
-
-              <div style={{ marginBottom: 12 }}>
-                <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                  Notiz (optional)
-                </div>
-                <textarea
-                  className="input"
-                  value={apptNotes}
-                  onChange={(e) => setApptNotes(e.target.value)}
-                  rows={3}
-                  style={{ resize: "vertical" }}
-                  placeholder="z. B. Ansprechpartner, Material, …"
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: apptEditingId ? "1fr 1fr" : "1fr", gap: 10 }}>
-                {apptEditingId ? (
-                  <button
-                    className="btn"
-                    type="button"
-                    onClick={() => selectedDate && resetAppointmentForm(selectedDate)}
-                    disabled={saving}
-                    style={{ width: "100%" }}
-                  >
-                    Abbrechen
-                  </button>
-                ) : null}
-
-                <button className="btn btn-accent" type="button" onClick={saveAppointment} disabled={saving} style={{ width: "100%" }}>
-                  {saving ? "Speichert..." : apptEditingId ? "Änderungen speichern" : "Eintragen"}
-                </button>
-              </div>
             </div>
+
+            <div style={{ marginBottom: 10 }}>
+              <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                Ort (optional)
+              </div>
+              <input className="input" value={apptLocation} onChange={(e) => setApptLocation(e.target.value)} placeholder="z. B. Baustelle / Adresse" />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                Notiz (optional)
+              </div>
+              <textarea
+                className="input"
+                value={apptNotes}
+                onChange={(e) => setApptNotes(e.target.value)}
+                rows={3}
+                style={{ resize: "vertical" }}
+                placeholder="z. B. Ansprechpartner, Material, …"
+              />
+            </div>
+
+            <button className="btn btn-accent" type="button" onClick={saveAppointment} disabled={saving} style={{ width: "100%" }}>
+              {saving ? "Speichert..." : apptEditingId ? "Änderungen speichern" : "Eintragen"}
+            </button>
           </>
         ) : (
           /* ================= EMPLOYEE MODAL (dein bisheriges) ================= */
