@@ -9,7 +9,6 @@ type CalendarDay = {
   hasWork: boolean;
   hasVacation: boolean;
   hasSick: boolean;
-
   hasPlan: boolean;
   planPreview: string | null;
 };
@@ -34,7 +33,6 @@ type PlanEntry = {
   activity: string;
   location: string;
   travelMinutes: number;
-
   noteEmployee?: string | null;
 };
 
@@ -44,6 +42,14 @@ type AbsenceBlock = {
   end: string; // YYYY-MM-DD
   idsByDate: Record<string, string>; // date -> absence id
 };
+
+type SessionDTO = {
+  userId: string;
+  fullName: string;
+  role: "EMPLOYEE" | "ADMIN";
+};
+
+type MeApiResponse = { session: SessionDTO | null };
 
 // ---------- helpers (no any) ----------
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -55,8 +61,49 @@ function getStringField(obj: Record<string, unknown>, key: string): string | nul
   return typeof v === "string" ? v : null;
 }
 
+function getBooleanField(obj: Record<string, unknown>, key: string): boolean | null {
+  const v = obj[key];
+  return typeof v === "boolean" ? v : null;
+}
+
 function isAbsenceType(v: unknown): v is AbsenceType {
   return v === "VACATION" || v === "SICK";
+}
+
+function isCalendarDay(v: unknown): v is CalendarDay {
+  if (!isRecord(v)) return false;
+  const date = getStringField(v, "date");
+  const hasWork = getBooleanField(v, "hasWork");
+  const hasVacation = getBooleanField(v, "hasVacation");
+  const hasSick = getBooleanField(v, "hasSick");
+  const hasPlan = getBooleanField(v, "hasPlan");
+  const planPreviewRaw = v["planPreview"];
+  const planPreview = planPreviewRaw === null || typeof planPreviewRaw === "string" ? planPreviewRaw : undefined;
+
+  return (
+    typeof date === "string" &&
+    typeof hasWork === "boolean" &&
+    typeof hasVacation === "boolean" &&
+    typeof hasSick === "boolean" &&
+    typeof hasPlan === "boolean" &&
+    (planPreview === null || typeof planPreview === "string")
+  );
+}
+
+function parseCalendarResponse(j: unknown): CalendarResponse {
+  if (!isRecord(j)) return { ok: false, error: "Unerwartete Antwort." };
+
+  const okVal = j["ok"];
+  if (okVal === true) {
+    const days = j["days"];
+    if (!Array.isArray(days)) return { ok: false, error: "Unerwartete Antwort." };
+    const parsedDays = days.filter(isCalendarDay);
+    return { ok: true, days: parsedDays };
+  }
+
+  const err = j["error"];
+  if (typeof err === "string" && err.trim()) return { ok: false, error: err };
+  return { ok: false, error: "Unerwartete Antwort." };
 }
 
 function isAbsenceDTO(v: unknown): v is AbsenceDTO {
@@ -78,6 +125,58 @@ function parseAbsencesResponse(j: unknown): AbsenceDTO[] {
   const abs = j["absences"];
   if (!Array.isArray(abs)) return [];
   return abs.filter(isAbsenceDTO);
+}
+
+function isPlanEntry(v: unknown): v is PlanEntry {
+  if (!isRecord(v)) return false;
+
+  const id = getStringField(v, "id");
+  const userId = getStringField(v, "userId");
+  const workDate = getStringField(v, "workDate");
+  const startHHMM = getStringField(v, "startHHMM");
+  const endHHMM = getStringField(v, "endHHMM");
+  const activity = getStringField(v, "activity");
+  const location = getStringField(v, "location");
+
+  const travelRaw = v["travelMinutes"];
+  const travelMinutes = typeof travelRaw === "number" ? travelRaw : null;
+
+  const noteRaw = v["noteEmployee"];
+  const noteEmployee = noteRaw === null || typeof noteRaw === "string" ? noteRaw : undefined;
+
+  return (
+    typeof id === "string" &&
+    typeof userId === "string" &&
+    typeof workDate === "string" &&
+    typeof startHHMM === "string" &&
+    typeof endHHMM === "string" &&
+    typeof activity === "string" &&
+    typeof location === "string" &&
+    typeof travelMinutes === "number" &&
+    (noteEmployee === undefined || noteEmployee === null || typeof noteEmployee === "string")
+  );
+}
+
+function parsePlanEntriesResponse(j: unknown): PlanEntry[] {
+  if (!isRecord(j)) return [];
+  const entries = j["entries"];
+  if (!Array.isArray(entries)) return [];
+  return entries.filter(isPlanEntry);
+}
+
+function isSessionDTO(v: unknown): v is SessionDTO {
+  if (!isRecord(v)) return false;
+  const userId = getStringField(v, "userId");
+  const fullName = getStringField(v, "fullName");
+  const role = getStringField(v, "role");
+  return typeof userId === "string" && typeof fullName === "string" && (role === "ADMIN" || role === "EMPLOYEE");
+}
+
+function parseMeResponse(j: unknown): SessionDTO | null {
+  if (!isRecord(j)) return null;
+  const session = j["session"];
+  if (session === null) return null;
+  return isSessionDTO(session) ? session : null;
 }
 
 // ---------- date helpers ----------
@@ -175,6 +274,8 @@ export default function KalenderPage() {
   const [data, setData] = useState<CalendarDay[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [session, setSession] = useState<SessionDTO | null>(null);
+
   const [monthAbsences, setMonthAbsences] = useState<AbsenceDTO[]>([]);
   const [absLoading, setAbsLoading] = useState(false);
 
@@ -201,15 +302,28 @@ export default function KalenderPage() {
     return `${m.charAt(0).toUpperCase()}${m.slice(1)} ${cursor.getFullYear()}`;
   }, [cursor]);
 
+  // Session laden (für Admin: Absences mit userId filtern)
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((j: unknown) => {
+        if (!alive) return;
+        const s = parseMeResponse(j);
+        setSession(s);
+      })
+      .catch(() => setSession(null));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   async function loadCalendar() {
     setLoading(true);
     try {
       const r = await fetch(`/api/calendar?month=${encodeURIComponent(ym)}`);
       const j: unknown = await r.json();
-
-      const parsed: CalendarResponse =
-        typeof j === "object" && j !== null && "ok" in j ? (j as CalendarResponse) : { ok: false, error: "Unerwartete Antwort." };
-
+      const parsed = parseCalendarResponse(j);
       if (parsed.ok) setData(parsed.days);
       else setData([]);
     } finally {
@@ -220,12 +334,21 @@ export default function KalenderPage() {
   async function loadAbsencesMonth() {
     setAbsLoading(true);
     try {
-      const r = await fetch(`/api/absences?month=${encodeURIComponent(ym)}`);
+      const qs = new URLSearchParams({ month: ym });
+
+      // ✅ Admin-Kalender: nur eigene Abwesenheiten laden
+      if (session?.role === "ADMIN" && session.userId) {
+        qs.set("userId", session.userId);
+      }
+
+      const r = await fetch(`/api/absences?${qs.toString()}`);
       const j: unknown = await r.json();
+
       if (!r.ok) {
         setMonthAbsences([]);
         return;
       }
+
       setMonthAbsences(parseAbsencesResponse(j));
     } finally {
       setAbsLoading(false);
@@ -239,7 +362,7 @@ export default function KalenderPage() {
   useEffect(() => {
     void reloadMonthAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ym]);
+  }, [ym, session?.role, session?.userId]);
 
   const dayMap = useMemo(() => new Map(data.map((d) => [d.date, d])), [data]);
   const blocks = useMemo(() => buildBlocks(monthAbsences), [monthAbsences]);
@@ -285,13 +408,7 @@ export default function KalenderPage() {
         return;
       }
 
-      if (!isRecord(j) || !Array.isArray(j["entries"])) {
-        setDayPlans([]);
-        return;
-      }
-
-      // entries kommen aus deiner API typisiert; wir übernehmen wie bisher
-      setDayPlans(j["entries"] as PlanEntry[]);
+      setDayPlans(parsePlanEntriesResponse(j));
     } catch {
       setDayPlans([]);
       setPlansError("Netzwerkfehler beim Laden des Plans.");

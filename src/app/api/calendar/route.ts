@@ -22,9 +22,6 @@ export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
-  const isAdmin = session.role === Role.ADMIN;
-  const userWhere = isAdmin ? {} : { userId: session.userId };
-
   const url = new URL(req.url);
   const month = url.searchParams.get("month"); // YYYY-MM
   if (!month) return NextResponse.json({ error: "month fehlt" }, { status: 400 });
@@ -36,6 +33,13 @@ export async function GET(req: Request) {
   const [y, m] = month.split("-").map(Number);
   const from = new Date(Date.UTC(y, m - 1, 1));
   const to = new Date(Date.UTC(y, m, 1));
+
+  /**
+   * ✅ WICHTIG:
+   * Admin-Kalender soll NICHT alle Mitarbeiter zeigen, sondern nur den Admin selbst.
+   * Daher: immer auf session.userId filtern – auch für Admin.
+   */
+  const userWhere = { userId: session.userId };
 
   const [entries, absences, planEntries] = await Promise.all([
     prisma.workEntry.findMany({
@@ -54,16 +58,14 @@ export async function GET(req: Request) {
         endHHMM: true,
         activity: true,
         location: true,
-        noteEmployee: true, // ✅ nur Mitarbeiter-Notiz
+        noteEmployee: true,
       },
       orderBy: [{ workDate: "asc" }, { startHHMM: "asc" }],
     }),
   ]);
 
   const workSet = new Set(entries.map((e) => toIsoDateUTC(e.workDate)));
-  const vacSet = new Set(
-    absences.filter((a) => a.type === "VACATION").map((a) => toIsoDateUTC(a.absenceDate))
-  );
+  const vacSet = new Set(absences.filter((a) => a.type === "VACATION").map((a) => toIsoDateUTC(a.absenceDate)));
   const sickSet = new Set(absences.filter((a) => a.type === "SICK").map((a) => toIsoDateUTC(a.absenceDate)));
 
   const planMap = new Map<string, PlanPreviewItem[]>();
