@@ -286,7 +286,7 @@ export default function AppShell({
                       style={{
                         marginTop: 8,
                         width: "100%",
-                        padding: "10px 12px",
+                        padding: "5px 7px",
                         borderRadius: 12,
                         border: "1px solid rgba(255,255,255,0.10)",
                         background: "rgba(255,80,80,0.16)",
