@@ -191,6 +191,7 @@ export default function AppShell({
                   priority
                   style={{ objectFit: "contain" }}
                 />
+                <div style={{ minWidth: 0 }}></div>
               </div>
               <div style={{ fontWeight: 900, color: "rgba(255,255,255,0.95)", lineHeight: 1.05 }}>
                 ma-fliesen
