@@ -159,7 +159,7 @@ export default function AppShell({
                   </Link>
                 )}
 
-                <Link className={`pill ${isActive(pathname, "/kalender") ? "pill-active" : ""}`} href="/kalender">
+                <Link className={`pill ${isActive(pathname, "/admin/appointment") ? "pill-active" : ""}`} href="/kalender">
                   {isAdmin ? "🗓 Termine" : "🗓 Kalender"}
                 </Link>
 
