@@ -1,10 +1,10 @@
 {
-  "name": "MA Fliesen App",
+  "name": "MA Fliesen",
   "short_name": "MA Fliesen",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#111827",
+  "background_color": "#3f3f3f",
+  "theme_color": "#3f3f3f",
   "icons": [
     {
       "src": "/icon-192.png",
