@@ -110,6 +110,7 @@ model WorkEntry {
   breakMinutes  Int     @default(0)  // Pause in Minuten (manuell oder auto)
   breakAuto     Boolean @default(false) // true = automatisch abgezogen
   workMinutes   Int     // Netto (Brutto - Pause)
+  noteEmployee  String? // ✅ Notiz vom Mitarbeiter (für Admin sichtbar)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
