@@ -248,7 +248,7 @@ export default function AppShell({
                 height: "100%",
                 width: 320,
                 maxWidth: "86vw",
-                background: "rgba(245,245,245,0.98)",   // hell wie in deinem Screenshot
+                background: "rgba(255,255,255,0.06)",   // hell wie in deinem Screenshot
                 color: "rgba(0,0,0,0.92)",
                 boxShadow: "0 24px 70px rgba(0,0,0,0.40)",
                 padding: 16,
@@ -271,7 +271,7 @@ export default function AppShell({
                     height: 44,
                     borderRadius: 14,
                     border: "1px solid rgba(0,0,0,0.10)",
-                    background: "rgba(255,255,255,0.9)",
+                    background: "rgba(255,255,255,0.06)",
                     cursor: "pointer",
                     fontWeight: 900,
                   }}
@@ -327,8 +327,8 @@ export default function AppShell({
                   width: "100%",
                   padding: "14px 14px",
                   borderRadius: 18,
-                  border: "1px solid rgba(255,80,80,0.35)",
-                  background: "rgba(255,80,80,0.14)",
+                  border: "1px solid rgba(41, 131, 89, 0.35)",
+                  background: "rgba(255,80,80,0.12)",
                   fontWeight: 900,
                   cursor: "pointer",
                 }}
@@ -477,7 +477,7 @@ export default function AppShell({
                           fontWeight: 800,
                           padding: "3px 8px",
                           borderRadius: 999,
-                          background: isAdmin ? "rgba(255,170,0,0.16)" : "rgba(0,200,255,0.14)",
+                          background: isAdmin ? "rgba(0,200,255,0.14)" : "rgba(255,255,255,0.06)",
                           border: "1px solid rgba(255,255,255,0.10)",
                           color: "rgba(255,255,255,0.92)",
                         }}
