@@ -117,6 +117,23 @@ export default function AppShell({
                   🔐 Passwort-Reset
                 </Link>
               )}
+
+              {isAdmin && (
+  <Link
+    href="/admin"
+    style={{
+      display: "block",
+      padding: "10px 12px",
+      borderRadius: 12,
+      textDecoration: "none",
+      fontWeight: 700,
+      color: "white",
+      background: isActive(pathname, "/admin") ? "rgba(255,255,255,0.12)" : "transparent",
+    }}
+  >
+    Admin
+  </Link>
+)}
             </div>
           </div>
         </div>

@@ -426,6 +426,11 @@ export default function KalenderPage() {
 
   const [session, setSession] = useState<SessionDTO | null>(null);
 
+  type UserOption = { id: string; fullName: string };
+
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+
   // EMPLOYEE only:
   const [monthAbsences, setMonthAbsences] = useState<AbsenceDTO[]>([]);
   const [absLoading, setAbsLoading] = useState(false);
@@ -467,6 +472,8 @@ export default function KalenderPage() {
 
   const ym = useMemo(() => monthKey(cursor), [cursor]);
   const isAdmin = session?.role === "ADMIN";
+  const isAdminOwnCalendar = isAdmin && !selectedUserId;      // Admin sieht eigene Termine
+  const isAdminViewingEmployee = isAdmin && !!selectedUserId; // Admin sieht Mitarbeiter-Kalender
 
   const title = useMemo(() => {
     if (viewMode === "WEEK") {
@@ -513,6 +520,29 @@ const weekMeta = useMemo(() => {
     };
   }, []);
 
+  // Admin: Mitarbeiterliste laden
+useEffect(() => {
+  if (!isAdmin) return;
+
+  fetch("/api/users")
+    .then((r) => r.json())
+    .then((j: unknown) => {
+      if (!isRecord(j) || j["ok"] !== true) return;
+      const list = j["users"];
+      if (!Array.isArray(list)) return;
+
+      const parsed: UserOption[] = [];
+      for (const it of list) {
+        if (!isRecord(it)) continue;
+        const id = getStringField(it, "id");
+        const fullName = getStringField(it, "fullName");
+        if (id && fullName) parsed.push({ id, fullName });
+      }
+      setUsers(parsed);
+    })
+    .catch(() => setUsers([]));
+}, [isAdmin]);
+
   // UI-only Categories (Admin): localStorage
   useEffect(() => {
     if (!isAdmin) return;
@@ -527,7 +557,9 @@ const weekMeta = useMemo(() => {
   async function loadCalendar() {
     setLoading(true);
     try {
-      const r = await fetch(`/api/calendar?month=${encodeURIComponent(ym)}`);
+      const qs = new URLSearchParams({ month: ym });
+      if (isAdminViewingEmployee && selectedUserId) qs.set("userId", selectedUserId);
+      const r = await fetch(`/api/calendar?${qs.toString()}`);
       const j: unknown = await r.json();
       const parsed = parseCalendarResponse(j);
       setData(parsed.ok ? parsed.days : []);
@@ -558,7 +590,7 @@ const weekMeta = useMemo(() => {
   useEffect(() => {
     void reloadMonthAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ym, session?.role]);
+  }, [ym, session?.role, selectedUserId]);
 
   const dayMap = useMemo(() => new Map(data.map((d) => [d.date, d])), [data]);
   const blocks = useMemo(() => (isAdmin ? [] : buildBlocks(monthAbsences)), [monthAbsences, isAdmin]);
@@ -1025,6 +1057,29 @@ const weekMeta = useMemo(() => {
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
   <div style={{ fontWeight: 900, fontSize: 20 }}>{title}</div>
+  {isAdmin ? (
+  <div style={{ marginTop: 8 }}>
+    <select
+      value={selectedUserId}
+      onChange={(e) => setSelectedUserId(e.target.value)}
+      className="input"
+      style={{ maxWidth: 280 }}
+    >
+      <option value="">Meine Admin-Termine</option>
+      {users.map((u) => (
+        <option key={u.id} value={u.id}>
+          {u.fullName}
+        </option>
+      ))}
+    </select>
+
+    {isAdminViewingEmployee ? (
+      <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
+        Mitarbeiteransicht (read-only): Kalender zeigt Plan/Urlaub/Krank des Mitarbeiters.
+      </div>
+    ) : null}
+  </div>
+) : null}
 
   {viewMode === "WEEK" && weekMeta ? (
     <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 800 }}>
@@ -1308,11 +1363,11 @@ const weekMeta = useMemo(() => {
       </div>
 
       {/* ✅ Floating + Button (nur Admin) */}
-      {isAdmin ? (
-        <button type="button" aria-label="Neuer Termin" title="Neuer Termin" onClick={openNewEventGlobal} style={floatingStyle}>
-          +
-        </button>
-      ) : null}
+      {isAdminOwnCalendar ? (
+  <button type="button" aria-label="Neuer Termin" title="Neuer Termin" onClick={openNewEventGlobal} style={floatingStyle}>
+    +
+  </button>
+) : null}
 
       <Modal
         open={open}
@@ -1327,7 +1382,7 @@ const weekMeta = useMemo(() => {
         maxWidth={980}
       >
         {/* ================= ADMIN MODAL ================= */}
-        {isAdmin ? (
+        {isAdminOwnCalendar ? (
           <>
             {apptError && (
               <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
@@ -1577,7 +1632,29 @@ const weekMeta = useMemo(() => {
               {saving ? "Speichert..." : apptEditingId ? "Änderungen speichern" : "Eintragen"}
             </button>
           </>
-        ) : (
+) : isAdminViewingEmployee ? (
+  <>
+    {/* ================= ADMIN: Mitarbeiter Read-only ================= */}
+    <div className="card" style={{ padding: 12, opacity: 0.9 }}>
+      Du siehst gerade den Kalender eines Mitarbeiters.  
+      Bearbeitung/Termine sind in dieser Ansicht deaktiviert.
+    </div>
+
+    {selectedDate ? (
+      <div className="card" style={{ padding: 12, marginTop: 10 }}>
+        <div style={{ fontWeight: 900, marginBottom: 6 }}>Tagesinfo</div>
+        <div style={{ color: "var(--muted)", fontSize: 13 }}>
+          {dayMap.get(selectedDate)?.planPreview ? `Plan: ${dayMap.get(selectedDate)?.planPreview}` : "Kein Plan/Preview vorhanden."}
+        </div>
+        <div style={{ marginTop: 8, display: "flex", gap: 10, flexWrap: "wrap", color: "var(--muted)" }}>
+          {dayMap.get(selectedDate)?.hasPlan ? <span style={pillStyle()}>Termine/Plan</span> : null}
+          {dayMap.get(selectedDate)?.hasVacation ? <span style={pillStyle()}>Urlaub</span> : null}
+          {dayMap.get(selectedDate)?.hasSick ? <span style={pillStyle()}>Krank</span> : null}
+        </div>
+      </div>
+    ) : null}
+  </>
+) : (
           /* ================= EMPLOYEE MODAL (dein bisheriges) ================= */
           <>
             <div style={{ marginBottom: 14 }}>

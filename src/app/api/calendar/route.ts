@@ -25,11 +25,12 @@ type PlanPreviewItem = {
 };
 
 export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const userIdParam = searchParams.get("userId");
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
-  const url = new URL(req.url);
-  const month = url.searchParams.get("month"); // YYYY-MM
+  const month = searchParams.get("month"); // YYYY-MM
   if (!month) return NextResponse.json({ error: "month fehlt" }, { status: 400 });
 
   if (!/^\d{4}-\d{2}$/.test(month)) {
@@ -48,7 +49,9 @@ export async function GET(req: Request) {
   if (!me || !me.isActive) return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
 
   // ✅ ADMIN: nur Termine (CalendarEvent) – keine Abwesenheiten / PlanEntries etc.
-  if (me.role === Role.ADMIN) {
+  // ✅ ADMIN: ohne userIdParam = eigene Termine (CalendarEvent)
+// ✅ ADMIN: mit userIdParam = Mitarbeiter-Kalender (Work/Absence/Plan)
+if (me.role === Role.ADMIN && !userIdParam) {
     const events = await prisma.calendarEvent.findMany({
       where: { userId: session.userId, startAt: { gte: from, lt: to } },
       orderBy: [{ startAt: "asc" }],
@@ -97,10 +100,22 @@ export async function GET(req: Request) {
   }
 
   /**
-   * ✅ EMPLOYEE: wie bisher
-   * Admin-Kalender soll NICHT alle Mitarbeiter zeigen, sondern nur den eingeloggten User.
-   */
-  const userWhere = { userId: session.userId };
+ * ✅ EMPLOYEE: eigener Kalender
+ * ✅ ADMIN mit userIdParam: Mitarbeiter-Kalender (read-only in UI)
+ */
+const targetUserId = me.role === Role.ADMIN && userIdParam ? userIdParam : session.userId;
+
+if (me.role === Role.ADMIN && userIdParam) {
+  const target = await prisma.appUser.findUnique({
+    where: { id: userIdParam },
+    select: { id: true, role: true, isActive: true },
+  });
+
+  if (!target || !target.isActive || target.role !== Role.EMPLOYEE) {
+    return NextResponse.json({ ok: false, error: "Mitarbeiter nicht gefunden" }, { status: 404 });
+  }
+}
+  const userWhere = { userId: targetUserId };
 
   const [entries, absences, planEntries] = await Promise.all([
     prisma.workEntry.findMany({
