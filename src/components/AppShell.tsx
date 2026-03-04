@@ -186,6 +186,17 @@ export default function AppShell({
               </div>
               <div style={{ fontSize: 12, marginTop: 2, color: "rgba(255,255,255,0.65)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {activeLabel ?? "#wirkönnendas"}
+                            {/* Brand */}
+            <div className="brand" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Image
+                src="/logo-ma-fliesen.jpeg"
+                alt="ma-fliesen Logo"
+                width={120}
+                height={40}
+                priority
+                style={{ objectFit: "contain" }}
+              />
+              </div>
               </div>
             </div>
 
