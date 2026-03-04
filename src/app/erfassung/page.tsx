@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 
@@ -163,6 +164,7 @@ function isMeApiResponse(v: unknown): v is MeApiResponse {
 }
 
 export default function Page() {
+  const router = useRouter();
   const [me, setMe] = useState<MeResponse | null>(null);
 
   // Create-Form (ohne fullName)
@@ -208,7 +210,10 @@ useEffect(() => {
         setMe({ ok: false });
         return;
       }
-
+      if (j.session.role === "ADMIN") {
+        router.replace("/admin/dashboard");
+        return;
+      }
       setMe({
         ok: true,
         user: {

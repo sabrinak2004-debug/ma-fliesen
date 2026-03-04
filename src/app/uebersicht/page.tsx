@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 
@@ -216,6 +217,7 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
 }
 
 export default function UebersichtPage() {
+  const router = useRouter();
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [absences, setAbsences] = useState<Absence[]>([]);
   const [absenceSummaryByUser, setAbsenceSummaryByUser] = useState<AbsenceUserSummary[]>([]);
@@ -289,6 +291,10 @@ export default function UebersichtPage() {
       }
     })();
   }, [ym]);
+  
+  useEffect(() => {
+    if (isAdmin) router.replace("/admin/dashboard");
+  }, [isAdmin, router]);
 
   const monthEntries = useMemo(() => entries.filter((e) => e.workDate?.startsWith(ym)), [entries, ym]);
   const monthAbsences = useMemo(() => absences.filter((a) => a.absenceDate?.startsWith(ym)), [absences, ym]);

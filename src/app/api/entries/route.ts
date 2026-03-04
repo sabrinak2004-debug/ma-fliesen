@@ -165,6 +165,9 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
   const isAdmin = session.role === Role.ADMIN;
+    if (isAdmin) {
+    return NextResponse.json({ error: "Admins dürfen keine Arbeitszeiten erfassen." }, { status: 403 });
+  }
 
   const raw = (await req.json().catch(() => null)) as unknown;
   const body: EntryBody = isRecord(raw) ? (raw as EntryBody) : {};
@@ -263,6 +266,9 @@ export async function PATCH(req: Request) {
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
   const isAdmin = session.role === Role.ADMIN;
+    if (isAdmin) {
+    return NextResponse.json({ error: "Admins dürfen keine Arbeitszeiten bearbeiten." }, { status: 403 });
+  }
 
   const raw = (await req.json().catch(() => null)) as unknown;
   const body: EntryBody = isRecord(raw) ? (raw as EntryBody) : {};
@@ -371,6 +377,10 @@ export async function DELETE(req: Request) {
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
   const isAdmin = session.role === Role.ADMIN;
+
+  if (isAdmin) {
+    return NextResponse.json({ error: "Admins dürfen keine Arbeitszeiten löschen." }, { status: 403 });
+  }
 
   const url = new URL(req.url);
   const id = url.searchParams.get("id");

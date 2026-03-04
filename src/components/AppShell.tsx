@@ -96,10 +96,18 @@ export default function AppShell({
               <Link className={`pill ${isActive(pathname, "/kalender") ? "pill-active" : ""}`} href="/kalender">
                 {isAdmin ? "🗓 Termine" : "🗓 Kalender"}
               </Link>
+              
+              {!isAdmin && (
+                <Link className={`pill ${isActive(pathname, "/uebersicht") ? "pill-active" : ""}`} href="/uebersicht">
+                  ▦ Übersicht
+                  </Link>
+                )}
 
-              <Link className={`pill ${isActive(pathname, "/uebersicht") ? "pill-active" : ""}`} href="/uebersicht">
-                ▦ Übersicht
-              </Link>
+              {isAdmin && (
+                <Link className={`pill ${isActive(pathname, "/admin/dashboard") ? "pill-active" : ""}`} href="/admin/dashboard">
+                  ▦ Admin-Übersicht
+                  </Link>
+                )}
 
               {isAdmin && (
                 <Link
