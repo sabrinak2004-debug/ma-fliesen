@@ -417,3 +417,18 @@ body {
   color: rgba(255,255,255,0.70);
   font-size: 12px;
 }
+
+ul {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 0;
+}
+ul {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 0;
+}
+
+li {
+  list-style: none;
+}

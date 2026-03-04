@@ -29,7 +29,13 @@ function endOfWeekSunday(d: Date) {
   return res;
 }
 
-export async function GET() {
+function lastDayOfMonth(ym: string) {
+  const [y, m] = ym.split("-").map(Number);
+  const last = new Date(y, m, 0);
+  return String(last.getDate()).padStart(2, "0");
+}
+
+export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
 
@@ -39,14 +45,22 @@ export async function GET() {
 
   const now = new Date();
   const todayIso = dateOnlyLocalIso(now);
+  const url = new URL(req.url);
+  const monthParam = url.searchParams.get("month") ?? todayIso.slice(0, 7);
+  
+  if (!/^\d{4}-\d{2}$/.test(monthParam)) {
+    return NextResponse.json(
+        { ok: false, error: "Ungültiger Monat." },
+        { status: 400 }
+    );
+}
+
+const monthStartIso = `${monthParam}-01`;
+const monthEndIso = `${monthParam}-${lastDayOfMonth(monthParam)}`;
+
 
   const weekStart = startOfWeekMonday(now);
   const weekEnd = endOfWeekSunday(now);
-
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const monthStartIso = dateOnlyLocalIso(monthStart);
-  const monthEndIso = dateOnlyLocalIso(monthEnd);
 
   // Mitarbeiterliste (nur aktive EMPLOYEE)
   const employees = await prisma.appUser.findMany({
@@ -103,6 +117,104 @@ export async function GET() {
     }
   }
   const missingWeek = Math.max(0, totalExpected - presentCount);
+  
+  const workEntriesMonth = await prisma.workEntry.findMany({
+    where: {
+        workDate: {
+            gte: new Date(`${monthStartIso}T00:00:00.000Z`),
+            lte: new Date(`${monthEndIso}T00:00:00.000Z`),
+        },
+    },
+    select: {
+        userId: true,
+        workDate: true,
+        startTime: true,
+        endTime: true,
+        activity: true,
+        location: true,
+        workMinutes: true,
+    },
+});
+const absencesMonth = await prisma.absence.findMany({
+  where: {
+    absenceDate: {
+      gte: new Date(`${monthStartIso}T00:00:00.000Z`),
+      lte: new Date(`${monthEndIso}T00:00:00.000Z`),
+    },
+  },
+  select: {
+    userId: true,
+    absenceDate: true,
+    type: true,
+  },
+});
+
+const employeesTimeline = employees.map((e) => {
+  const items: Array<
+    | {
+        type: "WORK";
+        date: string;
+        startHHMM: string;
+        endHHMM: string;
+        activity: string | null;
+        location: string | null;
+        workMinutes: number;
+      }
+    | {
+        type: "VACATION" | "SICK";
+        date: string;
+      }
+  > = [];
+
+  for (const w of workEntriesMonth) {
+    if (w.userId !== e.id) continue;
+
+    const d = new Date(w.workDate);
+    const date = dateOnlyLocalIso(d);
+
+    const start = new Date(w.startTime);
+    const end = new Date(w.endTime);
+
+    const startHHMM = `${String(start.getUTCHours()).padStart(2, "0")}:${String(
+      start.getUTCMinutes()
+    ).padStart(2, "0")}`;
+
+    const endHHMM = `${String(end.getUTCHours()).padStart(2, "0")}:${String(
+      end.getUTCMinutes()
+    ).padStart(2, "0")}`;
+
+    items.push({
+      type: "WORK",
+      date,
+      startHHMM,
+      endHHMM,
+      activity: w.activity ?? null,
+      location: w.location ?? null,
+      workMinutes: w.workMinutes ?? 0,
+    });
+  }
+
+  for (const a of absencesMonth) {
+    if (a.userId !== e.id) continue;
+
+    const d = new Date(a.absenceDate);
+    const date = dateOnlyLocalIso(d);
+
+    items.push({
+      type: a.type,
+      date,
+    });
+  }
+
+  items.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+
+  return {
+    userId: e.id,
+    fullName: e.fullName,
+    items,
+  };
+});
+
 
   // Überstunden Monat (wenn du schon "monthlyTargets" oder Sollstunden logik hast, integrieren wir das später sauber)
   // Hier: einfache Summe workMinutes im Monat (nur als Kennzahl)
@@ -129,5 +241,6 @@ export async function GET() {
       monthWorkMinutes: monthWorkAgg._sum.workMinutes ?? 0,
       employeesActive: employees.length,
     },
+    employeesTimeline,
   });
 }

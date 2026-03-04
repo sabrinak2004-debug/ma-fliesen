@@ -4,6 +4,46 @@ import React, { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 
+/* =========================
+   Types (Dashboard Timeline)
+   ========================= */
+
+type AdminTimelineWork = {
+  type: "WORK";
+  date: string; // YYYY-MM-DD
+  startHHMM: string; // HH:MM
+  endHHMM: string; // HH:MM
+  activity: string | null;
+  location: string | null;
+  workMinutes: number;
+};
+
+type AdminTimelineAbsence = {
+  type: "VACATION" | "SICK";
+  date: string; // YYYY-MM-DD
+};
+
+type AdminTimelineItem = AdminTimelineWork | AdminTimelineAbsence;
+
+type AdminEmployeeTimeline = {
+  userId: string;
+  fullName: string;
+  items: AdminTimelineItem[];
+};
+
+/* =========================
+   Types (UI Subcategories)
+   ========================= */
+
+type CatKey = "WORK" | "SICK" | "VACATION";
+type CatState = Record<CatKey, boolean>;
+
+const defaultCatState: CatState = { WORK: true, SICK: true, VACATION: true };
+
+/* =========================
+   Types (Dashboard + Overview)
+   ========================= */
+
 type DashboardCards = {
   plannedToday: number;
   absencesToday: number;
@@ -19,48 +59,12 @@ type AdminDashboardApiOk = {
   weekRange: { from: string; to: string };
   monthRange: { from: string; to: string };
   cards: DashboardCards;
+  employeesTimeline: AdminEmployeeTimeline[];
 };
 
 type AdminDashboardApiErr = { ok: false; error: string };
 
 type AdminDashboardApiResponse = AdminDashboardApiOk | AdminDashboardApiErr;
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-
-function isString(v: unknown): v is string {
-  return typeof v === "string";
-}
-
-function isNumber(v: unknown): v is number {
-  return typeof v === "number" && Number.isFinite(v);
-}
-
-function isAdminDashboardOk(v: unknown): v is AdminDashboardApiOk {
-  if (!isRecord(v)) return false;
-  if (v.ok !== true) return false;
-
-  const cards = v["cards"];
-  const weekRange = v["weekRange"];
-  const monthRange = v["monthRange"];
-
-  if (!isRecord(cards) || !isRecord(weekRange) || !isRecord(monthRange)) return false;
-
-  return (
-    isString(v["todayIso"]) &&
-    isString(weekRange["from"]) &&
-    isString(weekRange["to"]) &&
-    isString(monthRange["from"]) &&
-    isString(monthRange["to"]) &&
-    isNumber(cards["plannedToday"]) &&
-    isNumber(cards["absencesToday"]) &&
-    isNumber(cards["missingToday"]) &&
-    isNumber(cards["missingWeek"]) &&
-    isNumber(cards["monthWorkMinutes"]) &&
-    isNumber(cards["employeesActive"])
-  );
-}
 
 type OverviewByUserRow = {
   fullName: string;
@@ -86,6 +90,49 @@ type OverviewApiResponse = {
   isAdmin: boolean;
 };
 
+/* =========================
+   Type Guards
+   ========================= */
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function isString(v: unknown): v is string {
+  return typeof v === "string";
+}
+
+function isNumber(v: unknown): v is number {
+  return typeof v === "number" && Number.isFinite(v);
+}
+
+function isAdminDashboardOk(v: unknown): v is AdminDashboardApiOk {
+  if (!isRecord(v)) return false;
+  if (v.ok !== true) return false;
+
+  const cards = v["cards"];
+  const weekRange = v["weekRange"];
+  const monthRange = v["monthRange"];
+  const employeesTimeline = v["employeesTimeline"];
+
+  if (!isRecord(cards) || !isRecord(weekRange) || !isRecord(monthRange)) return false;
+  if (!Array.isArray(employeesTimeline)) return false;
+
+  return (
+    isString(v["todayIso"]) &&
+    isString(weekRange["from"]) &&
+    isString(weekRange["to"]) &&
+    isString(monthRange["from"]) &&
+    isString(monthRange["to"]) &&
+    isNumber(cards["plannedToday"]) &&
+    isNumber(cards["absencesToday"]) &&
+    isNumber(cards["missingToday"]) &&
+    isNumber(cards["missingWeek"]) &&
+    isNumber(cards["monthWorkMinutes"]) &&
+    isNumber(cards["employeesActive"])
+  );
+}
+
 function isOverviewRow(v: unknown): v is OverviewByUserRow {
   if (!isRecord(v)) return false;
   return (
@@ -103,7 +150,6 @@ function isOverviewApiResponse(v: unknown): v is OverviewApiResponse {
   if (!isRecord(v)) return false;
   const totals = v["totals"];
   const byUser = v["byUser"];
-
   if (!isRecord(totals) || !Array.isArray(byUser)) return false;
 
   return (
@@ -118,6 +164,10 @@ function isOverviewApiResponse(v: unknown): v is OverviewApiResponse {
     isNumber(totals["sickDays"])
   );
 }
+
+/* =========================
+   Helpers (Dates, Formatting)
+   ========================= */
 
 function monthKey(d: Date) {
   const yyyy = d.getFullYear();
@@ -149,12 +199,96 @@ function formatHours1(minutes: number) {
   return `${h.toFixed(1)}h`;
 }
 
+function formatDateDE(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dd = String(d).padStart(2, "0");
+  const mm = String(m).padStart(2, "0");
+  return `${dd}.${mm}.${y}`;
+}
+
+/* =========================
+   Absence grouping (ranges)
+   ========================= */
+
+type AbsenceRange = {
+  type: "VACATION" | "SICK";
+  from: string; // YYYY-MM-DD
+  to: string; // YYYY-MM-DD
+};
+
+function addDaysIso(iso: string, days: number) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + days);
+  const yyyy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function groupAbsenceRanges(items: AdminTimelineItem[]): AbsenceRange[] {
+  const abs = items
+    .filter((i): i is AdminTimelineAbsence => i.type === "VACATION" || i.type === "SICK")
+    .slice()
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+
+  const res: AbsenceRange[] = [];
+  for (const it of abs) {
+    const last = res[res.length - 1];
+
+    if (!last) {
+      res.push({ type: it.type, from: it.date, to: it.date });
+      continue;
+    }
+
+    const expectedNext = addDaysIso(last.to, 1);
+
+    if (last.type === it.type && it.date === expectedNext) {
+      last.to = it.date;
+      continue;
+    }
+
+    res.push({ type: it.type, from: it.date, to: it.date });
+  }
+
+  return res;
+}
+
+/* =========================
+   Accordion toggles
+   ========================= */
+
+function toggleUser(openUsers: Set<string>, id: string): Set<string> {
+  const next = new Set(openUsers);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  return next;
+}
+
+function toggleCat(prev: Record<string, CatState>, userId: string, cat: CatKey): Record<string, CatState> {
+  const cur = prev[userId] ?? defaultCatState;
+  return {
+    ...prev,
+    [userId]: {
+      ...cur,
+      [cat]: !cur[cat],
+    },
+  };
+}
+
+/* =========================
+   Page
+   ========================= */
+
 export default function AdminDashboardPage() {
   const ym = useMemo(() => monthKey(new Date()), []);
   const [month, setMonth] = useState<string>(ym);
 
   const [dash, setDash] = useState<AdminDashboardApiOk | null>(null);
   const [overview, setOverview] = useState<OverviewApiResponse | null>(null);
+
+  const [openUsers, setOpenUsers] = useState<Set<string>>(new Set());
+  const [openCats, setOpenCats] = useState<Record<string, CatState>>({});
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
@@ -218,9 +352,10 @@ export default function AdminDashboardPage() {
     (async () => {
       setLoading(true);
       setErr("");
+
       try {
         const [rd, ro] = await Promise.all([
-          fetch("/api/admin/dashboard"),
+          fetch(`/api/admin/dashboard?month=${encodeURIComponent(month)}`),
           fetch(`/api/overview?month=${encodeURIComponent(month)}`),
         ]);
 
@@ -230,8 +365,7 @@ export default function AdminDashboardPage() {
         if (!alive) return;
 
         if (!rd.ok) {
-          const msg =
-            isRecord(jd) && isString(jd["error"]) ? jd["error"] : "Dashboard konnte nicht geladen werden.";
+          const msg = isRecord(jd) && isString(jd["error"]) ? jd["error"] : "Dashboard konnte nicht geladen werden.";
           setErr(msg);
           setDash(null);
           setOverview(null);
@@ -247,7 +381,6 @@ export default function AdminDashboardPage() {
 
         // overview ist Admin-fähig, aber wir prüfen Shape
         if (!ro.ok || !isOverviewApiResponse(jo) || jo.isAdmin !== true) {
-          // Falls overview gesperrt wäre, zeigen wir zumindest dash
           setDash(jd);
           setOverview(null);
           return;
@@ -523,28 +656,195 @@ export default function AdminDashboardPage() {
 
         {loading ? (
           <div style={{ color: "var(--muted)" }}>Lade...</div>
-        ) : !overview ? (
-          <div style={{ color: "var(--muted)" }}>Keine Monatsdaten verfügbar.</div>
-        ) : overview.byUser.length === 0 ? (
-          <div style={{ color: "var(--muted)" }}>Keine Benutzer im Zeitraum.</div>
+        ) : !dash ? (
+          <div style={{ color: "var(--muted)" }}>Keine Dashboarddaten verfügbar.</div>
+        ) : dash.employeesTimeline.length === 0 ? (
+          <div style={{ color: "var(--muted)" }}>Keine Mitarbeiter im Zeitraum.</div>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
-            {overview.byUser
-              .filter((u) => u.role === "EMPLOYEE")
-              .sort((a, b) => b.workMinutes - a.workMinutes)
-              .map((u) => (
-                <div key={u.fullName} className="list-item">
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                    <div style={{ fontWeight: 900 }}>{u.fullName}</div>
-                    <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(u.workMinutes)}</div>
+            {dash.employeesTimeline
+              .slice()
+              .sort((a, b) => a.fullName.localeCompare(b.fullName))
+              .map((u) => {
+                const open = openUsers.has(u.userId);
+
+                const totalWorkMinutes = u.items
+                  .filter((i): i is AdminTimelineWork => i.type === "WORK")
+                  .reduce((sum, it) => sum + it.workMinutes, 0);
+
+                return (
+                  <div key={u.userId} className="list-item">
+                    {/* Employee header */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        flexWrap: "wrap",
+                        cursor: "pointer",
+                        fontWeight: 900,
+                      }}
+                      onClick={() => setOpenUsers((prev) => toggleUser(prev, u.userId))}
+                      title="Ein-/Ausklappen"
+                    >
+                      <div>{open ? "▼ " : "▶ "} {u.fullName}</div>
+                      <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(totalWorkMinutes)}</div>
+                    </div>
+
+                    {/* Employee body */}
+                    {open ? (
+                      <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                        {(() => {
+                          if (u.items.length === 0) {
+                            return <div style={{ color: "var(--muted)" }}>Keine Einträge.</div>;
+                          }
+
+                          const workItems = u.items
+                            .filter((i): i is AdminTimelineWork => i.type === "WORK")
+                            .slice()
+                            .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+
+                          const rangesAll = groupAbsenceRanges(u.items);
+                          const sickRanges = rangesAll.filter((r) => r.type === "SICK");
+                          const vacationRanges = rangesAll.filter((r) => r.type === "VACATION");
+
+                          const cat = openCats[u.userId] ?? defaultCatState;
+
+                          const sectionHeader = (key: CatKey, label: string, countText: string) => (
+                            <div
+                              onClick={() => setOpenCats((prev) => toggleCat(prev, u.userId, key))}
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                cursor: "pointer",
+                                padding: "8px 10px",
+                                borderRadius: 10,
+                                background: "rgba(255,255,255,0.03)",
+                                fontWeight: 1000,
+                              }}
+                              title="Ein-/Ausklappen"
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ opacity: 0.9 }}>{cat[key] ? "▼" : "▶"}</span>
+                                <span>{label}</span>
+                              </div>
+                              <div style={{ color: "var(--muted-2)", fontWeight: 900, fontSize: 12 }}>{countText}</div>
+                            </div>
+                          );
+
+                          return (
+                            <div style={{ display: "grid", gap: 10 }}>
+                              {/* ARBEIT */}
+                              {sectionHeader("WORK", "🛠 Arbeitszeiten", `${workItems.length} Eintrag${workItems.length === 1 ? "" : "e"}`)}
+                              {cat.WORK ? (
+                                workItems.length > 0 ? (
+                                  <div style={{ display: "grid", gap: 6 }}>
+                                    {workItems.map((it, idx) => (
+                                      <div
+                                        key={`w-${idx}`}
+                                        style={{
+                                          display: "flex",
+                                          justifyContent: "space-between",
+                                          gap: 10,
+                                          padding: "8px 10px",
+                                          borderRadius: 10,
+                                          background: "rgba(255,255,255,0.02)",
+                                          border: "1px solid rgba(255,255,255,0.06)",
+                                        }}
+                                      >
+                                        <div style={{ display: "grid", gap: 2 }}>
+                                          <div style={{ fontWeight: 1000 }}>
+                                            {formatDateDE(it.date)} · {it.startHHMM}–{it.endHHMM}
+                                          </div>
+
+                                          {(it.activity || it.location) ? (
+                                            <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
+                                              {it.activity ? it.activity : ""}
+                                              {it.activity && it.location ? " · " : ""}
+                                              {it.location ? it.location : ""}
+                                            </div>
+                                          ) : null}
+                                        </div>
+
+                                        <div style={{ color: "var(--accent)", fontWeight: 1100, whiteSpace: "nowrap" }}>
+                                          {formatHM(it.workMinutes)}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div style={{ color: "var(--muted)", paddingLeft: 6 }}>Keine Arbeitszeiten im Monat.</div>
+                                )
+                              ) : null}
+
+                              {/* KRANK */}
+                              {sectionHeader("SICK", "🌡 Krankheit", `${sickRanges.length} Zeitraum${sickRanges.length === 1 ? "" : "e"}`)}
+                              {cat.SICK ? (
+                                sickRanges.length > 0 ? (
+                                  <div style={{ display: "grid", gap: 6 }}>
+                                    {sickRanges.map((r, idx) => {
+                                      const from = formatDateDE(r.from);
+                                      const to = formatDateDE(r.to);
+                                      const text = r.from === r.to ? `${from}` : `${from}–${to}`;
+                                      return (
+                                        <div
+                                          key={`s-${idx}`}
+                                          style={{
+                                            padding: "8px 10px",
+                                            borderRadius: 10,
+                                            fontWeight: 1100,
+                                            background: "rgba(224,75,69,0.08)",
+                                            border: "1px solid rgba(224,75,69,0.14)",
+                                          }}
+                                        >
+                                          🌡 Krank · {text}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <div style={{ color: "var(--muted)", paddingLeft: 6 }}>Keine Krankheitstage im Monat.</div>
+                                )
+                              ) : null}
+
+                              {/* URLAUB */}
+                              {sectionHeader("VACATION", "🌴 Urlaub", `${vacationRanges.length} Zeitraum${vacationRanges.length === 1 ? "" : "e"}`)}
+                              {cat.VACATION ? (
+                                vacationRanges.length > 0 ? (
+                                  <div style={{ display: "grid", gap: 6 }}>
+                                    {vacationRanges.map((r, idx) => {
+                                      const from = formatDateDE(r.from);
+                                      const to = formatDateDE(r.to);
+                                      const text = r.from === r.to ? `${from}` : `${from}–${to}`;
+                                      return (
+                                        <div
+                                          key={`v-${idx}`}
+                                          style={{
+                                            padding: "8px 10px",
+                                            borderRadius: 10,
+                                            fontWeight: 1100,
+                                            background: "rgba(90,167,255,0.08)",
+                                            border: "1px solid rgba(90,167,255,0.14)",
+                                          }}
+                                        >
+                                          🌴 Urlaub · {text}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <div style={{ color: "var(--muted)", paddingLeft: 6 }}>Kein Urlaub im Monat.</div>
+                                )
+                              ) : null}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    ) : null}
                   </div>
-                  <div style={{ color: "var(--muted-2)", marginTop: 8, display: "flex", gap: 18, flexWrap: "wrap" }}>
-                    <span>🧾 {u.entriesCount} Einträge</span>
-                    {u.vacationDays > 0 ? <span style={{ color: "rgba(90, 167, 255, 0.95)" }}>🌴 {u.vacationDays}d Urlaub</span> : null}
-                    {u.sickDays > 0 ? <span style={{ color: "rgba(224, 75, 69, 0.95)" }}>🌡 {u.sickDays}d Krank</span> : null}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
           </div>
         )}
       </div>
