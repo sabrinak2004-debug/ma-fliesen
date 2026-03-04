@@ -378,7 +378,7 @@ export default function AppShell({
           cursor: "pointer",
         }}
       >
-        🚪 Logout
+        Logout
       </button>
     </div>
   </div>
