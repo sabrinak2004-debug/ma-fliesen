@@ -106,7 +106,10 @@ model WorkEntry {
   location      String
   distanceKm    Decimal @default(0)
   travelMinutes Int     @default(0)
-  workMinutes   Int
+  grossMinutes  Int     @default(0)  // Brutto ohne Pause (Start-Ende)
+  breakMinutes  Int     @default(0)  // Pause in Minuten (manuell oder auto)
+  breakAuto     Boolean @default(false) // true = automatisch abgezogen
+  workMinutes   Int     // Netto (Brutto - Pause)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

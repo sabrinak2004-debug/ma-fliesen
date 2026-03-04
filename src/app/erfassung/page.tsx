@@ -18,6 +18,9 @@ type WorkEntry = {
   distanceKm: string;
   travelMinutes: number;
   workMinutes: number;
+  grossMinutes: number;
+  breakMinutes: number;
+  breakAuto: boolean;
   user: { id: string; fullName: string };
 };
 
@@ -48,6 +51,13 @@ function formatHoursDE(workMinutes: number) {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   }).format(hours);
+}
+
+function formatHM(minutes: number) {
+  const m = Number.isFinite(minutes) ? Math.max(0, Math.round(minutes)) : 0;
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return `${h}h ${String(mm).padStart(2, "0")}min`;
 }
 
 /** Gruppierung Monat/Jahr */
@@ -101,6 +111,7 @@ type EditForm = {
   location: string;
   distanceKm: string;
   travelMinutes: string;
+  breakMinutes: string;
   userFullName: string; // ✅ nur Anzeige im Modal
 };
 
@@ -111,6 +122,26 @@ function minutesBetween(startHHMM: string, endHHMM: string) {
   const start = sh * 60 + sm;
   const end = eh * 60 + em;
   return Math.max(0, end - start);
+}
+function legalBreakMinutes(grossMinutes: number): number {
+  if (!Number.isFinite(grossMinutes) || grossMinutes <= 0) return 0;
+  if (grossMinutes > 9 * 60) return 45;
+  if (grossMinutes > 6 * 60) return 30;
+  return 0;
+}
+
+function previewNetMinutes(grossMinutes: number, breakInput: string): { net: number; brk: number; auto: boolean } {
+  const gross = Math.max(0, Math.round(grossMinutes));
+  const inputNum = breakInput.trim() ? Number(breakInput) : 0;
+  const valid = Number.isFinite(inputNum) ? inputNum : 0;
+
+  if (valid <= 0) {
+    const brk = legalBreakMinutes(gross);
+    return { net: Math.max(0, gross - brk), brk, auto: true };
+  }
+
+  const brk = Math.min(Math.max(0, Math.round(valid)), gross);
+  return { net: Math.max(0, gross - brk), brk, auto: false };
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -152,6 +183,7 @@ export default function Page() {
   const [location, setLocation] = useState("");
   const [distanceKm, setDistanceKm] = useState<string>("0");
   const [travelMinutes, setTravelMinutes] = useState<string>("0");
+  const [breakMinutes, setBreakMinutes] = useState<string>(""); // leer = automatisch
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,7 +197,11 @@ export default function Page() {
   const [editError, setEditError] = useState<string | null>(null);
   const [edit, setEdit] = useState<EditForm | null>(null);
 
-  const workMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
+  const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
+  const netPreview = useMemo(
+    () => previewNetMinutes(grossPreviewMinutes, breakMinutes),
+    [grossPreviewMinutes, breakMinutes]
+  );
 
   const monthHours = useMemo(() => {
     const month = workDate.slice(0, 7);
@@ -237,6 +273,7 @@ useEffect(() => {
         location: location.trim(),
         distanceKm: Number(distanceKm.replace(",", ".")) || 0,
         travelMinutes: Number(travelMinutes) || 0,
+        breakMinutes: breakMinutes.trim() ? Number(breakMinutes) : 0,
       };
 
       const r = await fetch("/api/entries", {
@@ -260,6 +297,7 @@ useEffect(() => {
       setLocation("");
       setDistanceKm("0");
       setTravelMinutes("0");
+      setBreakMinutes("");
 
       await loadEntries();
     } catch {
@@ -286,6 +324,7 @@ useEffect(() => {
       location: e.location ?? "",
       distanceKm: e.distanceKm ?? "0",
       travelMinutes: String(e.travelMinutes ?? 0),
+      breakMinutes: String(e.breakMinutes ?? 0),
     });
     setEditOpen(true);
   }
@@ -308,6 +347,7 @@ useEffect(() => {
         location: edit.location.trim(),
         distanceKm: Number(edit.distanceKm.replace(",", ".")) || 0,
         travelMinutes: Number(edit.travelMinutes) || 0,
+        breakMinutes: edit.breakMinutes.trim() ? Number(edit.breakMinutes) : 0,
       };
 
       const r = await fetch("/api/entries", {
@@ -356,9 +396,11 @@ useEffect(() => {
     return `${y}-${m}`;
   }, []);
 
-  const editWorkMinutes = useMemo(() => {
-    if (!edit) return 0;
-    return minutesBetween(edit.startTime, edit.endTime);
+  const editPreview = useMemo(() => {
+    if (!edit) return { net: 0, brk: 0, auto: true, gross: 0 };
+    const gross = minutesBetween(edit.startTime, edit.endTime);
+    const p = previewNetMinutes(gross, edit.breakMinutes);
+    return { gross, net: p.net, brk: p.brk, auto: p.auto };
   }, [edit]);
 
   const meName = me && me.ok ? me.user.fullName : "";
@@ -370,7 +412,7 @@ useEffect(() => {
         <div className="card kpi">
           <div>
             <div className="small">Arbeitsstunden (Monat)</div>
-            <div className="big">{(monthHours / 60).toFixed(1)}h</div>
+            <div className="big">{formatHM(monthHours)}</div>
             <div className="small">Soll: 160h</div>
           </div>
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>⏱</div>
@@ -437,7 +479,10 @@ useEffect(() => {
         <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
             <div style={{ color: "var(--muted)" }}>Arbeitszeit (berechnet)</div>
-            <div style={{ fontWeight: 900, color: "var(--accent)" }}>{(workMinutes / 60).toFixed(2)} Std.</div>
+            <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(netPreview.net)}</div>
+          <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
+            Brutto: {formatHM(grossPreviewMinutes)} · Pause: {netPreview.brk} Min {netPreview.auto ? "(auto)" : "(manuell)"}
+          </div>
           </div>
         </div>
 
@@ -482,6 +527,20 @@ useEffect(() => {
           </div>
         </div>
 
+        <div style={{ marginBottom: 12 }}>
+          <div className="label">Pause (Min.)</div>
+          <input
+            className="input"
+            inputMode="numeric"
+            placeholder="leer = gesetzlich automatisch"
+            value={breakMinutes}
+            onChange={(e) => setBreakMinutes(e.target.value)}
+          />
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+            Wenn du nichts einträgst (oder 0), wird die gesetzliche Pause automatisch abgezogen.
+          </div>
+        </div>
+
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
           <button
             className="btn"
@@ -491,6 +550,7 @@ useEffect(() => {
               setLocation("");
               setDistanceKm("0");
               setTravelMinutes("0");
+              setBreakMinutes("");
             }}
           >
             Abbrechen
@@ -552,6 +612,11 @@ useEffect(() => {
                     const hasDistance = Number(e.distanceKm) > 0;
                     const hasTravel = e.travelMinutes > 0;
 
+                    const hasBreak = (e.breakMinutes ?? 0) > 0 || (e.breakAuto ?? false);
+                    const breakLabel = (e.breakAuto ?? false) ? "auto" : "manuell";
+                    const grossHM = formatHM(e.grossMinutes ?? 0);
+                    const netHM = formatHM(e.workMinutes ?? 0);
+
                     return (
                       <div key={e.id} className="entry-card" style={{ margin: "0 12px" }}>
                         <div className="entry-accent" />
@@ -570,8 +635,7 @@ useEffect(() => {
 
                             <div className="entry-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                               <div className="entry-hours">
-                                <span className="entry-hours-number">{formatHoursDE(e.workMinutes)}</span>
-                                <span className="entry-hours-unit">h</span>
+                                <span className="entry-hours-number">{formatHM(e.workMinutes ?? 0)}</span>
                               </div>
 
                               <button className="icon-btn" onClick={() => openEditModal(e)} aria-label="Bearbeiten" title="Bearbeiten">
@@ -597,12 +661,23 @@ useEffect(() => {
                               </div>
                             ) : null}
 
-                            {hasDistance || hasTravel ? (
-                              <div className="entry-chips">
-                                {hasDistance ? <span className="chip">🚗 {e.distanceKm} km</span> : null}
-                                {hasTravel ? <span className="chip">⏱ {e.travelMinutes} Min</span> : null}
-                              </div>
-                            ) : null}
+{hasDistance || hasTravel || hasBreak ? (
+  <div className="entry-chips">
+    {/* ✅ Pause anzeigen */}
+    {hasBreak ? (
+      <span className="chip">
+        ☕ Pause {e.breakMinutes ?? 0} Min ({breakLabel})
+      </span>
+    ) : null}
+
+    {/* ✅ optional: Brutto/Netto anzeigen */}
+    <span className="chip">🧮 Brutto {grossHM}</span>
+    <span className="chip">✅ Netto {netHM}</span>
+
+    {hasDistance ? <span className="chip">🚗 {e.distanceKm} km</span> : null}
+    {hasTravel ? <span className="chip">⏱ {e.travelMinutes} Min</span> : null}
+  </div>
+) : null}
                           </div>
                         </div>
                       </div>
@@ -698,7 +773,13 @@ useEffect(() => {
             <div className="card" style={{ padding: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ color: "var(--muted)" }}>Arbeitszeit (berechnet)</div>
-                <div style={{ fontWeight: 900, color: "var(--accent)" }}>{(editWorkMinutes / 60).toFixed(2)} Std.</div>
+                <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(editPreview.net)}</div>
+                <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
+                  Pause: {editPreview.brk} Min {editPreview.auto ? "(auto)" : "(manuell)"}
+                  </div>
+              <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
+                Brutto: {formatHM(editPreview.gross)} · Pause: {editPreview.brk} Min {editPreview.auto ? "(auto)" : "(manuell)"}
+              </div>
               </div>
             </div>
 
@@ -738,6 +819,19 @@ useEffect(() => {
                   value={edit.travelMinutes}
                   onChange={(e) => setEdit((p) => (p ? { ...p, travelMinutes: e.target.value } : p))}
                 />
+              </div>
+            </div>
+            <div>
+              <div className="label">Pause (Min.)</div>
+              <input
+                className="input"
+                inputMode="numeric"
+                placeholder="0/leer = gesetzlich automatisch"
+                value={edit.breakMinutes}
+                onChange={(e) => setEdit((p) => (p ? { ...p, breakMinutes: e.target.value } : p))}
+              />
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+                Wenn leer oder 0, wird die gesetzliche Pause automatisch abgezogen.
               </div>
             </div>
           </div>

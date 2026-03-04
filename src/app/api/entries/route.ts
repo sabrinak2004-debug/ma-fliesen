@@ -46,6 +46,27 @@ function assertEmployeeMayEditDate(role: Role, workDateYMD: string) {
   }
 }
 
+function legalBreakMinutes(grossMinutes: number): number {
+  if (!Number.isFinite(grossMinutes) || grossMinutes <= 0) return 0;
+  if (grossMinutes > 9 * 60) return 45;
+  if (grossMinutes > 6 * 60) return 30;
+  return 0;
+}
+
+function normalizeBreakMinutes(input: number, grossMinutes: number): { breakMinutes: number; breakAuto: boolean } {
+  const safeGross = Math.max(0, Math.round(grossMinutes));
+
+  // Wenn nicht eingetragen oder 0/negativ -> automatisch
+  if (!Number.isFinite(input) || input <= 0) {
+    return { breakMinutes: legalBreakMinutes(safeGross), breakAuto: true };
+  }
+
+  const b = Math.max(0, Math.round(input));
+  // Pause darf brutto nicht überschreiten
+  const capped = Math.min(b, safeGross);
+  return { breakMinutes: capped, breakAuto: false };
+}
+
 type EntryBody = {
   id?: unknown;
 
@@ -59,6 +80,7 @@ type EntryBody = {
   location?: unknown;
   distanceKm?: unknown;
   travelMinutes?: unknown;
+  breakMinutes?: unknown; // optional: Pause in Minuten
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -86,6 +108,9 @@ type EntryDTO = {
   distanceKm: string; // string fürs UI
   travelMinutes: number;
   workMinutes: number;
+  grossMinutes: number;
+  breakMinutes: number;
+  breakAuto: boolean;
   user: { id: string; fullName: string };
 };
 
@@ -129,6 +154,9 @@ export async function GET(req: Request) {
     distanceKm: (e.distanceKm ?? new Prisma.Decimal(0)).toString(),
     travelMinutes: e.travelMinutes ?? 0,
     workMinutes: e.workMinutes ?? 0,
+    grossMinutes: e.grossMinutes ?? 0,
+    breakMinutes: e.breakMinutes ?? 0,
+    breakAuto: e.breakAuto ?? false,
     user: { id: e.user.id, fullName: e.user.fullName },
   }));
 
@@ -163,6 +191,9 @@ export async function POST(req: Request) {
   const start = timeOnly(startTime);
   const end = timeOnly(endTime);
   const diffMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+  const breakInput = getNumber(body.breakMinutes);
+  const brk = normalizeBreakMinutes(breakInput, diffMin);
+  const netMin = Math.max(0, diffMin - brk.breakMinutes);
 
   const distanceKmNum = getNumber(body.distanceKm);
   const travelMinutesNum = Math.max(0, Math.round(getNumber(body.travelMinutes)));
@@ -192,7 +223,10 @@ export async function POST(req: Request) {
       location,
       distanceKm: new Prisma.Decimal(distanceKmNum),
       travelMinutes: travelMinutesNum,
-      workMinutes: diffMin,
+      grossMinutes: diffMin,
+      breakMinutes: brk.breakMinutes,
+      breakAuto: brk.breakAuto,
+      workMinutes: netMin,
     },
     include: { user: { select: { id: true, fullName: true } } },
   });
@@ -207,6 +241,9 @@ export async function POST(req: Request) {
     distanceKm: (created.distanceKm ?? new Prisma.Decimal(0)).toString(),
     travelMinutes: created.travelMinutes ?? 0,
     workMinutes: created.workMinutes ?? 0,
+    grossMinutes: created.grossMinutes ?? 0,
+    breakMinutes: created.breakMinutes ?? 0,
+    breakAuto: created.breakAuto ?? false,
     user: { id: created.user.id, fullName: created.user.fullName },
   };
 
@@ -280,6 +317,9 @@ export async function PATCH(req: Request) {
   const start = timeOnly(startTime);
   const end = timeOnly(endTime);
   const diffMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+  const breakInput = getNumber(body.breakMinutes);
+  const brk = normalizeBreakMinutes(breakInput, diffMin);
+  const netMin = Math.max(0, diffMin - brk.breakMinutes);
 
   const distanceKmNum = getNumber(body.distanceKm);
   const travelMinutesNum = Math.max(0, Math.round(getNumber(body.travelMinutes)));
@@ -309,7 +349,10 @@ export async function PATCH(req: Request) {
       location,
       distanceKm: new Prisma.Decimal(distanceKmNum),
       travelMinutes: travelMinutesNum,
-      workMinutes: diffMin,
+      grossMinutes: diffMin,
+      breakMinutes: brk.breakMinutes,
+      breakAuto: brk.breakAuto,
+      workMinutes: netMin,
     },
     include: { user: { select: { id: true, fullName: true } } },
   });
@@ -324,6 +367,9 @@ export async function PATCH(req: Request) {
     distanceKm: (updated.distanceKm ?? new Prisma.Decimal(0)).toString(),
     travelMinutes: updated.travelMinutes ?? 0,
     workMinutes: updated.workMinutes ?? 0,
+    grossMinutes: updated.grossMinutes ?? 0,
+    breakMinutes: updated.breakMinutes ?? 0,
+    breakAuto: updated.breakAuto ?? false,
     user: { id: updated.user.id, fullName: updated.user.fullName },
   };
 

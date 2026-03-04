@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "WorkEntry" ADD COLUMN     "breakAuto" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "breakMinutes" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "grossMinutes" INTEGER NOT NULL DEFAULT 0;

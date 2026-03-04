@@ -24,6 +24,23 @@ function minutesBetween(startHHMM: string, endHHMM: string) {
   return Math.max(0, end - start);
 }
 
+function legalBreakMinutes(grossMinutes: number): number {
+  if (!Number.isFinite(grossMinutes) || grossMinutes <= 0) return 0;
+  if (grossMinutes > 9 * 60) return 45;
+  if (grossMinutes > 6 * 60) return 30;
+  return 0;
+}
+
+function normalizeBreakMinutes(input: number | undefined, grossMinutes: number): { breakMinutes: number; breakAuto: boolean } {
+  const safeGross = Math.max(0, Math.round(grossMinutes));
+  const inVal = typeof input === "number" && Number.isFinite(input) ? input : 0;
+
+  if (inVal <= 0) return { breakMinutes: legalBreakMinutes(safeGross), breakAuto: true };
+
+  const b = Math.max(0, Math.round(inVal));
+  return { breakMinutes: Math.min(b, safeGross), breakAuto: false };
+}
+
 function hhmmFromTime(dt: Date) {
   const h = String(dt.getUTCHours()).padStart(2, "0");
   const m = String(dt.getUTCMinutes()).padStart(2, "0");
@@ -45,6 +62,9 @@ type WorkEntryUI = {
   location: string;
   travelMinutes: number;
   workMinutes: number;
+  grossMinutes: number;
+  breakMinutes: number;
+  breakAuto: boolean;
   user: { id: string; fullName: string };
 };
 
@@ -58,6 +78,7 @@ type WorkEntryPostBody = {
   location?: string;
   distanceKm?: number;
   travelMinutes?: number;
+  breakMinutes?: number;
 };
 
 export async function GET(req: Request) {
@@ -90,6 +111,9 @@ export async function GET(req: Request) {
     location: e.location,
     travelMinutes: e.travelMinutes,
     workMinutes: e.workMinutes,
+    grossMinutes: e.grossMinutes ?? 0,
+    breakMinutes: e.breakMinutes ?? 0,
+    breakAuto: e.breakAuto ?? false,
     user: e.user,
   }));
 
@@ -118,13 +142,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
-  const workMinutes = minutesBetween(startHHMM, endHHMM);
-  if (workMinutes <= 0) {
-    return NextResponse.json(
-      { error: "endHHMM must be after startHHMM" },
-      { status: 400 }
-    );
+  const grossMinutes = minutesBetween(startHHMM, endHHMM);
+  if (grossMinutes <= 0) {
+    return NextResponse.json({ error: "endHHMM must be after startHHMM" }, { status: 400 });
   }
+
+  const brk = normalizeBreakMinutes(body.breakMinutes, grossMinutes);
+  const netMinutes = Math.max(0, grossMinutes - brk.breakMinutes);
 
   const data: Prisma.WorkEntryUncheckedCreateInput = {
     userId: String(userId),
@@ -135,7 +159,10 @@ export async function POST(req: Request) {
     location: location ? String(location) : "",
     distanceKm: distanceKm ?? 0,
     travelMinutes: travelMinutes ?? 0,
-    workMinutes,
+    grossMinutes,
+    breakMinutes: brk.breakMinutes,
+    breakAuto: brk.breakAuto,
+    workMinutes: netMinutes,
   };
 
   const saved = id
