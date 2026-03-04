@@ -48,6 +48,19 @@ function initialsFromName(fullName: string) {
   return (a + b).toUpperCase();
 }
 
+function mobileLinkStyle(active: boolean): React.CSSProperties {
+  return {
+    display: "block",
+    padding: "12px 12px",
+    borderRadius: 14,
+    textDecoration: "none",
+    fontWeight: 900,
+    border: `1px solid ${active ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0.12)"}`,
+    background: active ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.9)",
+    color: "rgba(0,0,0,0.92)",
+  };
+}
+
 export default function AppShell({
   children,
   activeLabel,
@@ -60,6 +73,7 @@ export default function AppShell({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -109,6 +123,223 @@ export default function AppShell({
 
   return (
     <div style={{ padding: "18px 0 42px" }}>
+      {/* MOBILE: Topbar mit Burger (Desktop bleibt unverändert) */}
+        <div
+          className="md:hidden"
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 60,
+            background: "white",
+            borderBottom: "1px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              padding: "10px 12px",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Menü öffnen"
+              style={{
+                padding: "8px 10px",
+                borderRadius: 12,
+                border: "1px solid rgba(0,0,0,0.12)",
+                background: "rgba(255,255,255,0.9)",
+                cursor: "pointer",
+                fontWeight: 900,
+              }}
+            >
+              ☰
+            </button>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+              <Image
+                src="/logo-ma-fliesen.jpeg"
+                alt="ma-fliesen Logo"
+                width={90}
+                height={30}
+                priority
+                style={{ objectFit: "contain" }}
+              />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 900, lineHeight: 1.05, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  ma-fliesen
+                </div>
+                <div style={{ color: "rgba(0,0,0,0.55)", fontSize: 12, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {activeLabel ?? "#wirkönnendas"}
+                </div>
+              </div>
+            </div>
+
+            {/* User Kurzbutton (öffnet normales Dropdown nicht; nur Anzeige) */}
+            <div
+              aria-hidden="true"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 999,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 900,
+                border: "1px solid rgba(0,0,0,0.12)",
+                background: "rgba(255,255,255,0.9)",
+              }}
+            >
+              {userInitials}
+            </div>
+          </div>
+        </div>
+
+        {/* MOBILE: Sidebar Drawer */}
+        {mobileOpen && (
+          <div className="md:hidden" style={{ position: "fixed", inset: 0, zIndex: 80 }}>
+            {/* Overlay */}
+            <button
+              type="button"
+              aria-label="Menü schließen"
+              onClick={() => setMobileOpen(false)}
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "rgba(0,0,0,0.40)",
+                border: "none",
+                padding: 0,
+              }}
+            />
+
+            {/* Drawer */}
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                height: "100%",
+                width: 290,
+                background: "white",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+                padding: 14,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 900 }}>{userName}</div>
+                  <div style={{ fontSize: 12, color: "rgba(0,0,0,0.6)", marginTop: 2 }}>
+                    {isAdmin ? "Admin" : "Mitarbeiter"}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen(false)}
+                  aria-label="Schließen"
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(0,0,0,0.12)",
+                    background: "rgba(255,255,255,0.9)",
+                    cursor: "pointer",
+                    fontWeight: 900,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ height: 6 }} />
+
+              {/* Nav Links (gleiche Logik wie Desktop) */}
+              <nav style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {!isAdmin && (
+                  <Link
+                    href="/erfassung"
+                    onClick={() => setMobileOpen(false)}
+                    style={mobileLinkStyle(isActive(pathname, "/erfassung"))}
+                  >
+                    ⊞ Erfassung
+                  </Link>
+                )}
+
+                <Link
+                  href="/kalender"
+                  onClick={() => setMobileOpen(false)}
+                  style={mobileLinkStyle(isActive(pathname, "/kalender"))}
+                >
+                  🗓 {isAdmin ? "Termine" : "Kalender"}
+                </Link>
+
+                {!isAdmin && (
+                  <Link
+                    href="/uebersicht"
+                    onClick={() => setMobileOpen(false)}
+                    style={mobileLinkStyle(isActive(pathname, "/uebersicht"))}
+                  >
+                    ▦ Übersicht
+                  </Link>
+                )}
+
+                {isAdmin && (
+                  <Link
+                    href="/admin/dashboard"
+                    onClick={() => setMobileOpen(false)}
+                    style={mobileLinkStyle(isActive(pathname, "/admin/dashboard"))}
+                  >
+                    ▦ Admin-Übersicht
+                  </Link>
+                )}
+
+                {isAdmin && (
+                  <Link
+                    href="/admin/wochenplan"
+                    onClick={() => setMobileOpen(false)}
+                    style={mobileLinkStyle(isActive(pathname, "/admin/wochenplan"))}
+                  >
+                    🧑‍💼 Wochenplan
+                  </Link>
+                )}
+
+                {isAdmin && (
+                  <Link
+                    href="/admin/password-reset"
+                    onClick={() => setMobileOpen(false)}
+                    style={mobileLinkStyle(isActive(pathname, "/admin/password-reset"))}
+                  >
+                    🔐 Passwort-Reset
+                  </Link>
+                )}
+              </nav>
+
+              <div style={{ flex: 1 }} />
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                style={{
+                  width: "100%",
+                  padding: "12px 12px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,80,80,0.28)",
+                  background: "rgba(255,80,80,0.14)",
+                  color: "rgba(0,0,0,0.92)",
+                  fontWeight: 900,
+                  cursor: "pointer",
+                }}
+              >
+                🚪 Logout
+              </button>
+            </div>
+          </div>
+        )}
       <div className="container-app">
         <div className="topbar" style={{ padding: 14, marginBottom: 18 }}>
           <div
@@ -142,6 +373,7 @@ export default function AppShell({
             {/* Nav + User menu */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div
+                className="hidden md:flex"
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -198,7 +430,7 @@ export default function AppShell({
               </div>
 
               {/* User dropdown */}
-              <div ref={menuRef} style={{ position: "relative" }}>
+              <div ref={menuRef} className="hidden md:block" style={{ position: "relative" }}>
                 <button
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
