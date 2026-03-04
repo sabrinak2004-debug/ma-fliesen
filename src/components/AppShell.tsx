@@ -86,11 +86,12 @@ export default function AppShell({
                 </div>
               </div>
             </div>
-
-            <div className="nav-pills">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {!isAdmin && (
               <Link className={`pill ${isActive(pathname, "/erfassung") ? "pill-active" : ""}`} href="/erfassung">
                 ⊞ Erfassung
-              </Link>
+                </Link>
+              )}
 
               <Link className={`pill ${isActive(pathname, "/kalender") ? "pill-active" : ""}`} href="/kalender">
                 {isAdmin ? "🗓 Termine" : "🗓 Kalender"}

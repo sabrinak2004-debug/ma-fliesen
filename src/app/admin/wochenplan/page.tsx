@@ -718,7 +718,7 @@ export default function AdminWochenplanPage() {
 
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <Link
-            href="/erfassung"
+            href="/kalender"
             className="pill"
             style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
           >
