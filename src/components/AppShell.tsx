@@ -61,6 +61,23 @@ function mobileLinkStyle(active: boolean): React.CSSProperties {
   };
 }
 
+function mobileItemStyle(active: boolean): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "16px 16px",
+    borderRadius: 18,
+    textDecoration: "none",
+    fontWeight: 900,
+    fontSize: 22,
+    border: "1px solid rgba(0,0,0,0.12)",
+    background: active ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.75)",
+    color: "rgba(0,0,0,0.92)",
+    boxShadow: active ? "inset 0 0 0 1px rgba(0,0,0,0.08)" : "none",
+  };
+}
+
 export default function AppShell({
   children,
   activeLabel,
@@ -108,6 +125,10 @@ export default function AppShell({
   }, []);
 
   const isAdmin = session?.role === "ADMIN";
+
+  useEffect(() => {
+  setMobileOpen(false);
+}, [pathname]);
 
   async function handleLogout() {
     try {
@@ -341,7 +362,188 @@ export default function AppShell({
           </div>
         )}
       <div className="container-app">
-        <div className="topbar" style={{ padding: 14, marginBottom: 18 }}>
+        {/* MOBILE TOPBAR (nur < md) */}
+        <div
+          className="md:hidden"
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 70,
+            padding: 12,
+            marginBottom: 12,
+            background: "rgba(14,16,14,0.92)",
+            backdropFilter: "blur(10px)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            borderRadius: 18,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Menü öffnen"
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.95)",
+                fontSize: 18,
+                fontWeight: 900,
+                cursor: "pointer",
+              }}
+            >
+              ☰
+            </button>
+
+            <div style={{ minWidth: 0, textAlign: "center", flex: 1 }}>
+              <div style={{ fontWeight: 900, color: "rgba(255,255,255,0.95)", lineHeight: 1.05 }}>
+                ma-fliesen
+              </div>
+              <div style={{ fontSize: 12, marginTop: 2, color: "rgba(255,255,255,0.65)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {activeLabel ?? "#wirkönnendas"}
+              </div>
+            </div>
+
+            <div
+              aria-hidden="true"
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.95)",
+                fontWeight: 900,
+              }}
+            >
+              {userInitials}
+            </div>
+          </div>
+        </div>
+
+        {/* MOBILE SIDEBAR (nur < md) */}
+        {mobileOpen && (
+          <div className="md:hidden" style={{ position: "fixed", inset: 0, zIndex: 80 }}>
+            {/* Overlay */}
+            <button
+              type="button"
+              aria-label="Menü schließen"
+              onClick={() => setMobileOpen(false)}
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "rgba(0,0,0,0.45)",
+                border: "none",
+                padding: 0,
+              }}
+            />
+
+            {/* Drawer */}
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                height: "100%",
+                width: 320,
+                maxWidth: "86vw",
+                background: "rgba(245,245,245,0.98)",   // hell wie in deinem Screenshot
+                color: "rgba(0,0,0,0.92)",
+                boxShadow: "0 24px 70px rgba(0,0,0,0.40)",
+                padding: 16,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: 14, opacity: 0.7 }}>{isAdmin ? "Admin" : "Mitarbeiter"}</div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen(false)}
+                  aria-label="Schließen"
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 14,
+                    border: "1px solid rgba(0,0,0,0.10)",
+                    background: "rgba(255,255,255,0.9)",
+                    cursor: "pointer",
+                    fontWeight: 900,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ height: 6 }} />
+
+              <nav style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {!isAdmin && (
+                  <Link href="/erfassung" style={mobileItemStyle(isActive(pathname, "/erfassung"))}>
+                    ⊞ Erfassung
+                  </Link>
+                )}
+
+                <Link href="/kalender" style={mobileItemStyle(isActive(pathname, "/kalender"))}>
+                  🗓 {isAdmin ? "Termine" : "Kalender"}
+                </Link>
+
+                {!isAdmin && (
+                  <Link href="/uebersicht" style={mobileItemStyle(isActive(pathname, "/uebersicht"))}>
+                    ▦ Übersicht
+                  </Link>
+                )}
+
+                {isAdmin && (
+                  <Link href="/admin/dashboard" style={mobileItemStyle(isActive(pathname, "/admin/dashboard"))}>
+                    ▦ Admin-Übersicht
+                  </Link>
+                )}
+
+                {isAdmin && (
+                  <Link href="/admin/wochenplan" style={mobileItemStyle(isActive(pathname, "/admin/wochenplan"))}>
+                    🧑‍💼 Wochenplan
+                  </Link>
+                )}
+
+                {isAdmin && (
+                  <Link href="/admin/password-reset" style={mobileItemStyle(isActive(pathname, "/admin/password-reset"))}>
+                    🔐 Passwort-Reset
+                  </Link>
+                )}
+              </nav>
+
+              <div style={{ flex: 1 }} />
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                style={{
+                  width: "100%",
+                  padding: "14px 14px",
+                  borderRadius: 18,
+                  border: "1px solid rgba(255,80,80,0.35)",
+                  background: "rgba(255,80,80,0.14)",
+                  fontWeight: 900,
+                  cursor: "pointer",
+                }}
+              >
+                🚪 Logout
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="topbar hidden md:block" style={{ padding: 14, marginBottom: 18 }}>
           <div
               style={{
                 display: "flex",
@@ -369,6 +571,8 @@ export default function AppShell({
                 </div>
               </div>
             </div>
+
+
 
             {/* Nav + User menu */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
