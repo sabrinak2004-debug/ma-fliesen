@@ -192,8 +192,7 @@ export async function POST(req: Request) {
   const end = timeOnly(endTime);
   const diffMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
   const breakInput = getNumber(body.breakMinutes);
-  const brk = normalizeBreakMinutes(breakInput, diffMin);
-  const netMin = Math.max(0, diffMin - brk.breakMinutes);
+  const manualBreak = Number.isFinite(breakInput) && breakInput > 0 ? Math.max(0, Math.round(breakInput)) : 0;
 
   const travelMinutesNum = Math.max(0, Math.round(getNumber(body.travelMinutes)));
 
@@ -222,9 +221,9 @@ export async function POST(req: Request) {
       location,
       travelMinutes: travelMinutesNum,
       grossMinutes: diffMin,
-      breakMinutes: brk.breakMinutes,
-      breakAuto: brk.breakAuto,
-      workMinutes: netMin,
+      breakMinutes: manualBreak,
+      breakAuto: false,
+      workMinutes: diffMin,
     },
     include: { user: { select: { id: true, fullName: true } } },
   });
@@ -317,8 +316,7 @@ export async function PATCH(req: Request) {
   const end = timeOnly(endTime);
   const diffMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
   const breakInput = getNumber(body.breakMinutes);
-  const brk = normalizeBreakMinutes(breakInput, diffMin);
-  const netMin = Math.max(0, diffMin - brk.breakMinutes);
+  const manualBreak = Number.isFinite(breakInput) && breakInput > 0 ? Math.max(0, Math.round(breakInput)) : 0;
 
   const travelMinutesNum = Math.max(0, Math.round(getNumber(body.travelMinutes)));
 
@@ -347,9 +345,9 @@ export async function PATCH(req: Request) {
       location,
       travelMinutes: travelMinutesNum,
       grossMinutes: diffMin,
-      breakMinutes: brk.breakMinutes,
-      breakAuto: brk.breakAuto,
-      workMinutes: netMin,
+      breakMinutes: manualBreak,
+      breakAuto: false,
+      workMinutes: diffMin,
     },
     include: { user: { select: { id: true, fullName: true } } },
   });

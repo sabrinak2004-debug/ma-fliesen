@@ -94,6 +94,63 @@ function groupByMonthYear(entries: WorkEntry[]) {
   }));
 }
 
+type DayGroup = {
+  date: string; // YYYY-MM-DD
+  label: string;
+  entries: WorkEntry[];
+};
+
+type MonthDayGroup = {
+  key: string; // YYYY-MM
+  label: string;
+  days: DayGroup[];
+};
+
+function sortYMDDesc(a: string, b: string) {
+  return a === b ? 0 : a > b ? -1 : 1;
+}
+
+function groupByMonthThenDay(entries: WorkEntry[]): MonthDayGroup[] {
+  const monthMap = new Map<string, Map<string, WorkEntry[]>>();
+
+  for (const e of entries) {
+    const day = toYMD(e.workDate);
+    const month = monthKeyFromWorkDate(day);
+
+    const dayMap = monthMap.get(month) ?? new Map<string, WorkEntry[]>();
+    const arr = dayMap.get(day) ?? [];
+    arr.push(e);
+    dayMap.set(day, arr);
+
+    monthMap.set(month, dayMap);
+  }
+
+  const monthKeys = Array.from(monthMap.keys()).sort(sortMonthKeysDesc);
+
+  return monthKeys.map((mk) => {
+    const dayMap = monthMap.get(mk) ?? new Map<string, WorkEntry[]>();
+    const dayKeys = Array.from(dayMap.keys()).sort(sortYMDDesc);
+
+    const days: DayGroup[] = dayKeys.map((dk) => ({
+      date: dk,
+      label: formatDateDE(dk),
+      entries: (dayMap.get(dk) ?? []).slice().sort(sortEntriesDesc),
+    }));
+
+    return {
+      key: mk,
+      label: monthLabelDE(mk),
+      days,
+    };
+  });
+}
+
+function formatPause(minutes: number): string {
+  const m = Number.isFinite(minutes) ? Math.max(0, Math.round(minutes)) : 0;
+  if (m < 60) return `${m} Min`;
+  return formatHM(m);
+}
+
 type EditForm = {
   id: string;
   workDate: string;
@@ -119,6 +176,70 @@ function legalBreakMinutes(grossMinutes: number): number {
   if (grossMinutes > 9 * 60) return 45;
   if (grossMinutes > 6 * 60) return 30;
   return 0;
+}
+
+function parseOptionalMinutes(input: string): number {
+  const t = input.trim();
+  if (!t) return 0;
+  const n = Number(t.replace(",", "."));
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.round(n));
+}
+
+type DayTotals = {
+  grossDay: number;
+  breakDay: number;
+  breakAuto: boolean;
+  netDay: number;
+  manualOverride: number; // 0 = none
+};
+
+function computeDayTotals(entries: WorkEntry[], ymd: string, additionalGross: number, overrideBreakInput: string): DayTotals {
+  const grossExisting = entries
+    .filter((e) => toYMD(e.workDate) === ymd)
+    .reduce((s, e) => s + (Number.isFinite(e.grossMinutes) ? e.grossMinutes : 0), 0);
+
+  const manualExisting = entries
+    .filter((e) => toYMD(e.workDate) === ymd)
+    .reduce((m, e) => {
+      const b = Number.isFinite(e.breakMinutes) ? e.breakMinutes : 0;
+      return b > 0 ? Math.max(m, b) : m;
+    }, 0);
+
+  const grossDay = Math.max(0, Math.round(grossExisting + Math.max(0, Math.round(additionalGross))));
+
+  const override = parseOptionalMinutes(overrideBreakInput);
+  const manual = override > 0 ? override : manualExisting;
+
+  if (manual > 0) {
+    const brk = Math.min(manual, grossDay);
+    return {
+      grossDay,
+      breakDay: brk,
+      breakAuto: false,
+      netDay: Math.max(0, grossDay - brk),
+      manualOverride: manual,
+    };
+  }
+
+  const brkAuto = legalBreakMinutes(grossDay);
+  return {
+    grossDay,
+    breakDay: brkAuto,
+    breakAuto: true,
+    netDay: Math.max(0, grossDay - brkAuto),
+    manualOverride: 0,
+  };
+}
+
+function buildDayTotalsMap(entries: WorkEntry[]): Map<string, DayTotals> {
+  const map = new Map<string, DayTotals>();
+  const days = new Set(entries.map((e) => toYMD(e.workDate)));
+
+  for (const day of days) {
+    map.set(day, computeDayTotals(entries, day, 0, "")); // no additional, no override
+  }
+  return map;
 }
 
 function previewNetMinutes(grossMinutes: number, breakInput: string): { net: number; brk: number; auto: boolean } {
@@ -189,10 +310,10 @@ export default function Page() {
   const [edit, setEdit] = useState<EditForm | null>(null);
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
-  const netPreview = useMemo(
-    () => previewNetMinutes(grossPreviewMinutes, breakMinutes),
-    [grossPreviewMinutes, breakMinutes]
-  );
+
+  const dayPreview = useMemo(() => {
+    return computeDayTotals(entries, workDate, grossPreviewMinutes, breakMinutes);
+  }, [entries, workDate, grossPreviewMinutes, breakMinutes]);
 
   const monthHours = useMemo(() => {
     const month = workDate.slice(0, 7);
@@ -377,7 +498,9 @@ useEffect(() => {
     }
   }
 
-  const groupedEntries = useMemo(() => groupByMonthYear(entries), [entries]);
+  const groupedEntries = useMemo(() => groupByMonthThenDay(entries), [entries]);
+
+  const dayTotalsMap = useMemo(() => buildDayTotalsMap(entries), [entries]);
 
   const currentMonthKey = useMemo(() => {
     const now = new Date();
@@ -387,11 +510,25 @@ useEffect(() => {
   }, []);
 
   const editPreview = useMemo(() => {
-    if (!edit) return { net: 0, brk: 0, auto: true, gross: 0 };
-    const gross = minutesBetween(edit.startTime, edit.endTime);
-    const p = previewNetMinutes(gross, edit.breakMinutes);
-    return { gross, net: p.net, brk: p.brk, auto: p.auto };
-  }, [edit]);
+  if (!edit) {
+    return { grossEntry: 0, grossDay: 0, breakDay: 0, breakAuto: true, netDay: 0 };
+  }
+
+  const grossEntry = minutesBetween(edit.startTime, edit.endTime);
+
+  // Für Tagesberechnung: bestehende Entries am Tag, aber ohne den Entry selbst
+  const entriesWithoutThis = entries.filter((e) => e.id !== edit.id);
+
+  const day = computeDayTotals(entriesWithoutThis, edit.workDate, grossEntry, edit.breakMinutes);
+
+  return {
+    grossEntry,
+    grossDay: day.grossDay,
+    breakDay: day.breakDay,
+    breakAuto: day.breakAuto,
+    netDay: day.netDay,
+  };
+}, [edit, entries]);
 
   const meName = me && me.ok ? me.user.fullName : "";
 
@@ -469,10 +606,10 @@ useEffect(() => {
         <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
             <div style={{ color: "var(--muted)" }}>Arbeitszeit (berechnet)</div>
-            <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(netPreview.net)}</div>
-          <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
-            Brutto: {formatHM(grossPreviewMinutes)} · Pause: {netPreview.brk} Min {netPreview.auto ? "(auto)" : "(manuell)"}
-          </div>
+            <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(dayPreview.netDay)}</div>
+            <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
+              Tag: Netto {formatHM(dayPreview.netDay)} · Pause {dayPreview.breakDay} Min {dayPreview.breakAuto ? "(auto)" : "(manuell)"}
+            </div>
           </div>
         </div>
 
@@ -547,125 +684,153 @@ useEffect(() => {
           Alle Einträge
         </div>
 
-        {loadingEntries ? (
-          <div style={{ color: "var(--muted)" }}>Lade...</div>
-        ) : groupedEntries.length === 0 ? (
-          <div className="card" style={{ padding: 18, textAlign: "center", color: "var(--muted)" }}>
-            <div style={{ fontSize: 40, opacity: 0.55 }}>🕒</div>
-            Noch keine Einträge vorhanden
-          </div>
-        ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            {groupedEntries.map((g) => (
-              <details
-                key={g.key}
-                open={g.key === currentMonthKey}
+        <div style={{ display: "grid", gap: 12 }}>
+          {groupedEntries.map((m) => (
+            <details
+              key={m.key}
+              open={m.key === currentMonthKey}
+              style={{
+                borderRadius: 16,
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(0,0,0,0.20)",
+                overflow: "hidden",
+              }}
+            >
+              <summary
                 style={{
-                  borderRadius: 16,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  background: "rgba(0,0,0,0.20)",
-                  overflow: "hidden",
+                  cursor: "pointer",
+                  listStyle: "none",
+                  padding: "14px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  userSelect: "none",
                 }}
               >
-                <summary
-                  style={{
-                    cursor: "pointer",
-                    listStyle: "none",
-                    padding: "14px 16px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    userSelect: "none",
-                  }}
-                >
-                  <div style={{ fontWeight: 800, fontSize: 15 }}>
-                    {g.label}
-                    <span style={{ opacity: 0.7, fontWeight: 600, marginLeft: 8 }}>({g.entries.length})</span>
-                  </div>
+                <div style={{ fontWeight: 800, fontSize: 15 }}>
+                  {m.label}
+                  <span style={{ opacity: 0.7, fontWeight: 600, marginLeft: 8 }}>
+                    ({m.days.reduce((s, d) => s + d.entries.length, 0)})
+                  </span>
+                </div>
 
-                  <div style={{ opacity: 0.7, fontSize: 12 }}>Ein-/Ausklappen</div>
-                </summary>
+                <div style={{ opacity: 0.7, fontSize: 12 }}>Ein-/Ausklappen</div>
+              </summary>
 
-                <div className="entry-grid" style={{ padding: "0 0 12px 0" }}>
-                  {g.entries.map((e) => {
-                    const hasTravel = e.travelMinutes > 0;
+              <div style={{ padding: "0 0 12px 0", display: "grid", gap: 10 }}>
+                {m.days.map((d) => {
+                  const totals = dayTotalsMap.get(d.date);
+                  const pauseMin = totals ? totals.breakDay : 0;
+                  const pauseLabel = totals ? (totals.breakAuto ? "auto" : "manuell") : "auto";
+                  const netDay = totals ? totals.netDay : 0;
 
-                    const hasBreak = (e.breakMinutes ?? 0) > 0 || (e.breakAuto ?? false);
-                    const breakLabel = (e.breakAuto ?? false) ? "auto" : "manuell";
-                    const grossHM = formatHM(e.grossMinutes ?? 0);
-                    const netHM = formatHM(e.workMinutes ?? 0);
-
-                    return (
-                      <div key={e.id} className="entry-card" style={{ margin: "0 12px" }}>
-                        <div className="entry-accent" />
-                        <div className="entry-content">
-                          <div className="entry-top">
-                            <div className="entry-title">
-                              <div className="entry-name">{e.user?.fullName ?? "Unbekannt"}</div>
-                              <div className="entry-sub">
-                                <span>{formatDateDE(e.workDate)}</span>
-                                <span className="entry-dot">•</span>
-                                <span>
-                                  {e.startTime}–{e.endTime} Uhr
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="entry-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <div className="entry-hours">
-                                <span className="entry-hours-number">{formatHM(e.workMinutes ?? 0)}</span>
-                              </div>
-
-                              <button className="icon-btn" onClick={() => openEditModal(e)} aria-label="Bearbeiten" title="Bearbeiten">
-                                ✏️
-                              </button>
-
-                              <button className="icon-btn danger" onClick={() => deleteEntry(e.id)} aria-label="Löschen" title="Löschen">
-                                🗑
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="entry-body">
-                            <div className="entry-line">
-                              <span className="entry-icon">🧱</span>
-                              <span className="entry-text">{e.activity}</span>
-                            </div>
-
-                            {e.location ? (
-                              <div className="entry-line">
-                                <span className="entry-icon">📍</span>
-                                <span className="entry-text">{e.location}</span>
-                              </div>
-                            ) : null}
-
-{hasTravel || hasBreak ? (
-  <div className="entry-chips">
-    {/* ✅ Pause anzeigen */}
-    {hasBreak ? (
-      <span className="chip">
-        ☕ Pause {e.breakMinutes ?? 0} Min ({breakLabel})
-      </span>
-    ) : null}
-
-    {/* ✅ optional: Brutto/Netto anzeigen */}
-    <span className="chip">🧮 Brutto {grossHM}</span>
-    <span className="chip">✅ Netto {netHM}</span>
-
-    {hasTravel ? <span className="chip">⏱ {e.travelMinutes} Min</span> : null}
-  </div>
-) : null}
+                  return (
+                    <details
+                      key={`${m.key}-${d.date}`}
+                      style={{
+                        margin: "0 12px",
+                        borderRadius: 14,
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        background: "rgba(0,0,0,0.16)",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <summary
+                        style={{
+                          cursor: "pointer",
+                          listStyle: "none",
+                          padding: "12px 14px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          userSelect: "none",
+                        }}
+                      >
+                        <div style={{ display: "grid", gap: 2 }}>
+                          <div style={{ fontWeight: 900 }}>{d.label}</div>
+                          <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                            {d.entries.length} {d.entries.length === 1 ? "Eintrag" : "Einträge"} · Pause {formatPause(pauseMin)} ({pauseLabel})
                           </div>
                         </div>
+
+                        <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(netDay)}</div>
+                      </summary>
+
+                      <div style={{ display: "grid", gap: 12, padding: "10px 0 12px 0" }}>
+                        {d.entries.map((e) => {
+                          const grossHM = formatHM(e.grossMinutes ?? 0);
+                          const hasTravel = (e.travelMinutes ?? 0) > 0;
+
+                          return (
+                            <div key={e.id} className="entry-card" style={{ margin: "0 12px" }}>
+                              <div className="entry-accent" />
+                              <div className="entry-content">
+                                <div className="entry-top">
+                                  <div className="entry-title">
+                                    <div className="entry-name">{e.user?.fullName ?? "Unbekannt"}</div>
+                                    <div className="entry-sub">
+                                      <span>{e.startTime}–{e.endTime} Uhr</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="entry-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    <div className="entry-hours">
+                                      <span className="entry-hours-number">{grossHM}</span>
+                                    </div>
+
+                                    <button
+                                      className="icon-btn"
+                                      onClick={() => openEditModal(e)}
+                                      aria-label="Bearbeiten"
+                                      title="Bearbeiten"
+                                    >
+                                      ✏️
+                                    </button>
+
+                                    <button
+                                      className="icon-btn danger"
+                                      onClick={() => deleteEntry(e.id)}
+                                      aria-label="Löschen"
+                                      title="Löschen"
+                                    >
+                                      🗑
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="entry-body">
+                                  <div className="entry-line">
+                                    <span className="entry-icon">🧱</span>
+                                    <span className="entry-text">{e.activity}</span>
+                                  </div>
+
+                                  {e.location ? (
+                                    <div className="entry-line">
+                                      <span className="entry-icon">📍</span>
+                                      <span className="entry-text">{e.location}</span>
+                                    </div>
+                                  ) : null}
+
+                                  {hasTravel ? (
+                                    <div className="entry-chips">
+                                      <span className="chip">⏱ {e.travelMinutes} Min</span>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
-              </details>
-            ))}
-          </div>
-        )}
+                    </details>
+                  );
+                })}
+              </div>
+            </details>
+          ))}
+        </div>
       </div>
 
       {/* ✅ EDIT MODAL */}
@@ -751,13 +916,10 @@ useEffect(() => {
             <div className="card" style={{ padding: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ color: "var(--muted)" }}>Arbeitszeit (berechnet)</div>
-                <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(editPreview.net)}</div>
+                <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(editPreview.netDay)}</div>
                 <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
-                  Pause: {editPreview.brk} Min {editPreview.auto ? "(auto)" : "(manuell)"}
-                  </div>
-              <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
-                Brutto: {formatHM(editPreview.gross)} · Pause: {editPreview.brk} Min {editPreview.auto ? "(auto)" : "(manuell)"}
-              </div>
+                  Tag: Netto {formatHM(dayPreview.netDay)} · Pause {dayPreview.breakDay} Min {dayPreview.breakAuto ? "(auto)" : "(manuell)"}
+                </div>
               </div>
             </div>
 

@@ -91,6 +91,43 @@ function isWeekendUTC(yyyyMmDd: string): boolean {
   return wd === 0 || wd === 6;
 }
 
+function legalBreakMinutes(grossMinutes: number): number {
+  if (!Number.isFinite(grossMinutes) || grossMinutes <= 0) return 0;
+  if (grossMinutes > 9 * 60) return 45;
+  if (grossMinutes > 6 * 60) return 30;
+  return 0;
+}
+
+type DayAgg = { gross: number; manualBreak: number };
+
+function isoDayUTC(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function computeDayAgg(entries: Loaded["entries"]): Map<string, DayAgg> {
+  const map = new Map<string, DayAgg>();
+  for (const e of entries) {
+    const dayKey = isoDayUTC(e.workDate);
+    const cur = map.get(dayKey) ?? { gross: 0, manualBreak: 0 };
+
+    const gross = Number.isFinite(e.grossMinutes) ? e.grossMinutes : 0;
+    const brk = Number.isFinite(e.breakMinutes) ? e.breakMinutes : 0;
+
+    cur.gross += gross;
+    if (brk > 0) cur.manualBreak = Math.max(cur.manualBreak, brk);
+
+    map.set(dayKey, cur);
+  }
+  return map;
+}
+
+function dayBreakAndAuto(grossDay: number, manualBreak: number): { breakMinutes: number; auto: boolean } {
+  const gross = Math.max(0, Math.round(grossDay));
+  const manual = Math.max(0, Math.round(manualBreak));
+  if (manual > 0) return { breakMinutes: Math.min(manual, gross), auto: false };
+  return { breakMinutes: legalBreakMinutes(gross), auto: true };
+}
+
 /** ===== Easter (Meeus/Jones/Butcher) ===== */
 function easterSundayUTC(year: number): Date {
   // returns Easter Sunday at 00:00 UTC
@@ -292,7 +329,14 @@ function buildPayrollCsv(data: Loaded, labelPeriod: string, rangeISO?: { fromISO
   lines.push([]);
 
   for (const b of blocks) {
-    const totalWorkMinutes = b.entries.reduce((s, e) => s + (Number.isFinite(e.workMinutes) ? e.workMinutes : 0), 0);
+    const dayAgg = computeDayAgg(b.entries);
+
+let totalNetMinutes = 0;
+for (const v of dayAgg.values()) {
+  const info = dayBreakAndAuto(v.gross, v.manualBreak);
+  const netDay = Math.max(0, Math.round(v.gross) - info.breakMinutes);
+  totalNetMinutes += netDay;
+}
     const totalTravelMinutes = b.entries.reduce(
       (s, e) => s + (Number.isFinite(e.travelMinutes) ? e.travelMinutes : 0),
       0
@@ -342,13 +386,13 @@ function buildPayrollCsv(data: Loaded, labelPeriod: string, rangeISO?: { fromISO
     const paidHolidayDaysNotWorked = Array.from(holidayDates).filter((d) => !workedDates.has(d)).length;
     const paidHolidayMinutes = paidHolidayDaysNotWorked * STANDARD_DAY_HOURS * 60;
 
-    const workedHours = totalWorkMinutes / 60;
+    const workedHours = totalNetMinutes / 60;
     const expectedHours = expectedMinutes / 60;
-    const overtimeHours = (totalWorkMinutes - expectedMinutes) / 60;
+    const overtimeHours = (totalNetMinutes - expectedMinutes) / 60;
 
     // "Wie viele Stunden bezahlt werden sollen"
     // => Arbeitszeit + bezahlte Abwesenheit + bezahlte Feiertage (die nicht gearbeitet wurden)
-    const payableMinutesRaw = totalWorkMinutes + paidAbsenceMinutes + paidHolidayMinutes;
+    const payableMinutesRaw = totalNetMinutes + paidAbsenceMinutes + paidHolidayMinutes;
     const payableMinutesRounded = roundMinutes(payableMinutesRaw, ROUND_TO_MINUTES);
     const payableHoursRaw = payableMinutesRaw / 60;
     const payableHoursRounded = payableMinutesRounded / 60;
@@ -422,29 +466,41 @@ function buildPayrollCsv(data: Loaded, labelPeriod: string, rangeISO?: { fromISO
       const end = timeOnly(e.endTime);
       const h = holidayMap.get(d);
 
-      details.push({
-        sortKey: `${d}T${start}`,
-        cols: [
-          d,
-          weekdayShortDE(d),
-          "ARBEIT",
-          h?.name ?? "",
-          start,
-          end,
-          e.workMinutes,
-          e.travelMinutes,
-          e.workMinutes,
-          e.travelMinutes,
-          e.grossMinutes ?? "",
-          e.breakMinutes ?? "",
-          (e.breakAuto ?? false) ? "ja" : "nein",
-          e.workMinutes ?? "",
-          e.travelMinutes,
-          e.activity,
-          e.location,
-          e.createdAt.toISOString(),
-        ],
-      });
+const dayInfo = dayAgg.get(d) ?? { gross: 0, manualBreak: 0 };
+const breakInfo = dayBreakAndAuto(dayInfo.gross, dayInfo.manualBreak);
+
+// Pause nur 1×/Tag in der Detailtabelle zeigen (beim ersten Eintrag des Tages)
+const isFirstOfDay = !details.some((x) => x.sortKey.startsWith(`${d}T`));
+const pauseThisRow = isFirstOfDay ? breakInfo.breakMinutes : 0;
+
+const grossMin = Number.isFinite(e.grossMinutes) ? e.grossMinutes : 0;
+const netMin = Math.max(0, Math.round(grossMin) - pauseThisRow);
+
+const km =
+  e.distanceKm !== null && e.distanceKm !== undefined
+    ? String(e.distanceKm)
+    : "";
+
+details.push({
+  sortKey: `${d}T${start}`,
+  cols: [
+    d,                         // Datum
+    weekdayShortDE(d),         // Wochentag
+    "ARBEIT",                  // Typ
+    h?.name ?? "",             // FeiertagName
+    start,                     // Start
+    end,                       // Ende
+    grossMin,                  // BruttoMinuten
+    pauseThisRow,              // PauseMinuten
+    isFirstOfDay ? (breakInfo.auto ? "ja" : "nein") : "", // PauseAuto (nur 1×/Tag)
+    netMin,                    // NettoArbeitsminuten
+    e.travelMinutes ?? 0,      // Fahrtminuten
+    km,                        // Kilometer
+    e.activity,                // Tätigkeit
+    e.location,                // Ort
+    e.createdAt.toISOString(), // ErstelltAm
+  ],
+});
     }
 
     // Abwesenheiten
