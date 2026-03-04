@@ -6,6 +6,8 @@ import AppShell from "@/components/AppShell";
 
 type ApiResponse = { ok: true } | { ok: false; error: string };
 
+export const dynamic = "force-dynamic";
+
 export default function ResetPasswordPage() {
   const sp = useSearchParams();
   const router = useRouter();

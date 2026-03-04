@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 
+export const dynamic = "force-dynamic";
+
 type RequestRow = {
   id: string;
   createdAt: string;
