@@ -66,15 +66,18 @@ function mobileItemStyle(active: boolean): React.CSSProperties {
     display: "flex",
     alignItems: "center",
     gap: 10,
-    padding: "16px 16px",
+    padding: "14px 14px",
     borderRadius: 18,
     textDecoration: "none",
     fontWeight: 900,
-    fontSize: 22,
-    border: "1px solid rgba(0,0,0,0.12)",
-    background: active ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.75)",
-    color: "rgba(0,0,0,0.92)",
-    boxShadow: active ? "inset 0 0 0 1px rgba(0,0,0,0.08)" : "none",
+
+    // ✅ Active: dunkler Hintergrund + grüner Rand + weißer Text
+    background: active ? "rgba(169,194,63,0.18)" : "rgba(255,255,255,0.06)",
+    border: active ? "1px solid rgba(169,194,63,0.55)" : "1px solid rgba(255,255,255,0.12)",
+    color: active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.82)",
+
+    // optional: macht active “knackiger”
+    boxShadow: active ? "0 10px 24px rgba(0,0,0,0.25)" : "none",
   };
 }
 
