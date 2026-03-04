@@ -373,7 +373,7 @@ export default function AppShell({
           borderRadius: 18,
           border: "1px solid #9db02f",
           background: "#9db02fb6",
-          color: "rgba(255,255,255,0.92)",
+          color: "rgba(20, 12, 12, 0.92)",
           fontWeight: 900,
           cursor: "pointer",
         }}
