@@ -65,19 +65,31 @@ function mobileItemStyle(active: boolean): React.CSSProperties {
   return {
     display: "flex",
     alignItems: "center",
-    gap: 10,
-    padding: "14px 14px",
-    borderRadius: 18,
+    gap: 12,
+    padding: "14px 16px",
+    borderRadius: 14,
     textDecoration: "none",
     fontWeight: 900,
+    fontSize: 16,
 
-    // ✅ Active: dunkler Hintergrund + grüner Rand + weißer Text
-    background: active ? "rgba(169,194,63,0.18)" : "rgba(255,255,255,0.06)",
-    border: active ? "1px solid rgba(169,194,63,0.55)" : "1px solid rgba(255,255,255,0.12)",
-    color: active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.82)",
+    /* Textfarbe */
+    color: active ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.82)",
 
-    // optional: macht active “knackiger”
-    boxShadow: active ? "0 10px 24px rgba(0,0,0,0.25)" : "none",
+    /* Hintergrund */
+    background: active
+      ? "rgba(169,194,63,0.12)"
+      : "transparent",
+
+    /* grüner Active Indicator */
+    borderLeft: active
+      ? "4px solid #A9C23F"
+      : "4px solid transparent",
+
+    /* Abstand damit Text nicht am Balken klebt */
+    paddingLeft: active ? 12 : 16,
+
+    /* leichter Hover Effekt */
+    transition: "all 0.15s ease",
   };
 }
 
