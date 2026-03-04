@@ -182,7 +182,7 @@ export default function AppShell({
 
             <div style={{ minWidth: 0, textAlign: "center", flex: 1 }}>
               {/* Brand */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}>
                 <Image
                   src="/logo-ma-fliesen.jpeg"
                   alt="ma-fliesen Logo"
