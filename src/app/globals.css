@@ -432,3 +432,9 @@ ul {
 li {
   list-style: none;
 }
+
+@media (max-width: 640px) {
+  .appshell-username {
+    display: none;
+  }
+}

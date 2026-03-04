@@ -716,7 +716,7 @@ export default function AdminWochenplanPage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
           <Link
             href="/kalender"
             className="pill"
@@ -748,6 +748,7 @@ export default function AdminWochenplanPage() {
               borderRadius: 10,
               background: "rgba(0,0,0,0.25)",
               color: UI.text,
+              maxWidth: 180,
             }}
           />
 
@@ -769,7 +770,222 @@ export default function AdminWochenplanPage() {
       {loading ? (
         <div style={{ color: UI.muted }}>lädt…</div>
       ) : (
-        <div
+        <>
+        <div className="md:hidden" style={{ display: "grid", gap: 12 }}>
+          {/* Tage (Mo–Fr etc.) als Cards */}
+          {ROWS.filter((r) => r.type === "DAY").map((row) => {
+            const dayYMD = fmtYMD(
+              new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + (row.offset ?? 0))
+            );
+
+            return (
+              <div
+                key={row.label}
+                style={{
+                  border: `1px solid ${UI.cellBorder}`,
+                  borderRadius: 14,
+                  background: UI.tableBg,
+                  padding: 12,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "baseline" }}>
+                  <div style={{ fontWeight: 1000, fontSize: 16, color: UI.text }}>{row.label}</div>
+                  <div style={{ fontSize: 12, color: UI.muted }}>{fmtDE(new Date(dayYMD))}</div>
+                </div>
+
+                <div style={{ height: 10 }} />
+
+                <div style={{ display: "grid", gap: 10 }}>
+                  {users.map((u) => {
+                    const entryKey = `${dayYMD}_${u.id}`;
+                    const cellEntries = entryGridMap.get(entryKey) ?? [];
+                    const cellNotes = noteMap.get(`${dayYMD}_${u.id}`) ?? [];
+
+                    return (
+                      <div
+                        key={`${dayYMD}_${u.id}`}
+                        style={{
+                          border: `1px solid ${UI.cardBorder}`,
+                          borderRadius: 12,
+                          padding: 10,
+                          background: "rgba(255,255,255,0.04)",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                          <div style={{ fontWeight: 1000, color: UI.text }}>{u.fullName}</div>
+                          <button
+                            type="button"
+                            className="pill"
+                            onClick={() => openCreateEntry(u.id, row)}
+                            style={{ textDecoration: "none" }}
+                          >
+                            + Plan
+                          </button>
+                        </div>
+
+                        {cellEntries.length > 0 ? (
+                          <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                            {cellEntries.map((e) => (
+                              <div
+                                key={e.id}
+                                onClick={() => openEditEntry(e, row)}
+                                style={{
+                                  border: `1px solid ${UI.cardBorder}`,
+                                  borderRadius: 10,
+                                  padding: "10px 12px",
+                                  background: UI.cardBg,
+                                  color: UI.text,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <div style={{ fontWeight: 1000, fontSize: 13 }}>{e.activity}</div>
+                                <div style={{ fontSize: 12, color: UI.muted, marginTop: 4 }}>
+                                  {e.startHHMM}–{e.endHHMM}
+                                  {e.location ? ` · ${e.location}` : ""}
+                                </div>
+                                {e.noteEmployee ? (
+                                  <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
+                                    📝 MA: {e.noteEmployee}
+                                  </div>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ marginTop: 10, fontSize: 12, color: UI.muted }}>
+                            Keine Einträge.
+                          </div>
+                        )}
+
+                        <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                          {cellNotes.map((n) => (
+                            <div
+                              key={n.id}
+                              onClick={() => openEditNote(n, row.label)}
+                              style={{
+                                border: `1px solid rgba(255,255,255,0.12)`,
+                                borderRadius: 10,
+                                padding: "10px 12px",
+                                cursor: "pointer",
+                                background: "rgba(255,255,255,0.03)",
+                                color: "rgba(255,255,255,0.85)",
+                              }}
+                            >
+                              <div style={{ fontWeight: 1000, fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
+                                🔒 Admin-Notiz
+                              </div>
+                              <div style={{ fontSize: 12, marginTop: 6, color: "rgba(255,255,255,0.70)" }}>
+                                {n.note.trim() ? n.note : "(leer)"}
+                              </div>
+                            </div>
+                          ))}
+
+                          <button
+                            type="button"
+                            onClick={() => openCreateNote(u.id, dayYMD, row.label)}
+                            style={{
+                              width: "100%",
+                              border: `1px dashed rgba(255,255,255,0.18)`,
+                              borderRadius: 10,
+                              padding: "10px 12px",
+                              background: "rgba(255,255,255,0.03)",
+                              cursor: "pointer",
+                              textAlign: "left",
+                              color: "rgba(255,255,255,0.75)",
+                              fontWeight: 900,
+                            }}
+                          >
+                            + Notiz (Admin)
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Spezial-Zeilen (REP / SUB) als eigene Sektion */}
+          {ROWS.filter((r) => r.type === "SPECIAL").map((row) => {
+            const rowKey = row.tag as string;
+
+            return (
+              <div
+                key={row.label}
+                style={{
+                  border: `1px solid ${UI.cellBorder}`,
+                  borderRadius: 14,
+                  background: UI.tableBg,
+                  padding: 12,
+                }}
+              >
+                <div style={{ fontWeight: 1000, fontSize: 16, color: UI.text }}>{row.label}</div>
+                <div style={{ height: 10 }} />
+
+                <div style={{ display: "grid", gap: 10 }}>
+                  {users.map((u) => {
+                    const entryKey = `${rowKey}_${u.id}`;
+                    const cellEntries = entryGridMap.get(entryKey) ?? [];
+
+                    return (
+                      <div
+                        key={`${rowKey}_${u.id}`}
+                        style={{
+                          border: `1px solid ${UI.cardBorder}`,
+                          borderRadius: 12,
+                          padding: 10,
+                          background: "rgba(255,255,255,0.04)",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                          <div style={{ fontWeight: 1000, color: UI.text }}>{u.fullName}</div>
+                          <button
+                            type="button"
+                            className="pill"
+                            onClick={() => openCreateEntry(u.id, row)}
+                            style={{ textDecoration: "none" }}
+                          >
+                            + Plan
+                          </button>
+                        </div>
+
+                        {cellEntries.length > 0 ? (
+                          <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                            {cellEntries.map((e) => (
+                              <div
+                                key={e.id}
+                                onClick={() => openEditEntry(e, row)}
+                                style={{
+                                  border: `1px solid ${UI.cardBorder}`,
+                                  borderRadius: 10,
+                                  padding: "10px 12px",
+                                  background: UI.cardBg,
+                                  color: UI.text,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <div style={{ fontWeight: 1000, fontSize: 13 }}>{e.activity}</div>
+                                <div style={{ fontSize: 12, color: UI.muted, marginTop: 4 }}>
+                                  {e.startHHMM}–{e.endHHMM}
+                                  {e.location ? ` · ${e.location}` : ""}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ marginTop: 10, fontSize: 12, color: UI.muted }}>Keine Einträge.</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="hidden md:block"
           style={{
             overflow: "auto",
             border: `1px solid ${UI.cellBorder}`,
@@ -935,7 +1151,9 @@ export default function AdminWochenplanPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
+    
 
       {/* -------------------- MODAL: PLAN-EINTRAG -------------------- */}
       <Modal

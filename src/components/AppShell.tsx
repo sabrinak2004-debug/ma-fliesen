@@ -111,7 +111,15 @@ export default function AppShell({
     <div style={{ padding: "18px 0 42px" }}>
       <div className="container-app">
         <div className="topbar" style={{ padding: 14, marginBottom: 18 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
+          <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 14,
+                flexWrap: "wrap",
+              }}
+            >
             {/* Brand */}
             <div className="brand" style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <Image
@@ -133,7 +141,18 @@ export default function AppShell({
 
             {/* Nav + User menu */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  overflowX: "auto",
+                  WebkitOverflowScrolling: "touch",
+                  whiteSpace: "nowrap",
+                  maxWidth: "100%",
+                  paddingBottom: 4,
+                }}
+              >
                 {!isAdmin && (
                   <Link className={`pill ${isActive(pathname, "/erfassung") ? "pill-active" : ""}`} href="/erfassung">
                     ⊞ Erfassung
@@ -214,7 +233,11 @@ export default function AppShell({
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1 }}>
-                    <div style={{ fontWeight: 800, fontSize: 13 }}>{userName}</div>
+                    {/* Desktop/Tablet: Name + Rolle */}
+                    <div className="appshell-username" style={{ fontWeight: 800, fontSize: 13 }}>
+                      {userName}
+                    </div>
+
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
                       <span
                         style={{
@@ -227,7 +250,7 @@ export default function AppShell({
                           color: "rgba(255,255,255,0.92)",
                         }}
                       >
-                        {isAdmin ? "ADMIN" : "MITARBEITER"}
+                        {isAdmin ? "ADMIN" : "MA"}
                       </span>
                       <span style={{ fontSize: 12, opacity: 0.8 }} aria-hidden="true">
                         ▾
@@ -286,7 +309,7 @@ export default function AppShell({
                       style={{
                         marginTop: 8,
                         width: "100%",
-                        padding: "5px 7px",
+                        padding: "10px 12px",
                         borderRadius: 12,
                         border: "1px solid rgba(255,255,255,0.10)",
                         background: "rgba(255,80,80,0.16)",
