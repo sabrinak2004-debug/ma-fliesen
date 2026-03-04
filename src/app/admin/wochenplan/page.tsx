@@ -913,7 +913,7 @@ export default function AdminWochenplanPage() {
             const rowKey = row.tag as string;
 
             return (
-              <div
+              <details
                 key={row.label}
                 style={{
                   border: `1px solid ${UI.cellBorder}`,
@@ -922,8 +922,14 @@ export default function AdminWochenplanPage() {
                   padding: 12,
                 }}
               >
-                <div style={{ fontWeight: 1000, fontSize: 16, color: UI.text }}>{row.label}</div>
-                <div style={{ height: 10 }} />
+                <summary style={{ listStyle: "none", cursor: "pointer" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                    <div style={{ fontWeight: 1000, fontSize: 16, color: UI.text }}>{row.label}</div>
+                    <div style={{ color: UI.muted, fontWeight: 900 }}>▾</div>
+                  </div>
+                </summary>
+
+<div style={{ height: 10 }} />
 
                 <div style={{ display: "grid", gap: 10 }}>
                   {users.map((u) => {
@@ -982,7 +988,7 @@ export default function AdminWochenplanPage() {
                     );
                   })}
                 </div>
-              </div>
+              </details>
             );
           })}
         </div>
