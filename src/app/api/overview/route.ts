@@ -48,7 +48,6 @@ export async function GET(req: Request) {
       role: u.role,
       entriesCount: e.length,
       workMinutes: e.reduce((s, x) => s + x.workMinutes, 0),
-      distanceKm: e.reduce((s, x) => s + Number(x.distanceKm), 0),
       travelMinutes: e.reduce((s, x) => s + x.travelMinutes, 0),
       vacationDays: a.filter((x) => x.type === "VACATION").length,
       sickDays: a.filter((x) => x.type === "SICK").length,
@@ -64,7 +63,6 @@ export async function GET(req: Request) {
     totals: {
       entriesCount: entries.length,
       workMinutes: byUser.reduce((s, u) => s + u.workMinutes, 0),
-      distanceKm: byUser.reduce((s, u) => s + u.distanceKm, 0),
       travelMinutes: byUser.reduce((s, u) => s + u.travelMinutes, 0),
       vacationDays: byUser.reduce((s, u) => s + u.vacationDays, 0),
       sickDays: byUser.reduce((s, u) => s + u.sickDays, 0),

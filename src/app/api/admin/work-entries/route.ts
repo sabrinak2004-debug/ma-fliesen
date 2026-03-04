@@ -76,7 +76,6 @@ type WorkEntryPostBody = {
   endHHMM: string;    // "16:00"
   activity: string;
   location?: string;
-  distanceKm?: number;
   travelMinutes?: number;
   breakMinutes?: number;
 };
@@ -134,7 +133,6 @@ export async function POST(req: Request) {
     endHHMM,
     activity,
     location,
-    distanceKm,
     travelMinutes,
   } = body ?? {};
 
@@ -157,7 +155,6 @@ export async function POST(req: Request) {
     endTime: timeToDbTime(String(endHHMM)),
     activity: String(activity),
     location: location ? String(location) : "",
-    distanceKm: distanceKm ?? 0,
     travelMinutes: travelMinutes ?? 0,
     grossMinutes,
     breakMinutes: brk.breakMinutes,

@@ -8,7 +8,6 @@ import Modal from "@/components/Modal";
 type WorkEntry = {
   id: string;
   workDate: string; // YYYY-MM-DD
-  distanceKm: number | string | null;
   workMinutes: number;
   user?: { id: string; fullName: string };
 };
@@ -61,10 +60,6 @@ function toHours(min: number) {
   return min / 60;
 }
 
-function safeNumber(x: unknown) {
-  const n = typeof x === "number" ? x : typeof x === "string" ? Number(x) : 0;
-  return Number.isFinite(n) ? n : 0;
-}
 
 function lastDayOfMonth(ym: string) {
   const [y, m] = ym.split("-").map(Number);
@@ -303,7 +298,7 @@ export default function UebersichtPage() {
     [monthEntries]
   );
 
-  const totalKm = useMemo(() => monthEntries.reduce((s, e) => s + safeNumber(e.distanceKm), 0), [monthEntries]);
+
 
   const vacDays = useMemo(() => {
     if (absenceSummaryByUser.length > 0) {
@@ -342,7 +337,6 @@ export default function UebersichtPage() {
         map.get(key) ?? { userId: key, name, minutes: 0, km: 0, entries: 0, vac: 0, sick: 0 };
 
       cur.minutes += Number.isFinite(e.workMinutes) ? e.workMinutes : 0;
-      cur.km += safeNumber(e.distanceKm);
       cur.entries += 1;
 
       map.set(key, cur);
@@ -692,13 +686,6 @@ export default function UebersichtPage() {
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>⏱</div>
         </div>
 
-        <div className="card kpi">
-          <div>
-            <div className="small">Gefahrene km</div>
-            <div className="big">{totalKm.toFixed(0)} km</div>
-          </div>
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🚗</div>
-        </div>
 
         <div className="card kpi">
           <div>

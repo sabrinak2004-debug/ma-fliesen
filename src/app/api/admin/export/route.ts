@@ -40,21 +40,6 @@ function timeOnly(d: Date): string {
   return d.toISOString().slice(11, 16);
 }
 
-function decimalToString(x: unknown): string {
-  if (x === null || x === undefined) return "";
-  if (typeof x === "number") return String(x);
-  if (typeof x === "string") return x;
-
-  const obj = x as { toNumber?: () => number; toString?: () => string };
-  if (typeof obj.toNumber === "function") return String(obj.toNumber());
-  if (typeof obj.toString === "function") return obj.toString();
-  return "";
-}
-
-function safeNumber(x: unknown): number {
-  const n = typeof x === "number" ? x : typeof x === "string" ? Number(x) : 0;
-  return Number.isFinite(n) ? n : 0;
-}
 
 function isValidYYYYMM(s: string) {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
@@ -312,7 +297,7 @@ function buildPayrollCsv(data: Loaded, labelPeriod: string, rangeISO?: { fromISO
       (s, e) => s + (Number.isFinite(e.travelMinutes) ? e.travelMinutes : 0),
       0
     );
-    const totalKm = b.entries.reduce((s, e) => s + safeNumber(decimalToString(e.distanceKm)), 0);
+    
 
     const workedDates = new Set(b.entries.map((e) => dateOnly(e.workDate)));
 
@@ -396,7 +381,6 @@ function buildPayrollCsv(data: Loaded, labelPeriod: string, rangeISO?: { fromISO
       formatHoursDE(workedHours),
       rangeISO ? formatHoursDE(overtimeHours) : "",
       totalTravelMinutes,
-      String(Math.round(totalKm)).replace(".", ","),
       vacationDates.size,
       sickDates.size,
       rangeISO ? holidayDates.size : "",
@@ -456,7 +440,6 @@ function buildPayrollCsv(data: Loaded, labelPeriod: string, rangeISO?: { fromISO
           (e.breakAuto ?? false) ? "ja" : "nein",
           e.workMinutes ?? "",
           e.travelMinutes,
-          decimalToString(e.distanceKm),
           e.activity,
           e.location,
           e.createdAt.toISOString(),

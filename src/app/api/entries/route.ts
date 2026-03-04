@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { Prisma, Role } from "@prisma/client";
+import { Role } from "@prisma/client";
 
 function dateOnly(yyyyMmDd: string) {
   return new Date(`${yyyyMmDd}T00:00:00.000Z`);
@@ -78,7 +78,6 @@ type EntryBody = {
   endTime?: unknown; // HH:MM
   activity?: unknown;
   location?: unknown;
-  distanceKm?: unknown;
   travelMinutes?: unknown;
   breakMinutes?: unknown; // optional: Pause in Minuten
 };
@@ -105,7 +104,6 @@ type EntryDTO = {
   endTime: string; // HH:MM
   activity: string;
   location: string;
-  distanceKm: string; // string fürs UI
   travelMinutes: number;
   workMinutes: number;
   grossMinutes: number;
@@ -151,7 +149,6 @@ export async function GET(req: Request) {
     endTime: toHHMMUTC(e.endTime),
     activity: e.activity ?? "",
     location: e.location ?? "",
-    distanceKm: (e.distanceKm ?? new Prisma.Decimal(0)).toString(),
     travelMinutes: e.travelMinutes ?? 0,
     workMinutes: e.workMinutes ?? 0,
     grossMinutes: e.grossMinutes ?? 0,
@@ -195,7 +192,6 @@ export async function POST(req: Request) {
   const brk = normalizeBreakMinutes(breakInput, diffMin);
   const netMin = Math.max(0, diffMin - brk.breakMinutes);
 
-  const distanceKmNum = getNumber(body.distanceKm);
   const travelMinutesNum = Math.max(0, Math.round(getNumber(body.travelMinutes)));
 
   // ✅ DEFAULT: immer Session-User
@@ -221,7 +217,6 @@ export async function POST(req: Request) {
       endTime: timeOnly(endTime),
       activity,
       location,
-      distanceKm: new Prisma.Decimal(distanceKmNum),
       travelMinutes: travelMinutesNum,
       grossMinutes: diffMin,
       breakMinutes: brk.breakMinutes,
@@ -238,7 +233,6 @@ export async function POST(req: Request) {
     endTime: toHHMMUTC(created.endTime),
     activity: created.activity ?? "",
     location: created.location ?? "",
-    distanceKm: (created.distanceKm ?? new Prisma.Decimal(0)).toString(),
     travelMinutes: created.travelMinutes ?? 0,
     workMinutes: created.workMinutes ?? 0,
     grossMinutes: created.grossMinutes ?? 0,
@@ -261,7 +255,6 @@ export async function POST(req: Request) {
  *   endTime: HH:MM,
  *   activity: string,
  *   location?: string,
- *   distanceKm?: number|string,
  *   travelMinutes?: number|string
  * }
  */
@@ -321,7 +314,6 @@ export async function PATCH(req: Request) {
   const brk = normalizeBreakMinutes(breakInput, diffMin);
   const netMin = Math.max(0, diffMin - brk.breakMinutes);
 
-  const distanceKmNum = getNumber(body.distanceKm);
   const travelMinutesNum = Math.max(0, Math.round(getNumber(body.travelMinutes)));
 
   let targetUserId = existing.userId;
@@ -347,7 +339,6 @@ export async function PATCH(req: Request) {
       endTime: timeOnly(endTime),
       activity,
       location,
-      distanceKm: new Prisma.Decimal(distanceKmNum),
       travelMinutes: travelMinutesNum,
       grossMinutes: diffMin,
       breakMinutes: brk.breakMinutes,
@@ -364,7 +355,6 @@ export async function PATCH(req: Request) {
     endTime: toHHMMUTC(updated.endTime),
     activity: updated.activity ?? "",
     location: updated.location ?? "",
-    distanceKm: (updated.distanceKm ?? new Prisma.Decimal(0)).toString(),
     travelMinutes: updated.travelMinutes ?? 0,
     workMinutes: updated.workMinutes ?? 0,
     grossMinutes: updated.grossMinutes ?? 0,

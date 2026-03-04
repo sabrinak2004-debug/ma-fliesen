@@ -15,7 +15,6 @@ type WorkEntry = {
   endTime: string; // HH:MM
   activity: string;
   location: string;
-  distanceKm: string;
   travelMinutes: number;
   workMinutes: number;
   grossMinutes: number;
@@ -43,14 +42,6 @@ function formatDateDE(yyyyMmDd: string) {
     month: "2-digit",
     year: "numeric",
   });
-}
-
-function formatHoursDE(workMinutes: number) {
-  const hours = workMinutes / 60;
-  return new Intl.NumberFormat("de-DE", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  }).format(hours);
 }
 
 function formatHM(minutes: number) {
@@ -109,7 +100,6 @@ type EditForm = {
   endTime: string;
   activity: string;
   location: string;
-  distanceKm: string;
   travelMinutes: string;
   breakMinutes: string;
   userFullName: string; // ✅ nur Anzeige im Modal
@@ -181,7 +171,6 @@ export default function Page() {
   const [endTime, setEndTime] = useState("16:30");
   const [activity, setActivity] = useState("");
   const [location, setLocation] = useState("");
-  const [distanceKm, setDistanceKm] = useState<string>("0");
   const [travelMinutes, setTravelMinutes] = useState<string>("0");
   const [breakMinutes, setBreakMinutes] = useState<string>(""); // leer = automatisch
 
@@ -271,7 +260,6 @@ useEffect(() => {
         endTime,
         activity: activity.trim(),
         location: location.trim(),
-        distanceKm: Number(distanceKm.replace(",", ".")) || 0,
         travelMinutes: Number(travelMinutes) || 0,
         breakMinutes: breakMinutes.trim() ? Number(breakMinutes) : 0,
       };
@@ -295,7 +283,6 @@ useEffect(() => {
 
       setActivity("");
       setLocation("");
-      setDistanceKm("0");
       setTravelMinutes("0");
       setBreakMinutes("");
 
@@ -322,7 +309,6 @@ useEffect(() => {
       endTime: e.endTime,
       activity: e.activity ?? "",
       location: e.location ?? "",
-      distanceKm: e.distanceKm ?? "0",
       travelMinutes: String(e.travelMinutes ?? 0),
       breakMinutes: String(e.breakMinutes ?? 0),
     });
@@ -345,7 +331,6 @@ useEffect(() => {
         endTime: edit.endTime,
         activity: edit.activity.trim(),
         location: edit.location.trim(),
-        distanceKm: Number(edit.distanceKm.replace(",", ".")) || 0,
         travelMinutes: Number(edit.travelMinutes) || 0,
         breakMinutes: edit.breakMinutes.trim() ? Number(edit.breakMinutes) : 0,
       };
@@ -506,16 +491,7 @@ useEffect(() => {
           />
         </div>
 
-        <div className="row" style={{ marginBottom: 12 }}>
-          <div>
-            <div className="label">Entfernung (km)</div>
-            <input
-              className="input"
-              inputMode="decimal"
-              value={distanceKm}
-              onChange={(e) => setDistanceKm(e.target.value)}
-            />
-          </div>
+        <div className="label" style={{ marginBottom: 12 }}>
           <div>
             <div className="label">Fahrzeit (Min.)</div>
             <input
@@ -548,7 +524,6 @@ useEffect(() => {
             onClick={() => {
               setActivity("");
               setLocation("");
-              setDistanceKm("0");
               setTravelMinutes("0");
               setBreakMinutes("");
             }}
@@ -609,7 +584,6 @@ useEffect(() => {
 
                 <div className="entry-grid" style={{ padding: "0 0 12px 0" }}>
                   {g.entries.map((e) => {
-                    const hasDistance = Number(e.distanceKm) > 0;
                     const hasTravel = e.travelMinutes > 0;
 
                     const hasBreak = (e.breakMinutes ?? 0) > 0 || (e.breakAuto ?? false);
@@ -661,7 +635,7 @@ useEffect(() => {
                               </div>
                             ) : null}
 
-{hasDistance || hasTravel || hasBreak ? (
+{hasTravel || hasBreak ? (
   <div className="entry-chips">
     {/* ✅ Pause anzeigen */}
     {hasBreak ? (
@@ -674,7 +648,6 @@ useEffect(() => {
     <span className="chip">🧮 Brutto {grossHM}</span>
     <span className="chip">✅ Netto {netHM}</span>
 
-    {hasDistance ? <span className="chip">🚗 {e.distanceKm} km</span> : null}
     {hasTravel ? <span className="chip">⏱ {e.travelMinutes} Min</span> : null}
   </div>
 ) : null}
@@ -802,15 +775,6 @@ useEffect(() => {
             </div>
 
             <div className="row">
-              <div>
-                <div className="label">Entfernung (km)</div>
-                <input
-                  className="input"
-                  inputMode="decimal"
-                  value={edit.distanceKm}
-                  onChange={(e) => setEdit((p) => (p ? { ...p, distanceKm: e.target.value } : p))}
-                />
-              </div>
               <div>
                 <div className="label">Fahrzeit (Min.)</div>
                 <input
