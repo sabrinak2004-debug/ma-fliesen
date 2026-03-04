@@ -23,6 +23,29 @@ function toHHMMUTC(d: Date) {
   return `${hh}:${mm}`;
 }
 
+function berlinTodayYMD(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+
+  const y = parts.find((p) => p.type === "year")?.value ?? "0000";
+  const m = parts.find((p) => p.type === "month")?.value ?? "00";
+  const d = parts.find((p) => p.type === "day")?.value ?? "00";
+  return `${y}-${m}-${d}`;
+}
+
+function assertEmployeeMayEditDate(role: Role, workDateYMD: string) {
+  if (role === Role.ADMIN) return;
+
+  const today = berlinTodayYMD();
+  if (workDateYMD !== today) {
+    throw new Error("Du kannst Einträge nur am selben Tag bearbeiten.");
+  }
+}
+
 type EntryBody = {
   id?: unknown;
 
@@ -130,7 +153,13 @@ export async function POST(req: Request) {
   if (!workDate || !startTime || !endTime || !activity) {
     return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
   }
-
+  // ✅ Lock: Mitarbeiter darf nur "heute" (Europe/Berlin) anlegen
+  try {
+    assertEmployeeMayEditDate(session.role, workDate);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Nicht erlaubt";
+    return NextResponse.json({ error: msg }, { status: 403 });
+  }
   const start = timeOnly(startTime);
   const end = timeOnly(endTime);
   const diffMin = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
@@ -222,6 +251,15 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
   }
 
+  // ✅ Lock: Mitarbeiter darf nur am selben Tag bearbeiten (Datum aus DB!)
+  const existingYMD = toIsoDateUTC(existing.workDate);
+  try {
+    assertEmployeeMayEditDate(session.role, existingYMD);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Nicht erlaubt";
+    return NextResponse.json({ error: msg }, { status: 403 });
+  }
+
   const workDate = getString(body.workDate);
   const startTime = getString(body.startTime);
   const endTime = getString(body.endTime);
@@ -230,6 +268,13 @@ export async function PATCH(req: Request) {
 
   if (!workDate || !startTime || !endTime || !activity) {
     return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
+  }
+  // ✅ Lock: Mitarbeiter darf workDate nicht auf einen anderen Tag ändern
+  try {
+    assertEmployeeMayEditDate(session.role, workDate);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Nicht erlaubt";
+    return NextResponse.json({ error: msg }, { status: 403 });
   }
 
   const start = timeOnly(startTime);
@@ -300,6 +345,15 @@ export async function DELETE(req: Request) {
 
   if (!isAdmin && e.userId !== session.userId) {
     return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
+  }
+
+  // ✅ Lock: Mitarbeiter darf nur am selben Tag löschen
+  const ymd = toIsoDateUTC(e.workDate);
+  try {
+    assertEmployeeMayEditDate(session.role, ymd);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Nicht erlaubt";
+    return NextResponse.json({ error: msg }, { status: 403 });
   }
 
   await prisma.workEntry.delete({ where: { id } });
