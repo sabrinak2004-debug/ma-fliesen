@@ -46,26 +46,6 @@ function assertEmployeeMayEditDate(role: Role, workDateYMD: string) {
   }
 }
 
-function legalBreakMinutes(grossMinutes: number): number {
-  if (!Number.isFinite(grossMinutes) || grossMinutes <= 0) return 0;
-  if (grossMinutes > 9 * 60) return 45;
-  if (grossMinutes > 6 * 60) return 30;
-  return 0;
-}
-
-function normalizeBreakMinutes(input: number, grossMinutes: number): { breakMinutes: number; breakAuto: boolean } {
-  const safeGross = Math.max(0, Math.round(grossMinutes));
-
-  // Wenn nicht eingetragen oder 0/negativ -> automatisch
-  if (!Number.isFinite(input) || input <= 0) {
-    return { breakMinutes: legalBreakMinutes(safeGross), breakAuto: true };
-  }
-
-  const b = Math.max(0, Math.round(input));
-  // Pause darf brutto nicht überschreiten
-  const capped = Math.min(b, safeGross);
-  return { breakMinutes: capped, breakAuto: false };
-}
 
 type EntryBody = {
   id?: unknown;

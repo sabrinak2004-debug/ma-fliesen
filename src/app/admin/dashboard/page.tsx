@@ -62,9 +62,6 @@ type AdminDashboardApiOk = {
   employeesTimeline: AdminEmployeeTimeline[];
 };
 
-type AdminDashboardApiErr = { ok: false; error: string };
-
-type AdminDashboardApiResponse = AdminDashboardApiOk | AdminDashboardApiErr;
 
 type OverviewByUserRow = {
   fullName: string;

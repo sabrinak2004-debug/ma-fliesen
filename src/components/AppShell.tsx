@@ -48,18 +48,6 @@ function initialsFromName(fullName: string) {
   return (a + b).toUpperCase();
 }
 
-function mobileLinkStyle(active: boolean): React.CSSProperties {
-  return {
-    display: "block",
-    padding: "12px 12px",
-    borderRadius: 14,
-    textDecoration: "none",
-    fontWeight: 900,
-    border: `1px solid ${active ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0.12)"}`,
-    background: active ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.9)",
-    color: "rgba(0,0,0,0.92)",
-  };
-}
 
 function mobileItemStyle(active: boolean): React.CSSProperties {
   return {
