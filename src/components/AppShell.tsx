@@ -181,22 +181,23 @@ export default function AppShell({
             </button>
 
             <div style={{ minWidth: 0, textAlign: "center", flex: 1 }}>
+              {/* Brand */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                <Image
+                  src="/logo-ma-fliesen.jpeg"
+                  alt="ma-fliesen Logo"
+                  width={90}
+                  height={30}
+                  priority
+                  style={{ objectFit: "contain" }}
+                />
+              </div>
               <div style={{ fontWeight: 900, color: "rgba(255,255,255,0.95)", lineHeight: 1.05 }}>
                 ma-fliesen
               </div>
               <div style={{ fontSize: 12, marginTop: 2, color: "rgba(255,255,255,0.65)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {activeLabel ?? "#wirkönnendas"}
-                            {/* Brand */}
-            <div className="brand" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Image
-                src="/logo-ma-fliesen.jpeg"
-                alt="ma-fliesen Logo"
-                width={120}
-                height={40}
-                priority
-                style={{ objectFit: "contain" }}
-              />
-              </div>
+
               </div>
             </div>
 
