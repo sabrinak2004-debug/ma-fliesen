@@ -103,6 +103,7 @@ export async function GET(req: Request) {
   if (!session) return okJson({ error: "Nicht eingeloggt" }, { status: 401 });
 
   const url = new URL(req.url);
+  const employeeId = url.searchParams.get("employeeId"); // optional
   const month = (url.searchParams.get("month") ?? "").trim(); // YYYY-MM
   const fromQ = (url.searchParams.get("from") ?? "").trim(); // YYYY-MM-DD
   const toQ = (url.searchParams.get("to") ?? "").trim(); // YYYY-MM-DD

@@ -304,6 +304,23 @@ export default function AdminDashboardPage() {
   const [rangeFrom, setRangeFrom] = useState<string>(`${ym}-01`);
   const [rangeTo, setRangeTo] = useState<string>(`${ym}-${lastDayOfMonth(ym)}`);
 
+      type ExportTarget = "ALL" | "EMPLOYEE";
+    const [exportTarget, setExportTarget] = useState<ExportTarget>("ALL");
+    const [exportEmployeeId, setExportEmployeeId] = useState<string>("");
+
+    const employeeOptions = useMemo(() => {
+      const list = (dash?.employeesTimeline ?? [])
+        .map((u) => ({ id: u.userId, name: u.fullName }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      return list;
+    }, [dash]);
+
+    const exportTargetError = useMemo(() => {
+      if (exportTarget !== "EMPLOYEE") return "";
+      if (!exportEmployeeId) return "Bitte Mitarbeiter auswählen.";
+      return "";
+    }, [exportTarget, exportEmployeeId]);
+
     // Admin Edit WorkEntry Modal
   const [editOpen, setEditOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
@@ -336,6 +353,10 @@ export default function AdminDashboardPage() {
     setExportYear(currentYear());
     setRangeFrom(`${month}-01`);
     setRangeTo(`${month}-${lastDayOfMonth(month)}`);
+
+    setExportTarget("ALL");
+    setExportEmployeeId("");
+
     setExportOpen(true);
   };
 
@@ -347,20 +368,27 @@ export default function AdminDashboardPage() {
   }, [exportMode, rangeFrom, rangeTo]);
 
   const doExport = () => {
+    if (exportTarget === "EMPLOYEE" && exportTargetError) return;
+
+    const empParam =
+      exportTarget === "EMPLOYEE" && exportEmployeeId
+        ? `&employeeId=${encodeURIComponent(exportEmployeeId)}`
+        : "";
+
     if (exportMode === "MONTH") {
-      startDownload(`/api/admin/export?scope=month&month=${encodeURIComponent(exportMonth)}`);
+      startDownload(`/api/admin/export?scope=month&month=${encodeURIComponent(exportMonth)}${empParam}`);
       setExportOpen(false);
       return;
     }
 
     if (exportMode === "YEAR") {
-      startDownload(`/api/admin/export?scope=year&year=${encodeURIComponent(exportYear)}`);
+      startDownload(`/api/admin/export?scope=year&year=${encodeURIComponent(exportYear)}${empParam}`);
       setExportOpen(false);
       return;
     }
 
     if (rangeError) return;
-    startDownload(`/api/admin/export?from=${encodeURIComponent(rangeFrom)}&to=${encodeURIComponent(rangeTo)}`);
+    startDownload(`/api/admin/export?from=${encodeURIComponent(rangeFrom)}&to=${encodeURIComponent(rangeTo)}${empParam}`);
     setExportOpen(false);
   };
 
@@ -443,16 +471,16 @@ export default function AdminDashboardPage() {
       <button
         type="button"
         onClick={doExport}
-        disabled={exportMode === "RANGE" && Boolean(rangeError)}
+        disabled={(exportMode === "RANGE" && Boolean(rangeError)) || Boolean(exportTargetError)}
         style={{
           padding: "10px 14px",
-          cursor: exportMode === "RANGE" && rangeError ? "not-allowed" : "pointer",
+          cursor: ((exportMode === "RANGE" && rangeError) || exportTargetError) ? "not-allowed" : "pointer",
           fontWeight: 1000,
           borderRadius: 12,
           border: "1px solid rgba(184,207,58,0.35)",
           background: exportMode === "RANGE" && rangeError ? "rgba(184,207,58,0.06)" : "rgba(184,207,58,0.12)",
           color: "var(--accent)",
-          opacity: exportMode === "RANGE" && rangeError ? 0.7 : 1,
+          opacity: ((exportMode === "RANGE" && rangeError) || exportTargetError) ? 0.7 : 1,
         }}
         title="Download starten"
       >
@@ -613,7 +641,83 @@ export default function AdminDashboardPage() {
           {m.label}
         </button>
       ))}
+      {/* ✅ Ziel: Alle oder pro Mitarbeiter */}
+<div style={{ display: "grid", gap: 8, marginTop: 6 }}>
+  <div style={{ fontSize: 12, color: "var(--muted)" }}>Export-Ziel</div>
+
+  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+    <button
+      type="button"
+      onClick={() => {
+        setExportTarget("ALL");
+        setExportEmployeeId("");
+      }}
+      style={{
+        borderRadius: 999,
+        padding: "8px 12px",
+        border: "1px solid rgba(255,255,255,0.14)",
+        background: exportTarget === "ALL" ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
+        color: "rgba(255,255,255,0.92)",
+        cursor: "pointer",
+        fontSize: 13,
+        fontWeight: 900,
+      }}
+    >
+      Alle gesammelt
+    </button>
+
+    <button
+      type="button"
+      onClick={() => setExportTarget("EMPLOYEE")}
+      style={{
+        borderRadius: 999,
+        padding: "8px 12px",
+        border: "1px solid rgba(255,255,255,0.14)",
+        background: exportTarget === "EMPLOYEE" ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
+        color: "rgba(255,255,255,0.92)",
+        cursor: "pointer",
+        fontSize: 13,
+        fontWeight: 900,
+      }}
+    >
+      Pro Mitarbeiter
+    </button>
+  </div>
+  </div>
+
+  {exportTarget === "EMPLOYEE" ? (
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter auswählen</div>
+      <select
+        value={exportEmployeeId}
+        onChange={(e) => setExportEmployeeId(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "10px 12px",
+          borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.18)",
+          background: "rgba(0,0,0,0.25)",
+          color: "rgba(255,255,255,0.92)",
+          outline: "none",
+        }}
+      >
+        <option value="" style={{ color: "black" }}>
+          — Bitte wählen —
+        </option>
+        {employeeOptions.map((u) => (
+          <option key={u.id} value={u.id} style={{ color: "black" }}>
+            {u.name}
+          </option>
+        ))}
+      </select>
+
+      {exportTargetError ? (
+        <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>{exportTargetError}</div>
+      ) : null}
     </div>
+  ) : null}
+</div>
+
 
     {exportMode === "MONTH" ? (
       <div style={{ display: "grid", gap: 8 }}>
