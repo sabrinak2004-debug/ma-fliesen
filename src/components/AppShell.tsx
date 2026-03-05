@@ -166,7 +166,7 @@ useEffect(() => {
   const userInitials = session ? initialsFromName(session.fullName) : "U";
 
   return (
-    <div style={{ padding: "18px 0 42px" }}>
+    <div style={{ padding: "18px 0 42px", height: "100dvh", overflow: "hidden" }}>
       <div className="container-app">
 {/* MOBILE TOPBAR (nur < md) */}
 <div
@@ -628,7 +628,17 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className="md:hidden" style={{ paddingTop: topbarH ? topbarH + 12 : 0 }}>
+        <div
+          className="md:hidden"
+          style={{
+            position: "relative",
+            marginTop: topbarH ? topbarH + 12 : 0, // Platz unter der fixed Topbar
+            height: topbarH ? `calc(100dvh - ${topbarH + 12}px)` : "100dvh",
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            paddingBottom: 24,
+          }}
+        >
           {children}
         </div>
 
