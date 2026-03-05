@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import JSZip from "jszip";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import Holidays from "date-holidays";
 
 /** === Payroll Settings (anpassen falls nötig) === */
 const STANDARD_DAY_HOURS = 8; // Tagessoll für bezahlte Tage (Urlaub/Krank/Feiertag)
@@ -91,11 +92,6 @@ function roundMinutes(minutes: number, stepMinutes: number): number {
   return Math.round(minutes / step) * step;
 }
 
-function addDaysUTC(d: Date, days: number): Date {
-  const x = new Date(d);
-  x.setUTCDate(x.getUTCDate() + days);
-  return x;
-}
 
 function isWeekendUTC(yyyyMmDd: string): boolean {
   const d = new Date(`${yyyyMmDd}T00:00:00.000Z`);
@@ -140,77 +136,26 @@ function dayBreakAndAuto(grossDay: number, manualBreak: number): { breakMinutes:
   return { breakMinutes: legalBreakMinutes(gross), auto: true };
 }
 
-/** ===== Easter (Meeus/Jones/Butcher) ===== */
-function easterSundayUTC(year: number): Date {
-  // returns Easter Sunday at 00:00 UTC
-  const a = year % 19;
-  const b = Math.floor(year / 100);
-  const c = year % 100;
-  const d = Math.floor(b / 4);
-  const e = b % 4;
-  const f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3);
-  const h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4);
-  const k = c % 4;
-  const l = (32 + 2 * e + 2 * i - h - k) % 7;
-  const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31); // 3=March, 4=April
-  const day = ((h + l - 7 * m + 114) % 31) + 1;
-  return new Date(Date.UTC(year, month - 1, day));
-}
-
-/** ===== Feiertage (Default: Baden-Württemberg) ===== */
+/** ===== Feiertage automatisch (DE + Bundesland via date-holidays) ===== */
 type HolidayInfo = { name: string };
 
-function holidaysBWForYear(year: number): Map<string, HolidayInfo> {
-  const map = new Map<string, HolidayInfo>();
-
-  const fixed: Array<{ m: number; d: number; name: string }> = [
-    { m: 1, d: 1, name: "Neujahr" },
-    { m: 1, d: 6, name: "Heilige Drei Könige" }, // BW
-    { m: 5, d: 1, name: "Tag der Arbeit" },
-    { m: 10, d: 3, name: "Tag der Deutschen Einheit" },
-    { m: 11, d: 1, name: "Allerheiligen" }, // BW
-    { m: 12, d: 25, name: "1. Weihnachtstag" },
-    { m: 12, d: 26, name: "2. Weihnachtstag" },
-  ];
-
-  for (const f of fixed) {
-    const iso = `${year}-${pad2(f.m)}-${pad2(f.d)}`;
-    map.set(iso, { name: f.name });
-  }
-
-  const easter = easterSundayUTC(year);
-  const karfreitag = addDaysUTC(easter, -2);
-  const ostermontag = addDaysUTC(easter, +1);
-  const christiHimmelfahrt = addDaysUTC(easter, +39);
-  const pfingstmontag = addDaysUTC(easter, +50);
-  const fronleichnam = addDaysUTC(easter, +60); // BW
-
-  const movable: Array<{ date: Date; name: string }> = [
-    { date: karfreitag, name: "Karfreitag" },
-    { date: ostermontag, name: "Ostermontag" },
-    { date: christiHimmelfahrt, name: "Christi Himmelfahrt" },
-    { date: pfingstmontag, name: "Pfingstmontag" },
-    { date: fronleichnam, name: "Fronleichnam" },
-  ];
-
-  for (const m of movable) {
-    map.set(dateOnly(m.date), { name: m.name });
-  }
-
-  return map;
-}
-
-function buildHolidayMapBW(fromISO: string, toISO: string): Map<string, HolidayInfo> {
-  const fromY = Number(fromISO.slice(0, 4));
-  const toY = Number(toISO.slice(0, 4));
+function buildHolidayMapDE(fromISO: string, toISO: string, state: string): Map<string, HolidayInfo> {
+  const hd = new Holidays("DE", state); // z.B. "BW"
   const res = new Map<string, HolidayInfo>();
-  for (let y = fromY; y <= toY; y++) {
-    const yearMap = holidaysBWForYear(y);
-    for (const [k, v] of yearMap.entries()) res.set(k, v);
+
+  for (const d of eachDayISOInclusive(fromISO, toISO)) {
+    const date = new Date(`${d}T00:00:00.000Z`);
+    const hit = hd.isHoliday(date);
+
+    if (!hit) continue;
+
+    // date-holidays kann mehrere Treffer liefern (selten); wir nehmen den ersten Namen
+    const first = Array.isArray(hit) ? hit[0] : hit;
+    if (!first?.name) continue;
+
+    res.set(d, { name: String(first.name) });
   }
+
   return res;
 }
 
@@ -323,12 +268,18 @@ function groupByUser(data: Loaded): UserBlock[] {
  * - pro Mitarbeiter: Summary + Details
  * - Details enthalten auch Feiertage als Zeilen (FEIERTAG) im Zeitraum
  */
-function buildPayrollCsv(data: Loaded, labelPeriod: string, rangeISO?: { fromISO: string; toISO: string }) {
+function buildPayrollCsv(
+  data: Loaded,
+  labelPeriod: string,
+  rangeISO?: { fromISO: string; toISO: string; state: string }
+) {
   const blocks = groupByUser(data);
 
   // Feiertage nur dann sauber zählen/ausgeben, wenn wir einen klaren Range haben (Monat/Jahr/Custom)
-  const holidayMap =
-    rangeISO && rangeISO.fromISO && rangeISO.toISO ? buildHolidayMapBW(rangeISO.fromISO, rangeISO.toISO) : new Map();
+    const holidayMap =
+      rangeISO && rangeISO.fromISO && rangeISO.toISO
+        ? buildHolidayMapDE(rangeISO.fromISO, rangeISO.toISO, rangeISO.state)
+        : new Map();
 
   const allDaysInRange = rangeISO ? eachDayISOInclusive(rangeISO.fromISO, rangeISO.toISO) : [];
 
@@ -402,7 +353,7 @@ for (const v of dayAgg.values()) {
 
     const workedHours = totalNetMinutes / 60;
     const expectedHours = expectedMinutes / 60;
-    const overtimeHours = (totalNetMinutes - expectedMinutes) / 60;
+
 
     // "Wie viele Stunden bezahlt werden sollen"
     // => Arbeitszeit + bezahlte Abwesenheit + bezahlte Feiertage (die nicht gearbeitet wurden)
@@ -410,10 +361,11 @@ for (const v of dayAgg.values()) {
     const payableMinutesRounded = roundMinutes(payableMinutesRaw, ROUND_TO_MINUTES);
     const payableHoursRaw = payableMinutesRaw / 60;
     const payableHoursRounded = payableMinutesRounded / 60;
+        // ✅ Für Payroll: Überstunden basieren auf "bezahlten Minuten"
+    const overtimeHours = (payableMinutesRaw - expectedMinutes) / 60;
 
     lines.push(["Mitarbeiter", b.name]);
 
-    // Summary Kopf
     lines.push([
       "Summary",
       "Soll-Arbeitstage",
@@ -421,7 +373,6 @@ for (const v of dayAgg.values()) {
       "Arbeitsstunden (Ist)",
       "Überstunden (Ist-Soll)",
       "Fahrtminuten",
-      "Kilometer",
       "Urlaubstage",
       "Krankheitstage",
       "Feiertage (Werktag)",
@@ -432,17 +383,17 @@ for (const v of dayAgg.values()) {
       "Bezahlte Stunden (gerundet)",
     ]);
 
-    lines.push([
+      lines.push([
       "",
       rangeISO ? expectedWorkdays : "",
       rangeISO ? formatHoursDE(expectedHours) : "",
       formatHoursDE(workedHours),
       rangeISO ? formatHoursDE(overtimeHours) : "",
-      totalTravelMinutes,
-      vacationDates.size,
-      sickDates.size,
-      rangeISO ? holidayDates.size : "",
-      paidAbsenceDays,
+      totalTravelMinutes,                 // Fahrtminuten
+      vacationDates.size,                 // Urlaubstage
+      sickDates.size,                     // Krankheitstage
+      rangeISO ? holidayDates.size : "",  // Feiertage (Werktag)
+      paidAbsenceDays,                    // Bezahlte Abw.-Tage (U+K)
       formatHoursDE(paidAbsenceMinutes / 60),
       rangeISO ? paidHolidayDaysNotWorked : "",
       formatHoursDE(payableHoursRaw),
@@ -464,7 +415,6 @@ for (const v of dayAgg.values()) {
       "PauseAuto",
       "NettoArbeitsminuten",
       "Fahrtminuten",
-      "Kilometer",
       "Tätigkeit",
       "Ort",
       "ErstelltAm",
@@ -490,10 +440,6 @@ const pauseThisRow = isFirstOfDay ? breakInfo.breakMinutes : 0;
 const grossMin = Number.isFinite(e.grossMinutes) ? e.grossMinutes : 0;
 const netMin = Math.max(0, Math.round(grossMin) - pauseThisRow);
 
-const km =
-  e.distanceKm !== null && e.distanceKm !== undefined
-    ? String(e.distanceKm)
-    : "";
 
 details.push({
   sortKey: `${d}T${start}`,
@@ -509,7 +455,6 @@ details.push({
     isFirstOfDay ? (breakInfo.auto ? "ja" : "nein") : "", // PauseAuto (nur 1×/Tag)
     netMin,                    // NettoArbeitsminuten
     e.travelMinutes ?? 0,      // Fahrtminuten
-    km,                        // Kilometer
     e.activity,                // Tätigkeit
     e.location,                // Ort
     e.createdAt.toISOString(), // ErstelltAm
@@ -601,6 +546,7 @@ export async function GET(req: Request) {
     if (me.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { searchParams } = new URL(req.url);
+    const state = (searchParams.get("state") ?? "BW").trim().toUpperCase(); // Default BW
 
     const group = (searchParams.get("group") ?? "all").trim(); // all | perEmployee | singleEmployee
 const userId = (searchParams.get("userId") ?? "").trim();
@@ -654,7 +600,7 @@ if (scope === "year") {
 
     if (isAll) {
       const data = await loadData(start, endInclusive, null);
-      const csv = buildPayrollCsv(data, key, { fromISO, toISO });
+      const csv = buildPayrollCsv(data, month, { fromISO, toISO, state });
       zip.file(`${key}_payroll.csv`, csv);
       continue;
     }
@@ -669,7 +615,7 @@ if (scope === "year") {
       }
 
       const data = await loadData(start, endInclusive, userId);
-      const csv = buildPayrollCsv(data, `${key} · ${emp.fullName}`, { fromISO, toISO });
+      const csv = buildPayrollCsv(data, month, { fromISO, toISO, state });
       zip.file(`${key}_${safeFileName(emp.fullName)}_payroll.csv`, csv);
       continue;
     }
@@ -677,7 +623,7 @@ if (scope === "year") {
     // perEmployee
     for (const e of employees) {
       const data = await loadData(start, endInclusive, e.id);
-      const csv = buildPayrollCsv(data, `${key} · ${e.fullName}`, { fromISO, toISO });
+      const csv = buildPayrollCsv(data, month, { fromISO, toISO, state });
       zip.file(`${key}_${safeFileName(e.fullName)}_payroll.csv`, csv);
     }
   }
@@ -714,7 +660,7 @@ if (scope === "month") {
 
   if (isAll) {
     const data = await loadData(start, endInclusive, null);
-    const csv = buildPayrollCsv(data, month, { fromISO, toISO });
+    const csv = buildPayrollCsv(data, month, { fromISO, toISO, state });
     const filename = `ma-fliesen_payroll_${month}.csv`;
 
     return new NextResponse(csv, {
@@ -736,7 +682,7 @@ if (scope === "month") {
     }
 
     const data = await loadData(start, endInclusive, userId);
-    const csv = buildPayrollCsv(data, `${month} · ${emp.fullName}`, { fromISO, toISO });
+    const csv = buildPayrollCsv(data, month, { fromISO, toISO, state });
     const filename = `ma-fliesen_payroll_${month}_${safeFileName(emp.fullName)}.csv`;
 
     return new NextResponse(csv, {
@@ -758,7 +704,7 @@ if (scope === "month") {
   const zip = new JSZip();
   for (const e of employees) {
     const data = await loadData(start, endInclusive, e.id);
-    const csv = buildPayrollCsv(data, `${month} · ${e.fullName}`, { fromISO, toISO });
+    const csv = buildPayrollCsv(data, `${month} · ${e.fullName}`, { fromISO, toISO, state });
     zip.file(`${month}_${safeFileName(e.fullName)}_payroll.csv`, csv);
   }
 
@@ -788,8 +734,10 @@ if (scope === "month") {
 
     const data = await loadData(rangeFrom, rangeTo, isSingle ? userId : null);
 
-    const csv =
-      fromStr && toStr ? buildPayrollCsv(data, label, { fromISO: fromStr, toISO: toStr }) : buildPayrollCsv(data, label);
+const csv =
+  fromStr && toStr
+    ? buildPayrollCsv(data, label, { fromISO: fromStr, toISO: toStr, state })
+    : buildPayrollCsv(data, label);
 
     const filename = `ma-fliesen_payroll_${fromStr ?? "all"}_${toStr ?? "all"}.csv`;
 
