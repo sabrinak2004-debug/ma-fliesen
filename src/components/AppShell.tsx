@@ -173,11 +173,10 @@ useEffect(() => {
   ref={topbarRef}
   className="md:hidden"
   style={{
-    position: "fixed",
-    top: 0,
+    position: "relative",
+    zIndex: 1,
     left: 0,
     right: 0,
-    zIndex: 70,
     padding: 12,
     paddingTop: "calc(12px + env(safe-area-inset-top))",
     marginBottom: 12,
@@ -627,24 +626,7 @@ useEffect(() => {
             </div>
           </div>
         </div>
-
-        <div
-          className="md:hidden"
-          style={{
-            position: "relative",
-            marginTop: topbarH ? topbarH + 12 : 0, // Platz unter der fixed Topbar
-            height: topbarH ? `calc(100dvh - ${topbarH + 12}px)` : "100dvh",
-            overflowY: "auto",
-            WebkitOverflowScrolling: "touch",
-            paddingBottom: 24,
-          }}
-        >
-          {children}
-        </div>
-
-        <div className="hidden md:block">
-          {children}
-        </div>
+        {children}
       </div>
     </div>
   );
