@@ -46,6 +46,80 @@ function assertEmployeeMayEditDate(role: Role, workDateYMD: string) {
   }
 }
 
+const BREAK_BLOCK_MIN = 15; // wenn du auf 15-Min-Blöcke runden willst
+
+function requiredLegalBreakMinutesByGrossDay(dayGrossMinutes: number) {
+  if (dayGrossMinutes > 9 * 60) return 45;
+  if (dayGrossMinutes > 6 * 60) return 30;
+  return 0;
+}
+
+function roundUpToBlock(mins: number, block = BREAK_BLOCK_MIN) {
+  if (block <= 1) return mins;
+  return Math.ceil(mins / block) * block;
+}
+
+/**
+ * Erzwingt gesetzliche Pause auf TAGESBASIS:
+ * - summiert grossMinutes & manuelle breakMinutes aller Einträge
+ * - berechnet fehlende Pause
+ * - hängt fehlende Pause an EINEN Eintrag (standard: letzter Eintrag des Tages)
+ * - setzt workMinutes für alle Einträge korrekt (gross - break)
+ */
+async function enforceDailyLegalBreak(userId: string, workDateYMD: string) {
+  const workDate = dateOnly(workDateYMD);
+
+  const entries = await prisma.workEntry.findMany({
+    where: { userId, workDate },
+    orderBy: [{ endTime: "asc" }, { startTime: "asc" }], // letzter Eintrag = "spätester"
+    select: { id: true, grossMinutes: true, breakMinutes: true },
+  });
+
+  if (entries.length === 0) return;
+
+  const dayGross = entries.reduce((sum, e) => sum + (e.grossMinutes ?? 0), 0);
+  const required = requiredLegalBreakMinutesByGrossDay(dayGross);
+
+  const manualTotal = entries.reduce((sum, e) => sum + (e.breakMinutes ?? 0), 0);
+
+  const missingRaw = Math.max(0, required - manualTotal);
+  const missing = roundUpToBlock(missingRaw); // falls du exakt willst: nimm missingRaw
+
+  // Reset: alle Einträge erstmal "nur manuell" rechnen
+  await prisma.$transaction(
+    entries.map((e) => {
+      const manual = Math.max(0, e.breakMinutes ?? 0);
+      const gross = Math.max(0, e.grossMinutes ?? 0);
+      return prisma.workEntry.update({
+        where: { id: e.id },
+        data: {
+          breakAuto: false,
+          // workMinutes IMMER aus (gross - breakMinutes)
+          workMinutes: Math.max(0, gross - manual),
+        },
+      });
+    })
+  );
+
+  if (missing <= 0) return;
+
+  // Fehlende Pause an den letzten Eintrag hängen
+  const target = entries[entries.length - 1];
+  const targetManual = Math.max(0, target.breakMinutes ?? 0);
+  const targetGross = Math.max(0, target.grossMinutes ?? 0);
+
+  const finalBreak = targetManual + missing;
+
+  await prisma.workEntry.update({
+    where: { id: target.id },
+    data: {
+      breakMinutes: finalBreak,
+      breakAuto: true,
+      workMinutes: Math.max(0, targetGross - finalBreak),
+    },
+  });
+}
+
 
 type EntryBody = {
   id?: unknown;
@@ -201,24 +275,37 @@ export async function POST(req: Request) {
       grossMinutes: diffMin,
       breakMinutes: manualBreak,
       breakAuto: false,
-      workMinutes: diffMin,
+      workMinutes: Math.max(0, diffMin - manualBreak),
     },
     include: { user: { select: { id: true, fullName: true } } },
   });
 
+// ✅ Tagespause für diesen User+Tag neu berechnen (wegen mehreren Einträgen am Tag)
+await enforceDailyLegalBreak(targetUserId, workDate);
+
+// ✅ Eintrag nochmal frisch laden (weil enforceDailyLegalBreak break/workMinutes ändern kann)
+const createdFresh = await prisma.workEntry.findUnique({
+  where: { id: created.id },
+  include: { user: { select: { id: true, fullName: true } } },
+});
+
+if (!createdFresh) {
+  return NextResponse.json({ error: "Eintrag nicht gefunden." }, { status: 500 });
+}
+
   const entry: EntryDTO = {
-    id: created.id,
-    workDate: toIsoDateUTC(created.workDate),
-    startTime: toHHMMUTC(created.startTime),
-    endTime: toHHMMUTC(created.endTime),
-    activity: created.activity ?? "",
-    location: created.location ?? "",
-    travelMinutes: created.travelMinutes ?? 0,
-    workMinutes: created.workMinutes ?? 0,
-    grossMinutes: created.grossMinutes ?? 0,
-    breakMinutes: created.breakMinutes ?? 0,
-    breakAuto: created.breakAuto ?? false,
-    user: { id: created.user.id, fullName: created.user.fullName },
+    id: createdFresh.id,
+    workDate: toIsoDateUTC(createdFresh.workDate),
+    startTime: toHHMMUTC(createdFresh.startTime),
+    endTime: toHHMMUTC(createdFresh.endTime),
+    activity: createdFresh.activity ?? "",
+    location: createdFresh.location ?? "",
+    travelMinutes: createdFresh.travelMinutes ?? 0,
+    workMinutes: createdFresh.workMinutes ?? 0,
+    grossMinutes: createdFresh.grossMinutes ?? 0,
+    breakMinutes: createdFresh.breakMinutes ?? 0,
+    breakAuto: createdFresh.breakAuto ?? false,
+    user: { id: createdFresh.user.id, fullName: createdFresh.user.fullName },
   };
 
   return NextResponse.json({ entry });
@@ -332,10 +419,23 @@ export async function PATCH(req: Request) {
       grossMinutes: diffMin,
       breakMinutes: manualBreak,
       breakAuto: false,
-      workMinutes: diffMin,
+      workMinutes: Math.max(0, diffMin - manualBreak),
     },
     include: { user: { select: { id: true, fullName: true } } },
   });
+
+  // ✅ Tagespause neu berechnen (weil dieser Tag mehrere Einträge hat)
+await enforceDailyLegalBreak(targetUserId, workDate);
+
+// ✅ Eintrag frisch laden (kann sich geändert haben)
+const updatedFresh = await prisma.workEntry.findUnique({
+  where: { id: updated.id },
+  include: { user: { select: { id: true, fullName: true } } },
+});
+
+if (!updatedFresh) {
+  return NextResponse.json({ error: "Eintrag nicht gefunden." }, { status: 500 });
+}
 
   const entry: EntryDTO = {
     id: updated.id,
@@ -382,6 +482,11 @@ export async function DELETE(req: Request) {
     }
   }
 
-  await prisma.workEntry.delete({ where: { id } });
+  const deleted = await prisma.workEntry.delete({ where: { id } });
+
+  // ✅ nach Delete Tagespause neu berechnen (falls noch Einträge am Tag existieren)
+  const ymd = toIsoDateUTC(deleted.workDate);
+  await enforceDailyLegalBreak(deleted.userId, ymd);
+
   return NextResponse.json({ ok: true });
 }
