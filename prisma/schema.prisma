@@ -27,6 +27,7 @@ model AppUser {
   adminNotes     AdminNote[]
   PasswordResetTokens PasswordResetToken[]
   PasswordResetRequests PasswordResetRequest[]
+  googleCalendarConnections GoogleCalendarConnection[]
 
   // ✅ NEU: Upload-Relation
   uploadedPlanEntryDocuments PlanEntryDocument[] @relation("UploadedBy")
@@ -87,10 +88,39 @@ model CalendarEvent {
   location  String?
   notes     String?
 
+    // ===== Google Sync Felder =====
+  googleEventId   String?  @unique
+  googleICalUID   String?
+  googleUpdatedAt DateTime?
+  googleEtag      String?
+  syncSource      String?   // "APP" | "GOOGLE"
+  lastSyncedAt    DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId, startAt])
+}
+
+model GoogleCalendarConnection {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Tokens (refreshToken MUSS bleiben, accessToken kannst du on-demand holen)
+  refreshToken String
+  calendarId   String   @default("primary")
+
+  // incremental sync
+  syncToken    String?
+
+  // push channel (watch)
+  channelId         String?
+  resourceId        String?
+  channelExpiration DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model WorkEntry {

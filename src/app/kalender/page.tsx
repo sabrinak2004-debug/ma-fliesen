@@ -1113,6 +1113,30 @@ useEffect(() => {
           >
             ›
           </button>
+          {isAdminOwnCalendar ? (
+  <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap", justifyContent: "center" }}>
+    <button
+      className="btn"
+      type="button"
+      onClick={() => {
+        window.location.href = "/api/admin/google/connect";
+      }}
+    >
+      Google Kalender verbinden
+    </button>
+
+    <button
+      className="btn"
+      type="button"
+      onClick={async () => {
+        await fetch("/api/admin/google/sync", { method: "POST" });
+        await Promise.all([reloadMonthAll(), selectedDate ? loadAppointmentsForDay(selectedDate) : Promise.resolve()]);
+      }}
+    >
+      Google → App syncen
+    </button>
+  </div>
+) : null}
         </div>
 
         {/* ===================== WEEK VIEW ===================== */}
@@ -1389,7 +1413,6 @@ useEffect(() => {
                 <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{apptError}</span>
               </div>
             )}
-
             {/* Agenda */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
               <div>

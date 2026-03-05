@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { Role } from "@prisma/client";
+import { getAuthedCalendarClient } from "@/lib/googleCalendar";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -115,6 +116,65 @@ export async function PUT(req: Request, ctx: Ctx) {
     },
   });
 
+  // ===== App -> Google Sync (update) =====
+  const googleClient = await getAuthedCalendarClient(session.userId);
+
+  if (googleClient) {
+    const { calendar, conn } = googleClient;
+
+    const requestBody = {
+      summary: updated.title,
+      location: updated.location ?? undefined,
+      description: updated.notes ?? undefined,
+      start: {
+        dateTime: updated.startAt.toISOString(),
+        timeZone: "Europe/Berlin",
+      },
+      end: {
+        dateTime: updated.endAt.toISOString(),
+        timeZone: "Europe/Berlin",
+      },
+    };
+
+    if (updated.googleEventId) {
+      const googleUpdated = await calendar.events.update({
+        calendarId: conn.calendarId || "primary",
+        eventId: updated.googleEventId,
+        requestBody,
+      });
+
+      await prisma.calendarEvent.update({
+        where: { id: updated.id },
+        data: {
+          googleICalUID: googleUpdated.data.iCalUID ?? null,
+          googleUpdatedAt: googleUpdated.data.updated ? new Date(googleUpdated.data.updated) : null,
+          googleEtag: googleUpdated.data.etag ?? null,
+          syncSource: "APP",
+          lastSyncedAt: new Date(),
+        },
+      });
+    } else {
+      const googleCreated = await calendar.events.insert({
+        calendarId: conn.calendarId || "primary",
+        requestBody,
+      });
+
+      if (googleCreated.data.id) {
+        await prisma.calendarEvent.update({
+          where: { id: updated.id },
+          data: {
+            googleEventId: googleCreated.data.id,
+            googleICalUID: googleCreated.data.iCalUID ?? null,
+            googleUpdatedAt: googleCreated.data.updated ? new Date(googleCreated.data.updated) : null,
+            googleEtag: googleCreated.data.etag ?? null,
+            syncSource: "APP",
+            lastSyncedAt: new Date(),
+          },
+        });
+      }
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     event: {
@@ -141,9 +201,23 @@ export async function DELETE(_req: Request, ctx: Ctx) {
 
   const existing = await prisma.calendarEvent.findFirst({
     where: { id, userId: session.userId },
-    select: { id: true },
+    select: { id: true, googleEventId: true },
   });
   if (!existing) return NextResponse.json({ ok: false, error: "Termin nicht gefunden" }, { status: 404 });
+
+  // ===== App -> Google Sync (delete) =====
+  const googleClient = await getAuthedCalendarClient(session.userId);
+
+  if (googleClient && existing.googleEventId) {
+    const { calendar, conn } = googleClient;
+
+    await calendar.events
+      .delete({
+        calendarId: conn.calendarId || "primary",
+        eventId: existing.googleEventId,
+      })
+      .catch(() => null);
+  }
 
   await prisma.calendarEvent.delete({ where: { id: existing.id } });
   return NextResponse.json({ ok: true });

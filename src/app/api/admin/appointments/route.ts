@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { Role } from "@prisma/client";
+import { getAuthedCalendarClient } from "@/lib/googleCalendar";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -152,6 +153,44 @@ export async function POST(req: Request) {
       notes: notesRaw ? notesRaw : null,
     },
   });
+
+    // ===== App -> Google Sync (create) =====
+  const googleClient = await getAuthedCalendarClient(session.userId);
+
+  if (googleClient) {
+    const { calendar, conn } = googleClient;
+
+    const googleCreated = await calendar.events.insert({
+      calendarId: conn.calendarId || "primary",
+      requestBody: {
+        summary: created.title,
+        location: created.location ?? undefined,
+        description: created.notes ?? undefined,
+        start: {
+          dateTime: created.startAt.toISOString(),
+          timeZone: "Europe/Berlin",
+        },
+        end: {
+          dateTime: created.endAt.toISOString(),
+          timeZone: "Europe/Berlin",
+        },
+      },
+    });
+
+    if (googleCreated.data.id) {
+      await prisma.calendarEvent.update({
+        where: { id: created.id },
+        data: {
+          googleEventId: googleCreated.data.id,
+          googleICalUID: googleCreated.data.iCalUID ?? null,
+          googleUpdatedAt: googleCreated.data.updated ? new Date(googleCreated.data.updated) : null,
+          googleEtag: googleCreated.data.etag ?? null,
+          syncSource: "APP",
+          lastSyncedAt: new Date(),
+        },
+      });
+    }
+  }
 
   return NextResponse.json({
     ok: true,
