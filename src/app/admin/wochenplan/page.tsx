@@ -307,6 +307,15 @@ export default function AdminWochenplanPage() {
   const [entries, setEntries] = useState<PlanEntry[]>([]);
   const [adminNotes, setAdminNotes] = useState<AdminNote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const onChange = () => setIsDesktop(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   // Plan-Entry Modal
   const [entryModalOpen, setEntryModalOpen] = useState(false);
@@ -771,7 +780,7 @@ export default function AdminWochenplanPage() {
         <div style={{ color: UI.muted }}>lädt…</div>
       ) : (
         <>
-        <div className="md:hidden" style={{ display: "grid", gap: 12 }}>
+        <div style={{ display: isDesktop ? "none" : "grid", gap: 12 }}>
           {/* Tage (Mo–Fr etc.) als Cards */}
           {ROWS.filter((r) => r.type === "DAY").map((row) => {
             const dayYMD = fmtYMD(
@@ -993,8 +1002,9 @@ export default function AdminWochenplanPage() {
           })}
         </div>
 
-        <div className="hidden md:block"
+        <div
           style={{
+            display: isDesktop ? "block" : "none",
             overflow: "auto",
             border: `1px solid ${UI.cellBorder}`,
             borderRadius: 14,

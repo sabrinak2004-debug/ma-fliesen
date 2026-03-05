@@ -196,7 +196,75 @@ export async function GET(req: Request) {
     orderBy: [{ workDate: "desc" }, { startTime: "desc" }],
   });
 
-  const entries: EntryDTO[] = rows.map((e) => ({
+// ---- Tagesweise gruppieren und Pflichtpause erzwingen (für Response) ----
+type Row = (typeof rows)[number];
+
+function requiredLegalBreakMinutesByGrossDay(dayGrossMinutes: number) {
+  if (dayGrossMinutes > 9 * 60) return 45;
+  if (dayGrossMinutes > 6 * 60) return 30;
+  return 0;
+}
+
+const groups = new Map<string, Row[]>();
+
+for (const r of rows) {
+  const ymd = toIsoDateUTC(r.workDate);
+  const key = `${r.userId}|${ymd}`;
+  const arr = groups.get(key) ?? [];
+  arr.push(r);
+  groups.set(key, arr);
+}
+
+// Für stabile "letzter Eintrag" Logik: nach Ende/Start sortieren
+for (const arr of groups.values()) {
+  arr.sort((a, b) => {
+    const ae = a.endTime.getTime() - b.endTime.getTime();
+    if (ae !== 0) return ae;
+    return a.startTime.getTime() - b.startTime.getTime();
+  });
+}
+
+const patched = new Map<string, { breakMinutes: number; breakAuto: boolean; workMinutes: number; grossMinutes: number }>();
+
+for (const [key, arr] of groups.entries()) {
+  const dayGross = arr.reduce((s, e) => s + (e.grossMinutes ?? 0), 0);
+  const required = requiredLegalBreakMinutesByGrossDay(dayGross);
+
+  const manualTotal = arr.reduce((s, e) => s + (e.breakMinutes ?? 0), 0);
+  const missing = Math.max(0, required - manualTotal);
+
+  // Erst: alle Einträge nur mit ihren manuellen Pausen rechnen
+  for (const e of arr) {
+    const gross = Math.max(0, e.grossMinutes ?? 0);
+    const br = Math.max(0, e.breakMinutes ?? 0);
+    patched.set(e.id, {
+      grossMinutes: gross,
+      breakMinutes: br,
+      breakAuto: false,
+      workMinutes: Math.max(0, gross - br),
+    });
+  }
+
+  // Dann: fehlende Pflichtpause an letzten Eintrag hängen
+  if (missing > 0) {
+    const last = arr[arr.length - 1];
+    const lastP = patched.get(last.id);
+    if (lastP) {
+      const newBreak = lastP.breakMinutes + missing;
+      patched.set(last.id, {
+        ...lastP,
+        breakMinutes: newBreak,
+        breakAuto: true,
+        workMinutes: Math.max(0, lastP.grossMinutes - newBreak),
+      });
+    }
+  }
+}
+
+// Jetzt Response bauen – aber mit gepatchten Werten
+const entries: EntryDTO[] = rows.map((e) => {
+  const p = patched.get(e.id);
+  return {
     id: e.id,
     workDate: toIsoDateUTC(e.workDate),
     startTime: toHHMMUTC(e.startTime),
@@ -204,12 +272,15 @@ export async function GET(req: Request) {
     activity: e.activity ?? "",
     location: e.location ?? "",
     travelMinutes: e.travelMinutes ?? 0,
-    workMinutes: e.workMinutes ?? 0,
-    grossMinutes: e.grossMinutes ?? 0,
-    breakMinutes: e.breakMinutes ?? 0,
-    breakAuto: e.breakAuto ?? false,
+    grossMinutes: p?.grossMinutes ?? (e.grossMinutes ?? 0),
+    breakMinutes: p?.breakMinutes ?? (e.breakMinutes ?? 0),
+    breakAuto: p?.breakAuto ?? (e.breakAuto ?? false),
+    workMinutes: p?.workMinutes ?? (e.workMinutes ?? 0),
     user: { id: e.user.id, fullName: e.user.fullName },
-  }));
+  };
+});
+
+return NextResponse.json({ entries });
 
   return NextResponse.json({ entries });
 }
