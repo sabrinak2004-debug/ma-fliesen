@@ -125,15 +125,19 @@ const monthEndIso = `${monthParam}-${lastDayOfMonth(monthParam)}`;
             lte: new Date(`${monthEndIso}T00:00:00.000Z`),
         },
     },
-    select: {
-        userId: true,
-        workDate: true,
-        startTime: true,
-        endTime: true,
-        activity: true,
-        location: true,
-        workMinutes: true,
-    },
+  select: {
+    id: true,
+    userId: true,
+    workDate: true,
+    startTime: true,
+    endTime: true,
+    activity: true,
+    location: true,
+    travelMinutes: true,
+    breakMinutes: true,
+    breakAuto: true,
+    workMinutes: true,
+  },
 });
 const absencesMonth = await prisma.absence.findMany({
   where: {
@@ -150,21 +154,25 @@ const absencesMonth = await prisma.absence.findMany({
 });
 
 const employeesTimeline = employees.map((e) => {
-  const items: Array<
-    | {
-        type: "WORK";
-        date: string;
-        startHHMM: string;
-        endHHMM: string;
-        activity: string | null;
-        location: string | null;
-        workMinutes: number;
-      }
-    | {
-        type: "VACATION" | "SICK";
-        date: string;
-      }
-  > = [];
+const items: Array<
+  | {
+      type: "WORK";
+      id: string;
+      date: string;
+      startHHMM: string;
+      endHHMM: string;
+      activity: string | null;
+      location: string | null;
+      travelMinutes: number;
+      breakMinutes: number;
+      breakAuto: boolean;
+      workMinutes: number;
+    }
+  | {
+      type: "VACATION" | "SICK";
+      date: string;
+    }
+> = [];
 
   for (const w of workEntriesMonth) {
     if (w.userId !== e.id) continue;
@@ -183,15 +191,19 @@ const employeesTimeline = employees.map((e) => {
       end.getUTCMinutes()
     ).padStart(2, "0")}`;
 
-    items.push({
-      type: "WORK",
-      date,
-      startHHMM,
-      endHHMM,
-      activity: w.activity ?? null,
-      location: w.location ?? null,
-      workMinutes: w.workMinutes ?? 0,
-    });
+        items.push({
+        type: "WORK",
+        id: w.id,
+        date,
+        startHHMM,
+        endHHMM,
+        activity: w.activity ?? null,
+        location: w.location ?? null,
+        travelMinutes: w.travelMinutes ?? 0,
+        breakMinutes: w.breakMinutes ?? 0,
+        breakAuto: w.breakAuto ?? false,
+        workMinutes: w.workMinutes ?? 0,
+        });
   }
 
   for (const a of absencesMonth) {

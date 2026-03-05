@@ -10,11 +10,15 @@ import Modal from "@/components/Modal";
 
 type AdminTimelineWork = {
   type: "WORK";
+  id: string;
   date: string; // YYYY-MM-DD
   startHHMM: string; // HH:MM
   endHHMM: string; // HH:MM
   activity: string | null;
   location: string | null;
+  travelMinutes: number;
+  breakMinutes: number;
+  breakAuto: boolean;
   workMinutes: number;
 };
 
@@ -290,6 +294,8 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
 
+  const [reloadTick, setReloadTick] = useState(0);
+
   // Export Modal State
   const [exportOpen, setExportOpen] = useState(false);
   const [exportMode, setExportMode] = useState<ExportMode>("MONTH");
@@ -297,6 +303,21 @@ export default function AdminDashboardPage() {
   const [exportYear, setExportYear] = useState<string>(currentYear());
   const [rangeFrom, setRangeFrom] = useState<string>(`${ym}-01`);
   const [rangeTo, setRangeTo] = useState<string>(`${ym}-${lastDayOfMonth(ym)}`);
+
+    // Admin Edit WorkEntry Modal
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editErr, setEditErr] = useState<string>("");
+
+  const [editEntryId, setEditEntryId] = useState<string>("");
+  const [editUserLabel, setEditUserLabel] = useState<string>(""); // nur Anzeige
+  const [editDate, setEditDate] = useState<string>(""); // nur Anzeige
+  const [editTime, setEditTime] = useState<string>(""); // nur Anzeige
+
+  const [editActivity, setEditActivity] = useState<string>("");
+  const [editLocation, setEditLocation] = useState<string>("");
+  const [editTravelMinutes, setEditTravelMinutes] = useState<string>("0");
+  const [editBreakMinutes, setEditBreakMinutes] = useState<string>("0");
 
   const years = useMemo(() => {
     const now = new Date().getFullYear();
@@ -399,7 +420,7 @@ export default function AdminDashboardPage() {
     return () => {
       alive = false;
     };
-  }, [month]);
+  }, [month, reloadTick]);
 
   const exportFooter = (
     <>
@@ -439,6 +460,88 @@ export default function AdminDashboardPage() {
       </button>
     </>
   );
+
+    function openEditWork(uName: string, it: AdminTimelineWork) {
+    setEditErr("");
+    setEditEntryId(it.id);
+    setEditUserLabel(uName);
+    setEditDate(it.date);
+    setEditTime(`${it.startHHMM}–${it.endHHMM}`);
+
+    setEditActivity(it.activity ?? "");
+    setEditLocation(it.location ?? "");
+    setEditTravelMinutes(String(it.travelMinutes ?? 0));
+    setEditBreakMinutes(String(it.breakMinutes ?? 0));
+
+    setEditOpen(true);
+  }
+
+  async function saveEditWork() {
+    if (!editEntryId) return;
+
+    setEditSaving(true);
+    setEditErr("");
+
+    const travel = Number(editTravelMinutes.replace(",", "."));
+    const brk = Number(editBreakMinutes.replace(",", "."));
+
+    const travelMinutes = Number.isFinite(travel) ? Math.max(0, Math.round(travel)) : 0;
+    const breakMinutes = Number.isFinite(brk) ? Math.max(0, Math.round(brk)) : 0;
+
+    try {
+      const r = await fetch("/api/entries", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editEntryId,
+          activity: editActivity,
+          location: editLocation,
+          travelMinutes,
+          breakMinutes,
+          // startTime/endTime NICHT schicken (Admin darf Zeit nicht ändern)
+        }),
+      });
+
+      const j: unknown = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const msg = isRecord(j) && isString(j["error"]) ? j["error"] : "Speichern fehlgeschlagen.";
+        setEditErr(msg);
+        return;
+      }
+
+      // schnell & sicher: Dashboard neu laden (einfach month einmal "neu setzen")
+      setEditOpen(false);
+      setReloadTick((x) => x + 1);
+    } catch {
+      setEditErr("Netzwerkfehler beim Speichern.");
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function deleteWorkEntry(entryId: string) {
+    const ok = window.confirm("Diesen Eintrag wirklich löschen?");
+    if (!ok) return;
+
+    try {
+      const r = await fetch(`/api/entries?id=${encodeURIComponent(entryId)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const j: unknown = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const msg = isRecord(j) && isString(j["error"]) ? j["error"] : "Löschen fehlgeschlagen.";
+        alert(msg);
+        return;
+      }
+
+      // neu laden
+      setReloadTick((x) => x + 1);
+    } catch {
+      alert("Netzwerkfehler beim Löschen.");
+    }
+  }
 
   return (
     <AppShell activeLabel="Admin-Übersicht">
@@ -764,8 +867,50 @@ export default function AdminDashboardPage() {
                                           ) : null}
                                         </div>
 
-                                        <div style={{ color: "var(--accent)", fontWeight: 1100, whiteSpace: "nowrap" }}>
-                                          {formatHM(it.workMinutes)}
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                          <div style={{ color: "var(--accent)", fontWeight: 1100, whiteSpace: "nowrap" }}>
+                                            {formatHM(it.workMinutes)}
+                                          </div>
+
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              openEditWork(u.fullName, it);
+                                            }}
+                                            title="Bearbeiten (ohne Zeit)"
+                                            style={{
+                                              padding: "6px 10px",
+                                              borderRadius: 10,
+                                              border: "1px solid rgba(255,255,255,0.14)",
+                                              background: "rgba(255,255,255,0.06)",
+                                              color: "rgba(255,255,255,0.9)",
+                                              cursor: "pointer",
+                                              fontWeight: 900,
+                                            }}
+                                          >
+                                            ✏️
+                                          </button>
+
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              deleteWorkEntry(it.id);
+                                            }}
+                                            title="Löschen"
+                                            style={{
+                                              padding: "6px 10px",
+                                              borderRadius: 10,
+                                              border: "1px solid rgba(224,75,69,0.35)",
+                                              background: "rgba(224,75,69,0.10)",
+                                              color: "rgba(224,75,69,0.95)",
+                                              cursor: "pointer",
+                                              fontWeight: 1000,
+                                            }}
+                                          >
+                                            🗑️
+                                          </button>
                                         </div>
                                       </div>
                                     ))}
