@@ -95,6 +95,19 @@ export default function AppShell({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const topbarRef = useRef<HTMLDivElement | null>(null);
+    const [topbarH, setTopbarH] = useState(0);
+
+    useEffect(() => {
+      function measure() {
+        const h = topbarRef.current?.offsetHeight ?? 0;
+        setTopbarH(h);
+      }
+      measure();
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }, []);
+
   useEffect(() => {
     let alive = true;
     fetch("/api/me")
@@ -133,6 +146,13 @@ export default function AppShell({
   setMobileOpen(false);
 }, [pathname]);
 
+useEffect(() => {
+  document.body.style.overflow = mobileOpen ? "hidden" : "";
+  return () => {
+    document.body.style.overflow = "";
+  };
+}, [mobileOpen]);
+
   async function handleLogout() {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -150,12 +170,16 @@ export default function AppShell({
       <div className="container-app">
 {/* MOBILE TOPBAR (nur < md) */}
 <div
+  ref={topbarRef}
   className="md:hidden"
   style={{
-    position: "sticky",
+    position: "fixed",
     top: 0,
+    left: 0,
+    right: 0,
     zIndex: 70,
     padding: 12,
+    paddingTop: "calc(12px + env(safe-area-inset-top))",
     marginBottom: 12,
     background: "rgba(14,16,14,0.92)", // --bg-main
     backdropFilter: "blur(10px)",
@@ -247,7 +271,7 @@ export default function AppShell({
 
 {/* MOBILE SIDEBAR (nur < md) */}
 {mobileOpen && (
-  <div className="md:hidden" style={{ position: "fixed", inset: 0, zIndex: 80 }}>
+  <div className="md:hidden" style={{ position: "fixed", inset: 0, zIndex: 80, overflow: "hidden" }}>
     {/* Overlay (dunkel, leicht transparent) */}
     <button
       type="button"
@@ -604,7 +628,13 @@ export default function AppShell({
           </div>
         </div>
 
-        {children}
+        <div className="md:hidden" style={{ paddingTop: topbarH ? topbarH + 12 : 0 }}>
+          {children}
+        </div>
+
+        <div className="hidden md:block">
+          {children}
+        </div>
       </div>
     </div>
   );
