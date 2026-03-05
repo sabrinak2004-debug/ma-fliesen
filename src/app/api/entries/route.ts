@@ -152,6 +152,7 @@ export async function POST(req: Request) {
   const raw = (await req.json().catch(() => null)) as unknown;
   const body: EntryBody = isRecord(raw) ? (raw as EntryBody) : {};
 
+  // ✅ Admin darf bearbeiten, aber Start/Ende (und standardmäßig auch Datum) bleiben wie in DB
   const workDate = getString(body.workDate);
   const startTime = getString(body.startTime);
   const endTime = getString(body.endTime);
@@ -243,11 +244,8 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
-
   const isAdmin = session.role === Role.ADMIN;
-    if (isAdmin) {
-    return NextResponse.json({ error: "Admins dürfen keine Arbeitszeiten bearbeiten." }, { status: 403 });
-  }
+
 
   const raw = (await req.json().catch(() => null)) as unknown;
   const body: EntryBody = isRecord(raw) ? (raw as EntryBody) : {};
@@ -266,30 +264,36 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
   }
 
-  // ✅ Lock: Mitarbeiter darf nur am selben Tag bearbeiten (Datum aus DB!)
-  const existingYMD = toIsoDateUTC(existing.workDate);
-  try {
-    assertEmployeeMayEditDate(session.role, existingYMD);
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Nicht erlaubt";
-    return NextResponse.json({ error: msg }, { status: 403 });
+  // ✅ Lock nur für EMPLOYEE
+  if (!isAdmin) {
+    const existingYMD = toIsoDateUTC(existing.workDate);
+    try {
+      assertEmployeeMayEditDate(session.role, existingYMD);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Nicht erlaubt";
+      return NextResponse.json({ error: msg }, { status: 403 });
+    }
   }
 
-  const workDate = getString(body.workDate);
-  const startTime = getString(body.startTime);
-  const endTime = getString(body.endTime);
+  // ✅ Admin darf bearbeiten, aber Start/Ende (und standardmäßig auch Datum) bleiben wie in DB
+  const workDate = isAdmin ? toIsoDateUTC(existing.workDate) : getString(body.workDate);
+  const startTime = isAdmin ? toHHMMUTC(existing.startTime) : getString(body.startTime);
+  const endTime = isAdmin ? toHHMMUTC(existing.endTime) : getString(body.endTime);
   const activity = getString(body.activity).trim();
   const location = getString(body.location).trim();
 
   if (!workDate || !startTime || !endTime || !activity) {
     return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
   }
-  // ✅ Lock: Mitarbeiter darf workDate nicht auf einen anderen Tag ändern
-  try {
-    assertEmployeeMayEditDate(session.role, workDate);
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Nicht erlaubt";
-    return NextResponse.json({ error: msg }, { status: 403 });
+
+  // ✅ Lock nur für EMPLOYEE (Admin ändert Datum hier ohnehin nicht)
+  if (!isAdmin) {
+    try {
+      assertEmployeeMayEditDate(session.role, workDate);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Nicht erlaubt";
+      return NextResponse.json({ error: msg }, { status: 403 });
+    }
   }
 
   const start = timeOnly(startTime);
@@ -353,12 +357,7 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
-
-  const isAdmin = session.role === Role.ADMIN;
-
-  if (isAdmin) {
-    return NextResponse.json({ error: "Admins dürfen keine Arbeitszeiten löschen." }, { status: 403 });
-  }
+    const isAdmin = session.role === Role.ADMIN;
 
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
@@ -371,13 +370,15 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
   }
 
-  // ✅ Lock: Mitarbeiter darf nur am selben Tag löschen
-  const ymd = toIsoDateUTC(e.workDate);
-  try {
-    assertEmployeeMayEditDate(session.role, ymd);
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Nicht erlaubt";
-    return NextResponse.json({ error: msg }, { status: 403 });
+  // ✅ Lock nur für EMPLOYEE, Admin darf immer löschen
+  if (!isAdmin) {
+    const ymd = toIsoDateUTC(e.workDate);
+    try {
+      assertEmployeeMayEditDate(session.role, ymd);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Nicht erlaubt";
+      return NextResponse.json({ error: msg }, { status: 403 });
+    }
   }
 
   await prisma.workEntry.delete({ where: { id } });
