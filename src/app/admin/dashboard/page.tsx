@@ -373,8 +373,8 @@ export default function AdminDashboardPage() {
 
       try {
         const [rd, ro] = await Promise.all([
-          fetch(`/api/admin/dashboard?month=${encodeURIComponent(month)}`),
-          fetch(`/api/overview?month=${encodeURIComponent(month)}`),
+          fetch(`/api/admin/dashboard?month=${encodeURIComponent(month)}`, { credentials: "include" }),
+          fetch(`/api/overview?month=${encodeURIComponent(month)}`, { credentials: "include" }),
         ]);
 
         const jd: unknown = await rd.json().catch(() => ({}));
@@ -583,41 +583,105 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      <Modal open={exportOpen} onClose={() => setExportOpen(false)} title="Export (Admin)" footer={exportFooter} maxWidth={720}>
+      <Modal
+        open={editOpen}
+        onClose={() => (editSaving ? null : setEditOpen(false))}
+        title="Arbeitszeit bearbeiten (Admin)"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setEditOpen(false)}
+              disabled={editSaving}
+              style={{
+                padding: "10px 14px",
+                cursor: editSaving ? "not-allowed" : "pointer",
+                fontWeight: 900,
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.9)",
+                opacity: editSaving ? 0.7 : 1,
+              }}
+            >
+              Abbrechen
+            </button>
+
+            <button
+              type="button"
+              onClick={saveEditWork}
+              disabled={editSaving}
+              style={{
+                padding: "10px 14px",
+                cursor: editSaving ? "not-allowed" : "pointer",
+                fontWeight: 1000,
+                borderRadius: 12,
+                border: "1px solid rgba(184,207,58,0.35)",
+                background: "rgba(184,207,58,0.12)",
+                color: "var(--accent)",
+                opacity: editSaving ? 0.7 : 1,
+              }}
+            >
+              {editSaving ? "Speichere…" : "Speichern"}
+            </button>
+          </>
+        }
+        maxWidth={640}
+      >
         <div style={{ display: "grid", gap: 12 }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {([
-              { key: "MONTH", label: "Monat (CSV)" },
-              { key: "YEAR", label: "Jahr (ZIP)" },
-              { key: "RANGE", label: "Zeitraum (CSV)" },
-            ] as Array<{ key: ExportMode; label: string }>).map((m) => (
-              <button
-                key={m.key}
-                type="button"
-                onClick={() => setExportMode(m.key)}
-                style={{
-                  borderRadius: 999,
-                  padding: "8px 12px",
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background: exportMode === m.key ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
-                  color: "rgba(255,255,255,0.92)",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  fontWeight: 900,
-                }}
-              >
-                {m.label}
-              </button>
-            ))}
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter</div>
+            <div style={{ fontWeight: 1000 }}>{editUserLabel}</div>
           </div>
 
-          {exportMode === "MONTH" ? (
-            <div style={{ display: "grid", gap: 8 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Monat auswählen</div>
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Datum & Zeit (nicht änderbar)</div>
+            <div style={{ fontWeight: 1000 }}>
+              {formatDateDE(editDate)} · {editTime}
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Tätigkeit</div>
+            <input
+              value={editActivity}
+              onChange={(e) => setEditActivity(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.18)",
+                background: "rgba(0,0,0,0.25)",
+                color: "rgba(255,255,255,0.92)",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Ort</div>
+            <input
+              value={editLocation}
+              onChange={(e) => setEditLocation(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.18)",
+                background: "rgba(0,0,0,0.25)",
+                color: "rgba(255,255,255,0.92)",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div style={{ display: "grid", gap: 6 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>Fahrtzeit (Min)</div>
               <input
-                type="month"
-                value={exportMonth}
-                onChange={(e) => setExportMonth(e.target.value)}
+                inputMode="numeric"
+                value={editTravelMinutes}
+                onChange={(e) => setEditTravelMinutes(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "10px 12px",
@@ -625,17 +689,17 @@ export default function AdminDashboardPage() {
                   border: "1px solid rgba(255,255,255,0.18)",
                   background: "rgba(0,0,0,0.25)",
                   color: "rgba(255,255,255,0.92)",
+                  outline: "none",
                 }}
               />
             </div>
-          ) : null}
 
-          {exportMode === "YEAR" ? (
-            <div style={{ display: "grid", gap: 8 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Jahr auswählen</div>
-              <select
-                value={exportYear}
-                onChange={(e) => setExportYear(e.target.value)}
+            <div style={{ display: "grid", gap: 6 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>Pause (Min)</div>
+              <input
+                inputMode="numeric"
+                value={editBreakMinutes}
+                onChange={(e) => setEditBreakMinutes(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "10px 12px",
@@ -643,62 +707,13 @@ export default function AdminDashboardPage() {
                   border: "1px solid rgba(255,255,255,0.18)",
                   background: "rgba(0,0,0,0.25)",
                   color: "rgba(255,255,255,0.92)",
+                  outline: "none",
                 }}
-              >
-                {years.map((y) => (
-                  <option key={y} value={y} style={{ color: "black" }}>
-                    {y}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
-          ) : null}
+          </div>
 
-          {exportMode === "RANGE" ? (
-            <div style={{ display: "grid", gap: 10 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Zeitraum auswählen</div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div style={{ display: "grid", gap: 6 }}>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Von</div>
-                  <input
-                    type="date"
-                    value={rangeFrom}
-                    onChange={(e) => setRangeFrom(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(0,0,0,0.25)",
-                      color: "rgba(255,255,255,0.92)",
-                    }}
-                  />
-                </div>
-
-                <div style={{ display: "grid", gap: 6 }}>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Bis</div>
-                  <input
-                    type="date"
-                    value={rangeTo}
-                    onChange={(e) => setRangeTo(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(0,0,0,0.25)",
-                      color: "rgba(255,255,255,0.92)",
-                    }}
-                  />
-                </div>
-              </div>
-
-              {rangeError ? (
-                <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>{rangeError}</div>
-              ) : null}
-            </div>
-          ) : null}
+          {editErr ? <div style={{ color: "rgba(224,75,69,0.95)", fontWeight: 900 }}>{editErr}</div> : null}
         </div>
       </Modal>
 
