@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 
+
 type ModalProps = {
   open: boolean;
   title?: string;
@@ -20,6 +21,7 @@ type ModalProps = {
   /** Optional: disable closing by clicking the backdrop */
   disableBackdropClose?: boolean;
 };
+
 
 export default function Modal({
   open,

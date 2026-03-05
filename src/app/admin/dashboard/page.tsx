@@ -580,6 +580,124 @@ export default function AdminDashboardPage() {
           >
             ⬇️ Export
           </button>
+          {/* ✅ Export Modal */}
+<Modal
+  open={exportOpen}
+  onClose={() => setExportOpen(false)}
+  title="Export (Admin)"
+  footer={exportFooter}
+  maxWidth={720}
+>
+  <div style={{ display: "grid", gap: 12 }}>
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      {([
+        { key: "MONTH", label: "Monat (CSV)" },
+        { key: "YEAR", label: "Jahr (ZIP)" },
+        { key: "RANGE", label: "Zeitraum (CSV)" },
+      ] as Array<{ key: ExportMode; label: string }>).map((m) => (
+        <button
+          key={m.key}
+          type="button"
+          onClick={() => setExportMode(m.key)}
+          style={{
+            borderRadius: 999,
+            padding: "8px 12px",
+            border: "1px solid rgba(255,255,255,0.14)",
+            background: exportMode === m.key ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
+            color: "rgba(255,255,255,0.92)",
+            cursor: "pointer",
+            fontSize: 13,
+            fontWeight: 900,
+          }}
+        >
+          {m.label}
+        </button>
+      ))}
+    </div>
+
+    {exportMode === "MONTH" ? (
+      <div style={{ display: "grid", gap: 8 }}>
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>Monat auswählen</div>
+        <input
+          type="month"
+          value={exportMonth}
+          onChange={(e) => setExportMonth(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "10px 12px",
+            borderRadius: 12,
+            border: "1px solid rgba(255,255,255,0.18)",
+            background: "rgba(0,0,0,0.25)",
+            color: "rgba(255,255,255,0.92)",
+          }}
+        />
+      </div>
+    ) : null}
+
+    {exportMode === "YEAR" ? (
+      <div style={{ display: "grid", gap: 8 }}>
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>Jahr auswählen</div>
+        <select
+          value={exportYear}
+          onChange={(e) => setExportYear(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "10px 12px",
+            borderRadius: 12,
+            border: "1px solid rgba(255,255,255,0.18)",
+            background: "rgba(0,0,0,0.25)",
+            color: "rgba(255,255,255,0.92)",
+          }}
+        >
+          {years.map((y) => (
+            <option key={y} value={y} style={{ color: "black" }}>
+              {y}
+            </option>
+          ))}
+        </select>
+      </div>
+    ) : null}
+
+    {exportMode === "RANGE" ? (
+      <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>Zeitraum auswählen</div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <input
+            type="date"
+            value={rangeFrom}
+            onChange={(e) => setRangeFrom(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.18)",
+              background: "rgba(0,0,0,0.25)",
+              color: "rgba(255,255,255,0.92)",
+            }}
+          />
+          <input
+            type="date"
+            value={rangeTo}
+            onChange={(e) => setRangeTo(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.18)",
+              background: "rgba(0,0,0,0.25)",
+              color: "rgba(255,255,255,0.92)",
+            }}
+          />
+        </div>
+
+        {rangeError ? (
+          <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>{rangeError}</div>
+        ) : null}
+      </div>
+    ) : null}
+  </div>
+</Modal>
         </div>
       </div>
 

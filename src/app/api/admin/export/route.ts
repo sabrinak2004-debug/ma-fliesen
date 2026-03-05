@@ -26,6 +26,18 @@ function csvEscape(value: unknown): string {
   return needsQuotes ? `"${escaped}"` : escaped;
 }
 
+function safeFileName(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
 function buildCsvLines(lines: Array<Array<unknown>>): string {
   const sep = ";"; // Excel/Numbers DE
   const body = lines.map((cols) => cols.map(csvEscape).join(sep)).join("\n");
@@ -213,10 +225,11 @@ function eachDayISOInclusive(fromISO: string, toISO: string): string[] {
   return out;
 }
 
-async function loadData(from: Date | null, to: Date | null) {
+async function loadData(from: Date | null, to: Date | null, userId: string | null) {
   const entriesWhere =
-    from || to
+    from || to || userId
       ? {
+          ...(userId ? { userId } : {}),
           workDate: {
             gte: from ?? undefined,
             lte: to ?? undefined,
@@ -225,8 +238,9 @@ async function loadData(from: Date | null, to: Date | null) {
       : {};
 
   const absWhere =
-    from || to
+    from || to || userId
       ? {
+          ...(userId ? { userId } : {}),
           absenceDate: {
             gte: from ?? undefined,
             lte: to ?? undefined,
@@ -588,6 +602,20 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
 
+    const group = (searchParams.get("group") ?? "all").trim(); // all | perEmployee | singleEmployee
+const userId = (searchParams.get("userId") ?? "").trim();
+
+const isAll = group === "all";
+const isPerEmployee = group === "perEmployee";
+const isSingle = group === "singleEmployee";
+
+if (!isAll && !isPerEmployee && !isSingle) {
+  return NextResponse.json({ error: "group muss all | perEmployee | singleEmployee sein" }, { status: 400 });
+}
+if (isSingle && !userId) {
+  return NextResponse.json({ error: "userId fehlt (bei group=singleEmployee)" }, { status: 400 });
+}
+
     const scope = (searchParams.get("scope") ?? "").trim(); // "month" | "year" | ""
     const month = (searchParams.get("month") ?? "").trim(); // YYYY-MM
     const yearStr = (searchParams.get("year") ?? "").trim(); // YYYY
@@ -598,69 +626,156 @@ export async function GET(req: Request) {
     // =========================
     // YEAR -> ZIP (12 CSVs)
     // =========================
-    if (scope === "year") {
-      if (!isValidYYYY(yearStr)) {
-        return NextResponse.json({ error: "year muss YYYY sein (z.B. 2026)" }, { status: 400 });
-      }
+if (scope === "year") {
+  if (!isValidYYYY(yearStr)) {
+    return NextResponse.json({ error: "year muss YYYY sein (z.B. 2026)" }, { status: 400 });
+  }
 
-      const year = Number(yearStr);
-      const zip = new JSZip();
+  const year = Number(yearStr);
+  const zip = new JSZip();
 
-      for (let m = 1; m <= 12; m++) {
-        const key = `${year}-${pad2(m)}`;
-        const start = new Date(Date.UTC(year, m - 1, 1));
-        const endExclusive = new Date(Date.UTC(year, m, 1));
-        const endInclusive = new Date(endExclusive.getTime() - 1);
+  // Mitarbeiterliste (für perEmployee)
+  const employees = isPerEmployee
+    ? await prisma.appUser.findMany({
+        where: { isActive: true, role: "EMPLOYEE" },
+        select: { id: true, fullName: true },
+        orderBy: { fullName: "asc" },
+      })
+    : [];
 
-        const data = await loadData(start, endInclusive);
-        const fromISO = `${year}-${pad2(m)}-01`;
-        const toISO = dateOnly(endInclusive);
+  for (let m = 1; m <= 12; m++) {
+    const key = `${year}-${pad2(m)}`;
+    const start = new Date(Date.UTC(year, m - 1, 1));
+    const endExclusive = new Date(Date.UTC(year, m, 1));
+    const endInclusive = new Date(endExclusive.getTime() - 1);
 
-        const csv = buildPayrollCsv(data, key, { fromISO, toISO });
-        zip.file(`${key}_payroll.csv`, csv);
-      }
+    const fromISO = `${year}-${pad2(m)}-01`;
+    const toISO = dateOnly(endInclusive);
 
-      const uint8 = await zip.generateAsync({ type: "uint8array" });
-      const ab = new ArrayBuffer(uint8.byteLength);
-      new Uint8Array(ab).set(uint8);
-
-      const filename = `ma-fliesen_payroll_${year}.zip`;
-
-      return new Response(ab, {
-        headers: {
-          "Content-Type": "application/zip",
-          "Content-Disposition": `attachment; filename="${filename}"`,
-          "Cache-Control": "no-store",
-        },
-      });
+    if (isAll) {
+      const data = await loadData(start, endInclusive, null);
+      const csv = buildPayrollCsv(data, key, { fromISO, toISO });
+      zip.file(`${key}_payroll.csv`, csv);
+      continue;
     }
+
+    if (isSingle) {
+      const emp = await prisma.appUser.findUnique({
+        where: { id: userId },
+        select: { fullName: true, role: true, isActive: true },
+      });
+      if (!emp?.isActive || emp.role !== "EMPLOYEE") {
+        return NextResponse.json({ error: "Ungültiger Mitarbeiter" }, { status: 400 });
+      }
+
+      const data = await loadData(start, endInclusive, userId);
+      const csv = buildPayrollCsv(data, `${key} · ${emp.fullName}`, { fromISO, toISO });
+      zip.file(`${key}_${safeFileName(emp.fullName)}_payroll.csv`, csv);
+      continue;
+    }
+
+    // perEmployee
+    for (const e of employees) {
+      const data = await loadData(start, endInclusive, e.id);
+      const csv = buildPayrollCsv(data, `${key} · ${e.fullName}`, { fromISO, toISO });
+      zip.file(`${key}_${safeFileName(e.fullName)}_payroll.csv`, csv);
+    }
+  }
+
+  const uint8 = await zip.generateAsync({ type: "uint8array" });
+  const ab = new ArrayBuffer(uint8.byteLength);
+  new Uint8Array(ab).set(uint8);
+
+  const filename =
+    isAll ? `ma-fliesen_payroll_${year}.zip`
+    : isSingle ? `ma-fliesen_payroll_${year}_${userId}.zip`
+    : `ma-fliesen_payroll_${year}_pro-mitarbeiter.zip`;
+
+  return new Response(ab, {
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "no-store",
+    },
+  });
+}
 
     // =========================
     // MONTH -> 1 CSV
     // =========================
-    if (scope === "month") {
-      if (!isValidYYYYMM(month)) {
-        return NextResponse.json({ error: "month muss YYYY-MM sein (z.B. 2026-03)" }, { status: 400 });
-      }
+if (scope === "month") {
+  if (!isValidYYYYMM(month)) {
+    return NextResponse.json({ error: "month muss YYYY-MM sein (z.B. 2026-03)" }, { status: 400 });
+  }
 
-      const { start, endInclusive } = monthRangeFromYYYYMM(month);
-      const data = await loadData(start, endInclusive);
+  const { start, endInclusive } = monthRangeFromYYYYMM(month);
+  const fromISO = `${month}-01`;
+  const toISO = dateOnly(endInclusive);
 
-      const fromISO = `${month}-01`;
-      const toISO = dateOnly(endInclusive);
+  if (isAll) {
+    const data = await loadData(start, endInclusive, null);
+    const csv = buildPayrollCsv(data, month, { fromISO, toISO });
+    const filename = `ma-fliesen_payroll_${month}.csv`;
 
-      const csv = buildPayrollCsv(data, month, { fromISO, toISO });
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
 
-      const filename = `ma-fliesen_payroll_${month}.csv`;
-
-      return new NextResponse(csv, {
-        headers: {
-          "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="${filename}"`,
-          "Cache-Control": "no-store",
-        },
-      });
+  if (isSingle) {
+    const emp = await prisma.appUser.findUnique({
+      where: { id: userId },
+      select: { fullName: true, role: true, isActive: true },
+    });
+    if (!emp?.isActive || emp.role !== "EMPLOYEE") {
+      return NextResponse.json({ error: "Ungültiger Mitarbeiter" }, { status: 400 });
     }
+
+    const data = await loadData(start, endInclusive, userId);
+    const csv = buildPayrollCsv(data, `${month} · ${emp.fullName}`, { fromISO, toISO });
+    const filename = `ma-fliesen_payroll_${month}_${safeFileName(emp.fullName)}.csv`;
+
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
+  // perEmployee
+  const employees = await prisma.appUser.findMany({
+    where: { isActive: true, role: "EMPLOYEE" },
+    select: { id: true, fullName: true },
+    orderBy: { fullName: "asc" },
+  });
+
+  const zip = new JSZip();
+  for (const e of employees) {
+    const data = await loadData(start, endInclusive, e.id);
+    const csv = buildPayrollCsv(data, `${month} · ${e.fullName}`, { fromISO, toISO });
+    zip.file(`${month}_${safeFileName(e.fullName)}_payroll.csv`, csv);
+  }
+
+  const uint8 = await zip.generateAsync({ type: "uint8array" });
+  const ab = new ArrayBuffer(uint8.byteLength);
+  new Uint8Array(ab).set(uint8);
+
+  const filename = `ma-fliesen_payroll_${month}_pro-mitarbeiter.zip`;
+
+  return new Response(ab, {
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "no-store",
+    },
+  });
+}
 
     // =========================
     // CUSTOM RANGE oder ALLES
@@ -671,7 +786,7 @@ export async function GET(req: Request) {
     const label =
       fromStr && toStr ? `${fromStr} bis ${toStr}` : fromStr ? `ab ${fromStr}` : toStr ? `bis ${toStr}` : "ALLE DATEN";
 
-    const data = await loadData(rangeFrom, rangeTo);
+    const data = await loadData(rangeFrom, rangeTo, isSingle ? userId : null);
 
     const csv =
       fromStr && toStr ? buildPayrollCsv(data, label, { fromISO: fromStr, toISO: toStr }) : buildPayrollCsv(data, label);
