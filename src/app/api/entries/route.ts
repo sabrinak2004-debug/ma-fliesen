@@ -145,9 +145,6 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
   const isAdmin = session.role === Role.ADMIN;
-    if (isAdmin) {
-    return NextResponse.json({ error: "Admins dürfen keine Arbeitszeiten erfassen." }, { status: 403 });
-  }
 
   const raw = (await req.json().catch(() => null)) as unknown;
   const body: EntryBody = isRecord(raw) ? (raw as EntryBody) : {};
@@ -275,14 +272,18 @@ export async function PATCH(req: Request) {
     }
   }
 
-  // ✅ Admin darf bearbeiten, aber Start/Ende (und standardmäßig auch Datum) bleiben wie in DB
+  // ✅ Admin darf bearbeiten, aber NICHT Datum/Zeit ändern:
+  // Admin braucht daher KEINE workDate/startTime/endTime im Body.
   const workDate = isAdmin ? toIsoDateUTC(existing.workDate) : getString(body.workDate);
   const startTime = isAdmin ? toHHMMUTC(existing.startTime) : getString(body.startTime);
   const endTime = isAdmin ? toHHMMUTC(existing.endTime) : getString(body.endTime);
-  const activity = getString(body.activity).trim();
-  const location = getString(body.location).trim();
 
-  if (!workDate || !startTime || !endTime || !activity) {
+  // Felder, die Admin ändern darf (alles andere bleibt wie in DB)
+  const activity = isAdmin ? getString(body.activity).trim() || (existing.activity ?? "") : getString(body.activity).trim();
+  const location = isAdmin ? getString(body.location).trim() || (existing.location ?? "") : getString(body.location).trim();
+
+  // Für EMPLOYEE bleiben deine Pflichtfelder bestehen
+  if (!isAdmin && (!workDate || !startTime || !endTime || !activity)) {
     return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
   }
 
