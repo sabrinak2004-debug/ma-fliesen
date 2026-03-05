@@ -95,18 +95,6 @@ export default function AppShell({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const topbarRef = useRef<HTMLDivElement | null>(null);
-    const [topbarH, setTopbarH] = useState(0);
-
-    useEffect(() => {
-      function measure() {
-        const h = topbarRef.current?.offsetHeight ?? 0;
-        setTopbarH(h);
-      }
-      measure();
-      window.addEventListener("resize", measure);
-      return () => window.removeEventListener("resize", measure);
-    }, []);
 
   useEffect(() => {
     let alive = true;
@@ -166,11 +154,10 @@ useEffect(() => {
   const userInitials = session ? initialsFromName(session.fullName) : "U";
 
   return (
-    <div style={{ padding: "18px 0 42px", height: "100dvh", overflow: "hidden" }}>
+    <div style={{ padding: "18px 0 42px" }}>
       <div className="container-app">
 {/* MOBILE TOPBAR (nur < md) */}
 <div
-  ref={topbarRef}
   className="md:hidden"
   style={{
     position: "relative",
