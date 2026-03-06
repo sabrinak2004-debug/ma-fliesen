@@ -47,6 +47,8 @@ export async function POST(req: Request) {
     });
     createdNewRequest = true;
   }
+  console.log("[forgot-password] fullName:", fullName);
+  console.log("[forgot-password] createdNewRequest:", createdNewRequest);
 
   if (createdNewRequest) {
     const adminSubscriptions = await prisma.pushSubscription.findMany({
@@ -64,10 +66,14 @@ export async function POST(req: Request) {
       },
     });
 
-    await Promise.allSettled(
+    console.log("[forgot-password] adminSubscriptions count:", adminSubscriptions.length);
+
+    const results = await Promise.allSettled(
       adminSubscriptions.map(async (sub) => {
         try {
-          await webpush.sendNotification(
+          console.log("[forgot-password] sending push to subscription:", sub.id);
+
+          const result = await webpush.sendNotification(
             {
               endpoint: sub.endpoint,
               keys: {
@@ -81,13 +87,24 @@ export async function POST(req: Request) {
               url: "/admin/dashboard",
             })
           );
-        } catch {
+
+          console.log("[forgot-password] push sent successfully:", sub.id, result.statusCode);
+          return { ok: true, subId: sub.id, statusCode: result.statusCode };
+        } catch (err) {
+          console.error("[forgot-password] push send failed for subscription:", sub.id, err);
+
           await prisma.pushSubscription.delete({
             where: { id: sub.id },
-          }).catch(() => {});
+          }).catch((deleteErr) => {
+            console.error("[forgot-password] deleting invalid subscription failed:", sub.id, deleteErr);
+          });
+
+          return { ok: false, subId: sub.id };
         }
       })
     );
+
+    console.log("[forgot-password] push results:", results);
   }
 
   return NextResponse.json({ ok: true });
