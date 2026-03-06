@@ -3,8 +3,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
-
-function sha256Hex(input: string) {
+function sha256Hex(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
 }
 
@@ -30,6 +29,7 @@ export async function POST(req: Request) {
   if (!token) {
     return NextResponse.json({ ok: false, error: "Token fehlt" }, { status: 400 });
   }
+
   if (newPassword.length < 8) {
     return NextResponse.json(
       { ok: false, error: "Passwort muss mindestens 8 Zeichen haben" },
@@ -48,33 +48,30 @@ export async function POST(req: Request) {
   if (!prt) {
     return NextResponse.json({ ok: false, error: "Ungültiger Token" }, { status: 400 });
   }
+
   if (prt.usedAt) {
     return NextResponse.json(
       { ok: false, error: "Token wurde bereits verwendet" },
       { status: 400 }
     );
   }
-  if (prt.expiresAt <= now) {
-    return NextResponse.json({ ok: false, error: "Token ist abgelaufen" }, { status: 400 });
-  }
 
   const passwordHash = await bcrypt.hash(newPassword, 12);
 
   await prisma.$transaction([
-  prisma.appUser.update({
-    where: { id: prt.userId },
-    data: { passwordHash, passwordUpdatedAt: now }, // ✅ NEU
-  }),
-  prisma.passwordResetToken.update({
-    where: { id: prt.id },
-    data: { usedAt: now },
-  }),
-  // Optional: offene Requests automatisch schließen
-  prisma.passwordResetRequest.updateMany({
-    where: { userId: prt.userId, status: "OPEN" },
-    data: { status: "DONE", doneAt: now },
-  }),
-]);
+    prisma.appUser.update({
+      where: { id: prt.userId },
+      data: { passwordHash, passwordUpdatedAt: now },
+    }),
+    prisma.passwordResetToken.update({
+      where: { id: prt.id },
+      data: { usedAt: now },
+    }),
+    prisma.passwordResetRequest.updateMany({
+      where: { userId: prt.userId, status: "OPEN" },
+      data: { status: "DONE", doneAt: now },
+    }),
+  ]);
 
   return NextResponse.json({ ok: true });
 }

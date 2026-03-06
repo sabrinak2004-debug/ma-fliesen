@@ -3,11 +3,17 @@ export const dynamic = "force-dynamic";
 
 import ResetPasswordClient from "./ResetPasswordClient";
 
-export default function ResetPasswordPage({
+type ResetPasswordPageProps = {
+  searchParams: Promise<{
+    token?: string;
+  }>;
+};
+
+export default async function ResetPasswordPage({
   searchParams,
-}: {
-  searchParams: { token?: string };
-}) {
-  const token = (searchParams.token ?? "").trim();
+}: ResetPasswordPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const token = (resolvedSearchParams.token ?? "").trim();
+
   return <ResetPasswordClient token={token} />;
 }

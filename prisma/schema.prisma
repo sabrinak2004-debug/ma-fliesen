@@ -54,7 +54,7 @@ model PasswordResetToken {
   // Wir speichern nur den HASH des Tokens (Sicherheitsbest practice)
   tokenHash String   @unique
 
-  expiresAt DateTime
+  expiresAt DateTime?
   usedAt    DateTime?
   createdAt DateTime @default(now())
 

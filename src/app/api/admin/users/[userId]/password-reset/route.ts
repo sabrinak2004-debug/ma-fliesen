@@ -3,11 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 import crypto from "crypto";
 
-function sha256Hex(input: string) {
+function sha256Hex(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
 }
 
-function getOrigin(req: Request) {
+function getOrigin(req: Request): string {
   const origin = req.headers.get("origin");
   if (origin) return origin;
 
@@ -18,9 +18,14 @@ function getOrigin(req: Request) {
   return "";
 }
 
-export async function POST(req: Request, ctx: { params: Promise<{ userId: string }> }) {
+export async function POST(
+  req: Request,
+  ctx: { params: Promise<{ userId: string }> }
+) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+  if (!admin) {
+    return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+  }
 
   const { userId } = await ctx.params;
 
@@ -33,14 +38,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ userId: string
     return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
   }
 
-  // ✅ Token generieren (raw) + nur Hash speichern
   const rawToken = crypto.randomBytes(32).toString("hex");
   const tokenHash = sha256Hex(rawToken);
 
-  // ✅ Ablaufzeit (z.B. 24h)
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-  // Optional: alte Tokens für diesen User invalidieren
   await prisma.passwordResetToken.updateMany({
     where: { userId, usedAt: null },
     data: { usedAt: new Date() },
@@ -50,7 +50,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ userId: string
     data: {
       userId,
       tokenHash,
-      expiresAt,
+      expiresAt: null,
     },
   });
 
@@ -63,6 +63,5 @@ export async function POST(req: Request, ctx: { params: Promise<{ userId: string
     ok: true,
     user: { id: user.id, fullName: user.fullName },
     resetUrl,
-    expiresAt: expiresAt.toISOString(),
   });
 }
