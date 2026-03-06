@@ -28,6 +28,7 @@ model AppUser {
   PasswordResetTokens PasswordResetToken[]
   PasswordResetRequests PasswordResetRequest[]
   googleCalendarConnections GoogleCalendarConnection[]
+  pushSubscriptions PushSubscription[]
 
   // ✅ NEU: Upload-Relation
   uploadedPlanEntryDocuments PlanEntryDocument[] @relation("UploadedBy")
@@ -233,6 +234,17 @@ model MonthlyTarget {
   user   AppUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([year, month, userId])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum Role {
