@@ -43,13 +43,19 @@ export async function setSession(data: SessionData) {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 30, // 30 Tage
+    maxAge: 60 * 60 * 24 * 365, // 365 Tage
   });
 }
 
 export async function clearSession() {
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, "", { path: "/", maxAge: 0 });
+  cookieStore.set(COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  });
 }
 
 export async function getSession(): Promise<SessionData | null> {
