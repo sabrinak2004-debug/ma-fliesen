@@ -208,14 +208,8 @@ function formatDateDE(iso: string) {
   return `${dd}.${mm}.${y}`;
 }
 
-function formatMonthLabelDE(monthKey: string) {
-  const [y, m] = monthKey.split("-").map(Number);
-  const dt = new Date(y, m - 1, 1);
-  return dt.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
-}
-
-function groupWorkItemsByMonthAndDay(items: AdminTimelineWork[]) {
-  const grouped: Record<string, Record<string, AdminTimelineWork[]>> = {};
+function groupWorkItemsByDay(items: AdminTimelineWork[]) {
+  const grouped: Record<string, AdminTimelineWork[]> = {};
 
   const sorted = items
     .slice()
@@ -226,13 +220,10 @@ function groupWorkItemsByMonthAndDay(items: AdminTimelineWork[]) {
     });
 
   for (const it of sorted) {
-    const month = it.date.slice(0, 7); // YYYY-MM
     const day = it.date; // YYYY-MM-DD
 
-    if (!grouped[month]) grouped[month] = {};
-    if (!grouped[month][day]) grouped[month][day] = [];
-
-    grouped[month][day].push(it);
+    if (!grouped[day]) grouped[day] = [];
+    grouped[day].push(it);
   }
 
   return grouped;
@@ -315,13 +306,6 @@ function toggleWorkDay(openDays: Set<string>, key: string): Set<string> {
   return next;
 }
 
-function toggleWorkMonth(openMonths: Set<string>, key: string): Set<string> {
-  const next = new Set(openMonths);
-  if (next.has(key)) next.delete(key);
-  else next.add(key);
-  return next;
-}
-
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -350,7 +334,6 @@ export default function AdminDashboardPage() {
   const [openCats, setOpenCats] = useState<Record<string, CatState>>({});
 
   const [openWorkDays, setOpenWorkDays] = useState<Set<string>>(new Set());
-  const [openWorkMonths, setOpenWorkMonths] = useState<Set<string>>(new Set());
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
@@ -1248,219 +1231,175 @@ export default function AdminDashboardPage() {
                             <div style={{ display: "grid", gap: 10 }}>
                               {/* ARBEIT */}
                               {sectionHeader("WORK", "🛠 Arbeitszeiten", `${workItems.length} Eintrag${workItems.length === 1 ? "" : "e"}`)}
-                              {cat.WORK ? (
-                                workItems.length > 0 ? (
-                                  <div style={{ display: "grid", gap: 10 }}>
-{Object.entries(groupWorkItemsByMonthAndDay(workItems)).map(([monthKey, days]) => {
-  const monthToggleKey = `${u.userId}__${monthKey}`;
-  const monthOpen = openWorkMonths.has(monthToggleKey);
+                      {cat.WORK ? (
+                        workItems.length > 0 ? (
+                          <div style={{ display: "grid", gap: 10 }}>
+                            {Object.entries(groupWorkItemsByDay(workItems)).map(([dayKey, dayItems]) => {
+                              const dayToggleKey = `${u.userId}__${dayKey}`;
+                              const dayOpen = openWorkDays.has(dayToggleKey);
 
-  const monthTotalMinutes = Object.values(days)
-    .flat()
-    .reduce((sum, it) => sum + it.workMinutes, 0);
+                              const dayTotalMinutes = dayItems.reduce((sum, it) => sum + it.workMinutes, 0);
+                              const dayEntriesCount = dayItems.length;
 
-  const monthEntriesCount = Object.values(days).flat().length;
+                              return (
+                                <div
+                                  key={dayKey}
+                                  style={{
+                                    display: "grid",
+                                    gap: 6,
+                                    padding: "10px 12px",
+                                    borderRadius: 12,
+                                    background: "rgba(255,255,255,0.02)",
+                                    border: "1px solid rgba(255,255,255,0.06)",
+                                  }}
+                                >
+                                  <div
+                                    onClick={() => setOpenWorkDays((prev) => toggleWorkDay(prev, dayToggleKey))}
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      gap: 10,
+                                      cursor: "pointer",
+                                      padding: "8px 10px",
+                                      borderRadius: 10,
+                                      background: "rgba(255,255,255,0.03)",
+                                      border: "1px solid rgba(255,255,255,0.06)",
+                                      fontWeight: 1000,
+                                    }}
+                                    title="Tag ein-/ausklappen"
+                                  >
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                      <span>{dayOpen ? "▼" : "▶"}</span>
+                                      <span>{formatDateDE(dayKey)}</span>
+                                    </div>
 
-  return (
-    <div
-      key={monthKey}
-      style={{
-        display: "grid",
-        gap: 8,
-        padding: "10px 12px",
-        borderRadius: 12,
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
-      <div
-        onClick={() => setOpenWorkMonths((prev) => toggleWorkMonth(prev, monthToggleKey))}
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 10,
-          cursor: "pointer",
-          padding: "8px 10px",
-          borderRadius: 10,
-          background: "rgba(255,255,255,0.03)",
-                                                border: "1px solid rgba(255,255,255,0.06)",
-                                                fontWeight: 1000,
-                                              }}
-                                              title="Monat ein-/ausklappen"
-                                            >
-                                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                <span>{monthOpen ? "▼" : "▶"}</span>
-                                                <span style={{ textTransform: "capitalize", color: "var(--accent)" }}>
-                                                  {formatMonthLabelDE(monthKey)}
-                                                </span>
-                                              </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                                      <div style={{ color: "var(--muted-2)", fontSize: 12, fontWeight: 900 }}>
+                                        {dayEntriesCount} Eintrag{dayEntriesCount === 1 ? "" : "e"}
+                                      </div>
+                                      <div style={{ color: "var(--accent)", fontWeight: 1000, whiteSpace: "nowrap" }}>
+                                        {formatHM(dayTotalMinutes)}
+                                      </div>
+                                    </div>
+                                  </div>
 
-                                              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                                                <div style={{ color: "var(--muted-2)", fontSize: 12, fontWeight: 900 }}>
-                                                  {monthEntriesCount} Eintrag{monthEntriesCount === 1 ? "" : "e"}
-                                                </div>
-                                                <div style={{ color: "var(--accent)", fontWeight: 1000, whiteSpace: "nowrap" }}>
-                                                  {formatHM(monthTotalMinutes)}
-                                                </div>
-                                              </div>
+                                  {dayOpen ? (
+                                    <div style={{ display: "grid", gap: 6, paddingLeft: 10 }}>
+                                      {dayItems.map((it) => (
+                                        <div
+                                          key={it.id}
+                                          style={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            gap: 10,
+                                            padding: "8px 10px",
+                                            borderRadius: 10,
+                                            background: "rgba(255,255,255,0.02)",
+                                            border: "1px solid rgba(255,255,255,0.06)",
+                                          }}
+                                        >
+                                          <div style={{ display: "grid", gap: 2 }}>
+                                            <div style={{ fontWeight: 1000 }}>
+                                              {it.startHHMM}–{it.endHHMM}
                                             </div>
 
-                                            {monthOpen ? (
-                                              Object.entries(days).map(([dayKey, dayItems]) => {
-                                                const dayToggleKey = `${u.userId}__${dayKey}`;
-                                                const dayOpen = openWorkDays.has(dayToggleKey);
-
-                                                const dayTotalMinutes = dayItems.reduce((sum, it) => sum + it.workMinutes, 0);
-
-                                                return (
-                                                  <div key={dayKey} style={{ display: "grid", gap: 6 }}>
-                                                    <div
-                                                      onClick={() => setOpenWorkDays((prev) => toggleWorkDay(prev, dayToggleKey))}
-                                                      style={{
-                                                        display: "flex",
-                                                        justifyContent: "space-between",
-                                                        alignItems: "center",
-                                                        gap: 10,
-                                                        cursor: "pointer",
-                                                        padding: "8px 10px",
-                                                        borderRadius: 10,
-                                                        background: "rgba(255,255,255,0.03)",
-                                                        border: "1px solid rgba(255,255,255,0.06)",
-                                                        fontWeight: 1000,
-                                                      }}
-                                                      title="Tag ein-/ausklappen"
-                                                    >
-                                                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                        <span>{dayOpen ? "▼" : "▶"}</span>
-                                                        <span>{formatDateDE(dayKey)}</span>
-                                                      </div>
-
-                                                      <div style={{ color: "var(--accent)", fontWeight: 1000, whiteSpace: "nowrap" }}>
-                                                        {formatHM(dayTotalMinutes)}
-                                                      </div>
-                                                    </div>
-
-                                                    {dayOpen ? (
-                                                      <div style={{ display: "grid", gap: 6, paddingLeft: 10 }}>
-                                                        {dayItems.map((it) => (
-                                                          <div
-                                                            key={it.id}
-                                                            style={{
-                                                              display: "flex",
-                                                              justifyContent: "space-between",
-                                                              gap: 10,
-                                                              padding: "8px 10px",
-                                                              borderRadius: 10,
-                                                              background: "rgba(255,255,255,0.02)",
-                                                              border: "1px solid rgba(255,255,255,0.06)",
-                                                            }}
-                                                          >
-                                                            <div style={{ display: "grid", gap: 2 }}>
-                                                              <div style={{ fontWeight: 1000 }}>
-                                                                {it.startHHMM}–{it.endHHMM}
-                                                              </div>
-
-                                                              {(it.activity || it.location) ? (
-                                                                <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
-                                                                  {it.activity ? it.activity : ""}
-                                                                  {it.activity && it.location ? " · " : ""}
-                                                                  {it.location ? it.location : ""}
-                                                                </div>
-                                                              ) : null}
-                                                            </div>
-
-                                                            <div
-                                                              style={{
-                                                                display: "flex",
-                                                                alignItems: "center",
-                                                                gap: 8,
-                                                                flexWrap: "wrap",
-                                                                justifyContent: "flex-end",
-                                                              }}
-                                                            >
-                                                              <div style={{ color: "var(--accent)", fontWeight: 1100, whiteSpace: "nowrap" }}>
-                                                                {formatHM(it.workMinutes)}
-                                                              </div>
-
-                                                              {it.noteEmployee && it.noteEmployee.trim() ? (
-                                                                <button
-                                                                  type="button"
-                                                                  onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    openEmployeeNote(u.fullName, it);
-                                                                  }}
-                                                                  title="Mitarbeiter-Notiz anzeigen"
-                                                                  style={{
-                                                                    padding: "6px 10px",
-                                                                    borderRadius: 10,
-                                                                    border: "1px solid rgba(90,167,255,0.28)",
-                                                                    background: "rgba(90,167,255,0.10)",
-                                                                    color: "rgba(90,167,255,0.95)",
-                                                                    cursor: "pointer",
-                                                                    fontWeight: 900,
-                                                                  }}
-                                                                >
-                                                                  📝 Notiz
-                                                                </button>
-                                                              ) : null}
-
-                                                              <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                  e.stopPropagation();
-                                                                  openEditWork(u.fullName, it);
-                                                                }}
-                                                                title="Bearbeiten (ohne Zeit)"
-                                                                style={{
-                                                                  padding: "6px 10px",
-                                                                  borderRadius: 10,
-                                                                  border: "1px solid rgba(255,255,255,0.14)",
-                                                                  background: "rgba(255,255,255,0.06)",
-                                                                  color: "rgba(255,255,255,0.9)",
-                                                                  cursor: "pointer",
-                                                                  fontWeight: 900,
-                                                                }}
-                                                              >
-                                                                ✏️
-                                                              </button>
-
-                                                              <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                  e.stopPropagation();
-                                                                  deleteWorkEntry(it.id);
-                                                                }}
-                                                                title="Löschen"
-                                                                style={{
-                                                                  padding: "6px 10px",
-                                                                  borderRadius: 10,
-                                                                  border: "1px solid rgba(224,75,69,0.35)",
-                                                                  background: "rgba(224,75,69,0.10)",
-                                                                  color: "rgba(224,75,69,0.95)",
-                                                                  cursor: "pointer",
-                                                                  fontWeight: 1000,
-                                                                }}
-                                                              >
-                                                                🗑️
-                                                              </button>
-                                                            </div>
-                                                          </div>
-                                                        ))}
-                                                      </div>
-                                                    ) : null}
-                                                  </div>
-                                                );
-                                              })
+                                            {it.activity || it.location ? (
+                                              <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
+                                                {it.activity ? it.activity : ""}
+                                                {it.activity && it.location ? " · " : ""}
+                                                {it.location ? it.location : ""}
+                                              </div>
                                             ) : null}
                                           </div>
-                                        );
-                                      })}
-                                  </div>
-                                ) : (
-                                  <div style={{ color: "var(--muted)", paddingLeft: 6 }}>Keine Arbeitszeiten im Monat.</div>
-                                )
-                              ) : null}
+
+                                          <div
+                                            style={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 8,
+                                              flexWrap: "wrap",
+                                              justifyContent: "flex-end",
+                                            }}
+                                          >
+                                            <div style={{ color: "var(--accent)", fontWeight: 1100, whiteSpace: "nowrap" }}>
+                                              {formatHM(it.workMinutes)}
+                                            </div>
+
+                                            {it.noteEmployee && it.noteEmployee.trim() ? (
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  openEmployeeNote(u.fullName, it);
+                                                }}
+                                                title="Mitarbeiter-Notiz anzeigen"
+                                                style={{
+                                                  padding: "6px 10px",
+                                                  borderRadius: 10,
+                                                  border: "1px solid rgba(90,167,255,0.28)",
+                                                  background: "rgba(90,167,255,0.10)",
+                                                  color: "rgba(90,167,255,0.95)",
+                                                  cursor: "pointer",
+                                                  fontWeight: 900,
+                                                }}
+                                              >
+                                                📝 Notiz
+                                              </button>
+                                            ) : null}
+
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                openEditWork(u.fullName, it);
+                                              }}
+                                              title="Bearbeiten (ohne Zeit)"
+                                              style={{
+                                                padding: "6px 10px",
+                                                borderRadius: 10,
+                                                border: "1px solid rgba(255,255,255,0.14)",
+                                                background: "rgba(255,255,255,0.06)",
+                                                color: "rgba(255,255,255,0.9)",
+                                                cursor: "pointer",
+                                                fontWeight: 900,
+                                              }}
+                                            >
+                                              ✏️
+                                            </button>
+
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                deleteWorkEntry(it.id);
+                                              }}
+                                              title="Löschen"
+                                              style={{
+                                                padding: "6px 10px",
+                                                borderRadius: 10,
+                                                border: "1px solid rgba(224,75,69,0.35)",
+                                                background: "rgba(224,75,69,0.10)",
+                                                color: "rgba(224,75,69,0.95)",
+                                                cursor: "pointer",
+                                                fontWeight: 1000,
+                                              }}
+                                            >
+                                              🗑️
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{ color: "var(--muted)", paddingLeft: 6 }}>Keine Arbeitszeiten im Monat.</div>
+                        )
+                      ) : null}
 
                               {/* KRANK */}
                               {sectionHeader("SICK", "🌡 Krankheit", `${sickRanges.length} Zeitraum${sickRanges.length === 1 ? "" : "e"}`)}
