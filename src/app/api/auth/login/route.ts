@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { setSession } from "@/lib/auth";
+import { createSessionCookieValue, COOKIE_NAME } from "@/lib/auth";
 import { Role } from "@prisma/client";
 
 type Body =
@@ -92,12 +92,22 @@ export async function POST(req: Request) {
     }
   }
 
-  // Session setzen (signiertes Cookie)
-  await setSession({
+  const sessionValue = createSessionCookieValue({
     userId: user.id,
     fullName: user.fullName,
-    role: user.role, // Prisma Role: "EMPLOYEE" | "ADMIN"
+    role: user.role,
   });
 
-  return NextResponse.json({ ok: true, role: user.role }, { status: 200 });
+  const res = NextResponse.json({ ok: true, role: user.role }, { status: 200 });
+
+  res.cookies.set(COOKIE_NAME, sessionValue, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
+  });
+
+  return res;
 }

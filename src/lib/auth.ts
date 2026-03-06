@@ -2,9 +2,9 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 
-const COOKIE_NAME = "mafliesen_session";
+export const COOKIE_NAME = "mafliesen_session";
 
-function hmac(input: string) {
+function hmac(input: string): string {
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error("AUTH_SECRET fehlt in .env");
   return crypto.createHmac("sha256", secret).update(input).digest("hex");
@@ -21,8 +21,8 @@ type SessionPayload = SessionData & { iat: number };
 function isSessionPayload(v: unknown): v is SessionPayload {
   if (typeof v !== "object" || v === null) return false;
   const r = v as Record<string, unknown>;
-
   const role = r.role;
+
   return (
     typeof r.userId === "string" &&
     typeof r.fullName === "string" &&
@@ -31,23 +31,28 @@ function isSessionPayload(v: unknown): v is SessionPayload {
   );
 }
 
-export async function setSession(data: SessionData) {
+function toBase64Url(input: string): string {
+  return Buffer.from(input, "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function fromBase64Url(input: string): string {
+  const base64 = input.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+  return Buffer.from(padded, "base64").toString("utf8");
+}
+
+export function createSessionCookieValue(data: SessionData): string {
   const payloadObj: SessionPayload = { ...data, iat: Date.now() };
   const payload = JSON.stringify(payloadObj);
   const sig = hmac(payload);
-  const value = Buffer.from(payload, "utf8").toString("base64") + "." + sig;
-
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, value, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365, // 365 Tage
-  });
+  return `${toBase64Url(payload)}.${sig}`;
 }
 
-export async function clearSession() {
+export async function clearSession(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, "", {
     httpOnly: true,
@@ -55,6 +60,7 @@ export async function clearSession() {
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: 0,
+    expires: new Date(0),
   });
 }
 
@@ -68,7 +74,7 @@ export async function getSession(): Promise<SessionData | null> {
 
   let payload: string;
   try {
-    payload = Buffer.from(b64, "base64").toString("utf8");
+    payload = fromBase64Url(b64);
   } catch {
     return null;
   }
