@@ -3,6 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { Role } from "@prisma/client";
 import { getAuthedCalendarClient } from "@/lib/googleCalendar";
+import {
+  utcFromLocalDateTime,
+  toGoogleDateTime,
+  toIsoDateUTC,
+  toHHMMUTC,
+} from "@/lib/time";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -12,33 +18,6 @@ function getString(v: Record<string, unknown>, key: string): string {
   return typeof x === "string" ? x : "";
 }
 
-function toIsoDateUTC(d: Date) {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-function toHHMMUTC(d: Date) {
-  const hh = String(d.getUTCHours()).padStart(2, "0");
-  const mm = String(d.getUTCMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
-}
-function dateTimeUTCFromYMDHHMM(ymd: string, hhmm: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
-  if (!/^\d{2}:\d{2}$/.test(hhmm)) return null;
-
-  const [y, m, d] = ymd.split("-").map(Number);
-  const [hh, mm] = hhmm.split(":").map(Number);
-
-  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
-  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
-  if (m < 1 || m > 12) return null;
-  if (d < 1 || d > 31) return null;
-  if (hh < 0 || hh > 23) return null;
-  if (mm < 0 || mm > 59) return null;
-
-  return new Date(Date.UTC(y, m - 1, d, hh, mm, 0, 0));
-}
 
 type CalendarEventDTO = {
   id: string;
@@ -78,9 +57,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: "date Format muss YYYY-MM-DD sein" }, { status: 400 });
     }
     // Ganzer Tag in UTC: [00:00, 24:00)
-    rangeFrom = dateTimeUTCFromYMDHHMM(date, "00:00");
-    const nextDay = new Date(Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10)) + 1));
-    rangeTo = nextDay;
+    rangeFrom = utcFromLocalDateTime(date, "00:00");
+    rangeTo = utcFromLocalDateTime(date, "23:59");
   } else {
     if (!from || !to) {
       return NextResponse.json({ ok: false, error: "from/to oder date fehlt" }, { status: 400 });
@@ -88,8 +66,8 @@ export async function GET(req: Request) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
       return NextResponse.json({ ok: false, error: "from/to Format muss YYYY-MM-DD sein" }, { status: 400 });
     }
-    rangeFrom = dateTimeUTCFromYMDHHMM(from, "00:00");
-    rangeTo = dateTimeUTCFromYMDHHMM(to, "00:00");
+    rangeFrom = utcFromLocalDateTime(from, "00:00");
+    rangeTo = utcFromLocalDateTime(to, "23:59");
   }
 
   if (!rangeFrom || !rangeTo) {
@@ -138,8 +116,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "date, startHHMM, endHHMM, title sind Pflicht" }, { status: 400 });
   }
 
-  const startAt = dateTimeUTCFromYMDHHMM(date, startHHMM);
-  const endAt = dateTimeUTCFromYMDHHMM(date, endHHMM);
+  const startAt = utcFromLocalDateTime(date, startHHMM);
+  const endAt = utcFromLocalDateTime(date, endHHMM);
   if (!startAt || !endAt) return NextResponse.json({ ok: false, error: "Ungültiges Datum/Zeit" }, { status: 400 });
   if (endAt <= startAt) return NextResponse.json({ ok: false, error: "Ende muss nach Start liegen" }, { status: 400 });
 
@@ -168,11 +146,11 @@ export async function POST(req: Request) {
           location: created.location ?? undefined,
           description: created.notes ?? undefined,
           start: {
-            dateTime: created.startAt.toISOString(),
+            dateTime: toGoogleDateTime(created.startAt),
             timeZone: "Europe/Berlin",
           },
           end: {
-            dateTime: created.endAt.toISOString(),
+            dateTime: toGoogleDateTime(created.endAt),
             timeZone: "Europe/Berlin",
           },
         },
