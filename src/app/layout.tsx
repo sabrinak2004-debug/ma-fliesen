@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import PushBootstrap from "@/components/PushBootstrap";
 
 export const metadata: Metadata = {
   title: "ma-fliesen – Mitarbeiterportal",
@@ -15,7 +16,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="MA Fliesen" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body>{children}</body>
+        <body>
+          <PushBootstrap />
+          {children}
+        </body>
     </html>
   );
 }
