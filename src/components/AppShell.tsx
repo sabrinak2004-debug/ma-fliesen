@@ -750,7 +750,6 @@ useEffect(() => {
             {children}
           </div>
         </div>
-        {children}
       </div>
     </div>
   );
