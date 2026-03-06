@@ -43,6 +43,44 @@ type AbsenceBlock = {
   idsByDate: Record<string, string>; // date -> absence id
 };
 
+type AbsenceRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+type AbsenceRequestDTO = {
+  id: string;
+  startDate: string;
+  endDate: string;
+  type: AbsenceType;
+  status: AbsenceRequestStatus;
+  noteEmployee: string;
+  createdAt: string;
+  updatedAt: string;
+  decidedAt: string | null;
+  user: {
+    id: string;
+    fullName: string;
+  };
+  decidedBy: {
+    id: string;
+    fullName: string;
+  } | null;
+};
+
+type AbsenceRequestBlock = {
+  id: string;
+  type: AbsenceType;
+  status: AbsenceRequestStatus;
+  start: string;
+  end: string;
+  noteEmployee: string;
+  createdAt: string;
+  updatedAt: string;
+  decidedAt: string | null;
+  decidedBy: {
+    id: string;
+    fullName: string;
+  } | null;
+};
+
 type SessionDTO = {
   userId: string;
   fullName: string;
@@ -139,6 +177,63 @@ function parseAbsencesResponse(j: unknown): AbsenceDTO[] {
   const abs = j["absences"];
   if (!Array.isArray(abs)) return [];
   return abs.filter(isAbsenceDTO);
+}
+
+function isAbsenceRequestStatus(v: unknown): v is AbsenceRequestStatus {
+  return v === "PENDING" || v === "APPROVED" || v === "REJECTED";
+}
+
+function isAbsenceRequestDTO(v: unknown): v is AbsenceRequestDTO {
+  if (!isRecord(v)) return false;
+
+  const id = getStringField(v, "id");
+  const startDate = getStringField(v, "startDate");
+  const endDate = getStringField(v, "endDate");
+  const type = v["type"];
+  const status = v["status"];
+  const noteEmployee = getStringField(v, "noteEmployee");
+  const createdAt = getStringField(v, "createdAt");
+  const updatedAt = getStringField(v, "updatedAt");
+  const decidedAtRaw = v["decidedAt"];
+  const userRaw = v["user"];
+  const decidedByRaw = v["decidedBy"];
+
+  if (
+    !id ||
+    !startDate ||
+    !endDate ||
+    !isAbsenceType(type) ||
+    !isAbsenceRequestStatus(status) ||
+    noteEmployee === null ||
+    !createdAt ||
+    !updatedAt
+  ) {
+    return false;
+  }
+
+  if (!isRecord(userRaw)) return false;
+  const userId = getStringField(userRaw, "id");
+  const userFullName = getStringField(userRaw, "fullName");
+  if (!userId || !userFullName) return false;
+
+  if (!(decidedAtRaw === null || typeof decidedAtRaw === "string")) return false;
+
+  if (decidedByRaw !== null) {
+    if (!isRecord(decidedByRaw)) return false;
+    const decidedById = getStringField(decidedByRaw, "id");
+    const decidedByFullName = getStringField(decidedByRaw, "fullName");
+    if (!decidedById || !decidedByFullName) return false;
+  }
+
+  return true;
+}
+
+function parseAbsenceRequestsResponse(j: unknown): AbsenceRequestDTO[] {
+  if (!isRecord(j)) return [];
+  if (j["ok"] !== true) return [];
+  const requests = j["requests"];
+  if (!Array.isArray(requests)) return [];
+  return requests.filter(isAbsenceRequestDTO);
 }
 
 function isPlanEntry(v: unknown): v is PlanEntry {
@@ -337,6 +432,39 @@ function blockLabel(b: AbsenceBlock) {
   return `${icon} ${name} (${span})`;
 }
 
+function buildRequestBlocks(requests: AbsenceRequestDTO[]): AbsenceRequestBlock[] {
+  return requests
+    .map((r) => ({
+      id: r.id,
+      type: r.type,
+      status: r.status,
+      start: r.startDate,
+      end: r.endDate,
+      noteEmployee: r.noteEmployee,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      decidedAt: r.decidedAt,
+      decidedBy: r.decidedBy,
+    }))
+    .sort((a, b) => {
+      if (a.start !== b.start) return a.start < b.start ? -1 : 1;
+      return a.createdAt < b.createdAt ? 1 : -1;
+    });
+}
+
+function requestStatusLabel(status: AbsenceRequestStatus): string {
+  if (status === "PENDING") return "Offen";
+  if (status === "APPROVED") return "Genehmigt";
+  return "Abgelehnt";
+}
+
+function requestBlockLabel(b: AbsenceRequestBlock) {
+  const icon = b.type === "VACATION" ? "🌴" : "🤒";
+  const name = b.type === "VACATION" ? "Urlaubsantrag" : "Krankheitsantrag";
+  const span = b.start === b.end ? b.start : `${b.start}–${b.end}`;
+  return `${icon} ${name} (${span})`;
+}
+
 // ---------- UI-only category persistence ----------
 const CAT_STORAGE_KEY = "mafliesen_admin_event_categories_v1";
 
@@ -434,6 +562,9 @@ export default function KalenderPage() {
   // EMPLOYEE only:
   const [monthAbsences, setMonthAbsences] = useState<AbsenceDTO[]>([]);
   const [absLoading, setAbsLoading] = useState(false);
+  const [monthRequests, setMonthRequests] = useState<AbsenceRequestDTO[]>([]);
+  const [reqLoading, setReqLoading] = useState(false);
+  const [requestNote, setRequestNote] = useState<string>("");
 
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>("");
@@ -447,7 +578,7 @@ export default function KalenderPage() {
   const [absenceStart, setAbsenceStart] = useState<string>("");
   const [absenceEnd, setAbsenceEnd] = useState<string>("");
   const [absenceType, setAbsenceType] = useState<AbsenceType>("VACATION");
-  const [editingBlock, setEditingBlock] = useState<AbsenceBlock | null>(null);
+  const [selectedRequestBlock, setSelectedRequestBlock] = useState<AbsenceRequestBlock | null>(null);
 
   // ADMIN only:
   const [dayAppointments, setDayAppointments] = useState<CalendarEventDTO[]>([]);
@@ -592,12 +723,23 @@ useEffect(() => {
     }
   }
 
-  async function reloadMonthAll() {
+    async function loadRequestsMonth() {
+    setReqLoading(true);
+    try {
+      const r = await fetch(`/api/absence-requests?${new URLSearchParams({ month: ym }).toString()}`);
+      const j: unknown = await r.json();
+      setMonthRequests(r.ok ? parseAbsenceRequestsResponse(j) : []);
+    } finally {
+      setReqLoading(false);
+    }
+  }
+
+    async function reloadMonthAll() {
     if (isAdmin) {
       await loadCalendar();
       return;
     }
-    await Promise.all([loadCalendar(), loadAbsencesMonth()]);
+    await Promise.all([loadCalendar(), loadAbsencesMonth(), loadRequestsMonth()]);
   }
 
   useEffect(() => {
@@ -608,10 +750,20 @@ useEffect(() => {
   const dayMap = useMemo(() => new Map(data.map((d) => [d.date, d])), [data]);
   const blocks = useMemo(() => (isAdmin ? [] : buildBlocks(monthAbsences)), [monthAbsences, isAdmin]);
 
+  const requestBlocks = useMemo(
+    () => (isAdmin ? [] : buildRequestBlocks(monthRequests)),
+    [monthRequests, isAdmin]
+  );
+
   const blocksForSelectedDay = useMemo(() => {
     if (!selectedDate || isAdmin) return [];
     return blocks.filter((b) => dateInRange(selectedDate, b.start, b.end));
   }, [blocks, selectedDate, isAdmin]);
+
+  const requestBlocksForSelectedDay = useMemo(() => {
+    if (!selectedDate || isAdmin) return [];
+    return requestBlocks.filter((b) => dateInRange(selectedDate, b.start, b.end));
+  }, [requestBlocks, selectedDate, isAdmin]);
 
   const grid = useMemo(() => {
     const [y, m] = ym.split("-").map(Number);
@@ -726,10 +878,11 @@ useEffect(() => {
     }
 
     // EMPLOYEE init:
-    setEditingBlock(null);
+    setSelectedRequestBlock(null);
     setAbsenceStart(date);
     setAbsenceEnd(date);
     setAbsenceType("VACATION");
+    setRequestNote("");
 
     setDayPlans([]);
     setPlansError(null);
@@ -758,20 +911,34 @@ useEffect(() => {
   }
 
   // EMPLOYEE: Abwesenheit bearbeiten
-  function startEdit(block: AbsenceBlock) {
-    setEditingBlock(block);
-    setAbsenceStart(block.start);
-    setAbsenceEnd(block.end);
-    setAbsenceType(block.type);
-    setError(null);
-  }
-  function cancelEdit() {
-    setEditingBlock(null);
+  function startNewRequest() {
+    setSelectedRequestBlock(null);
     if (selectedDate) {
       setAbsenceStart(selectedDate);
       setAbsenceEnd(selectedDate);
-      setAbsenceType("VACATION");
     }
+    setAbsenceType("VACATION");
+    setRequestNote("");
+    setError(null);
+  }
+
+  function showRequestDetails(block: AbsenceRequestBlock) {
+    setSelectedRequestBlock(block);
+    setAbsenceStart(block.start);
+    setAbsenceEnd(block.end);
+    setAbsenceType(block.type);
+    setRequestNote(block.noteEmployee);
+    setError(null);
+  }
+
+  function cancelRequestView() {
+    setSelectedRequestBlock(null);
+    if (selectedDate) {
+      setAbsenceStart(selectedDate);
+      setAbsenceEnd(selectedDate);
+    }
+    setAbsenceType("VACATION");
+    setRequestNote("");
     setError(null);
   }
 
@@ -783,6 +950,7 @@ useEffect(() => {
       setError("Bitte Start- und Enddatum auswählen.");
       return;
     }
+
     if (absenceEnd < absenceStart) {
       setError("Ende darf nicht vor Start liegen.");
       return;
@@ -790,72 +958,30 @@ useEffect(() => {
 
     setSaving(true);
     try {
-      if (editingBlock) {
-        const r = await fetch("/api/absences", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            from: editingBlock.start,
-            to: editingBlock.end,
-            type: editingBlock.type,
-            newStartDate: absenceStart,
-            newEndDate: absenceEnd,
-            newType: absenceType,
-          }),
-        });
-
-        const j: unknown = await r.json();
-        if (!r.ok) {
-          setError(extractErrorMessage(j, "Speichern fehlgeschlagen."));
-          return;
-        }
-
-        await reloadMonthAll();
-        setEditingBlock(null);
-        return;
-      }
-
-      const r = await fetch("/api/absences", {
+      const r = await fetch("/api/absence-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ startDate: absenceStart, endDate: absenceEnd, type: absenceType }),
+        body: JSON.stringify({
+          startDate: absenceStart,
+          endDate: absenceEnd,
+          type: absenceType,
+          noteEmployee: requestNote.trim(),
+        }),
       });
 
       const j: unknown = await r.json();
+
       if (!r.ok) {
-        setError(extractErrorMessage(j, "Speichern fehlgeschlagen."));
+        setError(extractErrorMessage(j, "Antrag konnte nicht gespeichert werden."));
         return;
       }
 
       setOpen(false);
+      setSelectedRequestBlock(null);
+      setRequestNote("");
       await reloadMonthAll();
     } catch {
       setError("Netzwerkfehler beim Speichern.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function deleteBlock(block: AbsenceBlock) {
-    setError(null);
-    setSaving(true);
-    try {
-      const qs = new URLSearchParams({ from: block.start, to: block.end, type: block.type });
-      const r = await fetch(`/api/absences?${qs.toString()}`, { method: "DELETE" });
-      const j: unknown = await r.json();
-
-      if (!r.ok) {
-        setError(extractErrorMessage(j, "Löschen fehlgeschlagen."));
-        return;
-      }
-
-      await reloadMonthAll();
-
-      if (editingBlock && editingBlock.type === block.type && editingBlock.start === block.start && editingBlock.end === block.end) {
-        cancelEdit();
-      }
-    } catch {
-      setError("Netzwerkfehler beim Löschen.");
     } finally {
       setSaving(false);
     }
@@ -1388,7 +1514,11 @@ useEffect(() => {
                   <div>
                     <span className="badge-dot dot-sick" /> Krank
                   </div>
-                  {absLoading ? <div style={{ marginLeft: "auto", fontSize: 12, opacity: 0.8 }}>Abwesenheiten laden…</div> : null}
+                  {absLoading || reqLoading ? (
+                    <div style={{ marginLeft: "auto", fontSize: 12, opacity: 0.8 }}>
+                      Abwesenheiten/Anträge laden…
+                    </div>
+                  ) : null}
                 </>
               )}
             </div>
@@ -1742,23 +1872,62 @@ useEffect(() => {
               )}
 
               <div style={{ marginTop: 14 }}>
-                <div className="label">Deine Abwesenheit</div>
+                <div className="label">Bestätigte Abwesenheit</div>
 
                 {blocksForSelectedDay.length === 0 ? (
                   <div className="card" style={{ padding: 12, opacity: 0.85 }}>
-                    Keine Abwesenheit eingetragen.
+                    Keine bestätigte Abwesenheit eingetragen.
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {blocksForSelectedDay.map((b) => (
                       <div key={`${b.type}-${b.start}-${b.end}`} className="card" style={{ padding: 12 }}>
                         <div style={{ fontWeight: 900 }}>{blockLabel(b)}</div>
-                        <div style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                          <button className="btn" type="button" onClick={() => startEdit(b)} disabled={saving}>
-                            ✏️ Bearbeiten
-                          </button>
-                          <button className="btn btn-danger" type="button" onClick={() => void deleteBlock(b)} disabled={saving}>
-                            🗑️ Löschen
+                        <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                          Bereits vom Admin bestätigt und im Kalender registriert.
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <div className="label">Meine Anträge</div>
+
+                {requestBlocksForSelectedDay.length === 0 ? (
+                  <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                    Kein Antrag für diesen Tag vorhanden.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {requestBlocksForSelectedDay.map((b) => (
+                      <div key={b.id} className="card" style={{ padding: 12 }}>
+                        <div style={{ fontWeight: 900 }}>{requestBlockLabel(b)}</div>
+
+                        <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                          Status: {requestStatusLabel(b.status)}
+                        </div>
+
+                        {b.noteEmployee.trim() ? (
+                          <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                            📝 {b.noteEmployee}
+                          </div>
+                        ) : null}
+
+                        {b.decidedBy ? (
+                          <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                            Bearbeitet von: {b.decidedBy.fullName}
+                          </div>
+                        ) : null}
+
+                        <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                          <button
+                            className="btn"
+                            type="button"
+                            onClick={() => showRequestDetails(b)}
+                          >
+                            Details
                           </button>
                         </div>
                       </div>
@@ -1777,46 +1946,93 @@ useEffect(() => {
             )}
 
             <div style={{ marginBottom: 12 }}>
-              <div className="label">{editingBlock ? "Abwesenheit bearbeiten" : "Abwesenheit eintragen"}</div>
-
+              <div className="label">{selectedRequestBlock ? "Antragsdetails" : "Abwesenheit beantragen"}</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
                   <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                     Start
                   </div>
-                  <input className="input" type="date" value={absenceStart} onChange={(e) => setAbsenceStart(e.target.value)} />
+                  <input
+                    className="input"
+                    type="date"
+                    value={absenceStart}
+                    onChange={(e) => setAbsenceStart(e.target.value)}
+                    disabled={!!selectedRequestBlock}
+                  />
                 </div>
 
                 <div>
                   <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                     Ende
                   </div>
-                  <input className="input" type="date" value={absenceEnd} onChange={(e) => setAbsenceEnd(e.target.value)} />
+                  <input
+                    className="input"
+                    type="date"
+                    value={absenceEnd}
+                    onChange={(e) => setAbsenceEnd(e.target.value)}
+                    disabled={!!selectedRequestBlock}
+                  />
                 </div>
               </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-              <button className={`btn ${absenceType === "VACATION" ? "btn-accent" : ""}`} type="button" onClick={() => setAbsenceType("VACATION")}>
+              <button
+                className={`btn ${absenceType === "VACATION" ? "btn-accent" : ""}`}
+                type="button"
+                onClick={() => setAbsenceType("VACATION")}
+                disabled={!!selectedRequestBlock}
+              >
                 🌴 Urlaub
               </button>
-              <button className={`btn ${absenceType === "SICK" ? "btn-danger" : ""}`} type="button" onClick={() => setAbsenceType("SICK")}>
+              <button
+                className={`btn ${absenceType === "SICK" ? "btn-danger" : ""}`}
+                type="button"
+                onClick={() => setAbsenceType("SICK")}
+                disabled={!!selectedRequestBlock}
+              >
                 🤒 Krank
               </button>
             </div>
+            <div style={{ marginBottom: 12 }}>
+              <div className="label">Notiz an Admin</div>
+              <textarea
+                className="textarea"
+                value={requestNote}
+                onChange={(e) => setRequestNote(e.target.value)}
+                placeholder="Optional: Hinweis zum Antrag"
+                disabled={!!selectedRequestBlock}
+              />
+            </div>
 
-            {editingBlock ? (
+            {selectedRequestBlock ? (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <button className="btn" type="button" onClick={cancelEdit} disabled={saving} style={{ width: "100%" }}>
-                  Abbrechen
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={cancelRequestView}
+                  style={{ width: "100%" }}
+                >
+                  Schließen
                 </button>
-                <button className="btn btn-accent" type="button" onClick={saveAbsence} disabled={saving} style={{ width: "100%" }}>
-                  {saving ? "Speichert..." : "Änderungen speichern"}
+                <button
+                  className="btn btn-accent"
+                  type="button"
+                  onClick={startNewRequest}
+                  style={{ width: "100%" }}
+                >
+                  Neuer Antrag
                 </button>
               </div>
             ) : (
-              <button className="btn btn-accent" type="button" onClick={saveAbsence} disabled={saving} style={{ width: "100%" }}>
-                {saving ? "Speichert..." : "Eintragen"}
+              <button
+                className="btn btn-accent"
+                type="button"
+                onClick={saveAbsence}
+                disabled={saving}
+                style={{ width: "100%" }}
+              >
+                {saving ? "Speichert..." : "Antrag senden"}
               </button>
             )}
           </>

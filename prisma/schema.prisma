@@ -20,6 +20,8 @@ model AppUser {
 
   entries        WorkEntry[]
   absences       Absence[]
+  absenceRequests AbsenceRequest[]
+  decidedAbsenceRequests AbsenceRequest[] @relation("AbsenceRequestDecidedBy")
   monthlyTargets MonthlyTarget[]
   planEntries    PlanEntry[]
   calendarEvents CalendarEvent[]
@@ -224,6 +226,30 @@ model Absence {
   @@unique([userId, absenceDate, type])
 }
 
+model AbsenceRequest {
+  id        String              @id @default(uuid())
+  userId    String
+  user      AppUser             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  startDate DateTime            @db.Date
+  endDate   DateTime            @db.Date
+  type      AbsenceType
+  status    AbsenceRequestStatus @default(PENDING)
+
+  noteEmployee String?
+
+  decidedAt   DateTime?
+  decidedById String?
+  decidedBy   AppUser?          @relation("AbsenceRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([userId, status, type])
+  @@index([startDate, endDate])
+  @@index([decidedById])
+}
+
 model MonthlyTarget {
   id            String @id @default(uuid())
   year          Int
@@ -255,4 +281,10 @@ enum Role {
 enum AbsenceType {
   VACATION
   SICK
+}
+
+enum AbsenceRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

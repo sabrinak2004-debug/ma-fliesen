@@ -226,6 +226,12 @@ export async function POST(req: Request) {
 
   const isAdmin = session.role === Role.ADMIN;
   const targetUserId = isAdmin && userIdFromBody ? userIdFromBody : session.userId;
+    if (!isAdmin) {
+    return okJson(
+      { error: "Mitarbeiter dürfen keine finalen Abwesenheiten direkt anlegen. Bitte Antrag stellen." },
+      { status: 403 }
+    );
+  }
 
   const days = eachDayInclusive(start, end);
 
@@ -294,6 +300,12 @@ export async function PATCH(req: Request) {
 
   const isAdmin = session.role === Role.ADMIN;
   const targetUserId = isAdmin && userIdFromBody ? userIdFromBody : session.userId;
+    if (!isAdmin) {
+    return okJson(
+      { error: "Mitarbeiter dürfen finale Abwesenheiten nicht direkt bearbeiten." },
+      { status: 403 }
+    );
+  }
 
   // Safety: Employee darf nur sich selbst
   if (!isAdmin && targetUserId !== session.userId) {
@@ -355,9 +367,14 @@ export async function DELETE(req: Request) {
   if (id) {
     const a = await prisma.absence.findUnique({ where: { id } });
     if (!a) return okJson({ error: "Nicht gefunden" }, { status: 404 });
-
+    
     const isAdmin = session.role === Role.ADMIN;
-    if (!isAdmin && a.userId !== session.userId) return okJson({ error: "Nicht erlaubt" }, { status: 403 });
+    if (!isAdmin) {
+      return okJson(
+        { error: "Mitarbeiter dürfen finale Abwesenheiten nicht direkt löschen." },
+        { status: 403 }
+      );
+    }
 
     await prisma.absence.delete({ where: { id } });
     return okJson({ ok: true, deleted: 1 });
@@ -377,9 +394,14 @@ export async function DELETE(req: Request) {
   if (to < from) return okJson({ error: "to darf nicht vor from liegen" }, { status: 400 });
 
   const isAdmin = session.role === Role.ADMIN;
-  const targetUserId = isAdmin ? (url.searchParams.get("userId") ?? "").trim() || session.userId : session.userId;
+  if (!isAdmin) {
+    return okJson(
+      { error: "Mitarbeiter dürfen finale Abwesenheiten nicht direkt löschen." },
+      { status: 403 }
+    );
+  }
 
-  if (!isAdmin && targetUserId !== session.userId) return okJson({ error: "Nicht erlaubt" }, { status: 403 });
+  const targetUserId = (url.searchParams.get("userId") ?? "").trim() || session.userId;
 
   const toExclusive = new Date(to);
   toExclusive.setUTCDate(toExclusive.getUTCDate() + 1);

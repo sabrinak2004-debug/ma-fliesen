@@ -2,12 +2,18 @@ self.addEventListener("push", function (event) {
   let data = {
     title: "MA-Fliesen App",
     body: "Neue Benachrichtigung",
-    url: "/admin/dashboard",
+    url: "/",
   };
 
   try {
     if (event.data) {
-      data = event.data.json();
+      const parsed = event.data.json();
+
+      data = {
+        title: typeof parsed.title === "string" ? parsed.title : "MA-Fliesen App",
+        body: typeof parsed.body === "string" ? parsed.body : "Neue Benachrichtigung",
+        url: typeof parsed.url === "string" ? parsed.url : "/",
+      };
     }
   } catch (err) {
     console.error("Push payload konnte nicht gelesen werden:", err);
@@ -16,10 +22,10 @@ self.addEventListener("push", function (event) {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
+      icon: "/icon_2.jpeg",
+      badge: "/icon_2.jpeg",
       data: {
-        url: data.url || "/admin/dashboard",
+        url: data.url || "/",
       },
     })
   );
@@ -29,10 +35,11 @@ self.addEventListener("notificationclick", function (event) {
   event.notification.close();
 
   const targetUrl =
-    (event.notification &&
-      event.notification.data &&
-      event.notification.data.url) ||
-    "/admin/dashboard";
+    event.notification &&
+    event.notification.data &&
+    typeof event.notification.data.url === "string"
+      ? event.notification.data.url
+      : "/";
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
@@ -48,6 +55,8 @@ self.addEventListener("notificationclick", function (event) {
       if (clients.openWindow) {
         return clients.openWindow(targetUrl);
       }
+
+      return Promise.resolve();
     })
   );
 });

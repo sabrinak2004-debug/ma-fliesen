@@ -418,6 +418,18 @@ useEffect(() => {
           </Link>
         )}
 
+                {isAdmin && (
+          <Link href="/admin/urlaubsantraege" style={mobileItemStyle(isActive(pathname, "/admin/urlaubsantraege"))}>
+            🌴 Urlaubsanträge
+          </Link>
+        )}
+
+        {isAdmin && (
+          <Link href="/admin/krankheitsantraege" style={mobileItemStyle(isActive(pathname, "/admin/krankheitsantraege"))}>
+            🤒 Krankheitsanträge
+          </Link>
+        )}
+
         {isAdmin && (
           <Link href="/admin/password-reset" style={mobileItemStyle(isActive(pathname, "/admin/password-reset"))}>
             🔐 Passwort-Reset
@@ -525,6 +537,24 @@ useEffect(() => {
                     href="/admin/wochenplan"
                   >
                     🧑‍💼 Wochenplan
+                  </Link>
+                )}
+
+                                {isAdmin && (
+                  <Link
+                    className={`pill ${isActive(pathname, "/admin/urlaubsantraege") ? "pill-active" : ""}`}
+                    href="/admin/urlaubsantraege"
+                  >
+                    🌴 Urlaubsanträge
+                  </Link>
+                )}
+
+                {isAdmin && (
+                  <Link
+                    className={`pill ${isActive(pathname, "/admin/krankheitsantraege") ? "pill-active" : ""}`}
+                    href="/admin/krankheitsantraege"
+                  >
+                    🤒 Krankheitsanträge
                   </Link>
                 )}
 
