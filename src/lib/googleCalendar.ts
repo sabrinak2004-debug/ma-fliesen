@@ -49,3 +49,101 @@ export async function getAuthedCalendarClient(
 
   return { calendar, conn };
 }
+
+type SyncGoogleEventArgs = {
+  userId: string;
+};
+
+export async function syncGoogleCalendarToApp({
+  userId,
+}: SyncGoogleEventArgs): Promise<void> {
+  const client = await getAuthedCalendarClient(userId);
+  if (!client) {
+    throw new Error("Google nicht verbunden");
+  }
+
+  const { calendar, conn } = client;
+
+  let pageToken: string | undefined = undefined;
+  let nextSyncToken: string | undefined = undefined;
+
+  do {
+    const response: { data: calendar_v3.Schema$Events } =
+      await calendar.events.list({
+        calendarId: conn.calendarId || "primary",
+        singleEvents: true,
+        showDeleted: true,
+        maxResults: 250,
+        pageToken,
+        syncToken: conn.syncToken || undefined,
+      });
+
+    const items: calendar_v3.Schema$Event[] = Array.isArray(response.data.items)
+      ? response.data.items
+      : [];
+
+    for (const ev of items) {
+      const gId = ev.id ?? null;
+      const start = ev.start?.dateTime ? new Date(ev.start.dateTime) : null;
+      const end = ev.end?.dateTime ? new Date(ev.end.dateTime) : null;
+
+      if (!gId) continue;
+
+      if (ev.status === "cancelled") {
+        await prisma.calendarEvent.deleteMany({
+          where: {
+            userId,
+            googleEventId: gId,
+          },
+        });
+        continue;
+      }
+
+      if (!start || !end) continue;
+
+      const title = ev.summary?.trim() || "(Ohne Titel)";
+      const location = ev.location?.trim() || null;
+      const notes = ev.description?.trim() || null;
+
+      await prisma.calendarEvent.upsert({
+        where: { googleEventId: gId },
+        create: {
+          userId,
+          title,
+          startAt: start,
+          endAt: end,
+          location,
+          notes,
+          googleEventId: gId,
+          googleICalUID: ev.iCalUID ?? null,
+          googleUpdatedAt: ev.updated ? new Date(ev.updated) : null,
+          googleEtag: ev.etag ?? null,
+          syncSource: "GOOGLE",
+          lastSyncedAt: new Date(),
+        },
+        update: {
+          title,
+          startAt: start,
+          endAt: end,
+          location,
+          notes,
+          googleICalUID: ev.iCalUID ?? null,
+          googleUpdatedAt: ev.updated ? new Date(ev.updated) : null,
+          googleEtag: ev.etag ?? null,
+          syncSource: "GOOGLE",
+          lastSyncedAt: new Date(),
+        },
+      });
+    }
+
+    pageToken = response.data.nextPageToken ?? undefined;
+    nextSyncToken = response.data.nextSyncToken ?? nextSyncToken;
+  } while (pageToken);
+
+  if (nextSyncToken) {
+    await prisma.googleCalendarConnection.update({
+      where: { userId },
+      data: { syncToken: nextSyncToken },
+    });
+  }
+}

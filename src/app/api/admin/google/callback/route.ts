@@ -40,7 +40,18 @@ export async function GET(req: Request) {
     },
   });
 
-  // zurück ins Admin-UI (kannst du ändern)
   const base = process.env.APP_BASE_URL || "http://localhost:3000";
+
+  try {
+    await fetch(`${base}/api/admin/google/watch`, {
+      method: "POST",
+      headers: {
+        cookie: req.headers.get("cookie") ?? "",
+      },
+    });
+  } catch (error) {
+    console.error("Watch registration after callback failed:", error);
+  }
+
   return NextResponse.redirect(`${base}/kalender?google=connected`);
 }
