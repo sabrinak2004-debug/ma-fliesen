@@ -163,7 +163,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace("/erfassung");
+      window.location.href = "/erfassung";
     } catch {
       setError("Netzwerkfehler beim Login.");
     } finally {

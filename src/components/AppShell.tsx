@@ -90,6 +90,7 @@ export default function AppShell({
 }) {
   const pathname = usePathname();
   const [session, setSession] = useState<SessionData | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -98,15 +99,59 @@ export default function AppShell({
 
   useEffect(() => {
     let alive = true;
-    fetch("/api/me")
-      .then((r) => r.json())
-      .then((j: unknown) => {
+
+    async function loadSession() {
+      try {
+        setSessionLoading(true);
+
+        const res = await fetch("/api/me", {
+          method: "GET",
+          cache: "no-store",
+          credentials: "include",
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+        });
+
+        const json = (await res.json()) as unknown;
+
         if (!alive) return;
-        setSession(parseMe(j));
-      })
-      .catch(() => setSession(null));
+        setSession(parseMe(json));
+      } catch {
+        if (!alive) return;
+        setSession(null);
+      } finally {
+        if (!alive) return;
+        setSessionLoading(false);
+      }
+    }
+
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        void loadSession();
+      }
+    }
+
+    function onFocus() {
+      void loadSession();
+    }
+
+    function onPageShow() {
+      void loadSession();
+    }
+
+    void loadSession();
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onPageShow);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     return () => {
       alive = false;
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onPageShow);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 
@@ -143,15 +188,24 @@ useEffect(() => {
 
   async function handleLogout() {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/logout", {
+        method: "POST",
+        cache: "no-store",
+        credentials: "include",
+      });
     } finally {
       setMenuOpen(false);
+      setMobileOpen(false);
       window.location.href = "/login";
     }
   }
 
-  const userName = session?.fullName ?? "Nicht eingeloggt";
-  const userInitials = session ? initialsFromName(session.fullName) : "U";
+  const userName = sessionLoading
+    ? "Lade..."
+    : session?.fullName ?? "Nicht eingeloggt";
+
+  const userInitials =
+    sessionLoading ? "…" : session ? initialsFromName(session.fullName) : "U";
 
   return (
     <div style={{ padding: "18px 0 42px" }}>
