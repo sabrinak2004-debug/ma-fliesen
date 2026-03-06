@@ -312,6 +312,9 @@ export default function Page() {
   const [editError, setEditError] = useState<string | null>(null);
   const [edit, setEdit] = useState<EditForm | null>(null);
 
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteEntry, setNoteEntry] = useState<WorkEntry | null>(null);
+
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
 
   const dayPreview = useMemo(() => {
@@ -446,6 +449,11 @@ useEffect(() => {
     });
     setEditOpen(true);
   }
+
+  function openNoteModal(e: WorkEntry) {
+  setNoteEntry(e);
+  setNoteOpen(true);
+}
 
   async function saveEdit() {
     if (!edit) return;
@@ -796,10 +804,21 @@ useEffect(() => {
                                     </div>
                                   </div>
 
-                                  <div className="entry-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <div className="entry-actions" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                                     <div className="entry-hours">
                                       <span className="entry-hours-number">{grossHM}</span>
                                     </div>
+
+                                    {e.noteEmployee.trim() ? (
+                                      <button
+                                        className="icon-btn"
+                                        onClick={() => openNoteModal(e)}
+                                        aria-label="Notiz anzeigen"
+                                        title="Notiz anzeigen"
+                                      >
+                                        📝
+                                      </button>
+                                    ) : null}
 
                                     <button
                                       className="icon-btn"
@@ -853,6 +872,56 @@ useEffect(() => {
           ))}
         </div>
       </div>
+
+      <Modal
+        open={noteOpen}
+        title="Notiz für Admin"
+        onClose={() => {
+          setNoteOpen(false);
+          setNoteEntry(null);
+        }}
+        footer={
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => {
+                setNoteOpen(false);
+                setNoteEntry(null);
+              }}
+            >
+              Schließen
+            </button>
+          </div>
+        }
+      >
+        {!noteEntry ? null : (
+          <div style={{ display: "grid", gap: 12 }}>
+            <div>
+              <div className="label">Datum</div>
+              <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+                {formatDateDE(toYMD(noteEntry.workDate))} · {noteEntry.startTime}–{noteEntry.endTime}
+              </div>
+            </div>
+
+            <div>
+              <div className="label">Notiz</div>
+              <div
+                className="input"
+                style={{
+                  minHeight: 110,
+                  display: "block",
+                  whiteSpace: "pre-wrap",
+                  paddingTop: 12,
+                  lineHeight: 1.45,
+                }}
+              >
+                {noteEntry.noteEmployee.trim() || "Keine Notiz vorhanden."}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* ✅ EDIT MODAL */}
       <Modal
