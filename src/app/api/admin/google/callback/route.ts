@@ -1,7 +1,7 @@
 // src/app/api/admin/google/callback/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getOAuthClient } from "@/lib/googleCalendar";
+import { getOAuthClient, registerGoogleCalendarWatch } from "@/lib/googleCalendar";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -43,12 +43,7 @@ export async function GET(req: Request) {
   const base = process.env.APP_BASE_URL || "http://localhost:3000";
 
   try {
-    await fetch(`${base}/api/admin/google/watch`, {
-      method: "POST",
-      headers: {
-        cookie: req.headers.get("cookie") ?? "",
-      },
-    });
+    await registerGoogleCalendarWatch({ userId: state });
   } catch (error) {
     console.error("Watch registration after callback failed:", error);
   }

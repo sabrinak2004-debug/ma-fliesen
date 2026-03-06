@@ -1,6 +1,7 @@
 // src/lib/googleCalendar.ts
 import { google, type calendar_v3 } from "googleapis";
 import { prisma } from "@/lib/prisma";
+import { randomUUID } from "crypto";
 
 export type AuthedCalendarClient = {
   calendar: calendar_v3.Calendar;
@@ -53,6 +54,55 @@ export async function getAuthedCalendarClient(
 type SyncGoogleEventArgs = {
   userId: string;
 };
+
+type RegisterGoogleWatchArgs = {
+  userId: string;
+};
+
+export async function registerGoogleCalendarWatch({
+  userId,
+}: RegisterGoogleWatchArgs): Promise<void> {
+  const client = await getAuthedCalendarClient(userId);
+  if (!client) {
+    throw new Error("Google nicht verbunden");
+  }
+
+  const { calendar, conn } = client;
+
+  const appBaseUrl = process.env.APP_BASE_URL;
+  const webhookSecret = process.env.GOOGLE_WEBHOOK_SECRET;
+
+  if (!appBaseUrl || !webhookSecret) {
+    throw new Error("APP_BASE_URL oder GOOGLE_WEBHOOK_SECRET fehlt");
+  }
+
+  const webhookAddress = `${appBaseUrl}/api/admin/google/webhook`;
+  const channelId = randomUUID();
+
+  const response = await calendar.events.watch({
+    calendarId: conn.calendarId || "primary",
+    requestBody: {
+      id: channelId,
+      type: "web_hook",
+      address: webhookAddress,
+      token: webhookSecret,
+    },
+  });
+
+  const resourceId = response.data.resourceId ?? null;
+  const expirationRaw = response.data.expiration ?? null;
+
+  await prisma.googleCalendarConnection.update({
+    where: { userId },
+    data: {
+      channelId,
+      resourceId,
+      channelExpiration: expirationRaw
+        ? new Date(Number(expirationRaw))
+        : null,
+    },
+  });
+}
 
 export async function syncGoogleCalendarToApp({
   userId,

@@ -1,17 +1,17 @@
-// src/app/api/admin/google/sync/route.ts
+// src/app/api/admin/google/watch/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { Role } from "@prisma/client";
-import { syncGoogleCalendarToApp } from "@/lib/googleCalendar";
+import { registerGoogleCalendarWatch } from "@/lib/googleCalendar";
 
 async function requireAdmin(userId: string) {
-  const u = await prisma.appUser.findUnique({
+  const user = await prisma.appUser.findUnique({
     where: { id: userId },
     select: { role: true, isActive: true },
   });
 
-  return !!u && u.isActive && u.role === Role.ADMIN;
+  return !!user && user.isActive && user.role === Role.ADMIN;
 }
 
 export async function POST() {
@@ -24,7 +24,8 @@ export async function POST() {
     );
   }
 
-  if (!(await requireAdmin(session.userId))) {
+  const isAdmin = await requireAdmin(session.userId);
+  if (!isAdmin) {
     return NextResponse.json(
       { ok: false, error: "Keine Berechtigung" },
       { status: 403 }
@@ -32,21 +33,13 @@ export async function POST() {
   }
 
   try {
-    await syncGoogleCalendarToApp({ userId: session.userId });
+    await registerGoogleCalendarWatch({ userId: session.userId });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    await prisma.googleCalendarConnection.update({
-      where: { userId: session.userId },
-      data: { syncToken: null },
-    });
-
-    console.error("Manual Google sync failed:", error);
+    console.error("Google watch registration failed:", error);
 
     return NextResponse.json(
-      {
-        ok: false,
-        error: "Sync fehlgeschlagen (syncToken reset). Bitte erneut syncen.",
-      },
+      { ok: false, error: "Watch-Registrierung fehlgeschlagen" },
       { status: 500 }
     );
   }
