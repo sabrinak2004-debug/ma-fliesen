@@ -137,6 +137,8 @@ export async function PUT(req: Request, ctx: Ctx) {
         },
       };
 
+      console.log("Updating Google event:", updated.googleEventId);
+
       if (updated.googleEventId) {
         const googleUpdated = await calendar.events.update({
           calendarId: conn.calendarId || "primary",
@@ -181,6 +183,15 @@ export async function PUT(req: Request, ctx: Ctx) {
     }
   } catch (error) {
     console.error("Google update sync failed:", error);
+
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Termin wurde in der App gespeichert, aber nicht in Google aktualisiert.",
+        details: error instanceof Error ? error.message : "Unbekannter Google-Fehler",
+      },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({
