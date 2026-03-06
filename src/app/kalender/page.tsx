@@ -508,13 +508,26 @@ const weekMeta = useMemo(() => {
   // Session laden
   useEffect(() => {
     let alive = true;
-    fetch("/api/me")
+
+    fetch("/api/me", {
+      method: "GET",
+      cache: "no-store",
+      credentials: "include",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    })
       .then((r) => r.json())
       .then((j: unknown) => {
         if (!alive) return;
         setSession(parseMeResponse(j));
       })
-      .catch(() => setSession(null));
+      .catch(() => {
+        if (!alive) return;
+        setSession(null);
+      });
+
     return () => {
       alive = false;
     };

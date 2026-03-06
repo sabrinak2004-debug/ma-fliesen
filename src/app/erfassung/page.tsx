@@ -328,19 +328,34 @@ export default function Page() {
   }, [entries, workDate]);
 
 useEffect(() => {
+  let alive = true;
+
   (async () => {
     try {
-      const r = await fetch("/api/me");
+      const r = await fetch("/api/me", {
+        method: "GET",
+        cache: "no-store",
+        credentials: "include",
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      });
+
       const j: unknown = await r.json().catch(() => ({}));
 
+      if (!alive) return;
+
       if (!isMeApiResponse(j) || !j.session) {
-        setMe({ ok: false });
+        router.replace("/login");
         return;
       }
+
       if (j.session.role === "ADMIN") {
         router.replace("/admin/dashboard");
         return;
       }
+
       setMe({
         ok: true,
         user: {
@@ -350,10 +365,15 @@ useEffect(() => {
         },
       });
     } catch {
-      setMe({ ok: false });
+      if (!alive) return;
+      router.replace("/login");
     }
   })();
-}, []);
+
+  return () => {
+    alive = false;
+  };
+}, [router]);
 
   async function loadEntries() {
     setLoadingEntries(true);
