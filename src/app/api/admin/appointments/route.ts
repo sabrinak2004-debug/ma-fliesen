@@ -151,45 +151,51 @@ export async function POST(req: Request) {
       endAt,
       location: locationRaw ? locationRaw : null,
       notes: notesRaw ? notesRaw : null,
+      syncSource: "APP",
     },
   });
 
-    // ===== App -> Google Sync (create) =====
-  const googleClient = await getAuthedCalendarClient(session.userId);
+  try {
+    const googleClient = await getAuthedCalendarClient(session.userId);
 
-  if (googleClient) {
-    const { calendar, conn } = googleClient;
+    if (googleClient) {
+      const { calendar, conn } = googleClient;
 
-    const googleCreated = await calendar.events.insert({
-      calendarId: conn.calendarId || "primary",
-      requestBody: {
-        summary: created.title,
-        location: created.location ?? undefined,
-        description: created.notes ?? undefined,
-        start: {
-          dateTime: created.startAt.toISOString(),
-          timeZone: "Europe/Berlin",
-        },
-        end: {
-          dateTime: created.endAt.toISOString(),
-          timeZone: "Europe/Berlin",
-        },
-      },
-    });
-
-    if (googleCreated.data.id) {
-      await prisma.calendarEvent.update({
-        where: { id: created.id },
-        data: {
-          googleEventId: googleCreated.data.id,
-          googleICalUID: googleCreated.data.iCalUID ?? null,
-          googleUpdatedAt: googleCreated.data.updated ? new Date(googleCreated.data.updated) : null,
-          googleEtag: googleCreated.data.etag ?? null,
-          syncSource: "APP",
-          lastSyncedAt: new Date(),
+      const googleCreated = await calendar.events.insert({
+        calendarId: conn.calendarId || "primary",
+        requestBody: {
+          summary: created.title,
+          location: created.location ?? undefined,
+          description: created.notes ?? undefined,
+          start: {
+            dateTime: created.startAt.toISOString(),
+            timeZone: "Europe/Berlin",
+          },
+          end: {
+            dateTime: created.endAt.toISOString(),
+            timeZone: "Europe/Berlin",
+          },
         },
       });
+
+      if (googleCreated.data.id) {
+        await prisma.calendarEvent.update({
+          where: { id: created.id },
+          data: {
+            googleEventId: googleCreated.data.id,
+            googleICalUID: googleCreated.data.iCalUID ?? null,
+            googleUpdatedAt: googleCreated.data.updated
+              ? new Date(googleCreated.data.updated)
+              : null,
+            googleEtag: googleCreated.data.etag ?? null,
+            syncSource: "APP",
+            lastSyncedAt: new Date(),
+          },
+        });
+      }
     }
+  } catch (error) {
+    console.error("Google create sync failed:", error);
   }
 
   return NextResponse.json({

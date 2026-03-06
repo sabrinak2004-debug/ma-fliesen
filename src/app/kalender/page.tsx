@@ -1113,8 +1113,16 @@ useEffect(() => {
           >
             ›
           </button>
-          {isAdminOwnCalendar ? (
-  <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap", justifyContent: "center" }}>
+{isAdminOwnCalendar ? (
+  <div
+    style={{
+      display: "flex",
+      gap: 8,
+      marginTop: 8,
+      flexWrap: "wrap",
+      justifyContent: "center",
+    }}
+  >
     <button
       className="btn"
       type="button"
@@ -1123,17 +1131,6 @@ useEffect(() => {
       }}
     >
       Google Kalender verbinden
-    </button>
-
-    <button
-      className="btn"
-      type="button"
-      onClick={async () => {
-        await fetch("/api/admin/google/sync", { method: "POST" });
-        await Promise.all([reloadMonthAll(), selectedDate ? loadAppointmentsForDay(selectedDate) : Promise.resolve()]);
-      }}
-    >
-      Google → App syncen
     </button>
   </div>
 ) : null}
