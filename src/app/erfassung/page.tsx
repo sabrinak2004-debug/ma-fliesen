@@ -21,6 +21,7 @@ type WorkEntry = {
   grossMinutes: number;
   breakMinutes: number;
   breakAuto: boolean;
+  noteEmployee: string;
   user: { id: string; fullName: string };
 };
 
@@ -160,6 +161,7 @@ type EditForm = {
   location: string;
   travelMinutes: string;
   breakMinutes: string;
+  noteEmployee: string;
   userFullName: string; // ✅ nur Anzeige im Modal
 };
 
@@ -296,6 +298,7 @@ export default function Page() {
   const [location, setLocation] = useState("");
   const [travelMinutes, setTravelMinutes] = useState<string>("0");
   const [breakMinutes, setBreakMinutes] = useState<string>(""); // leer = automatisch
+  const [noteEmployee, setNoteEmployee] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -388,6 +391,7 @@ useEffect(() => {
         location: location.trim(),
         travelMinutes: Number(travelMinutes) || 0,
         breakMinutes: breakMinutes.trim() ? Number(breakMinutes) : 0,
+        noteEmployee: noteEmployee.trim(),
       };
 
       const r = await fetch("/api/entries", {
@@ -411,6 +415,7 @@ useEffect(() => {
       setLocation("");
       setTravelMinutes("0");
       setBreakMinutes("");
+      setNoteEmployee("");
 
       await loadEntries();
     } catch {
@@ -437,6 +442,7 @@ useEffect(() => {
       location: e.location ?? "",
       travelMinutes: String(e.travelMinutes ?? 0),
       breakMinutes: String(e.breakMinutes ?? 0),
+      noteEmployee: e.noteEmployee ?? "",
     });
     setEditOpen(true);
   }
@@ -459,6 +465,7 @@ useEffect(() => {
         location: edit.location.trim(),
         travelMinutes: Number(edit.travelMinutes) || 0,
         breakMinutes: edit.breakMinutes.trim() ? Number(edit.breakMinutes) : 0,
+        noteEmployee: edit.noteEmployee.trim(),
       };
 
       const r = await fetch("/api/entries", {
@@ -633,6 +640,19 @@ useEffect(() => {
           />
         </div>
 
+        <div style={{ marginBottom: 12 }}>
+          <div className="label">Notiz für Admin</div>
+          <textarea
+            className="textarea"
+            placeholder="Optional: Hinweise zum Einsatz, Material, Besonderheiten..."
+            value={noteEmployee}
+            onChange={(e) => setNoteEmployee(e.target.value)}
+          />
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+            Diese Notiz ist optional und wird dem Admin beim Eintrag angezeigt.
+          </div>
+        </div>
+
         <div className="label" style={{ marginBottom: 12 }}>
           <div>
             <div className="label">Fahrzeit (Min.)</div>
@@ -660,18 +680,19 @@ useEffect(() => {
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-          <button
-            className="btn"
-            type="button"
-            onClick={() => {
-              setActivity("");
-              setLocation("");
-              setTravelMinutes("0");
-              setBreakMinutes("");
-            }}
-          >
-            Abbrechen
-          </button>
+      <button
+        className="btn"
+        type="button"
+        onClick={() => {
+          setActivity("");
+          setLocation("");
+          setTravelMinutes("0");
+          setBreakMinutes("");
+          setNoteEmployee("");
+        }}
+      >
+        Abbrechen
+      </button>
           <button className="btn btn-accent" type="button" onClick={saveEntry} disabled={saving}>
             {saving ? "Speichert..." : "Eintrag speichern"}
           </button>
@@ -938,6 +959,16 @@ useEffect(() => {
                 className="input"
                 value={edit.location}
                 onChange={(e) => setEdit((p) => (p ? { ...p, location: e.target.value } : p))}
+              />
+            </div>
+
+            <div>
+              <div className="label">Notiz für Admin</div>
+              <textarea
+                className="textarea"
+                value={edit.noteEmployee}
+                onChange={(e) => setEdit((p) => (p ? { ...p, noteEmployee: e.target.value } : p))}
+                placeholder="Optional: Hinweise zum Eintrag"
               />
             </div>
 

@@ -20,6 +20,7 @@ type AdminTimelineWork = {
   breakMinutes: number;
   breakAuto: boolean;
   workMinutes: number;
+  noteEmployee: string | null;
 };
 
 type AdminTimelineAbsence = {
@@ -336,6 +337,12 @@ export default function AdminDashboardPage() {
   const [editTravelMinutes, setEditTravelMinutes] = useState<string>("0");
   const [editBreakMinutes, setEditBreakMinutes] = useState<string>("0");
 
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteUserLabel, setNoteUserLabel] = useState<string>("");
+  const [noteDate, setNoteDate] = useState<string>("");
+  const [noteTime, setNoteTime] = useState<string>("");
+  const [noteText, setNoteText] = useState<string>("");
+
   const years = useMemo(() => {
     const now = new Date().getFullYear();
     const arr: string[] = [];
@@ -503,6 +510,14 @@ export default function AdminDashboardPage() {
 
     setEditOpen(true);
   }
+
+  function openEmployeeNote(uName: string, it: AdminTimelineWork) {
+  setNoteUserLabel(uName);
+  setNoteDate(it.date);
+  setNoteTime(`${it.startHHMM}–${it.endHHMM}`);
+  setNoteText(it.noteEmployee ?? "");
+  setNoteOpen(true);
+}
 
   async function saveEditWork() {
     if (!editEntryId) return;
@@ -805,6 +820,61 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+<Modal
+  open={noteOpen}
+  onClose={() => setNoteOpen(false)}
+  title="Mitarbeiter-Notiz"
+  footer={
+    <button
+      type="button"
+      onClick={() => setNoteOpen(false)}
+      style={{
+        padding: "10px 14px",
+        cursor: "pointer",
+        fontWeight: 900,
+        borderRadius: 12,
+        border: "1px solid rgba(255,255,255,0.12)",
+        background: "rgba(255,255,255,0.06)",
+        color: "rgba(255,255,255,0.9)",
+      }}
+    >
+      Schließen
+    </button>
+  }
+  maxWidth={640}
+>
+  <div style={{ display: "grid", gap: 12 }}>
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter</div>
+      <div style={{ fontWeight: 1000 }}>{noteUserLabel}</div>
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={{ fontSize: 12, color: "var(--muted)" }}>Datum & Zeit</div>
+      <div style={{ fontWeight: 1000 }}>
+        {formatDateDE(noteDate)} · {noteTime}
+      </div>
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={{ fontSize: 12, color: "var(--muted)" }}>Notiz</div>
+      <div
+        style={{
+          whiteSpace: "pre-wrap",
+          padding: "12px 14px",
+          borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.10)",
+          background: "rgba(0,0,0,0.22)",
+          color: "rgba(255,255,255,0.92)",
+          minHeight: 90,
+        }}
+      >
+        {noteText.trim() ? noteText : "Keine Notiz vorhanden."}
+      </div>
+    </div>
+  </div>
+</Modal>
+
       <Modal
         open={editOpen}
         onClose={() => (editSaving ? null : setEditOpen(false))}
@@ -1104,10 +1174,32 @@ export default function AdminDashboardPage() {
                                           ) : null}
                                         </div>
 
-                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
                                           <div style={{ color: "var(--accent)", fontWeight: 1100, whiteSpace: "nowrap" }}>
                                             {formatHM(it.workMinutes)}
                                           </div>
+
+                                          {it.noteEmployee && it.noteEmployee.trim() ? (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                openEmployeeNote(u.fullName, it);
+                                              }}
+                                              title="Mitarbeiter-Notiz anzeigen"
+                                              style={{
+                                                padding: "6px 10px",
+                                                borderRadius: 10,
+                                                border: "1px solid rgba(90,167,255,0.28)",
+                                                background: "rgba(90,167,255,0.10)",
+                                                color: "rgba(90,167,255,0.95)",
+                                                cursor: "pointer",
+                                                fontWeight: 900,
+                                              }}
+                                            >
+                                              📝 Notiz
+                                            </button>
+                                          ) : null}
 
                                           <button
                                             type="button"

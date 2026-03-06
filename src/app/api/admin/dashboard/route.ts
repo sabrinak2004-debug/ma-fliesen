@@ -119,26 +119,27 @@ const monthEndIso = `${monthParam}-${lastDayOfMonth(monthParam)}`;
   const missingWeek = Math.max(0, totalExpected - presentCount);
   
   const workEntriesMonth = await prisma.workEntry.findMany({
-    where: {
+      where: {
         workDate: {
-            gte: new Date(`${monthStartIso}T00:00:00.000Z`),
-            lte: new Date(`${monthEndIso}T00:00:00.000Z`),
+          gte: new Date(`${monthStartIso}T00:00:00.000Z`),
+          lte: new Date(`${monthEndIso}T00:00:00.000Z`),
         },
-    },
-  select: {
-    id: true,
-    userId: true,
-    workDate: true,
-    startTime: true,
-    endTime: true,
-    activity: true,
-    location: true,
-    travelMinutes: true,
-    breakMinutes: true,
-    breakAuto: true,
-    workMinutes: true,
-  },
-});
+      },
+      select: {
+        id: true,
+        userId: true,
+        workDate: true,
+        startTime: true,
+        endTime: true,
+        activity: true,
+        location: true,
+        travelMinutes: true,
+        breakMinutes: true,
+        breakAuto: true,
+        workMinutes: true,
+        noteEmployee: true,
+      },
+    });
 const absencesMonth = await prisma.absence.findMany({
   where: {
     absenceDate: {
@@ -167,6 +168,7 @@ const items: Array<
       breakMinutes: number;
       breakAuto: boolean;
       workMinutes: number;
+      noteEmployee: string | null;
     }
   | {
       type: "VACATION" | "SICK";
@@ -191,7 +193,7 @@ const items: Array<
       end.getUTCMinutes()
     ).padStart(2, "0")}`;
 
-        items.push({
+      items.push({
         type: "WORK",
         id: w.id,
         date,
@@ -203,7 +205,8 @@ const items: Array<
         breakMinutes: w.breakMinutes ?? 0,
         breakAuto: w.breakAuto ?? false,
         workMinutes: w.workMinutes ?? 0,
-        });
+        noteEmployee: w.noteEmployee ?? null,
+      });
   }
 
   for (const a of absencesMonth) {

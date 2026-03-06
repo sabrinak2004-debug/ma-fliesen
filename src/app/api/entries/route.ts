@@ -123,10 +123,7 @@ async function enforceDailyLegalBreak(userId: string, workDateYMD: string) {
 
 type EntryBody = {
   id?: unknown;
-
-  // ✅ NEU: optional userId (nur Admin sinnvoll)
   userId?: unknown;
-
   workDate?: unknown; // YYYY-MM-DD
   startTime?: unknown; // HH:MM
   endTime?: unknown; // HH:MM
@@ -134,8 +131,8 @@ type EntryBody = {
   location?: unknown;
   travelMinutes?: unknown;
   breakMinutes?: unknown; // optional: Pause in Minuten
+  noteEmployee?: unknown; // optional: Notiz des Mitarbeiters
 };
-
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
@@ -163,6 +160,7 @@ type EntryDTO = {
   grossMinutes: number;
   breakMinutes: number;
   breakAuto: boolean;
+  noteEmployee: string;
   user: { id: string; fullName: string };
 };
 
@@ -261,7 +259,6 @@ for (const [key, arr] of groups.entries()) {
   }
 }
 
-// Jetzt Response bauen – aber mit gepatchten Werten
 const entries: EntryDTO[] = rows.map((e) => {
   const p = patched.get(e.id);
   return {
@@ -276,11 +273,10 @@ const entries: EntryDTO[] = rows.map((e) => {
     breakMinutes: p?.breakMinutes ?? (e.breakMinutes ?? 0),
     breakAuto: p?.breakAuto ?? (e.breakAuto ?? false),
     workMinutes: p?.workMinutes ?? (e.workMinutes ?? 0),
+    noteEmployee: e.noteEmployee ?? "",
     user: { id: e.user.id, fullName: e.user.fullName },
   };
 });
-
-return NextResponse.json({ entries });
 
   return NextResponse.json({ entries });
 }
@@ -300,6 +296,7 @@ export async function POST(req: Request) {
   const endTime = getString(body.endTime);
   const activity = getString(body.activity).trim();
   const location = getString(body.location).trim();
+  const noteEmployee = getString(body.noteEmployee).trim();
 
   if (!workDate || !startTime || !endTime || !activity) {
     return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
@@ -334,22 +331,23 @@ export async function POST(req: Request) {
     }
   }
 
-  const created = await prisma.workEntry.create({
-    data: {
-      userId: targetUserId,
-      workDate: dateOnly(workDate),
-      startTime: timeOnly(startTime),
-      endTime: timeOnly(endTime),
-      activity,
-      location,
-      travelMinutes: travelMinutesNum,
-      grossMinutes: diffMin,
-      breakMinutes: manualBreak,
-      breakAuto: false,
-      workMinutes: Math.max(0, diffMin - manualBreak),
-    },
-    include: { user: { select: { id: true, fullName: true } } },
-  });
+const created = await prisma.workEntry.create({
+  data: {
+    userId: targetUserId,
+    workDate: dateOnly(workDate),
+    startTime: timeOnly(startTime),
+    endTime: timeOnly(endTime),
+    activity,
+    location,
+    travelMinutes: travelMinutesNum,
+    grossMinutes: diffMin,
+    breakMinutes: manualBreak,
+    breakAuto: false,
+    workMinutes: Math.max(0, diffMin - manualBreak),
+    noteEmployee: noteEmployee || null,
+  },
+  include: { user: { select: { id: true, fullName: true } } },
+});
 
 // ✅ Tagespause für diesen User+Tag neu berechnen (wegen mehreren Einträgen am Tag)
 await enforceDailyLegalBreak(targetUserId, workDate);
@@ -364,20 +362,21 @@ if (!createdFresh) {
   return NextResponse.json({ error: "Eintrag nicht gefunden." }, { status: 500 });
 }
 
-  const entry: EntryDTO = {
-    id: createdFresh.id,
-    workDate: toIsoDateUTC(createdFresh.workDate),
-    startTime: toHHMMUTC(createdFresh.startTime),
-    endTime: toHHMMUTC(createdFresh.endTime),
-    activity: createdFresh.activity ?? "",
-    location: createdFresh.location ?? "",
-    travelMinutes: createdFresh.travelMinutes ?? 0,
-    workMinutes: createdFresh.workMinutes ?? 0,
-    grossMinutes: createdFresh.grossMinutes ?? 0,
-    breakMinutes: createdFresh.breakMinutes ?? 0,
-    breakAuto: createdFresh.breakAuto ?? false,
-    user: { id: createdFresh.user.id, fullName: createdFresh.user.fullName },
-  };
+const entry: EntryDTO = {
+  id: createdFresh.id,
+  workDate: toIsoDateUTC(createdFresh.workDate),
+  startTime: toHHMMUTC(createdFresh.startTime),
+  endTime: toHHMMUTC(createdFresh.endTime),
+  activity: createdFresh.activity ?? "",
+  location: createdFresh.location ?? "",
+  travelMinutes: createdFresh.travelMinutes ?? 0,
+  workMinutes: createdFresh.workMinutes ?? 0,
+  grossMinutes: createdFresh.grossMinutes ?? 0,
+  breakMinutes: createdFresh.breakMinutes ?? 0,
+  breakAuto: createdFresh.breakAuto ?? false,
+  noteEmployee: createdFresh.noteEmployee ?? "",
+  user: { id: createdFresh.user.id, fullName: createdFresh.user.fullName },
+};
 
   return NextResponse.json({ entry });
 }
@@ -440,6 +439,10 @@ export async function PATCH(req: Request) {
   const activity = isAdmin ? getString(body.activity).trim() || (existing.activity ?? "") : getString(body.activity).trim();
   const location = isAdmin ? getString(body.location).trim() || (existing.location ?? "") : getString(body.location).trim();
 
+    const noteEmployee = isAdmin
+      ? (existing.noteEmployee ?? "")
+      : getString(body.noteEmployee).trim();
+
   // Für EMPLOYEE bleiben deine Pflichtfelder bestehen
   if (!isAdmin && (!workDate || !startTime || !endTime || !activity)) {
     return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
@@ -491,6 +494,7 @@ export async function PATCH(req: Request) {
       breakMinutes: manualBreak,
       breakAuto: false,
       workMinutes: Math.max(0, diffMin - manualBreak),
+      noteEmployee: noteEmployee || null,
     },
     include: { user: { select: { id: true, fullName: true } } },
   });
@@ -509,18 +513,19 @@ if (!updatedFresh) {
 }
 
   const entry: EntryDTO = {
-    id: updated.id,
-    workDate: toIsoDateUTC(updated.workDate),
-    startTime: toHHMMUTC(updated.startTime),
-    endTime: toHHMMUTC(updated.endTime),
-    activity: updated.activity ?? "",
-    location: updated.location ?? "",
-    travelMinutes: updated.travelMinutes ?? 0,
-    workMinutes: updated.workMinutes ?? 0,
-    grossMinutes: updated.grossMinutes ?? 0,
-    breakMinutes: updated.breakMinutes ?? 0,
-    breakAuto: updated.breakAuto ?? false,
-    user: { id: updated.user.id, fullName: updated.user.fullName },
+    id: updatedFresh.id,
+    workDate: toIsoDateUTC(updatedFresh.workDate),
+    startTime: toHHMMUTC(updatedFresh.startTime),
+    endTime: toHHMMUTC(updatedFresh.endTime),
+    activity: updatedFresh.activity ?? "",
+    location: updatedFresh.location ?? "",
+    travelMinutes: updatedFresh.travelMinutes ?? 0,
+    workMinutes: updatedFresh.workMinutes ?? 0,
+    grossMinutes: updatedFresh.grossMinutes ?? 0,
+    breakMinutes: updatedFresh.breakMinutes ?? 0,
+    breakAuto: updatedFresh.breakAuto ?? false,
+    noteEmployee: updatedFresh.noteEmployee ?? "",
+    user: { id: updatedFresh.user.id, fullName: updatedFresh.user.fullName },
   };
 
   return NextResponse.json({ entry });
