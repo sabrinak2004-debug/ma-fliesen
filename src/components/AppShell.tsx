@@ -523,7 +523,7 @@ useEffect(() => {
             </nav>
 
             <div className="appshell-sidebar-bottom">
-              <div
+             <div
                 style={{
                   padding: 12,
                   borderRadius: 16,
@@ -531,62 +531,12 @@ useEffect(() => {
                   background: "rgba(255,255,255,0.04)",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 999,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 900,
-                      letterSpacing: 0.5,
-                      background: "rgba(255,255,255,0.14)",
-                    }}
-                    aria-hidden="true"
-                  >
-                    {userInitials}
-                  </div>
-
-                  <div style={{ minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontWeight: 800,
-                        fontSize: 13,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {userName}
-                    </div>
-
-                    <div style={{ marginTop: 4 }}>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 800,
-                          padding: "3px 8px",
-                          borderRadius: 999,
-                          background: isAdmin ? "rgba(0,200,255,0.14)" : "rgba(255,255,255,0.06)",
-                          border: "1px solid rgba(255,255,255,0.10)",
-                          color: "rgba(255,255,255,0.92)",
-                        }}
-                      >
-                        {isAdmin ? "ADMIN" : "MA"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
                 <button
                   type="button"
                   onClick={handleLogout}
                   style={{
-                    marginTop: 12,
                     width: "100%",
-                    padding: "10px 12px",
+                    padding: "12px 14px",
                     borderRadius: 12,
                     border: "1px solid rgba(224,75,69,0.35)",
                     background: "rgba(224,75,69,0.16)",
@@ -618,6 +568,57 @@ useEffect(() => {
                   </div>
                   <div style={{ color: "var(--muted-2)", fontSize: 13, marginTop: 4 }}>
                     {isAdmin ? "Adminbereich" : "Mitarbeiterbereich"}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "8px 10px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    background: "rgba(255,255,255,0.06)",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 999,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 900,
+                      letterSpacing: 0.5,
+                      background: "rgba(255,255,255,0.14)",
+                    }}
+                    aria-hidden="true"
+                  >
+                    {userInitials}
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1 }}>
+                    <div className="appshell-username" style={{ fontWeight: 800, fontSize: 13 }}>
+                      {userName}
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 800,
+                          padding: "3px 8px",
+                          borderRadius: 999,
+                          background: isAdmin ? "rgba(0,200,255,0.14)" : "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.10)",
+                          color: "rgba(255,255,255,0.92)",
+                        }}
+                      >
+                        {isAdmin ? "ADMIN" : "MA"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
