@@ -438,3 +438,59 @@ li {
     display: none;
   }
 }
+
+/* ===== AppShell Desktop Layout ===== */
+
+.appshell-desktop {
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.appshell-sidebar {
+  position: sticky;
+  top: 18px;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 36px);
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  background: rgba(17, 22, 19, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
+}
+
+.appshell-sidebar-top {
+  margin-bottom: 18px;
+}
+
+.appshell-sidebar-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.appshell-sidebar-bottom {
+  margin-top: auto;
+  padding-top: 18px;
+}
+
+.appshell-content {
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
+  .container-app {
+    width: min(100%, calc(100% - 32px));
+  }
+
+  .appshell-desktop {
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .appshell-sidebar {
+    padding: 16px;
+  }
+}

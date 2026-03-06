@@ -49,6 +49,12 @@ function initialsFromName(fullName: string) {
 }
 
 
+type NavItem = {
+  href: string;
+  label: string;
+  icon: string;
+};
+
 function mobileItemStyle(active: boolean): React.CSSProperties {
   return {
     display: "flex",
@@ -59,24 +65,31 @@ function mobileItemStyle(active: boolean): React.CSSProperties {
     textDecoration: "none",
     fontWeight: 900,
     fontSize: 16,
-
-    /* Textfarbe */
     color: active ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.82)",
-
-    /* Hintergrund */
-    background: active
-      ? "rgba(169,194,63,0.12)"
-      : "transparent",
-
-    /* grüner Active Indicator */
-    borderLeft: active
-      ? "4px solid #A9C23F"
-      : "4px solid transparent",
-
-    /* Abstand damit Text nicht am Balken klebt */
+    background: active ? "rgba(169,194,63,0.12)" : "transparent",
+    borderLeft: active ? "4px solid #A9C23F" : "4px solid transparent",
     paddingLeft: active ? 12 : 16,
+    transition: "all 0.15s ease",
+  };
+}
 
-    /* leichter Hover Effekt */
+function desktopSidebarItemStyle(active: boolean): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    width: "100%",
+    padding: "12px 14px",
+    borderRadius: 14,
+    textDecoration: "none",
+    fontWeight: 800,
+    fontSize: 15,
+    color: active ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.78)",
+    background: active ? "rgba(184,207,58,0.12)" : "transparent",
+    border: active
+      ? "1px solid rgba(184,207,58,0.32)"
+      : "1px solid transparent",
+    boxShadow: active ? "0 0 0 1px rgba(184,207,58,0.06) inset" : "none",
     transition: "all 0.15s ease",
   };
 }
@@ -174,6 +187,22 @@ export default function AppShell({
   }, []);
 
   const isAdmin = session?.role === "ADMIN";
+    const employeeNavItems: NavItem[] = [
+    { href: "/erfassung", label: "Erfassung", icon: "⊞" },
+    { href: "/kalender", label: "Kalender", icon: "🗓" },
+    { href: "/uebersicht", label: "Übersicht", icon: "▦" },
+  ];
+
+  const adminNavItems: NavItem[] = [
+    { href: "/kalender", label: "Termine", icon: "🗓" },
+    { href: "/admin/dashboard", label: "Admin-Übersicht", icon: "▦" },
+    { href: "/admin/wochenplan", label: "Wochenplan", icon: "🧑‍💼" },
+    { href: "/admin/urlaubsantraege", label: "Urlaubsanträge", icon: "🌴" },
+    { href: "/admin/krankheitsantraege", label: "Krankheitsanträge", icon: "🤒" },
+    { href: "/admin/password-reset", label: "Passwort-Reset", icon: "🔐" },
+  ];
+
+  const navItems = isAdmin ? adminNavItems : employeeNavItems;
 
   useEffect(() => {
   setMobileOpen(false);
@@ -390,51 +419,16 @@ useEffect(() => {
 
       {/* Nav */}
       <nav style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {!isAdmin && (
-          <Link href="/erfassung" style={mobileItemStyle(isActive(pathname, "/erfassung"))}>
-            ⊞ Erfassung
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            style={mobileItemStyle(isActive(pathname, item.href))}
+          >
+            <span>{item.icon}</span>
+            <span>{item.label}</span>
           </Link>
-        )}
-
-        <Link href="/kalender" style={mobileItemStyle(isActive(pathname, "/kalender"))}>
-          🗓 {isAdmin ? "Termine" : "Kalender"}
-        </Link>
-
-        {!isAdmin && (
-          <Link href="/uebersicht" style={mobileItemStyle(isActive(pathname, "/uebersicht"))}>
-            ▦ Übersicht
-          </Link>
-        )}
-
-        {isAdmin && (
-          <Link href="/admin/dashboard" style={mobileItemStyle(isActive(pathname, "/admin/dashboard"))}>
-            ▦ Admin-Übersicht
-          </Link>
-        )}
-
-        {isAdmin && (
-          <Link href="/admin/wochenplan" style={mobileItemStyle(isActive(pathname, "/admin/wochenplan"))}>
-            🧑‍💼 Wochenplan
-          </Link>
-        )}
-
-                {isAdmin && (
-          <Link href="/admin/urlaubsantraege" style={mobileItemStyle(isActive(pathname, "/admin/urlaubsantraege"))}>
-            🌴 Urlaubsanträge
-          </Link>
-        )}
-
-        {isAdmin && (
-          <Link href="/admin/krankheitsantraege" style={mobileItemStyle(isActive(pathname, "/admin/krankheitsantraege"))}>
-            🤒 Krankheitsanträge
-          </Link>
-        )}
-
-        {isAdmin && (
-          <Link href="/admin/password-reset" style={mobileItemStyle(isActive(pathname, "/admin/password-reset"))}>
-            🔐 Passwort-Reset
-          </Link>
-        )}
+        ))}
       </nav>
 
       <div style={{ flex: 1 }} />
@@ -460,136 +454,88 @@ useEffect(() => {
   </div>
 )}
 
-        <div className="topbar hidden md:block" style={{ padding: 14, marginBottom: 18 }}>
-          <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 14,
-                flexWrap: "wrap",
-              }}
-            >
-            {/* Brand */}
-            <div className="brand" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Image
-                src="/logo-ma-fliesen.jpeg"
-                alt="ma-fliesen Logo"
-                width={120}
-                height={40}
-                priority
-                style={{ objectFit: "contain" }}
-              />
-
-              <div>
-                <div style={{ fontWeight: 900, lineHeight: 1.05 }}>ma-fliesen</div>
-                <div style={{ color: "var(--muted-2)", fontSize: 12, marginTop: 2 }}>
-                  {activeLabel ?? "#wirkönnendas"}
-                </div>
-              </div>
-            </div>
-
-
-
-            {/* Nav + User menu */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div
-                className="hidden md:flex"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  overflowX: "auto",
-                  WebkitOverflowScrolling: "touch",
-                  whiteSpace: "nowrap",
-                  maxWidth: "100%",
-                  paddingBottom: 4,
-                }}
-              >
-                {!isAdmin && (
-                  <Link className={`pill ${isActive(pathname, "/erfassung") ? "pill-active" : ""}`} href="/erfassung">
-                    ⊞ Erfassung
-                  </Link>
-                )}
-
-                <Link className={`pill ${isActive(pathname, "/admin/appointment") ? "pill-active" : ""}`} href="/kalender">
-                  {isAdmin ? "🗓 Termine" : "🗓 Kalender"}
-                </Link>
-
-                {!isAdmin && (
-                  <Link className={`pill ${isActive(pathname, "/uebersicht") ? "pill-active" : ""}`} href="/uebersicht">
-                    ▦ Übersicht
-                  </Link>
-                )}
-
-                {isAdmin && (
-                  <Link
-                    className={`pill ${isActive(pathname, "/admin/dashboard") ? "pill-active" : ""}`}
-                    href="/admin/dashboard"
-                  >
-                    ▦ Admin-Übersicht
-                  </Link>
-                )}
-
-                {isAdmin && (
-                  <Link
-                    className={`pill ${isActive(pathname, "/admin/wochenplan") ? "pill-active" : ""}`}
-                    href="/admin/wochenplan"
-                  >
-                    🧑‍💼 Wochenplan
-                  </Link>
-                )}
-
-                                {isAdmin && (
-                  <Link
-                    className={`pill ${isActive(pathname, "/admin/urlaubsantraege") ? "pill-active" : ""}`}
-                    href="/admin/urlaubsantraege"
-                  >
-                    🌴 Urlaubsanträge
-                  </Link>
-                )}
-
-                {isAdmin && (
-                  <Link
-                    className={`pill ${isActive(pathname, "/admin/krankheitsantraege") ? "pill-active" : ""}`}
-                    href="/admin/krankheitsantraege"
-                  >
-                    🤒 Krankheitsanträge
-                  </Link>
-                )}
-
-                {isAdmin && (
-                  <Link
-                    className={`pill ${isActive(pathname, "/admin/password-reset") ? "pill-active" : ""}`}
-                    href="/admin/password-reset"
-                  >
-                    🔐 Passwort-Reset
-                  </Link>
-                )}
-              </div>
-
-              {/* User dropdown */}
-              <div ref={menuRef} className="hidden md:block" style={{ position: "relative" }}>
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen((v) => !v)}
-                  aria-haspopup="menu"
-                  aria-expanded={menuOpen}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "8px 10px",
-                    borderRadius: 14,
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    background: "rgba(255,255,255,0.06)",
-                    cursor: "pointer",
-                  }}
-                >
+        <div className="appshell-desktop hidden md:grid">
+          {/* Sidebar */}
+          <aside className="appshell-sidebar">
+            <div className="appshell-sidebar-top">
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <Image
+                  src="/logo-ma-fliesen.jpeg"
+                  alt="ma-fliesen Logo"
+                  width={120}
+                  height={40}
+                  priority
+                  style={{ objectFit: "contain" }}
+                />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 900, lineHeight: 1.05 }}>ma-fliesen</div>
                   <div
                     style={{
-                      width: 34,
-                      height: 34,
+                      color: "var(--muted-2)",
+                      fontSize: 12,
+                      marginTop: 2,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {activeLabel ?? "#wirkönnendas"}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  height: 4,
+                  width: 56,
+                  borderRadius: 999,
+                  background: "var(--accent)",
+                }}
+              />
+            </div>
+
+            <nav className="appshell-sidebar-nav">
+              {navItems.map((item) => {
+                const active = isActive(pathname, item.href);
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    style={desktopSidebarItemStyle(active)}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 22,
+                        display: "inline-flex",
+                        justifyContent: "center",
+                        fontSize: 16,
+                      }}
+                    >
+                      {item.icon}
+                    </span>
+                    <span style={{ minWidth: 0 }}>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="appshell-sidebar-bottom">
+              <div
+                style={{
+                  padding: 12,
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  background: "rgba(255,255,255,0.04)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div
+                    style={{
+                      width: 42,
+                      height: 42,
                       borderRadius: 999,
                       display: "flex",
                       alignItems: "center",
@@ -603,13 +549,20 @@ useEffect(() => {
                     {userInitials}
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1 }}>
-                    {/* Desktop/Tablet: Name + Rolle */}
-                    <div className="appshell-username" style={{ fontWeight: 800, fontSize: 13 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontWeight: 800,
+                        fontSize: 13,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
                       {userName}
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                    <div style={{ marginTop: 4 }}>
                       <span
                         style={{
                           fontSize: 11,
@@ -623,78 +576,178 @@ useEffect(() => {
                       >
                         {isAdmin ? "ADMIN" : "MA"}
                       </span>
-                      <span style={{ fontSize: 12, opacity: 0.8 }} aria-hidden="true">
-                        ▾
-                      </span>
                     </div>
                   </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  style={{
+                    marginTop: 12,
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(224,75,69,0.35)",
+                    background: "rgba(224,75,69,0.16)",
+                    color: "rgba(255,255,255,0.96)",
+                    fontWeight: 900,
+                    cursor: "pointer",
+                  }}
+                >
+                  🚪 Logout
                 </button>
-
-                {menuOpen && (
-                  <div
-                    role="menu"
-                    style={{
-                      position: "absolute",
-                      right: 0,
-                      top: "calc(100% + 10px)",
-                      minWidth: 230,
-                      padding: 10,
-                      borderRadius: 16,
-                      border: "1px solid rgba(255,255,255,0.10)",
-                      background: "rgba(20,20,20,0.92)",
-                      backdropFilter: "blur(12px)",
-                      boxShadow: "0 18px 60px rgba(0,0,0,0.35)",
-                      zIndex: 50,
-                    }}
-                  >
-                    <div style={{ padding: "8px 10px", borderRadius: 12, background: "rgba(255,255,255,0.06)" }}>
-                      <div style={{ fontWeight: 900, fontSize: 13 }}>{userName}</div>
-                      <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>
-                        Rolle: {isAdmin ? "Admin" : "Mitarbeiter"}
-                      </div>
-                    </div>
-
-                    <div style={{ height: 10 }} />
-
-                    {!isAdmin && (
-                      <Link
-                        href="/login"
-                        onClick={() => setMenuOpen(false)}
-                        style={{
-                          display: "block",
-                          padding: "10px 12px",
-                          borderRadius: 12,
-                          textDecoration: "none",
-                          fontWeight: 800,
-                          color: "rgba(255,255,255,0.92)",
-                          background: "rgba(255,255,255,0.06)",
-                        }}
-                      >
-                        🔐 Account
-                      </Link>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      style={{
-                        marginTop: 8,
-                        width: "100%",
-                        padding: "10px 12px",
-                        borderRadius: 12,
-                        border: "1px solid rgba(255,255,255,0.10)",
-                        background: "rgba(255,80,80,0.16)",
-                        color: "rgba(255,255,255,0.96)",
-                        fontWeight: 900,
-                        cursor: "pointer",
-                      }}
-                    >
-                      🚪 Logout
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
+          </aside>
+
+          {/* Content */}
+          <div className="appshell-content">
+            <div className="topbar" style={{ padding: 14, marginBottom: 18 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 14,
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 900, fontSize: 22, lineHeight: 1.1 }}>
+                    {activeLabel ?? "ma-fliesen"}
+                  </div>
+                  <div style={{ color: "var(--muted-2)", fontSize: 13, marginTop: 4 }}>
+                    {isAdmin ? "Adminbereich" : "Mitarbeiterbereich"}
+                  </div>
+                </div>
+
+                <div ref={menuRef} style={{ position: "relative" }}>
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen((v) => !v)}
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "8px 10px",
+                      borderRadius: 14,
+                      border: "1px solid rgba(255,255,255,0.10)",
+                      background: "rgba(255,255,255,0.06)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 900,
+                        letterSpacing: 0.5,
+                        background: "rgba(255,255,255,0.14)",
+                      }}
+                      aria-hidden="true"
+                    >
+                      {userInitials}
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1 }}>
+                      <div className="appshell-username" style={{ fontWeight: 800, fontSize: 13 }}>
+                        {userName}
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 800,
+                            padding: "3px 8px",
+                            borderRadius: 999,
+                            background: isAdmin ? "rgba(0,200,255,0.14)" : "rgba(255,255,255,0.06)",
+                            border: "1px solid rgba(255,255,255,0.10)",
+                            color: "rgba(255,255,255,0.92)",
+                          }}
+                        >
+                          {isAdmin ? "ADMIN" : "MA"}
+                        </span>
+                        <span style={{ fontSize: 12, opacity: 0.8 }} aria-hidden="true">
+                          ▾
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+
+                  {menuOpen && (
+                    <div
+                      role="menu"
+                      style={{
+                        position: "absolute",
+                        right: 0,
+                        top: "calc(100% + 10px)",
+                        minWidth: 230,
+                        padding: 10,
+                        borderRadius: 16,
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        background: "rgba(20,20,20,0.92)",
+                        backdropFilter: "blur(12px)",
+                        boxShadow: "0 18px 60px rgba(0,0,0,0.35)",
+                        zIndex: 50,
+                      }}
+                    >
+                      <div style={{ padding: "8px 10px", borderRadius: 12, background: "rgba(255,255,255,0.06)" }}>
+                        <div style={{ fontWeight: 900, fontSize: 13 }}>{userName}</div>
+                        <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>
+                          Rolle: {isAdmin ? "Admin" : "Mitarbeiter"}
+                        </div>
+                      </div>
+
+                      <div style={{ height: 10 }} />
+
+                      {!isAdmin && (
+                        <Link
+                          href="/login"
+                          onClick={() => setMenuOpen(false)}
+                          style={{
+                            display: "block",
+                            padding: "10px 12px",
+                            borderRadius: 12,
+                            textDecoration: "none",
+                            fontWeight: 800,
+                            color: "rgba(255,255,255,0.92)",
+                            background: "rgba(255,255,255,0.06)",
+                          }}
+                        >
+                          🔐 Account
+                        </Link>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        style={{
+                          marginTop: 8,
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: 12,
+                          border: "1px solid rgba(255,255,255,0.10)",
+                          background: "rgba(255,80,80,0.16)",
+                          color: "rgba(255,255,255,0.96)",
+                          fontWeight: 900,
+                          cursor: "pointer",
+                        }}
+                      >
+                        🚪 Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            {children}
           </div>
         </div>
         {children}
