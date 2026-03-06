@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 type PushPublicKeyResponse =
   | {
@@ -32,10 +33,7 @@ function parsePushPublicKeyResponse(v: unknown): PushPublicKeyResponse {
       return { ok: false, error: "Public Key fehlt." };
     }
 
-    return {
-      ok: true,
-      publicKey,
-    };
+    return { ok: true, publicKey };
   }
 
   return {
@@ -54,13 +52,46 @@ function base64UrlToArrayBuffer(base64Url: string): ArrayBuffer {
     bytes[i] = rawData.charCodeAt(i);
   }
 
-  return bytes.buffer.slice(
-    bytes.byteOffset,
-    bytes.byteOffset + bytes.byteLength
-  );
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+}
+
+type SubscriptionJson = {
+  endpoint?: string;
+  keys?: {
+    p256dh?: string;
+    auth?: string;
+  };
+};
+
+async function sendSubscriptionToBackend(subscriptionJson: SubscriptionJson): Promise<void> {
+  if (
+    !subscriptionJson.endpoint ||
+    !subscriptionJson.keys?.p256dh ||
+    !subscriptionJson.keys?.auth
+  ) {
+    return;
+  }
+
+  await fetch("/api/push/register", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    cache: "no-store",
+    body: JSON.stringify({
+      endpoint: subscriptionJson.endpoint,
+      keys: {
+        p256dh: subscriptionJson.keys.p256dh,
+        auth: subscriptionJson.keys.auth,
+      },
+    }),
+  });
 }
 
 export default function PushBootstrap() {
+  const pathname = usePathname();
+
   useEffect(() => {
     let cancelled = false;
 
@@ -72,44 +103,25 @@ export default function PushBootstrap() {
       try {
         const registration = await navigator.serviceWorker.register("/sw.js");
 
-        const permission = await Notification.requestPermission();
+        const permission = Notification.permission === "granted"
+          ? "granted"
+          : await Notification.requestPermission();
+
         if (permission !== "granted") {
           return;
         }
 
         const existingSubscription = await registration.pushManager.getSubscription();
+
         if (existingSubscription) {
-          const existingJson = existingSubscription.toJSON();
-          const existingKeys = existingJson.keys;
-
-          if (
-            existingJson.endpoint &&
-            existingKeys?.p256dh &&
-            existingKeys?.auth
-          ) {
-            await fetch("/api/push/register", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              credentials: "include",
-              body: JSON.stringify({
-                endpoint: existingJson.endpoint,
-                keys: {
-                  p256dh: existingKeys.p256dh,
-                  auth: existingKeys.auth,
-                },
-              }),
-            });
-
-            return;
-          }
+          await sendSubscriptionToBackend(existingSubscription.toJSON());
+          return;
         }
 
         const publicKeyResponse = await fetch("/api/push/public-key", {
           method: "GET",
-          cache: "no-store",
           credentials: "include",
+          cache: "no-store",
         });
 
         const publicKeyJson: unknown = await publicKeyResponse.json().catch(() => ({}));
@@ -130,32 +142,7 @@ export default function PushBootstrap() {
           applicationServerKey,
         });
 
-        const subscriptionJson = subscription.toJSON();
-        const keys = subscriptionJson.keys;
-
-        if (
-          !subscriptionJson.endpoint ||
-          !keys?.p256dh ||
-          !keys?.auth
-        ) {
-          console.error("Push-Subscription unvollständig.");
-          return;
-        }
-
-        await fetch("/api/push/register", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            endpoint: subscriptionJson.endpoint,
-            keys: {
-              p256dh: keys.p256dh,
-              auth: keys.auth,
-            },
-          }),
-        });
+        await sendSubscriptionToBackend(subscription.toJSON());
       } catch (error: unknown) {
         if (cancelled) return;
         console.error("Push-Setup fehlgeschlagen:", error);
@@ -167,7 +154,7 @@ export default function PushBootstrap() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [pathname]);
 
   return null;
 }
