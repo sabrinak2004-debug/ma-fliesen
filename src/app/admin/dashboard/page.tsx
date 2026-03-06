@@ -1167,13 +1167,7 @@ export default function AdminDashboardPage() {
                   .reduce((sum, it) => sum + it.workMinutes, 0);
 
                 return (
-                  <div
-                    key={u.userId}
-                    className="list-item"
-                    style={{
-                      listStyle: "none",
-                    }}
-                  >
+                <div key={u.userId}>
                     {/* Employee header */}
                     <div
                       style={{
