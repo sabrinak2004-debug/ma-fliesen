@@ -163,6 +163,40 @@ function formatPause(minutes: number): string {
   return formatHM(m);
 }
 
+function hasCompleteTimeRange(startHHMM: string, endHHMM: string): boolean {
+  return /^\d{2}:\d{2}$/.test(startHHMM) && /^\d{2}:\d{2}$/.test(endHHMM);
+}
+
+function getLegalBreakHintLines(): string[] {
+  return [
+    "Gesetzliche Pausen:",
+    "ab mehr als 6h: 30 Min",
+    "ab mehr als 9h: 45 Min",
+  ];
+}
+
+function hasMeaningfulEntryInput(params: {
+  startTime: string;
+  endTime: string;
+  activity: string;
+  location: string;
+  travelMinutes: string;
+  noteEmployee: string;
+}): boolean {
+  const { startTime, endTime, activity, location, travelMinutes, noteEmployee } = params;
+
+  const travel = (travelMinutes ?? "").trim();
+  const hasTravel = travel !== "" && travel !== "0";
+
+  return (
+    hasCompleteTimeRange(startTime, endTime) ||
+    activity.trim().length > 0 ||
+    location.trim().length > 0 ||
+    noteEmployee.trim().length > 0 ||
+    hasTravel
+  );
+}
+
 type EditForm = {
   id: string;
   workDate: string;
@@ -319,6 +353,28 @@ export default function Page() {
   const [noteEntry, setNoteEntry] = useState<WorkEntry | null>(null);
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
+    const isEntryPreviewActive = useMemo(() => {
+    return hasMeaningfulEntryInput({
+      startTime,
+      endTime,
+      activity,
+      location,
+      travelMinutes,
+      noteEmployee,
+    });
+  }, [startTime, endTime, activity, location, travelMinutes, noteEmployee]);
+
+  const hasSavedEntriesForSelectedDay = useMemo(() => {
+    return entries.some((entry) => toYMD(entry.workDate) === workDate);
+  }, [entries, workDate]);
+
+  const shouldShowEntryComputation = useMemo(() => {
+    return isEntryPreviewActive;
+  }, [isEntryPreviewActive]);
+
+  const shouldShowBreakComputation = useMemo(() => {
+    return hasSavedEntriesForSelectedDay;
+  }, [hasSavedEntriesForSelectedDay]);
 
   const dayBreakMap = useMemo(() => {
     const map = new Map<string, DayBreak>();
@@ -337,11 +393,24 @@ export default function Page() {
   }, [breakStartHHMM, breakEndHHMM]);
 
   const dayPreview = useMemo(() => {
+    if (!shouldShowEntryComputation) {
+      return null;
+    }
+
     const overrideManual =
       breakStartHHMM && breakEndHHMM ? currentBreakFormManualMinutes : 0;
 
     return computeDayTotals(entries, dayBreakMap, workDate, grossPreviewMinutes, overrideManual);
-  }, [entries, dayBreakMap, workDate, grossPreviewMinutes, breakStartHHMM, breakEndHHMM, currentBreakFormManualMinutes]);
+  }, [
+    shouldShowEntryComputation,
+    entries,
+    dayBreakMap,
+    workDate,
+    grossPreviewMinutes,
+    breakStartHHMM,
+    breakEndHHMM,
+    currentBreakFormManualMinutes,
+  ]);
 
 useEffect(() => {
   let alive = true;
@@ -632,6 +701,55 @@ useEffect(() => {
     return `${y}-${m}`;
   }, []);
 
+    const breakPreviewText = useMemo(() => {
+    if (!shouldShowBreakComputation) {
+      return {
+        rightValue: "",
+        detailLines: getLegalBreakHintLines(),
+      };
+    }
+
+    const selectedBreak = dayBreakMap.get(workDate) ?? null;
+    const dayTotals = computeDayTotals(entries, dayBreakMap, workDate, 0, null);
+
+    if (dayTotals.legalBreak === 0) {
+      return {
+        rightValue: "",
+        detailLines: getLegalBreakHintLines(),
+      };
+    }
+
+    if (!selectedBreak || selectedBreak.manualMinutes <= 0) {
+      return {
+        rightValue: formatPause(dayTotals.legalBreak),
+        detailLines: [
+          `Gesetzliche Pause automatisch eingetragen: ${formatPause(dayTotals.legalBreak)}`,
+          `Brutto ${formatHM(dayTotals.grossDay)} · Netto ${formatHM(dayTotals.netDay)}`,
+        ],
+      };
+    }
+
+    if (selectedBreak.manualMinutes < dayTotals.legalBreak) {
+      return {
+        rightValue: formatPause(dayTotals.effectiveBreak),
+        detailLines: [
+          `Eingetragen: ${formatPause(selectedBreak.manualMinutes)}`,
+          `Auto-Zusatz: ${formatPause(dayTotals.autoSupplement)}`,
+          `Gesetzlich notwendig: ${formatPause(dayTotals.legalBreak)}`,
+        ],
+      };
+    }
+
+    return {
+      rightValue: formatPause(dayTotals.effectiveBreak),
+      detailLines: [
+        `Eingetragen: ${formatPause(selectedBreak.manualMinutes)}`,
+        `Gesetzlich notwendig: ${formatPause(dayTotals.legalBreak)}`,
+        `Brutto ${formatHM(dayTotals.grossDay)} · Netto ${formatHM(dayTotals.netDay)}`,
+      ],
+    };
+  }, [shouldShowBreakComputation, dayBreakMap, workDate, entries]);
+
     useEffect(() => {
     if (selectedYear !== "ALLE") return;
     const currentYear = String(new Date().getFullYear());
@@ -722,11 +840,29 @@ useEffect(() => {
           <div style={{ display: "grid", gap: 6 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
               <div style={{ color: "var(--muted)" }}>Arbeitszeit (Tag berechnet)</div>
-              <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(dayPreview.netDay)}</div>
+              <div style={{ fontWeight: 900, color: "var(--accent)" }}>
+                {dayPreview ? formatHM(dayPreview.netDay) : ""}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>
-              Brutto {formatHM(dayPreview.grossDay)} · Wirksame Pause {formatPause(dayPreview.effectiveBreak)} · Netto {formatHM(dayPreview.netDay)}
-            </div>
+
+            {!dayPreview ? (
+              <div style={{ fontSize: 12, color: "var(--muted)", display: "grid", gap: 4 }}>
+                {getLegalBreakHintLines().map((line) => (
+                  <div key={line}>{line}</div>
+                ))}
+              </div>
+            ) : dayPreview.legalBreak > 0 ? (
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                Brutto {formatHM(dayPreview.grossDay)} · Notwendige Pause {formatPause(dayPreview.legalBreak)} · Netto {formatHM(dayPreview.netDay)}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, color: "var(--muted)", display: "grid", gap: 4 }}>
+                <div>Brutto {formatHM(dayPreview.grossDay)} · Netto {formatHM(dayPreview.netDay)}</div>
+                {getLegalBreakHintLines().map((line) => (
+                  <div key={line}>{line}</div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -839,17 +975,20 @@ useEffect(() => {
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
               <div style={{ color: "var(--muted)" }}>Pausenberechnung</div>
               <div style={{ fontWeight: 900, color: "var(--accent)" }}>
-                {formatPause(dayPreview.effectiveBreak)}
+                {breakPreviewText.rightValue}
               </div>
             </div>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>
-              Manuell {formatPause(dayPreview.manualBreak)} · Gesetzlich {formatPause(dayPreview.legalBreak)} · Auto-Zusatz {formatPause(dayPreview.autoSupplement)}
+
+            <div style={{ fontSize: 12, color: "var(--muted)", display: "grid", gap: 4 }}>
+              {breakPreviewText.detailLines.map((line) => (
+                <div key={line}>{line}</div>
+              ))}
             </div>
           </div>
         </div>
 
         <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>
-          Wenn du weniger Pause einträgst als gesetzlich erforderlich, zieht die App die fehlende Differenz automatisch vom Tag ab.
+          Die gesetzliche Pause richtet sich nach der gesamten Arbeitszeit des Tages. Falls du zu wenig Pause einträgst, ergänzt die App die fehlende Differenz automatisch.
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
