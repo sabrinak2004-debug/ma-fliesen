@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/admin/dashboard/remind-admin-missing",
+      "schedule": "0 19 * * *"
+    }
+  ]
+}
