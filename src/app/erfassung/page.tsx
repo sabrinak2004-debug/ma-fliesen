@@ -837,7 +837,7 @@ useEffect(() => {
               </div>
             ) : dayPreview.legalBreak > 0 ? (
               <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                Brutto {formatHM(dayPreview.grossDay)} · Notwendige Pause {formatPause(dayPreview.legalBreak)} · Netto {formatHM(dayPreview.netDay)}
+                Brutto {formatHM(dayPreview.grossDay)} · Gesetzliche Pause {formatPause(dayPreview.legalBreak)} · Netto {formatHM(dayPreview.netDay)}
               </div>
             ) : (
               <div style={{ fontSize: 12, color: "var(--muted)", display: "grid", gap: 4 }}>
