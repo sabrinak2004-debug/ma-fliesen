@@ -208,6 +208,25 @@ function formatDateDE(iso: string) {
   return `${dd}.${mm}.${y}`;
 }
 
+function formatBreakInfo(it: AdminTimelineWork) {
+  const manual = it.breakAuto ? 0 : it.breakMinutes;
+  const auto = it.breakAuto ? it.breakMinutes : 0;
+
+  if (manual > 0 && auto > 0) {
+    return `Pause ${manual} min · +${auto} min automatisch`;
+  }
+
+  if (manual > 0) {
+    return `Pause ${manual} min`;
+  }
+
+  if (auto > 0) {
+    return `Pause automatisch +${auto} min`;
+  }
+
+  return "";
+}
+
 function groupWorkItemsByDay(items: AdminTimelineWork[]) {
   const grouped: Record<string, AdminTimelineWork[]> = {};
 
@@ -1317,6 +1336,17 @@ export default function AdminDashboardPage() {
                                                 {it.location ? it.location : ""}
                                               </div>
                                             ) : null}
+                                            {formatBreakInfo(it) ? (
+                                            <div
+                                              style={{
+                                                color: "rgba(255,255,255,0.55)",
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                              }}
+                                            >
+                                              ⏸ {formatBreakInfo(it)}
+                                            </div>
+                                          ) : null}
                                           </div>
 
                                           <div
