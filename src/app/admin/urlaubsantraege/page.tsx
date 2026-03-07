@@ -610,7 +610,7 @@ export default function UrlaubsantraegePage() {
             marginTop: 16,
           }}
         >
-          <div style={{ minWidth: 0, width: "100%", height: "80%" }}>
+          <div style={{ minWidth: 0, width: "100%", height: "90%" }}>
             <div className="label">Mitarbeiter</div>
             <select
               className="input"
@@ -618,7 +618,7 @@ export default function UrlaubsantraegePage() {
               onChange={(e) => setSelectedUserId(e.target.value)}
               style={{
                 width: "100%",
-                height: "80%",
+                height: "90%",
                 minWidth: 0,
                 boxSizing: "border-box",
                 display: "block",
