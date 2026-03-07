@@ -610,7 +610,7 @@ export default function UrlaubsantraegePage() {
             marginTop: 16,
           }}
         >
-          <div style={{ minWidth: 0, width: "100%" }}>
+          <div style={{ minWidth: 0, width: "200%" }}>
             <div className="label">Mitarbeiter</div>
             <select
               className="input"
