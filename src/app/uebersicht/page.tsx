@@ -71,6 +71,28 @@ function lastDayOfMonth(ym: string) {
 function currentYear(): string {
   return String(new Date().getFullYear());
 }
+function currentMonth(): MonthOption {
+  return String(new Date().getMonth() + 1).padStart(2, "0") as MonthOption;
+}
+
+function buildYm(year: string, month: string) {
+  return `${year}-${month}`;
+}
+
+const MONTH_OPTIONS: Array<{ value: MonthOption; label: string }> = [
+  { value: "01", label: "Januar" },
+  { value: "02", label: "Februar" },
+  { value: "03", label: "März" },
+  { value: "04", label: "April" },
+  { value: "05", label: "Mai" },
+  { value: "06", label: "Juni" },
+  { value: "07", label: "Juli" },
+  { value: "08", label: "August" },
+  { value: "09", label: "September" },
+  { value: "10", label: "Oktober" },
+  { value: "11", label: "November" },
+  { value: "12", label: "Dezember" },
+];
 
 type ExportMode = "MONTH" | "YEAR" | "RANGE";
 
@@ -139,19 +161,20 @@ function selectStyle(): React.CSSProperties {
 }
 
 type AbsFilterType = "ALL" | "SICK" | "VACATION";
-type AbsRange = "MONTH" | "TODAY" | "WEEK";
+type MonthOption =
+  | "01"
+  | "02"
+  | "03"
+  | "04"
+  | "05"
+  | "06"
+  | "07"
+  | "08"
+  | "09"
+  | "10"
+  | "11"
+  | "12";
 
-function startOfTodayUTC() {
-  const d = new Date();
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0));
-}
-
-function isoUTCDate(d: Date) {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
 
 function toUTCDateFromISO(ymd: string) {
   return new Date(`${ymd}T00:00:00.000Z`);
@@ -185,7 +208,12 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
   const isNextDay = (prev: string, next: string) => {
     const p = toUTCDateFromISO(prev);
     p.setUTCDate(p.getUTCDate() + 1);
-    return isoUTCDate(p) === next;
+
+    const y = p.getUTCFullYear();
+    const m = String(p.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(p.getUTCDate()).padStart(2, "0");
+
+    return `${y}-${m}-${d}` === next;
   };
 
   for (let i = 1; i < sortedAbsences.length; i++) {
@@ -225,8 +253,11 @@ export default function UebersichtPage() {
 
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const ym = useMemo(() => monthKey(new Date()), []);
+  const initialYm = useMemo(() => monthKey(new Date()), []);
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear());
+  const [selectedMonth, setSelectedMonth] = useState<MonthOption>(currentMonth());
 
+  const ym = useMemo(() => buildYm(selectedYear, selectedMonth), [selectedYear, selectedMonth]);
   // ===== Export Modal State =====
   const [exportOpen, setExportOpen] = useState(false);
   const [exportMode, setExportMode] = useState<ExportMode>("MONTH");
@@ -247,7 +278,6 @@ export default function UebersichtPage() {
   // ✅ Abwesenheiten Filter State
   const [absQuery, setAbsQuery] = useState<string>("");
   const [absType, setAbsType] = useState<AbsFilterType>("ALL");
-  const [absRange, setAbsRange] = useState<AbsRange>("MONTH");
 
   useEffect(() => {
     (async () => {
@@ -457,54 +487,38 @@ export default function UebersichtPage() {
   );
 
   // ✅ Blocks (für Admin UND Employee)
-  const filteredBlocks = useMemo((): AbsenceBlock[] => {
-    const q = absQuery.trim().toLowerCase();
+const filteredBlocks = useMemo((): AbsenceBlock[] => {
+  const q = absQuery.trim().toLowerCase();
 
-    const today = startOfTodayUTC();
-    const todayIso = isoUTCDate(today);
-    const weekStart = new Date(today);
-    weekStart.setUTCDate(weekStart.getUTCDate() - 6);
+  const base = monthAbsences.filter((a) => {
+    if (absType !== "ALL" && a.type !== absType) return false;
+    if (isAdmin && q && !a.user.fullName.toLowerCase().includes(q)) return false;
+    return true;
+  });
 
-    const base = monthAbsences
-      .filter((a) => {
-        if (absRange === "TODAY") return a.absenceDate === todayIso;
-        if (absRange === "WEEK") {
-          const d = toUTCDateFromISO(a.absenceDate);
-          return d >= weekStart && d <= today;
-        }
-        return true; // MONTH
-      })
-      .filter((a) => {
-        if (absType !== "ALL" && a.type !== absType) return false;
-        if (isAdmin && q && !a.user.fullName.toLowerCase().includes(q)) return false; // Suche nur bei Admin sichtbar/benutzt
-        return true;
-      });
+  const byUser = new Map<string, Absence[]>();
+  for (const a of base) {
+    const arr = byUser.get(a.user.id) ?? [];
+    arr.push(a);
+    byUser.set(a.user.id, arr);
+  }
 
-    // pro User gruppieren => pro User Blöcke bauen
-    const byUser = new Map<string, Absence[]>();
-    for (const a of base) {
-      const arr = byUser.get(a.user.id) ?? [];
-      arr.push(a);
-      byUser.set(a.user.id, arr);
-    }
+  const blocks: AbsenceBlock[] = [];
+  for (const arr of byUser.values()) {
+    const sorted = arr.slice().sort((x, y) => x.absenceDate.localeCompare(y.absenceDate));
+    blocks.push(...buildBlocksForSingleUser(sorted));
+  }
 
-    const blocks: AbsenceBlock[] = [];
-    for (const arr of byUser.values()) {
-      const sorted = arr.slice().sort((x, y) => x.absenceDate.localeCompare(y.absenceDate));
-      blocks.push(...buildBlocksForSingleUser(sorted));
-    }
+  blocks.sort((a, b) => {
+    const d = a.from.localeCompare(b.from);
+    if (d !== 0) return d;
+    const n = a.user.fullName.localeCompare(b.user.fullName);
+    if (n !== 0) return n;
+    return a.type.localeCompare(b.type);
+  });
 
-    // Sortierung: zuerst Startdatum, dann Name, dann Typ
-    blocks.sort((a, b) => {
-      const d = a.from.localeCompare(b.from);
-      if (d !== 0) return d;
-      const n = a.user.fullName.localeCompare(b.user.fullName);
-      if (n !== 0) return n;
-      return a.type.localeCompare(b.type);
-    });
-
-    return blocks;
-  }, [monthAbsences, absQuery, absType, absRange, isAdmin]);
+  return blocks;
+}, [monthAbsences, absQuery, absType, isAdmin]);
 
   const filteredAbsenceCounts = useMemo(() => {
     let sick = 0;
@@ -523,7 +537,8 @@ export default function UebersichtPage() {
   const resetAbsFilters = () => {
     setAbsQuery("");
     setAbsType("ALL");
-    setAbsRange("MONTH");
+    setSelectedYear(currentYear());
+    setSelectedMonth(currentMonth());
   };
 
   return (
@@ -738,7 +753,9 @@ export default function UebersichtPage() {
       {/* ✅ Abwesenheiten + Filter */}
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-          <div className="section-title">Abwesenheiten (Blocks)</div>
+          <div className="section-title">
+            Abwesenheiten – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+          </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={chipStyle("rgba(255,255,255,0.06)", "rgba(255,255,255,0.12)")}>
@@ -758,11 +775,12 @@ export default function UebersichtPage() {
           style={{
             marginTop: 12,
             display: "grid",
-            gridTemplateColumns: isAdmin ? "1.4fr 1fr 1fr auto" : "1fr 1fr auto",
+            gridTemplateColumns: isAdmin
+            ? "minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto"
+            : "minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto",
             gap: 10,
           }}
         >
-          {/* ✅ Name-Suche nur für Admin */}
           {isAdmin ? (
             <input
               value={absQuery}
@@ -772,16 +790,26 @@ export default function UebersichtPage() {
             />
           ) : null}
 
-          <select value={absType} onChange={(e) => setAbsType(e.target.value as AbsFilterType)} style={selectStyle()}>
-            <option value="ALL">Alle Typen</option>
-            <option value="SICK">Nur Krank</option>
-            <option value="VACATION">Nur Urlaub</option>
+          <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value as MonthOption)} style={selectStyle()}>
+            {MONTH_OPTIONS.map((m) => (
+              <option key={m.value} value={m.value} style={{ color: "black" }}>
+                {m.label}
+              </option>
+            ))}
           </select>
 
-          <select value={absRange} onChange={(e) => setAbsRange(e.target.value as AbsRange)} style={selectStyle()}>
-            <option value="MONTH">Dieser Monat</option>
-            <option value="WEEK">Letzte 7 Tage</option>
-            <option value="TODAY">Heute</option>
+          <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} style={selectStyle()}>
+            {years.map((y) => (
+              <option key={y} value={y} style={{ color: "black" }}>
+                {y}
+              </option>
+            ))}
+          </select>
+
+          <select value={absType} onChange={(e) => setAbsType(e.target.value as AbsFilterType)} style={selectStyle()}>
+            <option value="ALL">Alle Typen</option>
+            <option value="SICK">Krank</option>
+            <option value="VACATION">Urlaub</option>
           </select>
 
           <button
