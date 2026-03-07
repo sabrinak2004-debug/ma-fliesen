@@ -543,10 +543,9 @@ useEffect(() => {
                   style={{
                     width: "100%",
                     padding: "12px 14px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(224,75,69,0.35)",
-                    background: "rgba(224,75,69,0.16)",
-                    color: "rgba(255,255,255,0.96)",
+                    border: "1px solid #9db02f",
+                    background: "#9db02f61",
+                    color: "rgba(20, 12, 12, 0.92)",
                     fontWeight: 900,
                     cursor: "pointer",
                   }}
