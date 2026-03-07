@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 
@@ -56,6 +56,32 @@ export default function KalenderDokumentePage() {
   const [docs, setDocs] = useState<DocItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+    const backToCalendar = useCallback(() => {
+    router.push("/kalender");
+  }, [router]);
+
+  function buildInlineUrl(docId: string): string {
+    return `/api/plan-entry-documents/file?id=${encodeURIComponent(docId)}&disposition=inline`;
+  }
+
+  function buildDownloadUrl(docId: string): string {
+    return `/api/plan-entry-documents/file?id=${encodeURIComponent(docId)}&disposition=attachment`;
+  }
+
+  function openDocument(docId: string): void {
+    const url = buildInlineUrl(docId);
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function downloadDocument(docId: string, fileName: string): void {
+    const link = document.createElement("a");
+    link.href = buildDownloadUrl(docId);
+    link.download = fileName;
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 
   async function loadDocs() {
     if (!entryId) return;
@@ -93,8 +119,8 @@ export default function KalenderDokumentePage() {
       <div className="card card-olive" style={{ padding: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
           <div style={{ fontWeight: 900, fontSize: 18 }}>Dokumente</div>
-          <button className="btn" onClick={() => router.back()}>
-            ← Zurück
+          <button className="btn" onClick={backToCalendar}>
+            ← Zurück zum Kalender
           </button>
         </div>
 
@@ -118,18 +144,29 @@ export default function KalenderDokumentePage() {
                 </div>
 
                 <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <a
+                  <button
+                    type="button"
                     className="btn btn-accent"
-                    href={`/api/plan-entry-documents/file?id=${encodeURIComponent(d.id)}`}
-                    target="_blank"
-                    rel="noreferrer"
+                    onClick={() => openDocument(d.id)}
                   >
                     Öffnen
-                  </a>
+                  </button>
 
-                  <a className="btn" href={`/api/plan-entry-documents/file?id=${encodeURIComponent(d.id)}`} download>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => downloadDocument(d.id, d.fileName)}
+                  >
                     Download
-                  </a>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={backToCalendar}
+                  >
+                    Zurück zum Kalender
+                  </button>
                 </div>
               </div>
             ))}

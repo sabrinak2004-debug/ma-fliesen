@@ -1860,7 +1860,7 @@ useEffect(() => {
                           type="button"
                           onClick={() => {
                             setOpen(false);
-                            window.location.href = `/kalender/dokumente/${encodeURIComponent(p.id)}`;
+                            window.location.href = `/dokumente/${encodeURIComponent(p.id)}`;
                           }}
                         >
                           📎 Dokumente
