@@ -542,7 +542,7 @@ useEffect(() => {
                   onClick={handleLogout}
                   style={{
                     width: "100%",
-                    padding: "12px 14px",
+                    padding: "14px 14px",
                     border: "1px solid #9db02f",
                     background: "#9db02f61",
                     color: "rgba(20, 12, 12, 0.92)",
@@ -550,7 +550,7 @@ useEffect(() => {
                     cursor: "pointer",
                   }}
                 >
-                  🚪 Logout
+                  Logout
                 </button>
               </div>
             </div>
