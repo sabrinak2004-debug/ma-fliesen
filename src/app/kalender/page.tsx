@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 
@@ -546,6 +547,7 @@ function smallDot(color: string): React.CSSProperties {
 }
 
 export default function KalenderPage() {
+  const router = useRouter();
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const [viewMode, setViewMode] = useState<CalendarViewMode>("MONTH");
 
@@ -1860,7 +1862,7 @@ useEffect(() => {
                           type="button"
                           onClick={() => {
                             setOpen(false);
-                            window.location.href = `/dokumente/${encodeURIComponent(p.id)}`;
+                            router.push(`/dokumente/${encodeURIComponent(p.id)}`);
                           }}
                         >
                           📎 Dokumente
