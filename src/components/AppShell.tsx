@@ -454,6 +454,12 @@ useEffect(() => {
   </div>
 )}
 
+        {/* MOBILE CONTENT */}
+        <div className="md:hidden" style={{ minWidth: 0 }}>
+          {children}
+        </div>
+
+        {/* DESKTOP LAYOUT */}
         <div className="appshell-desktop hidden md:grid">
           {/* Sidebar */}
           <aside className="appshell-sidebar">
@@ -523,7 +529,7 @@ useEffect(() => {
             </nav>
 
             <div className="appshell-sidebar-bottom">
-             <div
+              <div
                 style={{
                   padding: 12,
                   borderRadius: 16,
@@ -599,7 +605,14 @@ useEffect(() => {
                     {userInitials}
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      lineHeight: 1.1,
+                    }}
+                  >
                     <div className="appshell-username" style={{ fontWeight: 800, fontSize: 13 }}>
                       {userName}
                     </div>
@@ -623,6 +636,7 @@ useEffect(() => {
                 </div>
               </div>
             </div>
+
             {children}
           </div>
         </div>
