@@ -12,7 +12,6 @@ function dateOnlyLocalIso(d: Date) {
 }
 
 function startOfWeekMonday(d: Date) {
-  // Montag = 1, Sonntag = 0
   const day = d.getDay();
   const diff = (day === 0 ? -6 : 1) - day;
   const res = new Date(d);
@@ -35,60 +34,70 @@ function lastDayOfMonth(ym: string) {
   return String(last.getDate()).padStart(2, "0");
 }
 
+function toHHMMUTC(d: Date) {
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+type TimelineDayBreak = {
+  workDate: string;
+  breakStartHHMM: string | null;
+  breakEndHHMM: string | null;
+  manualMinutes: number;
+  legalMinutes: number;
+  autoSupplementMinutes: number;
+  effectiveMinutes: number;
+};
+
 export async function GET(req: Request) {
   const session = await getSession();
-  if (!session) return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+  if (!session) {
+    return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+  }
 
   // @ts-expect-error - je nach getSession shape
   const role = (session.role ?? session.user?.role) as Role | undefined;
-  if (role !== Role.ADMIN) return NextResponse.json({ ok: false, error: "Kein Zugriff" }, { status: 403 });
+  if (role !== Role.ADMIN) {
+    return NextResponse.json({ ok: false, error: "Kein Zugriff" }, { status: 403 });
+  }
 
   const now = new Date();
   const todayIso = dateOnlyLocalIso(now);
   const url = new URL(req.url);
   const monthParam = url.searchParams.get("month") ?? todayIso.slice(0, 7);
-  
+
   if (!/^\d{4}-\d{2}$/.test(monthParam)) {
-    return NextResponse.json(
-        { ok: false, error: "Ungültiger Monat." },
-        { status: 400 }
-    );
-}
+    return NextResponse.json({ ok: false, error: "Ungültiger Monat." }, { status: 400 });
+  }
 
-const monthStartIso = `${monthParam}-01`;
-const monthEndIso = `${monthParam}-${lastDayOfMonth(monthParam)}`;
-
+  const monthStartIso = `${monthParam}-01`;
+  const monthEndIso = `${monthParam}-${lastDayOfMonth(monthParam)}`;
 
   const weekStart = startOfWeekMonday(now);
   const weekEnd = endOfWeekSunday(now);
 
-  // Mitarbeiterliste (nur aktive EMPLOYEE)
   const employees = await prisma.appUser.findMany({
     where: { isActive: true, role: Role.EMPLOYEE },
     select: { id: true, fullName: true },
     orderBy: { fullName: "asc" },
   });
 
-  // Heutige Plan-Einsätze (alle)
   const plannedToday = await prisma.planEntry.count({
     where: { workDate: new Date(`${todayIso}T00:00:00.000Z`) },
   });
 
-  // Abwesenheiten heute (Urlaub+Krank)
   const absencesToday = await prisma.absence.count({
     where: { absenceDate: new Date(`${todayIso}T00:00:00.000Z`) },
   });
 
-  // Fehlende Einträge heute: Mitarbeiter ohne WorkEntry an diesem Datum (sehr simple)
   const workedToday = await prisma.workEntry.findMany({
     where: { workDate: new Date(`${todayIso}T00:00:00.000Z`) },
     select: { userId: true },
     distinct: ["userId"],
   });
+
   const workedTodaySet = new Set(workedToday.map((x) => x.userId));
   const missingToday = employees.filter((e) => !workedTodaySet.has(e.id)).length;
 
-  // Fehlende Einträge diese Woche
   const weekDays: string[] = [];
   {
     const cur = new Date(weekStart);
@@ -110,129 +119,163 @@ const monthEndIso = `${monthParam}-${lastDayOfMonth(monthParam)}`;
 
   const weekPairs = new Set(workWeek.map((w) => `${w.userId}:${dateOnlyLocalIso(new Date(w.workDate))}`));
   const totalExpected = employees.length * weekDays.length;
+
   let presentCount = 0;
-  for (const e of employees) {
+  for (const employee of employees) {
     for (const day of weekDays) {
-      if (weekPairs.has(`${e.id}:${day}`)) presentCount += 1;
+      if (weekPairs.has(`${employee.id}:${day}`)) {
+        presentCount += 1;
+      }
     }
   }
+
   const missingWeek = Math.max(0, totalExpected - presentCount);
-  
+
   const workEntriesMonth = await prisma.workEntry.findMany({
-      where: {
-        workDate: {
-          gte: new Date(`${monthStartIso}T00:00:00.000Z`),
-          lte: new Date(`${monthEndIso}T00:00:00.000Z`),
-        },
+    where: {
+      workDate: {
+        gte: new Date(`${monthStartIso}T00:00:00.000Z`),
+        lte: new Date(`${monthEndIso}T00:00:00.000Z`),
       },
-      select: {
-        id: true,
-        userId: true,
-        workDate: true,
-        startTime: true,
-        endTime: true,
-        activity: true,
-        location: true,
-        travelMinutes: true,
-        breakMinutes: true,
-        breakAuto: true,
-        workMinutes: true,
-        noteEmployee: true,
-      },
-    });
-const absencesMonth = await prisma.absence.findMany({
-  where: {
-    absenceDate: {
-      gte: new Date(`${monthStartIso}T00:00:00.000Z`),
-      lte: new Date(`${monthEndIso}T00:00:00.000Z`),
     },
-  },
-  select: {
-    userId: true,
-    absenceDate: true,
-    type: true,
-  },
-});
+    select: {
+      id: true,
+      userId: true,
+      workDate: true,
+      startTime: true,
+      endTime: true,
+      activity: true,
+      location: true,
+      travelMinutes: true,
+      breakMinutes: true,
+      breakAuto: true,
+      workMinutes: true,
+      noteEmployee: true,
+    },
+  });
 
-const employeesTimeline = employees.map((e) => {
-const items: Array<
-  | {
-      type: "WORK";
-      id: string;
-      date: string;
-      startHHMM: string;
-      endHHMM: string;
-      activity: string | null;
-      location: string | null;
-      travelMinutes: number;
-      breakMinutes: number;
-      breakAuto: boolean;
-      workMinutes: number;
-      noteEmployee: string | null;
-    }
-  | {
-      type: "VACATION" | "SICK";
-      date: string;
-    }
-> = [];
+  const dayBreaksMonth = await prisma.dayBreak.findMany({
+    where: {
+      workDate: {
+        gte: new Date(`${monthStartIso}T00:00:00.000Z`),
+        lte: new Date(`${monthEndIso}T00:00:00.000Z`),
+      },
+    },
+    select: {
+      userId: true,
+      workDate: true,
+      breakStartHHMM: true,
+      breakEndHHMM: true,
+      manualMinutes: true,
+      legalMinutes: true,
+      autoSupplementMinutes: true,
+      effectiveMinutes: true,
+    },
+  });
 
-  for (const w of workEntriesMonth) {
-    if (w.userId !== e.id) continue;
+  const absencesMonth = await prisma.absence.findMany({
+    where: {
+      absenceDate: {
+        gte: new Date(`${monthStartIso}T00:00:00.000Z`),
+        lte: new Date(`${monthEndIso}T00:00:00.000Z`),
+      },
+    },
+    select: {
+      userId: true,
+      absenceDate: true,
+      type: true,
+    },
+  });
 
-    const d = new Date(w.workDate);
-    const date = dateOnlyLocalIso(d);
+  const dayBreakMap = new Map<string, TimelineDayBreak>();
+  for (const row of dayBreaksMonth) {
+    const workDate = dateOnlyLocalIso(new Date(row.workDate));
+    dayBreakMap.set(`${row.userId}:${workDate}`, {
+      workDate,
+      breakStartHHMM: row.breakStartHHMM,
+      breakEndHHMM: row.breakEndHHMM,
+      manualMinutes: row.manualMinutes ?? 0,
+      legalMinutes: row.legalMinutes ?? 0,
+      autoSupplementMinutes: row.autoSupplementMinutes ?? 0,
+      effectiveMinutes: row.effectiveMinutes ?? 0,
+    });
+  }
 
-    const start = new Date(w.startTime);
-    const end = new Date(w.endTime);
+  const employeesTimeline = employees.map((employee) => {
+    const items: Array<
+      | {
+          type: "WORK";
+          id: string;
+          date: string;
+          startHHMM: string;
+          endHHMM: string;
+          activity: string | null;
+          location: string | null;
+          travelMinutes: number;
+          breakMinutes: number;
+          breakAuto: boolean;
+          workMinutes: number;
+          noteEmployee: string | null;
+        }
+      | {
+          type: "VACATION" | "SICK";
+          date: string;
+        }
+    > = [];
 
-    const startHHMM = `${String(start.getUTCHours()).padStart(2, "0")}:${String(
-      start.getUTCMinutes()
-    ).padStart(2, "0")}`;
+    const dayBreaks: TimelineDayBreak[] = [];
 
-    const endHHMM = `${String(end.getUTCHours()).padStart(2, "0")}:${String(
-      end.getUTCMinutes()
-    ).padStart(2, "0")}`;
+    for (const workEntry of workEntriesMonth) {
+      if (workEntry.userId !== employee.id) continue;
+
+      const date = dateOnlyLocalIso(new Date(workEntry.workDate));
+      const startHHMM = toHHMMUTC(new Date(workEntry.startTime));
+      const endHHMM = toHHMMUTC(new Date(workEntry.endTime));
 
       items.push({
         type: "WORK",
-        id: w.id,
+        id: workEntry.id,
         date,
         startHHMM,
         endHHMM,
-        activity: w.activity ?? null,
-        location: w.location ?? null,
-        travelMinutes: w.travelMinutes ?? 0,
-        breakMinutes: w.breakMinutes ?? 0,
-        breakAuto: w.breakAuto ?? false,
-        workMinutes: w.workMinutes ?? 0,
-        noteEmployee: w.noteEmployee ?? null,
+        activity: workEntry.activity ?? null,
+        location: workEntry.location ?? null,
+        travelMinutes: workEntry.travelMinutes ?? 0,
+        breakMinutes: workEntry.breakMinutes ?? 0,
+        breakAuto: workEntry.breakAuto ?? false,
+        workMinutes: workEntry.workMinutes ?? 0,
+        noteEmployee: workEntry.noteEmployee ?? null,
       });
-  }
+    }
 
-  for (const a of absencesMonth) {
-    if (a.userId !== e.id) continue;
+    for (const [key, value] of dayBreakMap.entries()) {
+      const [userId] = key.split(":");
+      if (userId === employee.id) {
+        dayBreaks.push(value);
+      }
+    }
 
-    const d = new Date(a.absenceDate);
-    const date = dateOnlyLocalIso(d);
+    for (const absence of absencesMonth) {
+      if (absence.userId !== employee.id) continue;
 
-    items.push({
-      type: a.type,
-      date,
-    });
-  }
+      const date = dateOnlyLocalIso(new Date(absence.absenceDate));
+      items.push({
+        type: absence.type,
+        date,
+      });
+    }
 
-  items.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    items.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    dayBreaks.sort((a, b) => (a.workDate < b.workDate ? -1 : a.workDate > b.workDate ? 1 : 0));
 
-  return {
-    userId: e.id,
-    fullName: e.fullName,
-    items,
-  };
-});
+    return {
+      userId: employee.id,
+      fullName: employee.fullName,
+      items,
+      dayBreaks,
+    };
+  });
 
-
-  // Überstunden Monat (wenn du schon "monthlyTargets" oder Sollstunden logik hast, integrieren wir das später sauber)
-  // Hier: einfache Summe workMinutes im Monat (nur als Kennzahl)
   const monthWorkAgg = await prisma.workEntry.aggregate({
     where: {
       workDate: {

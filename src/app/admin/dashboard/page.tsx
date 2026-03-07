@@ -30,10 +30,21 @@ type AdminTimelineAbsence = {
 
 type AdminTimelineItem = AdminTimelineWork | AdminTimelineAbsence;
 
+type AdminDayBreak = {
+  workDate: string;
+  breakStartHHMM: string | null;
+  breakEndHHMM: string | null;
+  manualMinutes: number;
+  legalMinutes: number;
+  autoSupplementMinutes: number;
+  effectiveMinutes: number;
+};
+
 type AdminEmployeeTimeline = {
   userId: string;
   fullName: string;
   items: AdminTimelineItem[];
+  dayBreaks: AdminDayBreak[];
 };
 
 /* =========================
@@ -206,6 +217,16 @@ function formatDateDE(iso: string) {
   const dd = String(d).padStart(2, "0");
   const mm = String(m).padStart(2, "0");
   return `${dd}.${mm}.${y}`;
+}
+
+function formatMinutesCompact(minutes: number) {
+  const mins = Math.max(0, Math.round(minutes));
+  if (mins < 60) return `${mins} min`;
+  return formatHM(mins);
+}
+
+function getDayBreakForDate(dayBreaks: AdminDayBreak[], workDate: string): AdminDayBreak | null {
+  return dayBreaks.find((item) => item.workDate === workDate) ?? null;
 }
 
 function formatBreakInfo(it: AdminTimelineWork) {
@@ -441,7 +462,24 @@ export default function AdminDashboardPage() {
   const [editActivity, setEditActivity] = useState<string>("");
   const [editLocation, setEditLocation] = useState<string>("");
   const [editTravelMinutes, setEditTravelMinutes] = useState<string>("0");
-  const [editBreakMinutes, setEditBreakMinutes] = useState<string>("0");
+    const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsUserLabel, setDetailsUserLabel] = useState<string>("");
+  const [detailsDate, setDetailsDate] = useState<string>("");
+  const [detailsTime, setDetailsTime] = useState<string>("");
+  const [detailsActivity, setDetailsActivity] = useState<string>("");
+  const [detailsLocation, setDetailsLocation] = useState<string>("");
+  const [detailsTravelMinutes, setDetailsTravelMinutes] = useState<number>(0);
+  const [detailsWorkMinutes, setDetailsWorkMinutes] = useState<number>(0);
+
+  const [breakInfoOpen, setBreakInfoOpen] = useState(false);
+  const [breakInfoUserLabel, setBreakInfoUserLabel] = useState<string>("");
+  const [breakInfoDate, setBreakInfoDate] = useState<string>("");
+  const [breakInfoManualStart, setBreakInfoManualStart] = useState<string>("");
+  const [breakInfoManualEnd, setBreakInfoManualEnd] = useState<string>("");
+  const [breakInfoManualMinutes, setBreakInfoManualMinutes] = useState<number>(0);
+  const [breakInfoLegalMinutes, setBreakInfoLegalMinutes] = useState<number>(0);
+  const [breakInfoAutoMinutes, setBreakInfoAutoMinutes] = useState<number>(0);
+  const [breakInfoEffectiveMinutes, setBreakInfoEffectiveMinutes] = useState<number>(0);
 
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteUserLabel, setNoteUserLabel] = useState<string>("");
@@ -612,7 +650,6 @@ export default function AdminDashboardPage() {
     setEditActivity(it.activity ?? "");
     setEditLocation(it.location ?? "");
     setEditTravelMinutes(String(it.travelMinutes ?? 0));
-    setEditBreakMinutes(String(it.breakMinutes ?? 0));
 
     setEditOpen(true);
   }
@@ -625,6 +662,29 @@ export default function AdminDashboardPage() {
   setNoteOpen(true);
 }
 
+  function openWorkDetails(uName: string, it: AdminTimelineWork) {
+    setDetailsUserLabel(uName);
+    setDetailsDate(it.date);
+    setDetailsTime(`${it.startHHMM}–${it.endHHMM}`);
+    setDetailsActivity(it.activity ?? "");
+    setDetailsLocation(it.location ?? "");
+    setDetailsTravelMinutes(it.travelMinutes ?? 0);
+    setDetailsWorkMinutes(it.workMinutes ?? 0);
+    setDetailsOpen(true);
+  }
+
+  function openDayBreakInfo(uName: string, date: string, dayBreak: AdminDayBreak | null) {
+    setBreakInfoUserLabel(uName);
+    setBreakInfoDate(date);
+    setBreakInfoManualStart(dayBreak?.breakStartHHMM ?? "");
+    setBreakInfoManualEnd(dayBreak?.breakEndHHMM ?? "");
+    setBreakInfoManualMinutes(dayBreak?.manualMinutes ?? 0);
+    setBreakInfoLegalMinutes(dayBreak?.legalMinutes ?? 0);
+    setBreakInfoAutoMinutes(dayBreak?.autoSupplementMinutes ?? 0);
+    setBreakInfoEffectiveMinutes(dayBreak?.effectiveMinutes ?? 0);
+    setBreakInfoOpen(true);
+  }
+
   async function saveEditWork() {
     if (!editEntryId) return;
 
@@ -632,10 +692,7 @@ export default function AdminDashboardPage() {
     setEditErr("");
 
     const travel = Number(editTravelMinutes.replace(",", "."));
-    const brk = Number(editBreakMinutes.replace(",", "."));
-
     const travelMinutes = Number.isFinite(travel) ? Math.max(0, Math.round(travel)) : 0;
-    const breakMinutes = Number.isFinite(brk) ? Math.max(0, Math.round(brk)) : 0;
 
     try {
       const r = await fetch("/api/entries", {
@@ -647,7 +704,6 @@ export default function AdminDashboardPage() {
           activity: editActivity,
           location: editLocation,
           travelMinutes,
-          breakMinutes,
           // startTime/endTime NICHT schicken (Admin darf Zeit nicht ändern)
         }),
       });
@@ -926,6 +982,129 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+
+      <Modal
+        open={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        title="Arbeitszeit-Details"
+        footer={
+          <button
+            type="button"
+            onClick={() => setDetailsOpen(false)}
+            style={{
+              padding: "10px 14px",
+              cursor: "pointer",
+              fontWeight: 900,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.9)",
+            }}
+          >
+            Schließen
+          </button>
+        }
+        maxWidth={640}
+      >
+        <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter</div>
+            <div style={{ fontWeight: 1000 }}>{detailsUserLabel}</div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Datum & Zeit</div>
+            <div style={{ fontWeight: 1000 }}>
+              {formatDateDE(detailsDate)} · {detailsTime}
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Netto-Arbeitszeit</div>
+            <div style={{ fontWeight: 1000 }}>{formatHM(detailsWorkMinutes)}</div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Baustelle / Adresse</div>
+            <div style={{ fontWeight: 1000 }}>{detailsLocation || "—"}</div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Ausgeführte Tätigkeit</div>
+            <div style={{ fontWeight: 1000 }}>{detailsActivity || "—"}</div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Fahrtzeit</div>
+            <div style={{ fontWeight: 1000 }}>{formatMinutesCompact(detailsTravelMinutes)}</div>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={breakInfoOpen}
+        onClose={() => setBreakInfoOpen(false)}
+        title="Pausen-Details"
+        footer={
+          <button
+            type="button"
+            onClick={() => setBreakInfoOpen(false)}
+            style={{
+              padding: "10px 14px",
+              cursor: "pointer",
+              fontWeight: 900,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.9)",
+            }}
+          >
+            Schließen
+          </button>
+        }
+        maxWidth={640}
+      >
+        <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter</div>
+            <div style={{ fontWeight: 1000 }}>{breakInfoUserLabel}</div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Datum</div>
+            <div style={{ fontWeight: 1000 }}>{formatDateDE(breakInfoDate)}</div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Manuell eingetragene Pause</div>
+            <div style={{ fontWeight: 1000 }}>
+              {breakInfoManualStart && breakInfoManualEnd
+                ? `${breakInfoManualStart}–${breakInfoManualEnd} · ${formatMinutesCompact(breakInfoManualMinutes)}`
+                : breakInfoManualMinutes > 0
+                ? formatMinutesCompact(breakInfoManualMinutes)
+                : "Keine manuelle Pause eingetragen"}
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Gesetzlich erforderlich</div>
+            <div style={{ fontWeight: 1000 }}>{formatMinutesCompact(breakInfoLegalMinutes)}</div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Automatisch ergänzt</div>
+            <div style={{ fontWeight: 1000 }}>
+              {breakInfoAutoMinutes > 0 ? formatMinutesCompact(breakInfoAutoMinutes) : "Keine automatische Ergänzung"}
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Wirksame Pause gesamt</div>
+            <div style={{ fontWeight: 1000 }}>{formatMinutesCompact(breakInfoEffectiveMinutes)}</div>
+          </div>
+        </div>
+      </Modal>
+
 <Modal
   open={noteOpen}
   onClose={() => setNoteOpen(false)}
@@ -1073,31 +1252,13 @@ export default function AdminDashboardPage() {
             />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
             <div style={{ display: "grid", gap: 6 }}>
               <div style={{ fontSize: 12, color: "var(--muted)" }}>Fahrtzeit (Min)</div>
               <input
                 inputMode="numeric"
                 value={editTravelMinutes}
                 onChange={(e) => setEditTravelMinutes(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(0,0,0,0.25)",
-                  color: "rgba(255,255,255,0.92)",
-                  outline: "none",
-                }}
-              />
-            </div>
-
-            <div style={{ display: "grid", gap: 6 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Pause (Min)</div>
-              <input
-                inputMode="numeric"
-                value={editBreakMinutes}
-                onChange={(e) => setEditBreakMinutes(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "10px 12px",
@@ -1265,6 +1426,8 @@ export default function AdminDashboardPage() {
 
                               const dayTotalMinutes = dayItems.reduce((sum, it) => sum + it.workMinutes, 0);
                               const dayEntriesCount = dayItems.length;
+                              const dayBreak = getDayBreakForDate(u.dayBreaks, dayKey);
+                              const dayPauseMinutes = dayBreak?.effectiveMinutes ?? 0;
 
                               return (
                                 <div
@@ -1294,17 +1457,35 @@ export default function AdminDashboardPage() {
                                     }}
                                     title="Tag ein-/ausklappen"
                                   >
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                       <span>{dayOpen ? "▼" : "▶"}</span>
                                       <span>{formatDateDE(dayKey)}</span>
+                                      <span style={{ opacity: 0.5 }}>·</span>
+                                      <span style={{ color: "var(--accent)" }}>{formatHM(dayTotalMinutes)}</span>
+                                      <span style={{ opacity: 0.5 }}>·</span>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openDayBreakInfo(u.fullName, dayKey, dayBreak);
+                                        }}
+                                        style={{
+                                          padding: 0,
+                                          border: "none",
+                                          background: "transparent",
+                                          color: "rgba(255,255,255,0.92)",
+                                          cursor: "pointer",
+                                          fontWeight: 900,
+                                        }}
+                                        title="Pausen-Details anzeigen"
+                                      >
+                                        {formatMinutesCompact(dayPauseMinutes)} Pause
+                                      </button>
                                     </div>
 
                                     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                                       <div style={{ color: "var(--muted-2)", fontSize: 12, fontWeight: 900 }}>
                                         {dayEntriesCount} Eintrag{dayEntriesCount === 1 ? "" : "e"}
-                                      </div>
-                                      <div style={{ color: "var(--accent)", fontWeight: 1000, whiteSpace: "nowrap" }}>
-                                        {formatHM(dayTotalMinutes)}
                                       </div>
                                     </div>
                                   </div>
@@ -1312,7 +1493,7 @@ export default function AdminDashboardPage() {
                                   {dayOpen ? (
                                     <div style={{ display: "grid", gap: 6, paddingLeft: 10 }}>
                                       {dayItems.map((it) => (
-                                        <div
+                                                                                <div
                                           key={it.id}
                                           style={{
                                             display: "flex",
@@ -1325,28 +1506,13 @@ export default function AdminDashboardPage() {
                                           }}
                                         >
                                           <div style={{ display: "grid", gap: 2 }}>
-                                            <div style={{ fontWeight: 1000 }}>
-                                              {it.startHHMM}–{it.endHHMM}
+                                            <div style={{ fontWeight: 1100, color: "var(--accent)" }}>
+                                              {formatHM(it.workMinutes)}
                                             </div>
 
-                                            {it.activity || it.location ? (
-                                              <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
-                                                {it.activity ? it.activity : ""}
-                                                {it.activity && it.location ? " · " : ""}
-                                                {it.location ? it.location : ""}
-                                              </div>
-                                            ) : null}
-                                            {formatBreakInfo(it) ? (
-                                            <div
-                                              style={{
-                                                color: "rgba(255,255,255,0.55)",
-                                                fontSize: 12,
-                                                fontWeight: 700,
-                                              }}
-                                            >
-                                              ⏸ {formatBreakInfo(it)}
+                                            <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
+                                              {it.location && it.location.trim() ? it.location : "Keine Baustelle / Adresse hinterlegt"}
                                             </div>
-                                          ) : null}
                                           </div>
 
                                           <div
@@ -1358,9 +1524,25 @@ export default function AdminDashboardPage() {
                                               justifyContent: "flex-end",
                                             }}
                                           >
-                                            <div style={{ color: "var(--accent)", fontWeight: 1100, whiteSpace: "nowrap" }}>
-                                              {formatHM(it.workMinutes)}
-                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                openWorkDetails(u.fullName, it);
+                                              }}
+                                              title="Details anzeigen"
+                                              style={{
+                                                padding: "6px 10px",
+                                                borderRadius: 10,
+                                                border: "1px solid rgba(184,207,58,0.28)",
+                                                background: "rgba(184,207,58,0.10)",
+                                                color: "var(--accent)",
+                                                cursor: "pointer",
+                                                fontWeight: 900,
+                                              }}
+                                            >
+                                              ℹ️ Details
+                                            </button>
 
                                             {it.noteEmployee && it.noteEmployee.trim() ? (
                                               <button
