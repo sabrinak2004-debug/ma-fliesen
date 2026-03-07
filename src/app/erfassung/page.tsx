@@ -307,6 +307,7 @@ export default function Page() {
 
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(true);
+  const [selectedYear, setSelectedYear] = useState<string>("ALLE");
 
   // Edit Modal
   const [editOpen, setEditOpen] = useState(false);
@@ -341,12 +342,6 @@ export default function Page() {
 
     return computeDayTotals(entries, dayBreakMap, workDate, grossPreviewMinutes, overrideManual);
   }, [entries, dayBreakMap, workDate, grossPreviewMinutes, breakStartHHMM, breakEndHHMM, currentBreakFormManualMinutes]);
-
-  const monthHours = useMemo(() => {
-    const month = workDate.slice(0, 7);
-    const mins = entries.filter((e) => e.workDate.startsWith(month)).reduce((sum, e) => sum + e.workMinutes, 0);
-    return mins;
-  }, [entries, workDate]);
 
 useEffect(() => {
   let alive = true;
@@ -609,8 +604,24 @@ useEffect(() => {
       setBreakSaving(false);
     }
   }
-
   const groupedEntries = useMemo(() => groupByMonthThenDay(entries), [entries]);
+
+  const availableYears = useMemo(() => {
+    const years = Array.from(
+      new Set(
+        entries
+          .map((entry) => toYMD(entry.workDate).slice(0, 4))
+          .filter((year) => /^\d{4}$/.test(year))
+      )
+    ).sort((a, b) => (a === b ? 0 : a > b ? -1 : 1));
+
+    return years;
+  }, [entries]);
+
+  const filteredGroupedEntries = useMemo(() => {
+    if (selectedYear === "ALLE") return groupedEntries;
+    return groupedEntries.filter((group) => group.key.startsWith(`${selectedYear}-`));
+  }, [groupedEntries, selectedYear]);
 
   const dayTotalsMap = useMemo(() => buildDayTotalsMap(entries, dayBreakMap), [entries, dayBreakMap]);
 
@@ -620,6 +631,14 @@ useEffect(() => {
     const m = String(now.getMonth() + 1).padStart(2, "0");
     return `${y}-${m}`;
   }, []);
+
+    useEffect(() => {
+    if (selectedYear !== "ALLE") return;
+    const currentYear = String(new Date().getFullYear());
+    if (availableYears.includes(currentYear)) {
+      setSelectedYear(currentYear);
+    }
+  }, [availableYears, selectedYear]);
 
   const editPreview = useMemo(() => {
     if (!edit) {
@@ -649,25 +668,6 @@ useEffect(() => {
 
   return (
     <AppShell activeLabel="#wirkönnendas">
-      {/* KPI */}
-      <div className="kpi-grid" style={{ marginBottom: 14 }}>
-        <div className="card kpi">
-          <div>
-            <div className="small">Arbeitsstunden (Monat)</div>
-            <div className="big">{formatHM(monthHours)}</div>
-            <div className="small">Soll: 160h</div>
-          </div>
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>⏱</div>
-        </div>
-
-        <div className="card kpi">
-          <div>
-            <div className="small">Einträge gesamt</div>
-            <div className="big">{entries.length}</div>
-          </div>
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>▦</div>
-        </div>
-      </div>
 
       {/* CREATE */}
       <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
@@ -774,7 +774,6 @@ useEffect(() => {
             />
           </div>
         </div>
-        </div>
 
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
@@ -794,6 +793,7 @@ useEffect(() => {
             {saving ? "Speichert..." : "Eintrag speichern"}
           </button>
         </div>
+      </div>
 
             <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
         <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -872,12 +872,62 @@ useEffect(() => {
 
       {/* LIST */}
       <div className="card" style={{ padding: 18 }}>
-        <div className="section-title" style={{ marginBottom: 12 }}>
-          Alle Einträge
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+            marginBottom: 12,
+          }}
+        >
+          <div className="section-title" style={{ marginBottom: 0 }}>
+            Alle Einträge
+          </div>
+
+          <div style={{ minWidth: 160 }}>
+            <div className="label">Jahr</div>
+            <select
+              className="input"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+            >
+              <option value="ALLE">Alle Jahre</option>
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div style={{ display: "grid", gap: 12 }}>
-          {groupedEntries.map((m) => (
+          {loadingEntries ? (
+            <div
+              className="card"
+              style={{
+                padding: 14,
+                borderColor: "rgba(255,255,255,0.08)",
+              }}
+            >
+              Lade Einträge...
+            </div>
+          ) : null}
+
+          {!loadingEntries && filteredGroupedEntries.length === 0 ? (
+            <div
+              className="card"
+              style={{
+                padding: 14,
+                borderColor: "rgba(255,255,255,0.08)",
+              }}
+            >
+              Keine Einträge für das ausgewählte Jahr vorhanden.
+            </div>
+          ) : null}
+          {filteredGroupedEntries.map((m) => (
             <details
               key={m.key}
               open={m.key === currentMonthKey}
