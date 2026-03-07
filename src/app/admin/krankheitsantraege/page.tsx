@@ -26,6 +26,11 @@ type AbsenceRequestItem = {
   } | null;
 };
 
+type UserOption = {
+  id: string;
+  fullName: string;
+};
+
 type AdminRequestsResponse =
   | {
       ok: true;
@@ -227,18 +232,40 @@ function sectionTitle(label: string, count: number): string {
   return `${label} (${count})`;
 }
 
+function currentMonthValue(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
 export default function KrankheitsantraegePage() {
   const [items, setItems] = useState<AbsenceRequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthValue());
+
   async function loadRequests() {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch("/api/admin/absence-requests?type=SICK", {
+      const params = new URLSearchParams();
+      params.set("type", "SICK");
+
+      if (selectedMonth) {
+        params.set("month", selectedMonth);
+      }
+
+      if (selectedUserId) {
+        params.set("userId", selectedUserId);
+      }
+
+      const response = await fetch(`/api/admin/absence-requests?${params.toString()}`, {
         method: "GET",
         cache: "no-store",
       });
@@ -260,9 +287,56 @@ export default function KrankheitsantraegePage() {
       setLoading(false);
     }
   }
-
   useEffect(() => {
     void loadRequests();
+  }, [selectedUserId, selectedMonth]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadUsers() {
+      try {
+        const response = await fetch("/api/users", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const json: unknown = await response.json().catch(() => ({}));
+
+        if (!response.ok || !isRecord(json) || json["ok"] !== true) {
+          if (active) setUsers([]);
+          return;
+        }
+
+        const usersRaw = json["users"];
+        if (!Array.isArray(usersRaw)) {
+          if (active) setUsers([]);
+          return;
+        }
+
+        const parsedUsers: UserOption[] = [];
+
+        for (const entry of usersRaw) {
+          if (!isRecord(entry)) continue;
+          const id = getStringField(entry, "id");
+          const fullName = getStringField(entry, "fullName");
+          if (!id || !fullName) continue;
+          parsedUsers.push({ id, fullName });
+        }
+
+        if (active) {
+          setUsers(parsedUsers);
+        }
+      } catch {
+        if (active) setUsers([]);
+      }
+    }
+
+    void loadUsers();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function approveRequest(id: string) {
@@ -335,6 +409,11 @@ export default function KrankheitsantraegePage() {
     () => items.filter((item) => item.status === "REJECTED"),
     [items]
   );
+
+    const selectedUserLabel = useMemo(() => {
+    if (!selectedUserId) return "Alle Mitarbeiter";
+    return users.find((user) => user.id === selectedUserId)?.fullName ?? "Ausgewählter Mitarbeiter";
+  }, [users, selectedUserId]);
 
   function renderRequestCard(item: AbsenceRequestItem) {
     const isBusy = busyId === item.id;
@@ -512,17 +591,39 @@ export default function KrankheitsantraegePage() {
         </div>
       </div>
 
-      <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
         <div
-          className="section-title"
-          style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 12,
+            marginTop: 16,
+          }}
         >
-          <span style={{ color: "var(--accent)" }}>🤒</span>
-          Krankheitsanträge
-        </div>
+          <div>
+            <div className="label">Mitarbeiter</div>
+            <select
+              className="input"
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+            >
+              <option value="">Alle Mitarbeiter</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.fullName}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div style={{ color: "var(--muted)", fontSize: 14 }}>
-          Hier siehst du alle Krankheitsanträge deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.
+          <div>
+            <div className="label">Monat</div>
+            <input
+              className="input"
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+            />
+          </div>
         </div>
 
         {error ? (
@@ -537,7 +638,8 @@ export default function KrankheitsantraegePage() {
             <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
           </div>
         ) : null}
-      </div>
+    
+
 
       {loading ? (
         <div className="card" style={{ padding: 18 }}>
@@ -594,7 +696,7 @@ export default function KrankheitsantraegePage() {
                 userSelect: "none",
               }}
             >
-              {sectionTitle("Genehmigt", approvedItems.length)}
+              {sectionTitle(`Genehmigt – ${selectedUserLabel}`, approvedItems.length)}
             </summary>
 
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
@@ -625,7 +727,7 @@ export default function KrankheitsantraegePage() {
                 userSelect: "none",
               }}
             >
-              {sectionTitle("Abgelehnt", rejectedItems.length)}
+              {sectionTitle(`Abgelehnt – ${selectedUserLabel}`, rejectedItems.length)}
             </summary>
 
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>

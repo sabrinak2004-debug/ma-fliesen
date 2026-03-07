@@ -26,6 +26,11 @@ type AbsenceRequestItem = {
   } | null;
 };
 
+type UserOption = {
+  id: string;
+  fullName: string;
+};
+
 type AdminRequestsResponse = {
   ok: true;
   requests: AbsenceRequestItem[];
@@ -225,18 +230,40 @@ function sectionTitle(label: string, count: number): string {
   return `${label} (${count})`;
 }
 
+function currentMonthValue(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
 export default function UrlaubsantraegePage() {
   const [items, setItems] = useState<AbsenceRequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthValue());
+
   async function loadRequests() {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch("/api/admin/absence-requests?type=VACATION", {
+      const params = new URLSearchParams();
+      params.set("type", "VACATION");
+
+      if (selectedMonth) {
+        params.set("month", selectedMonth);
+      }
+
+      if (selectedUserId) {
+        params.set("userId", selectedUserId);
+      }
+
+      const response = await fetch(`/api/admin/absence-requests?${params.toString()}`, {
         method: "GET",
         cache: "no-store",
       });
@@ -261,6 +288,54 @@ export default function UrlaubsantraegePage() {
 
   useEffect(() => {
     void loadRequests();
+  }, [selectedUserId, selectedMonth]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadUsers() {
+      try {
+        const response = await fetch("/api/users", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const json: unknown = await response.json().catch(() => ({}));
+
+        if (!response.ok || !isRecord(json) || json["ok"] !== true) {
+          if (active) setUsers([]);
+          return;
+        }
+
+        const usersRaw = json["users"];
+        if (!Array.isArray(usersRaw)) {
+          if (active) setUsers([]);
+          return;
+        }
+
+        const parsedUsers: UserOption[] = [];
+
+        for (const entry of usersRaw) {
+          if (!isRecord(entry)) continue;
+          const id = getStringField(entry, "id");
+          const fullName = getStringField(entry, "fullName");
+          if (!id || !fullName) continue;
+          parsedUsers.push({ id, fullName });
+        }
+
+        if (active) {
+          setUsers(parsedUsers);
+        }
+      } catch {
+        if (active) setUsers([]);
+      }
+    }
+
+    void loadUsers();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function approveRequest(id: string) {
@@ -333,6 +408,11 @@ export default function UrlaubsantraegePage() {
     () => items.filter((item) => item.status === "REJECTED"),
     [items]
   );
+
+  const selectedUserLabel = useMemo(() => {
+    if (!selectedUserId) return "Alle Mitarbeiter";
+    return users.find((user) => user.id === selectedUserId)?.fullName ?? "Ausgewählter Mitarbeiter";
+  }, [users, selectedUserId]);
 
   function renderRequestCard(item: AbsenceRequestItem) {
     const isBusy = busyId === item.id;
@@ -523,6 +603,41 @@ export default function UrlaubsantraegePage() {
           Hier siehst du alle Urlaubsanträge deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.
         </div>
 
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 12,
+            marginTop: 16,
+          }}
+        >
+          <div>
+            <div className="label">Mitarbeiter</div>
+            <select
+              className="input"
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+            >
+              <option value="">Alle Mitarbeiter</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.fullName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div className="label">Monat</div>
+            <input
+              className="input"
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+            />
+          </div>
+        </div>
+
         {error ? (
           <div
             className="card"
@@ -567,7 +682,7 @@ export default function UrlaubsantraegePage() {
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
               {pendingItems.length === 0 ? (
                 <div className="card" style={{ padding: 14, opacity: 0.85 }}>
-                  Keine offenen Urlaubsanträge.
+                  Keine offenen Urlaubsanträge für diesen Filter.
                 </div>
               ) : (
                 pendingItems.map(renderRequestCard)
@@ -592,13 +707,13 @@ export default function UrlaubsantraegePage() {
                 userSelect: "none",
               }}
             >
-              {sectionTitle("Genehmigt", approvedItems.length)}
+              {sectionTitle(`Genehmigt – ${selectedUserLabel}`, approvedItems.length)}
             </summary>
 
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
               {approvedItems.length === 0 ? (
                 <div className="card" style={{ padding: 14, opacity: 0.85 }}>
-                  Keine genehmigten Urlaubsanträge.
+                  Keine genehmigten Urlaubsanträge für diesen Filter.
                 </div>
               ) : (
                 approvedItems.map(renderRequestCard)
@@ -623,13 +738,13 @@ export default function UrlaubsantraegePage() {
                 userSelect: "none",
               }}
             >
-              {sectionTitle("Abgelehnt", rejectedItems.length)}
+              {sectionTitle(`Abgelehnt – ${selectedUserLabel}`, rejectedItems.length)}
             </summary>
 
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
               {rejectedItems.length === 0 ? (
                 <div className="card" style={{ padding: 14, opacity: 0.85 }}>
-                  Keine abgelehnten Urlaubsanträge.
+                  Keine abgelehnten Urlaubsanträge für diesen Filter.
                 </div>
               ) : (
                 rejectedItems.map(renderRequestCard)
