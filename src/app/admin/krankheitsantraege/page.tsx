@@ -594,18 +594,23 @@ export default function KrankheitsantraegePage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
             gap: 12,
             marginTop: 16,
           }}
         >
-          <div>
+          <div style={{ minWidth: 0, width: "100%" }}>
             <div className="label">Mitarbeiter</div>
             <select
               className="input"
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
-              style={{ width: "100%" }}
+              style={{
+                width: "100%",
+                minWidth: 0,
+                boxSizing: "border-box",
+                display: "block",
+              }}
             >
               <option value="">Alle Mitarbeiter</option>
               {users.map((user) => (
@@ -616,14 +621,19 @@ export default function KrankheitsantraegePage() {
             </select>
           </div>
 
-          <div>
+          <div style={{ minWidth: 0, width: "100%" }}>
             <div className="label">Monat</div>
             <input
               className="input"
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              style={{ width: "100%" }}
+              style={{
+                width: "100%",
+                minWidth: 0,
+                boxSizing: "border-box",
+                display: "block",
+              }}
             />
           </div>
         </div>
