@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { Role } from "@prisma/client";
+import { Role, AbsenceType } from "@prisma/client";
 
 function dateOnlyLocalIso(d: Date) {
   const yyyy = d.getFullYear();
@@ -38,6 +38,10 @@ function toHHMMUTC(d: Date) {
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 
+function absenceTypeToApi(type: AbsenceType): "VACATION" | "SICK" {
+  return type === AbsenceType.VACATION ? "VACATION" : "SICK";
+}
+
 type TimelineDayBreak = {
   workDate: string;
   breakStartHHMM: string | null;
@@ -48,15 +52,24 @@ type TimelineDayBreak = {
   effectiveMinutes: number;
 };
 
+type DashboardPersonRow = {
+  userId: string;
+  fullName: string;
+};
+
+type DashboardAbsenceRow = {
+  userId: string;
+  fullName: string;
+  type: "VACATION" | "SICK";
+};
+
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
   }
 
-  // @ts-expect-error - je nach getSession shape
-  const role = (session.role ?? session.user?.role) as Role | undefined;
-  if (role !== Role.ADMIN) {
+  if (session.role !== Role.ADMIN) {
     return NextResponse.json({ ok: false, error: "Kein Zugriff" }, { status: 403 });
   }
 
@@ -81,13 +94,40 @@ export async function GET(req: Request) {
     orderBy: { fullName: "asc" },
   });
 
+  const activeEmployeesToday: DashboardPersonRow[] = employees.map((employee) => ({
+    userId: employee.id,
+    fullName: employee.fullName,
+  }));
+
   const plannedToday = await prisma.planEntry.count({
     where: { workDate: new Date(`${todayIso}T00:00:00.000Z`) },
   });
 
-  const absencesToday = await prisma.absence.count({
+  const absencesTodayRows = await prisma.absence.findMany({
     where: { absenceDate: new Date(`${todayIso}T00:00:00.000Z`) },
+    select: {
+      userId: true,
+      type: true,
+      user: {
+        select: {
+          fullName: true,
+        },
+      },
+    },
+    orderBy: {
+      user: {
+        fullName: "asc",
+      },
+    },
   });
+
+  const absentTodayEmployees: DashboardAbsenceRow[] = absencesTodayRows.map((row) => ({
+    userId: row.userId,
+    fullName: row.user.fullName,
+    type: absenceTypeToApi(row.type),
+  }));
+
+  const absentTodaySet = new Set(absentTodayEmployees.map((row) => row.userId));
 
   const workedToday = await prisma.workEntry.findMany({
     where: { workDate: new Date(`${todayIso}T00:00:00.000Z`) },
@@ -96,12 +136,21 @@ export async function GET(req: Request) {
   });
 
   const workedTodaySet = new Set(workedToday.map((x) => x.userId));
-  const missingToday = employees.filter((e) => !workedTodaySet.has(e.id)).length;
+
+  const missingTodayEmployees: DashboardPersonRow[] = employees
+    .filter((employee) => !workedTodaySet.has(employee.id) && !absentTodaySet.has(employee.id))
+    .map((employee) => ({
+      userId: employee.id,
+      fullName: employee.fullName,
+    }));
+
+  const absencesToday = absentTodayEmployees.length;
+  const missingToday = missingTodayEmployees.length;
 
   const weekDays: string[] = [];
   {
     const cur = new Date(weekStart);
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 7; i += 1) {
       weekDays.push(dateOnlyLocalIso(cur));
       cur.setDate(cur.getDate() + 1);
     }
@@ -260,7 +309,7 @@ export async function GET(req: Request) {
 
       const date = dateOnlyLocalIso(new Date(absence.absenceDate));
       items.push({
-        type: absence.type,
+        type: absence.type === AbsenceType.VACATION ? "VACATION" : "SICK",
         date,
       });
     }
@@ -299,6 +348,9 @@ export async function GET(req: Request) {
       monthWorkMinutes: monthWorkAgg._sum.workMinutes ?? 0,
       employeesActive: employees.length,
     },
+    todayActiveEmployees: activeEmployeesToday,
+    todayMissingEmployees: missingTodayEmployees,
+    todayAbsentEmployees: absentTodayEmployees,
     employeesTimeline,
   });
 }

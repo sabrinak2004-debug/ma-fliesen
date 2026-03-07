@@ -69,15 +69,28 @@ type DashboardCards = {
   employeesActive: number;
 };
 
+type DashboardPersonRow = {
+  userId: string;
+  fullName: string;
+};
+
+type DashboardAbsenceRow = {
+  userId: string;
+  fullName: string;
+  type: "VACATION" | "SICK";
+};
+
 type AdminDashboardApiOk = {
   ok: true;
   todayIso: string;
   weekRange: { from: string; to: string };
   monthRange: { from: string; to: string };
   cards: DashboardCards;
+  todayActiveEmployees: DashboardPersonRow[];
+  todayMissingEmployees: DashboardPersonRow[];
+  todayAbsentEmployees: DashboardAbsenceRow[];
   employeesTimeline: AdminEmployeeTimeline[];
 };
-
 
 type OverviewByUserRow = {
   fullName: string;
@@ -119,6 +132,20 @@ function isNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
 
+function isDashboardPersonRow(v: unknown): v is DashboardPersonRow {
+  if (!isRecord(v)) return false;
+  return isString(v["userId"]) && isString(v["fullName"]);
+}
+
+function isDashboardAbsenceRow(v: unknown): v is DashboardAbsenceRow {
+  if (!isRecord(v)) return false;
+  return (
+    isString(v["userId"]) &&
+    isString(v["fullName"]) &&
+    (v["type"] === "VACATION" || v["type"] === "SICK")
+  );
+}
+
 function isAdminDashboardOk(v: unknown): v is AdminDashboardApiOk {
   if (!isRecord(v)) return false;
   if (v.ok !== true) return false;
@@ -127,9 +154,15 @@ function isAdminDashboardOk(v: unknown): v is AdminDashboardApiOk {
   const weekRange = v["weekRange"];
   const monthRange = v["monthRange"];
   const employeesTimeline = v["employeesTimeline"];
+  const todayActiveEmployees = v["todayActiveEmployees"];
+  const todayMissingEmployees = v["todayMissingEmployees"];
+  const todayAbsentEmployees = v["todayAbsentEmployees"];
 
   if (!isRecord(cards) || !isRecord(weekRange) || !isRecord(monthRange)) return false;
   if (!Array.isArray(employeesTimeline)) return false;
+  if (!Array.isArray(todayActiveEmployees)) return false;
+  if (!Array.isArray(todayMissingEmployees)) return false;
+  if (!Array.isArray(todayAbsentEmployees)) return false;
 
   return (
     isString(v["todayIso"]) &&
@@ -142,7 +175,10 @@ function isAdminDashboardOk(v: unknown): v is AdminDashboardApiOk {
     isNumber(cards["missingToday"]) &&
     isNumber(cards["missingWeek"]) &&
     isNumber(cards["monthWorkMinutes"]) &&
-    isNumber(cards["employeesActive"])
+    isNumber(cards["employeesActive"]) &&
+    todayActiveEmployees.every(isDashboardPersonRow) &&
+    todayMissingEmployees.every(isDashboardPersonRow) &&
+    todayAbsentEmployees.every(isDashboardAbsenceRow)
   );
 }
 
@@ -223,6 +259,10 @@ function formatMinutesCompact(minutes: number) {
   const mins = Math.max(0, Math.round(minutes));
   if (mins < 60) return `${mins} min`;
   return formatHM(mins);
+}
+
+function absenceTypeLabel(type: "VACATION" | "SICK") {
+  return type === "VACATION" ? "Urlaub" : "Krank";
 }
 
 function getDayBreakForDate(dayBreaks: AdminDayBreak[], workDate: string): AdminDayBreak | null {
@@ -346,18 +386,6 @@ function toggleWorkDay(openDays: Set<string>, key: string): Set<string> {
   return next;
 }
 
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-
-  return outputArray;
-}
 
 /* =========================
    Page
@@ -379,50 +407,13 @@ export default function AdminDashboardPage() {
   const [err, setErr] = useState<string>("");
 
   const [reloadTick, setReloadTick] = useState(0);
-    useEffect(() => {
-    let cancelled = false;
+  type KpiModalKind = "ACTIVE" | "MISSING" | "ABSENT" | null;
 
-    async function registerPushForAdmin() {
-      try {
-        if (!("serviceWorker" in navigator)) return;
-        if (!("PushManager" in window)) return;
-
-        const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-        if (!publicKey) return;
-
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") return;
-
-        const registration = await navigator.serviceWorker.ready;
-
-        let subscription = await registration.pushManager.getSubscription();
-
-        if (!subscription) {
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(publicKey),
-          });
-        }
-
-        if (cancelled) return;
-
-        await fetch("/api/push/register", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(subscription),
-        });
-      } catch (err) {
-        console.error("Push-Registrierung fehlgeschlagen:", err);
-      }
-    }
-
-    registerPushForAdmin();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const [kpiModalOpen, setKpiModalOpen] = useState(false);
+  const [kpiModalKind, setKpiModalKind] = useState<KpiModalKind>(null);
+  const [remindLoadingUserId, setRemindLoadingUserId] = useState<string>("");
+  const [remindErr, setRemindErr] = useState<string>("");
+  const [remindSuccess, setRemindSuccess] = useState<string>("");
 
   // Export Modal State
   const [exportOpen, setExportOpen] = useState(false);
@@ -497,6 +488,53 @@ export default function AdminDashboardPage() {
   const startDownload = (url: string) => {
     window.location.href = url;
   };
+
+    const openKpiModal = (kind: Exclude<KpiModalKind, null>) => {
+    setKpiModalKind(kind);
+    setRemindErr("");
+    setRemindSuccess("");
+    setKpiModalOpen(true);
+  };
+
+  const closeKpiModal = () => {
+    setKpiModalOpen(false);
+    setKpiModalKind(null);
+    setRemindLoadingUserId("");
+    setRemindErr("");
+    setRemindSuccess("");
+  };
+
+  async function sendMissingReminder(userId: string, fullName: string) {
+    setRemindLoadingUserId(userId);
+    setRemindErr("");
+    setRemindSuccess("");
+
+    try {
+      const r = await fetch("/api/admin/dashboard/remind-missing", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      const j: unknown = await r.json().catch(() => ({}));
+
+      if (!r.ok) {
+        const msg = isRecord(j) && isString(j["error"]) ? j["error"] : "Push konnte nicht gesendet werden.";
+        setRemindErr(msg);
+        return;
+      }
+
+      setRemindSuccess(`Reminder an ${fullName} gesendet.`);
+      setReloadTick((x) => x + 1);
+    } catch {
+      setRemindErr("Netzwerkfehler beim Senden des Reminders.");
+    } finally {
+      setRemindLoadingUserId("");
+    }
+  }
 
   const openExportModal = () => {
     setExportMode("MONTH");
@@ -982,6 +1020,174 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      <Modal
+        open={kpiModalOpen}
+        onClose={closeKpiModal}
+        title={
+          kpiModalKind === "ACTIVE"
+            ? "Aktive Mitarbeiter"
+            : kpiModalKind === "MISSING"
+            ? "Fehlende Einträge heute"
+            : kpiModalKind === "ABSENT"
+            ? "Abwesenheiten heute"
+            : ""
+        }
+        footer={
+          <button
+            type="button"
+            onClick={closeKpiModal}
+            style={{
+              padding: "10px 14px",
+              cursor: "pointer",
+              fontWeight: 900,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.9)",
+            }}
+          >
+            Schließen
+          </button>
+        }
+        maxWidth={720}
+      >
+        <div style={{ display: "grid", gap: 12 }}>
+          {remindErr ? (
+            <div
+              style={{
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid rgba(224,75,69,0.28)",
+                background: "rgba(224,75,69,0.10)",
+                color: "rgba(224,75,69,0.95)",
+                fontWeight: 900,
+              }}
+            >
+              {remindErr}
+            </div>
+          ) : null}
+
+          {remindSuccess ? (
+            <div
+              style={{
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid rgba(184,207,58,0.28)",
+                background: "rgba(184,207,58,0.10)",
+                color: "var(--accent)",
+                fontWeight: 900,
+              }}
+            >
+              {remindSuccess}
+            </div>
+          ) : null}
+
+          {kpiModalKind === "ACTIVE" ? (
+            (dash?.todayActiveEmployees ?? []).length > 0 ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                {(dash?.todayActiveEmployees ?? []).map((person) => (
+                  <div
+                    key={person.userId}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(255,255,255,0.03)",
+                      fontWeight: 900,
+                    }}
+                  >
+                    <div>{person.fullName}</div>
+                    <div style={{ color: "var(--muted-2)", fontSize: 12 }}>aktiv</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color: "var(--muted)" }}>Keine aktiven Mitarbeiter vorhanden.</div>
+            )
+          ) : null}
+
+          {kpiModalKind === "MISSING" ? (
+            (dash?.todayMissingEmployees ?? []).length > 0 ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                {(dash?.todayMissingEmployees ?? []).map((person) => (
+                  <div
+                    key={person.userId}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(255,255,255,0.03)",
+                    }}
+                  >
+                    <div style={{ fontWeight: 900 }}>{person.fullName}</div>
+
+                    <button
+                      type="button"
+                      onClick={() => sendMissingReminder(person.userId, person.fullName)}
+                      disabled={remindLoadingUserId === person.userId}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: 10,
+                        border: "1px solid rgba(184,207,58,0.35)",
+                        background: "rgba(184,207,58,0.12)",
+                        color: "var(--accent)",
+                        cursor: remindLoadingUserId === person.userId ? "not-allowed" : "pointer",
+                        fontWeight: 1000,
+                        opacity: remindLoadingUserId === person.userId ? 0.7 : 1,
+                      }}
+                    >
+                      {remindLoadingUserId === person.userId ? "Sende…" : "Push senden"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color: "var(--muted)" }}>
+                Heute fehlen aktuell keine Einträge.
+              </div>
+            )
+          ) : null}
+
+          {kpiModalKind === "ABSENT" ? (
+            (dash?.todayAbsentEmployees ?? []).length > 0 ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                {(dash?.todayAbsentEmployees ?? []).map((person) => (
+                  <div
+                    key={`${person.userId}-${person.type}`}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(255,255,255,0.03)",
+                    }}
+                  >
+                    <div style={{ fontWeight: 900 }}>{person.fullName}</div>
+                    <div style={{ color: "var(--muted-2)", fontSize: 12, fontWeight: 900 }}>
+                      {absenceTypeLabel(person.type)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color: "var(--muted)" }}>
+                Heute sind keine Mitarbeiter abwesend.
+              </div>
+            )
+          ) : null}
+        </div>
+      </Modal>
 
       <Modal
         open={detailsOpen}
@@ -1284,7 +1490,12 @@ export default function AdminDashboardPage() {
 
       {/* KPI Cards */}
       <div className="kpi-grid" style={{ marginBottom: 14 }}>
-        <div className="card kpi">
+        <div
+          className="card kpi"
+          onClick={() => openKpiModal("ACTIVE")}
+          style={{ cursor: "pointer" }}
+          title="Liste aktiver Mitarbeiter öffnen"
+        >
           <div>
             <div className="small">Aktive Mitarbeiter</div>
             <div className="big">{dash?.cards.employeesActive ?? "—"}</div>
@@ -1292,7 +1503,12 @@ export default function AdminDashboardPage() {
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>👥</div>
         </div>
 
-        <div className="card kpi">
+        <div
+          className="card kpi"
+          onClick={() => openKpiModal("MISSING")}
+          style={{ cursor: "pointer" }}
+          title="Liste fehlender Einträge öffnen"
+        >
           <div>
             <div className="small">Fehlende Einträge (heute)</div>
             <div className="big">{dash?.cards.missingToday ?? "—"}</div>
@@ -1300,7 +1516,12 @@ export default function AdminDashboardPage() {
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>⚠️</div>
         </div>
 
-        <div className="card kpi">
+        <div
+          className="card kpi"
+          onClick={() => openKpiModal("ABSENT")}
+          style={{ cursor: "pointer" }}
+          title="Liste heutiger Abwesenheiten öffnen"
+        >
           <div>
             <div className="small">Abwesenheiten (heute)</div>
             <div className="big">{dash?.cards.absencesToday ?? "—"}</div>
