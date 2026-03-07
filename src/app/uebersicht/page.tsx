@@ -696,51 +696,62 @@ const resetAbsFilters = () => {
 
       {/* Globaler Filter oben */}
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0,1fr) minmax(140px,180px) minmax(160px,220px)",
-            gap: 10,
-            alignItems: "end",
-          }}
-        >
+        <div style={{ display: "grid", gap: 14 }}>
           <div>
-            <div className="section-title" style={{ marginBottom: 4 }}>
+            <div className="section-title" style={{ marginBottom: 6 }}>
               Übersicht
             </div>
-            <div style={{ color: "var(--muted)" }}>
-              Daten für {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+            <div
+              style={{
+                color: "var(--muted)",
+                fontSize: 15,
+                lineHeight: 1.4,
+                wordBreak: "break-word",
+              }}
+            >
+              Daten für{" "}
+              <span style={{ fontWeight: 900, color: "rgba(255,255,255,0.92)" }}>
+                {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+              </span>
             </div>
           </div>
 
-          <div>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Jahr</div>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              style={selectStyle()}
-            >
-              {years.map((y) => (
-                <option key={y} value={y} style={{ color: "black" }}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Jahr</div>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                style={selectStyle()}
+              >
+                {years.map((y) => (
+                  <option key={y} value={y} style={{ color: "black" }}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Monat</div>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value as MonthOption)}
-              style={selectStyle()}
-            >
-              {MONTH_OPTIONS.map((m) => (
-                <option key={m.value} value={m.value} style={{ color: "black" }}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Monat</div>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value as MonthOption)}
+                style={selectStyle()}
+              >
+                {MONTH_OPTIONS.map((m) => (
+                  <option key={m.value} value={m.value} style={{ color: "black" }}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
