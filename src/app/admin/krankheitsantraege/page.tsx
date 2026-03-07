@@ -594,7 +594,7 @@ export default function KrankheitsantraegePage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gridTemplateColumns: "1fr 1fr",
             gap: 12,
             marginTop: 16,
           }}
@@ -605,6 +605,7 @@ export default function KrankheitsantraegePage() {
               className="input"
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
+              style={{ width: "100%" }}
             >
               <option value="">Alle Mitarbeiter</option>
               {users.map((user) => (
@@ -622,6 +623,7 @@ export default function KrankheitsantraegePage() {
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
+              style={{ width: "100%" }}
             />
           </div>
         </div>
