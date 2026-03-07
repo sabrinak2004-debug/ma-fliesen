@@ -1862,7 +1862,7 @@ useEffect(() => {
                           type="button"
                           onClick={() => {
                             setOpen(false);
-                            router.push(`/dokumente/${encodeURIComponent(p.id)}`);
+                            router.push(`/kalender/dokumente/${encodeURIComponent(p.id)}`);
                           }}
                         >
                           📎 Dokumente
