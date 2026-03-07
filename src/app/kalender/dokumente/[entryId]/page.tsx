@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 
@@ -12,6 +12,10 @@ type DocItem = {
   mimeType: string;
   sizeBytes: number;
   createdAt: string;
+};
+
+type ShareNavigator = Navigator & {
+  canShare?: (data: ShareData) => boolean;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -36,7 +40,9 @@ function getDocsFromJson(j: unknown): DocItem[] {
   const docs = j["documents"];
   if (!Array.isArray(docs)) return [];
   const out: DocItem[] = [];
-  for (const d of docs) if (isDocItem(d)) out.push(d);
+  for (const d of docs) {
+    if (isDocItem(d)) out.push(d);
+  }
   return out;
 }
 
@@ -48,6 +54,10 @@ function fmtBytes(n: number): string {
   return `${mb.toFixed(1)} MB`;
 }
 
+function canPreviewMime(mimeType: string): boolean {
+  return mimeType === "application/pdf" || mimeType.startsWith("image/");
+}
+
 export default function KalenderDokumentePage() {
   const router = useRouter();
   const params = useParams<{ entryId: string }>();
@@ -56,34 +66,99 @@ export default function KalenderDokumentePage() {
   const [docs, setDocs] = useState<DocItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-    const backToCalendar = useCallback(() => {
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewMimeType, setPreviewMimeType] = useState<string>("");
+  const [previewTitle, setPreviewTitle] = useState<string>("");
+
+  function backToCalendar(): void {
     router.push("/kalender");
-  }, [router]);
-
-  function buildInlineUrl(docId: string): string {
-    return `/api/plan-entry-documents/file?id=${encodeURIComponent(docId)}&disposition=inline`;
   }
 
-  function buildDownloadUrl(docId: string): string {
-    return `/api/plan-entry-documents/file?id=${encodeURIComponent(docId)}&disposition=attachment`;
+  function buildFileUrl(docId: string, disposition: "inline" | "attachment"): string {
+    return `/api/plan-entry-documents/file?id=${encodeURIComponent(docId)}&disposition=${disposition}`;
   }
 
-  function openDocument(docId: string): void {
-    const url = buildInlineUrl(docId);
-    window.open(url, "_blank", "noopener,noreferrer");
+  function revokePreviewUrl(): void {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(null);
   }
 
-  function downloadDocument(docId: string, fileName: string): void {
-    const link = document.createElement("a");
-    link.href = buildDownloadUrl(docId);
-    link.download = fileName;
-    link.rel = "noopener noreferrer";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  function closePreview(): void {
+    revokePreviewUrl();
+    setPreviewOpen(false);
+    setPreviewMimeType("");
+    setPreviewTitle("");
   }
 
-  async function loadDocs() {
+  async function fetchDocumentBlob(docId: string, disposition: "inline" | "attachment"): Promise<Blob> {
+    const response = await fetch(buildFileUrl(docId, disposition), {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error("Datei konnte nicht geladen werden.");
+    }
+
+    return await response.blob();
+  }
+
+  async function previewDocument(doc: DocItem): Promise<void> {
+    if (!canPreviewMime(doc.mimeType)) {
+      setErr("Dieser Dateityp kann in der App nicht angezeigt werden.");
+      return;
+    }
+
+    try {
+      setErr(null);
+
+      const blob = await fetchDocumentBlob(doc.id, "inline");
+      const blobUrl = URL.createObjectURL(blob);
+
+      revokePreviewUrl();
+      setPreviewUrl(blobUrl);
+      setPreviewMimeType(doc.mimeType);
+      setPreviewTitle(doc.title || doc.fileName);
+      setPreviewOpen(true);
+    } catch {
+      setErr("Dokument konnte nicht in der App geöffnet werden.");
+    }
+  }
+
+  async function shareDocument(doc: DocItem): Promise<void> {
+    try {
+      setErr(null);
+
+      const blob = await fetchDocumentBlob(doc.id, "attachment");
+      const file = new File([blob], doc.fileName, { type: doc.mimeType });
+
+      const shareNavigator = navigator as ShareNavigator;
+
+      if (
+        typeof navigator.share === "function" &&
+        typeof shareNavigator.canShare === "function" &&
+        shareNavigator.canShare({ files: [file] })
+      ) {
+        await navigator.share({
+          files: [file],
+          title: doc.title,
+          text: doc.fileName,
+        });
+        return;
+      }
+
+      setErr("Auf diesem Gerät ist 'Teilen / In Dateien sichern' hier nicht verfügbar.");
+    } catch {
+      setErr("Dokument konnte nicht geteilt bzw. gespeichert werden.");
+    }
+  }
+
+  async function loadDocs(): Promise<void> {
     if (!entryId) return;
 
     setLoading(true);
@@ -94,7 +169,10 @@ export default function KalenderDokumentePage() {
       const j: unknown = await r.json().catch(() => ({}));
 
       if (!r.ok) {
-        const msg = isRecord(j) && typeof j.error === "string" ? j.error : "Dokumente konnten nicht geladen werden.";
+        const msg =
+          isRecord(j) && typeof j.error === "string"
+            ? j.error
+            : "Dokumente konnten nicht geladen werden.";
         setErr(msg);
         setDocs([]);
         return;
@@ -114,22 +192,47 @@ export default function KalenderDokumentePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entryId]);
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   return (
     <AppShell activeLabel="#wirkönnendas">
       <div className="card card-olive" style={{ padding: 18 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+          }}
+        >
           <div style={{ fontWeight: 900, fontSize: 18 }}>Dokumente</div>
           <button className="btn" onClick={backToCalendar}>
             ← Zurück zum Kalender
           </button>
         </div>
 
-        <div style={{ height: 1, background: "var(--border)", margin: "14px 0", opacity: 0.7 }} />
+        <div
+          style={{
+            height: 1,
+            background: "var(--border)",
+            margin: "14px 0",
+            opacity: 0.7,
+          }}
+        />
 
         {loading ? (
           <div style={{ color: "var(--muted)" }}>Lade Dokumente...</div>
         ) : err ? (
-          <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
+          <div
+            className="card"
+            style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}
+          >
             <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{err}</span>
           </div>
         ) : docs.length === 0 ? (
@@ -147,25 +250,21 @@ export default function KalenderDokumentePage() {
                   <button
                     type="button"
                     className="btn btn-accent"
-                    onClick={() => openDocument(d.id)}
+                    onClick={() => {
+                      void previewDocument(d);
+                    }}
                   >
-                    Öffnen
+                    In App ansehen
                   </button>
 
                   <button
                     type="button"
                     className="btn"
-                    onClick={() => downloadDocument(d.id, d.fileName)}
+                    onClick={() => {
+                      void shareDocument(d);
+                    }}
                   >
-                    Download
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={backToCalendar}
-                  >
-                    Zurück zum Kalender
+                    Teilen / Sichern
                   </button>
                 </div>
               </div>
@@ -173,6 +272,90 @@ export default function KalenderDokumentePage() {
           </div>
         )}
       </div>
+
+      {previewOpen && previewUrl ? (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 90,
+            background: "rgba(0,0,0,0.72)",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div
+            style={{
+              padding: 12,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              borderBottom: "1px solid rgba(255,255,255,0.10)",
+              background: "rgba(20,20,20,0.85)",
+            }}
+          >
+            <div
+              style={{
+                color: "white",
+                fontWeight: 900,
+                fontSize: 14,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {previewTitle}
+            </div>
+
+            <button type="button" className="btn" onClick={closePreview}>
+              Schließen
+            </button>
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              background: "rgba(255,255,255,0.02)",
+              overflow: "auto",
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
+            {previewMimeType === "application/pdf" ? (
+              <iframe
+                src={previewUrl}
+                title={previewTitle}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                  background: "white",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  minHeight: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 16,
+                }}
+              >
+                <img
+                  src={previewUrl}
+                  alt={previewTitle}
+                  style={{
+                    maxWidth: "100%",
+                    height: "auto",
+                    borderRadius: 12,
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
     </AppShell>
   );
 }

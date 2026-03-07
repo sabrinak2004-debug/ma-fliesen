@@ -23,6 +23,10 @@ type PlanEntry = {
   user?: { id: string; fullName: string };
 };
 
+type ShareNavigator = Navigator & {
+  canShare?: (data: ShareData) => boolean;
+};
+
 /**
  * ✅ Admin-Notiz ist ein SEPARATER Datensatz (separates Speichern/Löschen)
  * Erwartete Felder im Backend:
@@ -330,6 +334,11 @@ export default function AdminWochenplanPage() {
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
 
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewDocUrl, setPreviewDocUrl] = useState<string | null>(null);
+  const [previewDocMimeType, setPreviewDocMimeType] = useState<string>("");
+  const [previewDocTitle, setPreviewDocTitle] = useState<string>("");
+
   // Admin-Note Modal (SEPARAT)
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [editNoteId, setEditNoteId] = useState<string | null>(null);
@@ -449,6 +458,94 @@ export default function AdminWochenplanPage() {
     }
   }
 
+    function canPreviewMime(mimeType: string): boolean {
+    return mimeType === "application/pdf" || mimeType.startsWith("image/");
+  }
+
+  function revokePreviewDocUrl(): void {
+    if (previewDocUrl) {
+      URL.revokeObjectURL(previewDocUrl);
+    }
+    setPreviewDocUrl(null);
+  }
+
+  function closePreview(): void {
+    revokePreviewDocUrl();
+    setPreviewOpen(false);
+    setPreviewDocMimeType("");
+    setPreviewDocTitle("");
+  }
+
+  async function fetchPlanDocumentBlob(
+    docId: string,
+    disposition: "inline" | "attachment"
+  ): Promise<Blob> {
+    const response = await fetch(
+      `/api/plan-entry-documents/file?id=${encodeURIComponent(docId)}&disposition=${disposition}`,
+      {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Datei konnte nicht geladen werden.");
+    }
+
+    return await response.blob();
+  }
+
+  async function previewPlanDocument(doc: PlanEntryDocument): Promise<void> {
+    if (!canPreviewMime(doc.mimeType)) {
+      setDocsError("Dieser Dateityp kann in der App nicht angezeigt werden.");
+      return;
+    }
+
+    try {
+      setDocsError(null);
+
+      const blob = await fetchPlanDocumentBlob(doc.id, "inline");
+      const blobUrl = URL.createObjectURL(blob);
+
+      revokePreviewDocUrl();
+      setPreviewDocUrl(blobUrl);
+      setPreviewDocMimeType(doc.mimeType);
+      setPreviewDocTitle(doc.title || doc.fileName);
+      setPreviewOpen(true);
+    } catch {
+      setDocsError("Dokument konnte nicht in der App geöffnet werden.");
+    }
+  }
+
+  async function sharePlanDocument(doc: PlanEntryDocument): Promise<void> {
+    try {
+      setDocsError(null);
+
+      const blob = await fetchPlanDocumentBlob(doc.id, "attachment");
+      const file = new File([blob], doc.fileName, { type: doc.mimeType });
+
+      const shareNavigator = navigator as ShareNavigator;
+
+      if (
+        typeof navigator.share === "function" &&
+        typeof shareNavigator.canShare === "function" &&
+        shareNavigator.canShare({ files: [file] })
+      ) {
+        await navigator.share({
+          files: [file],
+          title: doc.title,
+          text: doc.fileName,
+        });
+        return;
+      }
+
+      setDocsError("Auf diesem Gerät ist 'Teilen / Sichern' hier nicht verfügbar.");
+    } catch {
+      setDocsError("Dokument konnte nicht geteilt bzw. gespeichert werden.");
+    }
+  }
+
   async function uploadDoc() {
     if (!editEntryId) {
       alert("Bitte erst den Plan-Eintrag speichern, dann Dokumente hochladen.");
@@ -504,10 +601,10 @@ export default function AdminWochenplanPage() {
   }
 
   function closeEntryModal() {
+    closePreview();
     setEntryModalOpen(false);
     setEditEntryId(null);
 
-    // ✅ reset docs state
     setDocs([]);
     setDocsError(null);
     setDocsLoading(false);
@@ -1453,15 +1550,25 @@ export default function AdminWochenplanPage() {
                           </div>
 
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                            <a
+                            <button
                               className="pill"
-                              href={`/api/plan-entry-documents/file?id=${encodeURIComponent(d.id)}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{ textDecoration: "none" }}
+                              type="button"
+                              onClick={() => {
+                                void previewPlanDocument(d);
+                              }}
                             >
-                              Öffnen
-                            </a>
+                              In App ansehen
+                            </button>
+
+                            <button
+                              className="pill"
+                              type="button"
+                              onClick={() => {
+                                void sharePlanDocument(d);
+                              }}
+                            >
+                              Teilen / Sichern
+                            </button>
 
                             <button
                               className="pill"
@@ -1485,6 +1592,51 @@ export default function AdminWochenplanPage() {
             ✅ Admin-Notiz wird <b>nicht</b> hier gespeichert — dafür gibt es separat “+ Notiz (Admin)” im Wochenplan.
           </div>
         </div>
+      </Modal>
+
+            <Modal
+        open={previewOpen}
+        title={previewDocTitle || "Dokument"}
+        onClose={closePreview}
+        maxWidth={980}
+        zIndex={70}
+        footer={
+          <div style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
+            <button className="pill" onClick={closePreview} type="button">
+              Schließen
+            </button>
+          </div>
+        }
+      >
+        {previewDocUrl ? (
+          previewDocMimeType === "application/pdf" ? (
+            <iframe
+              src={previewDocUrl}
+              title={previewDocTitle}
+              style={{
+                width: "100%",
+                height: "70vh",
+                border: "none",
+                borderRadius: 10,
+                background: "white",
+              }}
+            />
+          ) : (
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <img
+                src={previewDocUrl}
+                alt={previewDocTitle}
+                style={{
+                  maxWidth: "100%",
+                  height: "auto",
+                  borderRadius: 10,
+                }}
+              />
+            </div>
+          )
+        ) : (
+          <div style={{ color: UI.muted }}>Keine Vorschau verfügbar.</div>
+        )}
       </Modal>
 
       {/* -------------------- MODAL: ADMIN-NOTIZ (SEPARAT) -------------------- */}
