@@ -591,6 +591,18 @@ export default function KrankheitsantraegePage() {
         </div>
       </div>
 
+      <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
+        <div
+          className="section-title"
+          style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}
+        >
+          <span style={{ color: "var(--accent)" }}>🤒</span>
+          Krankheitsanträge
+        </div>
+
+        <div style={{ color: "var(--muted)", fontSize: 14 }}>
+          Hier siehst du alle Krankheitsanträge deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.
+        </div>
         <div
           style={{
             display: "grid",
@@ -637,6 +649,8 @@ export default function KrankheitsantraegePage() {
             />
           </div>
         </div>
+      </div>
+
 
         {error ? (
           <div
