@@ -534,12 +534,10 @@ const filteredBlocks = useMemo((): AbsenceBlock[] => {
     return { total, sick, vac };
   }, [filteredBlocks]);
 
-  const resetAbsFilters = () => {
-    setAbsQuery("");
-    setAbsType("ALL");
-    setSelectedYear(currentYear());
-    setSelectedMonth(currentMonth());
-  };
+const resetAbsFilters = () => {
+  setAbsQuery("");
+  setAbsType("ALL");
+};
 
   return (
     <AppShell activeLabel="#wirkönndas">
@@ -696,11 +694,64 @@ const filteredBlocks = useMemo((): AbsenceBlock[] => {
         </div>
       </Modal>
 
+      {/* Globaler Filter oben */}
+      <div className="card" style={{ padding: 18, marginBottom: 14 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0,1fr) minmax(140px,180px) minmax(160px,220px)",
+            gap: 10,
+            alignItems: "end",
+          }}
+        >
+          <div>
+            <div className="section-title" style={{ marginBottom: 4 }}>
+              Übersicht
+            </div>
+            <div style={{ color: "var(--muted)" }}>
+              Daten für {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Jahr</div>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              style={selectStyle()}
+            >
+              {years.map((y) => (
+                <option key={y} value={y} style={{ color: "black" }}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Monat</div>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value as MonthOption)}
+              style={selectStyle()}
+            >
+              {MONTH_OPTIONS.map((m) => (
+                <option key={m.value} value={m.value} style={{ color: "black" }}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* KPI Cards */}
       <div className="kpi-grid" style={{ marginBottom: 14 }}>
         <div className="card kpi">
           <div>
-            <div className="small">Arbeitsstunden</div>
+            <div className="small">
+              Arbeitsstunden · {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+            </div>
             <div className="big">{toHours(totalMinutes).toFixed(1)}h</div>
             <div className="small">Soll: 160h</div>
           </div>
@@ -727,9 +778,7 @@ const filteredBlocks = useMemo((): AbsenceBlock[] => {
 
       {/* Progress */}
       <div className="card card-olive" style={{ padding: 18, marginBottom: 14 }}>
-        <div className="section-title" style={{ marginBottom: 10 }}>
-          Monatsfortschritt
-        </div>
+        Monatsfortschritt – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ color: "var(--muted)" }}>
             Noch {Math.max(0, (targetMinutes - totalMinutes) / 60).toFixed(1)}h bis zum Monatssoll
@@ -775,9 +824,7 @@ const filteredBlocks = useMemo((): AbsenceBlock[] => {
           style={{
             marginTop: 12,
             display: "grid",
-            gridTemplateColumns: isAdmin
-            ? "minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto"
-            : "minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto",
+            gridTemplateColumns: isAdmin ? "minmax(0,1.4fr) minmax(0,1fr) auto" : "minmax(0,1fr) auto",
             gap: 10,
           }}
         >
@@ -789,22 +836,6 @@ const filteredBlocks = useMemo((): AbsenceBlock[] => {
               style={inputStyle()}
             />
           ) : null}
-
-          <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value as MonthOption)} style={selectStyle()}>
-            {MONTH_OPTIONS.map((m) => (
-              <option key={m.value} value={m.value} style={{ color: "black" }}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-
-          <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} style={selectStyle()}>
-            {years.map((y) => (
-              <option key={y} value={y} style={{ color: "black" }}>
-                {y}
-              </option>
-            ))}
-          </select>
 
           <select value={absType} onChange={(e) => setAbsType(e.target.value as AbsFilterType)} style={selectStyle()}>
             <option value="ALL">Alle Typen</option>
