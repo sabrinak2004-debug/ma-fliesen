@@ -178,23 +178,9 @@ function getLegalBreakHintLines(): string[] {
 function hasMeaningfulEntryInput(params: {
   startTime: string;
   endTime: string;
-  activity: string;
-  location: string;
-  travelMinutes: string;
-  noteEmployee: string;
 }): boolean {
-  const { startTime, endTime, activity, location, travelMinutes, noteEmployee } = params;
-
-  const travel = (travelMinutes ?? "").trim();
-  const hasTravel = travel !== "" && travel !== "0";
-
-  return (
-    hasCompleteTimeRange(startTime, endTime) ||
-    activity.trim().length > 0 ||
-    location.trim().length > 0 ||
-    noteEmployee.trim().length > 0 ||
-    hasTravel
-  );
+  const { startTime, endTime } = params;
+  return hasCompleteTimeRange(startTime, endTime);
 }
 
 type EditForm = {
@@ -323,8 +309,8 @@ export default function Page() {
 
   // Create-Form (ohne fullName)
   const [workDate, setWorkDate] = useState<string>(() => toIsoDateLocal(new Date()));
-  const [startTime, setStartTime] = useState("08:00");
-  const [endTime, setEndTime] = useState("16:30");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [activity, setActivity] = useState("");
   const [location, setLocation] = useState("");
   const [travelMinutes, setTravelMinutes] = useState<string>("0");
@@ -353,16 +339,12 @@ export default function Page() {
   const [noteEntry, setNoteEntry] = useState<WorkEntry | null>(null);
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
-    const isEntryPreviewActive = useMemo(() => {
+  const isEntryPreviewActive = useMemo(() => {
     return hasMeaningfulEntryInput({
       startTime,
       endTime,
-      activity,
-      location,
-      travelMinutes,
-      noteEmployee,
     });
-  }, [startTime, endTime, activity, location, travelMinutes, noteEmployee]);
+  }, [startTime, endTime]);
 
   const hasSavedEntriesForSelectedDay = useMemo(() => {
     return entries.some((entry) => toYMD(entry.workDate) === workDate);
@@ -536,6 +518,8 @@ useEffect(() => {
         return;
       }
 
+      setStartTime("");
+      setEndTime("");
       setActivity("");
       setLocation("");
       setTravelMinutes("0");
@@ -917,10 +901,14 @@ useEffect(() => {
         className="btn"
         type="button"
         onClick={() => {
+          setWorkDate(toIsoDateLocal(new Date()));
+          setStartTime("");
+          setEndTime("");
           setActivity("");
           setLocation("");
           setTravelMinutes("0");
           setNoteEmployee("");
+          setError(null);
         }}
       >
         Abbrechen
