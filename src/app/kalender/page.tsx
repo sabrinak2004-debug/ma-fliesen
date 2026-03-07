@@ -764,7 +764,12 @@ useEffect(() => {
 
   const requestBlocksForSelectedDay = useMemo(() => {
     if (!selectedDate || isAdmin) return [];
-    return requestBlocks.filter((b) => dateInRange(selectedDate, b.start, b.end));
+
+    return requestBlocks.filter(
+      (b) =>
+        b.status === "PENDING" &&
+        dateInRange(selectedDate, b.start, b.end)
+    );
   }, [requestBlocks, selectedDate, isAdmin]);
 
   const grid = useMemo(() => {
