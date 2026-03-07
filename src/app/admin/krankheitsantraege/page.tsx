@@ -611,14 +611,15 @@ export default function KrankheitsantraegePage() {
             marginTop: 16,
           }}
         >
-          <div style={{ minWidth: 0, width: "200%" }}>
+          <div style={{ minWidth: 0, width: "100%",height: "200%" }}>
             <div className="label">Mitarbeiter</div>
             <select
               className="input"
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
               style={{
-                width: "200%",
+                width: "100%",
+                height: "200%",
                 minWidth: 0,
                 boxSizing: "border-box",
                 display: "block",
