@@ -13,10 +13,13 @@ type WorkEntry = {
   user?: { id: string; fullName: string };
 };
 
+type AbsenceDayPortion = "FULL_DAY" | "HALF_DAY";
+
 type Absence = {
   id: string;
   absenceDate: string; // YYYY-MM-DD
   type: "VACATION" | "SICK";
+  dayPortion: AbsenceDayPortion;
   user: { id: string; fullName: string };
 };
 
@@ -186,6 +189,7 @@ type AbsenceBlock = {
   from: string; // YYYY-MM-DD
   to: string; // YYYY-MM-DD
   days: number;
+  dayPortion: AbsenceDayPortion;
 };
 
 function daysInclusive(from: string, to: string) {
@@ -195,6 +199,16 @@ function daysInclusive(from: string, to: string) {
   return diff + 1;
 }
 
+function absenceDayValue(dayPortion: AbsenceDayPortion): number {
+  return dayPortion === "HALF_DAY" ? 0.5 : 1;
+}
+
+function formatDayCountDE(days: number): string {
+  if (days === 0.5) return "0,5 Tag";
+  if (Number.isInteger(days)) return `${days} ${days === 1 ? "Tag" : "Tage"}`;
+  return `${String(days).replace(".", ",")} Tage`;
+}
+
 function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
   const res: AbsenceBlock[] = [];
   if (sortedAbsences.length === 0) return res;
@@ -202,8 +216,10 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
   const user = sortedAbsences[0].user;
 
   let curType: Absence["type"] = sortedAbsences[0].type;
+  let curDayPortion: AbsenceDayPortion = sortedAbsences[0].dayPortion;
   let curFrom = sortedAbsences[0].absenceDate;
   let curTo = sortedAbsences[0].absenceDate;
+  let curDays = absenceDayValue(sortedAbsences[0].dayPortion);
 
   const isNextDay = (prev: string, next: string) => {
     const p = toUTCDateFromISO(prev);
@@ -219,28 +235,61 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
   for (let i = 1; i < sortedAbsences.length; i++) {
     const a = sortedAbsences[i];
 
-    // Falls doch gemischt -> harte Trennung
     if (a.user.id !== user.id) {
-      res.push({ user, type: curType, from: curFrom, to: curTo, days: daysInclusive(curFrom, curTo) });
+      res.push({
+        user,
+        type: curType,
+        from: curFrom,
+        to: curTo,
+        days: curDays,
+        dayPortion: curDayPortion,
+      });
+
       curType = a.type;
+      curDayPortion = a.dayPortion;
       curFrom = a.absenceDate;
       curTo = a.absenceDate;
+      curDays = absenceDayValue(a.dayPortion);
       continue;
     }
 
-    if (a.type === curType && isNextDay(curTo, a.absenceDate)) {
+    const mayMergeFullDays =
+      curDayPortion === "FULL_DAY" &&
+      a.dayPortion === "FULL_DAY" &&
+      a.type === curType &&
+      isNextDay(curTo, a.absenceDate);
+
+    if (mayMergeFullDays) {
       curTo = a.absenceDate;
+      curDays += 1;
       continue;
     }
 
-    res.push({ user, type: curType, from: curFrom, to: curTo, days: daysInclusive(curFrom, curTo) });
+    res.push({
+      user,
+      type: curType,
+      from: curFrom,
+      to: curTo,
+      days: curDays,
+      dayPortion: curDayPortion,
+    });
 
     curType = a.type;
+    curDayPortion = a.dayPortion;
     curFrom = a.absenceDate;
     curTo = a.absenceDate;
+    curDays = absenceDayValue(a.dayPortion);
   }
 
-  res.push({ user, type: curType, from: curFrom, to: curTo, days: daysInclusive(curFrom, curTo) });
+  res.push({
+    user,
+    type: curType,
+    from: curFrom,
+    to: curTo,
+    days: curDays,
+    dayPortion: curDayPortion,
+  });
+
   return res;
 }
 
@@ -397,8 +446,10 @@ export default function UebersichtPage() {
         const cur =
           map.get(key) ?? { userId: key, name, minutes: 0, km: 0, entries: 0, vac: 0, sick: 0 };
 
-        if (a.type === "VACATION") cur.vac += 1;
-        if (a.type === "SICK") cur.sick += 1;
+        const value = absenceDayValue(a.dayPortion);
+
+        if (a.type === "VACATION") cur.vac += value;
+        if (a.type === "SICK") cur.sick += value;
 
         map.set(key, cur);
       }
@@ -908,7 +959,7 @@ const resetAbsFilters = () => {
                     <span style={{ fontWeight: 900 }}>{title}</span>
                     <span style={badgeStyle(b.type)}>{typeLabel(b.type)}</span>
                     <span style={{ color: "var(--muted)" }}>
-                      {b.days} {b.days === 1 ? "Tag" : "Tage"}
+                      {formatDayCountDE(b.days)}
                     </span>
                   </div>
 
@@ -958,8 +1009,16 @@ const resetAbsFilters = () => {
                       <div style={{ color: "var(--muted-2)", marginTop: 8, display: "flex", gap: 18, flexWrap: "wrap" }}>
                         <span>🧾 {p.entries} Einträge</span>
                         <span>🚗 {p.km.toFixed(0)} km</span>
-                        {p.sick > 0 ? <span style={{ color: "rgba(224, 75, 69, 0.95)" }}>🌡 {p.sick}d Krank</span> : null}
-                        {p.vac > 0 ? <span style={{ color: "rgba(90, 167, 255, 0.95)" }}>🌴 {p.vac}d Urlaub</span> : null}
+                        {p.sick > 0 ? (
+                          <span style={{ color: "rgba(224, 75, 69, 0.95)" }}>
+                            🌡 {String(p.sick).replace(".", ",")} Krank
+                          </span>
+                        ) : null}
+                        {p.vac > 0 ? (
+                          <span style={{ color: "rgba(90, 167, 255, 0.95)" }}>
+                            🌴 {String(p.vac).replace(".", ",")} Urlaub
+                          </span>
+                        ) : null}
                       </div>
                     </div>
 

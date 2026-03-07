@@ -26,6 +26,7 @@ type AdminTimelineWork = {
 type AdminTimelineAbsence = {
   type: "VACATION" | "SICK";
   date: string; // YYYY-MM-DD
+  dayPortion: "FULL_DAY" | "HALF_DAY";
 };
 
 type AdminTimelineItem = AdminTimelineWork | AdminTimelineAbsence;
@@ -317,6 +318,8 @@ type AbsenceRange = {
   type: "VACATION" | "SICK";
   from: string; // YYYY-MM-DD
   to: string; // YYYY-MM-DD
+  dayPortion: "FULL_DAY" | "HALF_DAY";
+  days: number;
 };
 
 function addDaysIso(iso: string, days: number) {
@@ -329,6 +332,16 @@ function addDaysIso(iso: string, days: number) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function absenceDayValue(dayPortion: "FULL_DAY" | "HALF_DAY"): number {
+  return dayPortion === "HALF_DAY" ? 0.5 : 1;
+}
+
+function formatDayCountDE(days: number): string {
+  if (days === 0.5) return "0,5 Tag";
+  if (Number.isInteger(days)) return `${days} ${days === 1 ? "Tag" : "Tage"}`;
+  return `${String(days).replace(".", ",")} Tage`;
+}
+
 function groupAbsenceRanges(items: AdminTimelineItem[]): AbsenceRange[] {
   const abs = items
     .filter((i): i is AdminTimelineAbsence => i.type === "VACATION" || i.type === "SICK")
@@ -336,22 +349,42 @@ function groupAbsenceRanges(items: AdminTimelineItem[]): AbsenceRange[] {
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
   const res: AbsenceRange[] = [];
+
   for (const it of abs) {
     const last = res[res.length - 1];
 
     if (!last) {
-      res.push({ type: it.type, from: it.date, to: it.date });
+      res.push({
+        type: it.type,
+        from: it.date,
+        to: it.date,
+        dayPortion: it.dayPortion,
+        days: absenceDayValue(it.dayPortion),
+      });
       continue;
     }
 
     const expectedNext = addDaysIso(last.to, 1);
 
-    if (last.type === it.type && it.date === expectedNext) {
+    const mayMergeFullDays =
+      last.type === it.type &&
+      last.dayPortion === "FULL_DAY" &&
+      it.dayPortion === "FULL_DAY" &&
+      it.date === expectedNext;
+
+    if (mayMergeFullDays) {
       last.to = it.date;
+      last.days += 1;
       continue;
     }
 
-    res.push({ type: it.type, from: it.date, to: it.date });
+    res.push({
+      type: it.type,
+      from: it.date,
+      to: it.date,
+      dayPortion: it.dayPortion,
+      days: absenceDayValue(it.dayPortion),
+    });
   }
 
   return res;
@@ -1848,7 +1881,12 @@ export default function AdminDashboardPage() {
                                     {sickRanges.map((r, idx) => {
                                       const from = formatDateDE(r.from);
                                       const to = formatDateDE(r.to);
-                                      const text = r.from === r.to ? `${from}` : `${from}–${to}`;
+                                      const text =
+                                        r.dayPortion === "HALF_DAY"
+                                          ? `${from} · ${formatDayCountDE(r.days)}`
+                                          : r.from === r.to
+                                          ? `${from} · ${formatDayCountDE(r.days)}`
+                                          : `${from}–${to} · ${formatDayCountDE(r.days)}`;
                                       return (
                                         <div
                                           key={`s-${idx}`}
@@ -1878,7 +1916,12 @@ export default function AdminDashboardPage() {
                                     {vacationRanges.map((r, idx) => {
                                       const from = formatDateDE(r.from);
                                       const to = formatDateDE(r.to);
-                                      const text = r.from === r.to ? `${from}` : `${from}–${to}`;
+                                      const text =
+                                        r.dayPortion === "HALF_DAY"
+                                          ? `${from} · ${formatDayCountDE(r.days)}`
+                                          : r.from === r.to
+                                          ? `${from} · ${formatDayCountDE(r.days)}`
+                                          : `${from}–${to} · ${formatDayCountDE(r.days)}`;
                                       return (
                                         <div
                                           key={`v-${idx}`}

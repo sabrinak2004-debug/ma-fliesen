@@ -233,6 +233,7 @@ export async function GET(req: Request) {
       userId: true,
       absenceDate: true,
       type: true,
+      dayPortion: true,
     },
   });
 
@@ -269,6 +270,7 @@ export async function GET(req: Request) {
       | {
           type: "VACATION" | "SICK";
           date: string;
+          dayPortion: "FULL_DAY" | "HALF_DAY";
         }
     > = [];
 
@@ -311,6 +313,7 @@ export async function GET(req: Request) {
       items.push({
         type: absence.type === AbsenceType.VACATION ? "VACATION" : "SICK",
         date,
+        dayPortion: absence.dayPortion === "HALF_DAY" ? "HALF_DAY" : "FULL_DAY",
       });
     }
 

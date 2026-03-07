@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Role } from "@prisma/client";
+import { AbsenceDayPortion, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { computeDayBreakFromGross } from "@/lib/breaks";
@@ -12,6 +12,10 @@ type DayAgg = {
   gross: number;
   manualBreak: number;
 };
+
+function absencePortionValue(dayPortion: AbsenceDayPortion): number {
+  return dayPortion === AbsenceDayPortion.HALF_DAY ? 0.5 : 1;
+}
 
 export async function GET(req: Request) {
   const session = await getSession();
@@ -97,8 +101,12 @@ export async function GET(req: Request) {
       entriesCount: userEntries.length,
       workMinutes: netMinutesSum,
       travelMinutes: userEntries.reduce((sum, row) => sum + (row.travelMinutes ?? 0), 0),
-      vacationDays: userAbsences.filter((row) => row.type === "VACATION").length,
-      sickDays: userAbsences.filter((row) => row.type === "SICK").length,
+      vacationDays: userAbsences
+        .filter((row) => row.type === "VACATION")
+        .reduce((sum, row) => sum + absencePortionValue(row.dayPortion), 0),
+      sickDays: userAbsences
+        .filter((row) => row.type === "SICK")
+        .reduce((sum, row) => sum + absencePortionValue(row.dayPortion), 0),
     };
   });
 
