@@ -268,7 +268,7 @@ export async function POST(req: Request) {
   });
 
   if (!fresh) {
-    return NextResponse.json({ error: "Pause konnte nicht geladen werden." }, { status: 500 });
+    return NextResponse.json({ error: "Trage erst deine Arbeitzeit für diesen Tag ein" }, { status: 500 });
   }
 
   const dayBreak: DayBreakDTO = {
