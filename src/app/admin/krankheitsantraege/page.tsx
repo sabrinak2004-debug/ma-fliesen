@@ -618,7 +618,7 @@ export default function KrankheitsantraegePage() {
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
               style={{
-                width: "100%",
+                width: "200%",
                 minWidth: 0,
                 boxSizing: "border-box",
                 display: "block",
