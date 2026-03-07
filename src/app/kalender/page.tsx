@@ -18,10 +18,13 @@ type CalendarResponse = { ok: true; days: CalendarDay[] } | { ok: false; error: 
 
 type AbsenceType = "VACATION" | "SICK";
 
+type AbsenceDayPortion = "FULL_DAY" | "HALF_DAY";
+
 type AbsenceDTO = {
   id: string;
   absenceDate: string; // YYYY-MM-DD
   type: AbsenceType;
+  dayPortion: AbsenceDayPortion;
   user: { id: string; fullName: string };
 };
 
@@ -39,9 +42,10 @@ type PlanEntry = {
 
 type AbsenceBlock = {
   type: AbsenceType;
-  start: string; // YYYY-MM-DD
-  end: string; // YYYY-MM-DD
-  idsByDate: Record<string, string>; // date -> absence id
+  dayPortion: AbsenceDayPortion;
+  start: string;
+  end: string;
+  idsByDate: Record<string, string>;
 };
 
 type AbsenceRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -51,6 +55,7 @@ type AbsenceRequestDTO = {
   startDate: string;
   endDate: string;
   type: AbsenceType;
+  dayPortion: AbsenceDayPortion;
   status: AbsenceRequestStatus;
   noteEmployee: string;
   createdAt: string;
@@ -69,6 +74,7 @@ type AbsenceRequestDTO = {
 type AbsenceRequestBlock = {
   id: string;
   type: AbsenceType;
+  dayPortion: AbsenceDayPortion;
   status: AbsenceRequestStatus;
   start: string;
   end: string;
@@ -124,6 +130,10 @@ function isAbsenceType(v: unknown): v is AbsenceType {
   return v === "VACATION" || v === "SICK";
 }
 
+function isAbsenceDayPortion(v: unknown): v is AbsenceDayPortion {
+  return v === "FULL_DAY" || v === "HALF_DAY";
+}
+
 function isCalendarDay(v: unknown): v is CalendarDay {
   if (!isRecord(v)) return false;
   const date = getStringField(v, "date");
@@ -164,9 +174,12 @@ function isAbsenceDTO(v: unknown): v is AbsenceDTO {
   const id = getStringField(v, "id");
   const absenceDate = getStringField(v, "absenceDate");
   const type = v["type"];
+  const dayPortion = v["dayPortion"];
   const user = v["user"];
 
-  if (!id || !absenceDate || !isAbsenceType(type)) return false;
+  if (!id || !absenceDate || !isAbsenceType(type) || !isAbsenceDayPortion(dayPortion)) {
+      return false;
+    }
   if (!isRecord(user)) return false;
   const uid = getStringField(user, "id");
   const fullName = getStringField(user, "fullName");
@@ -191,6 +204,7 @@ function isAbsenceRequestDTO(v: unknown): v is AbsenceRequestDTO {
   const startDate = getStringField(v, "startDate");
   const endDate = getStringField(v, "endDate");
   const type = v["type"];
+  const dayPortion = v["dayPortion"];
   const status = v["status"];
   const noteEmployee = getStringField(v, "noteEmployee");
   const createdAt = getStringField(v, "createdAt");
@@ -204,6 +218,7 @@ function isAbsenceRequestDTO(v: unknown): v is AbsenceRequestDTO {
     !startDate ||
     !endDate ||
     !isAbsenceType(type) ||
+    !isAbsenceDayPortion(dayPortion) ||
     !isAbsenceRequestStatus(status) ||
     noteEmployee === null ||
     !createdAt ||
@@ -394,12 +409,22 @@ function buildBlocks(absences: AbsenceDTO[]): AbsenceBlock[] {
     .sort((x, y) => (x.absenceDate < y.absenceDate ? -1 : x.absenceDate > y.absenceDate ? 1 : 0));
 
   const blocks: AbsenceBlock[] = [];
-  const byType: Record<AbsenceType, AbsenceDTO[]> = { VACATION: [], SICK: [] };
-  for (const r of rows) byType[r.type].push(r);
 
-  (Object.keys(byType) as AbsenceType[]).forEach((type) => {
-    const list = byType[type];
-    if (list.length === 0) return;
+  const byKey = new Map<string, AbsenceDTO[]>();
+
+  for (const row of rows) {
+    const key = `${row.type}__${row.dayPortion}`;
+    const list = byKey.get(key) ?? [];
+    list.push(row);
+    byKey.set(key, list);
+  }
+
+  for (const [key, list] of byKey.entries()) {
+    const [typeRaw, dayPortionRaw] = key.split("__");
+    const type = typeRaw === "SICK" ? "SICK" : "VACATION";
+    const dayPortion = dayPortionRaw === "HALF_DAY" ? "HALF_DAY" : "FULL_DAY";
+
+    if (list.length === 0) continue;
 
     let curStart = list[0].absenceDate;
     let curEnd = list[0].absenceDate;
@@ -408,27 +433,50 @@ function buildBlocks(absences: AbsenceDTO[]): AbsenceBlock[] {
     for (let i = 1; i < list.length; i++) {
       const d = list[i].absenceDate;
       const expectedNext = addDaysYMD(curEnd, 1);
-      idsByDate[d] = list[i].id;
 
-      if (d === expectedNext) {
+      if (d === expectedNext && dayPortion === "FULL_DAY") {
+        idsByDate[d] = list[i].id;
         curEnd = d;
       } else {
-        blocks.push({ type, start: curStart, end: curEnd, idsByDate });
+        blocks.push({
+          type,
+          dayPortion,
+          start: curStart,
+          end: curEnd,
+          idsByDate,
+        });
         curStart = d;
         curEnd = d;
         idsByDate = { [d]: list[i].id };
       }
     }
-    blocks.push({ type, start: curStart, end: curEnd, idsByDate });
+
+    blocks.push({
+      type,
+      dayPortion,
+      start: curStart,
+      end: curEnd,
+      idsByDate,
+    });
+  }
+
+  blocks.sort((a, b) => {
+    if (a.start !== b.start) return a.start < b.start ? -1 : 1;
+    if (a.type !== b.type) return a.type.localeCompare(b.type);
+    return a.dayPortion.localeCompare(b.dayPortion);
   });
 
-  blocks.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : a.type.localeCompare(b.type)));
   return blocks;
 }
 
 function blockLabel(b: AbsenceBlock) {
   const icon = b.type === "VACATION" ? "🌴" : "🤒";
   const name = b.type === "VACATION" ? "Urlaub" : "Krank";
+
+  if (b.dayPortion === "HALF_DAY") {
+    return `${icon} Halber ${name.toLowerCase()} (${b.start})`;
+  }
+
   const span = b.start === b.end ? b.start : `${b.start}–${b.end}`;
   return `${icon} ${name} (${span})`;
 }
@@ -438,6 +486,7 @@ function buildRequestBlocks(requests: AbsenceRequestDTO[]): AbsenceRequestBlock[
     .map((r) => ({
       id: r.id,
       type: r.type,
+      dayPortion: r.dayPortion,
       status: r.status,
       start: r.startDate,
       end: r.endDate,
@@ -461,6 +510,11 @@ function requestStatusLabel(status: AbsenceRequestStatus): string {
 
 function requestBlockLabel(b: AbsenceRequestBlock) {
   const icon = b.type === "VACATION" ? "🌴" : "🤒";
+
+  if (b.type === "VACATION" && b.dayPortion === "HALF_DAY") {
+    return `${icon} Urlaubsantrag (halber Tag · ${b.start})`;
+  }
+
   const name = b.type === "VACATION" ? "Urlaubsantrag" : "Krankheitsantrag";
   const span = b.start === b.end ? b.start : `${b.start}–${b.end}`;
   return `${icon} ${name} (${span})`;
@@ -580,6 +634,7 @@ export default function KalenderPage() {
   const [absenceStart, setAbsenceStart] = useState<string>("");
   const [absenceEnd, setAbsenceEnd] = useState<string>("");
   const [absenceType, setAbsenceType] = useState<AbsenceType>("VACATION");
+  const [absenceDayPortion, setAbsenceDayPortion] = useState<AbsenceDayPortion>("FULL_DAY");
   const [selectedRequestBlock, setSelectedRequestBlock] = useState<AbsenceRequestBlock | null>(null);
 
   // ADMIN only:
@@ -925,8 +980,8 @@ useEffect(() => {
       setAbsenceEnd(selectedDate);
     }
     setAbsenceType("VACATION");
+    setAbsenceDayPortion("FULL_DAY");
     setRequestNote("");
-    setError(null);
   }
 
   function showRequestDetails(block: AbsenceRequestBlock) {
@@ -934,6 +989,7 @@ useEffect(() => {
     setAbsenceStart(block.start);
     setAbsenceEnd(block.end);
     setAbsenceType(block.type);
+    setAbsenceDayPortion(block.dayPortion);
     setRequestNote(block.noteEmployee);
     setError(null);
   }
@@ -945,8 +1001,8 @@ useEffect(() => {
       setAbsenceEnd(selectedDate);
     }
     setAbsenceType("VACATION");
+    setAbsenceDayPortion("FULL_DAY");
     setRequestNote("");
-    setError(null);
   }
 
   // EMPLOYEE: speichern
@@ -962,6 +1018,20 @@ useEffect(() => {
       setError("Ende darf nicht vor Start liegen.");
       return;
     }
+    if (absenceType === "SICK" && absenceDayPortion !== "FULL_DAY") {
+      setError("Krankheit kann nur ganztägig beantragt werden.");
+      return;
+    }
+
+    if (absenceDayPortion === "HALF_DAY" && absenceType !== "VACATION") {
+      setError("Halbe Tage sind nur für Urlaub erlaubt.");
+      return;
+    }
+
+    if (absenceDayPortion === "HALF_DAY" && absenceStart !== absenceEnd) {
+      setError("Ein halber Urlaubstag darf nur für genau ein Datum beantragt werden.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -972,6 +1042,7 @@ useEffect(() => {
           startDate: absenceStart,
           endDate: absenceEnd,
           type: absenceType,
+          dayPortion: absenceDayPortion,
           noteEmployee: requestNote.trim(),
         }),
       });
@@ -1916,6 +1987,12 @@ useEffect(() => {
                           Status: {requestStatusLabel(b.status)}
                         </div>
 
+                        {b.type === "VACATION" ? (
+                          <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                            Umfang: {b.dayPortion === "HALF_DAY" ? "Halber Urlaubstag" : "Ganzer Urlaubstag"}
+                          </div>
+                        ) : null}
+
                         {b.noteEmployee.trim() ? (
                           <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
                             📝 {b.noteEmployee}
@@ -1987,7 +2064,9 @@ useEffect(() => {
               <button
                 className={`btn ${absenceType === "VACATION" ? "btn-accent" : ""}`}
                 type="button"
-                onClick={() => setAbsenceType("VACATION")}
+                onClick={() => {
+                  setAbsenceType("VACATION");
+                }}
                 disabled={!!selectedRequestBlock}
               >
                 🌴 Urlaub
@@ -1995,12 +2074,43 @@ useEffect(() => {
               <button
                 className={`btn ${absenceType === "SICK" ? "btn-danger" : ""}`}
                 type="button"
-                onClick={() => setAbsenceType("SICK")}
+                onClick={() => {
+                  setAbsenceType("SICK");
+                  setAbsenceDayPortion("FULL_DAY");
+                }}
                 disabled={!!selectedRequestBlock}
               >
                 🤒 Krank
               </button>
             </div>
+
+            {absenceType === "VACATION" ? (
+              <div style={{ marginBottom: 12 }}>
+                <div className="label">Umfang</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <button
+                    className={`btn ${absenceDayPortion === "FULL_DAY" ? "btn-accent" : ""}`}
+                    type="button"
+                    onClick={() => setAbsenceDayPortion("FULL_DAY")}
+                    disabled={!!selectedRequestBlock}
+                  >
+                    Ganzer Urlaubstag
+                  </button>
+                  <button
+                    className={`btn ${absenceDayPortion === "HALF_DAY" ? "btn-accent" : ""}`}
+                    type="button"
+                    onClick={() => {
+                      setAbsenceDayPortion("HALF_DAY");
+                      setAbsenceEnd(absenceStart);
+                    }}
+                    disabled={!!selectedRequestBlock || absenceDayPortion === "HALF_DAY"}
+                  >
+                    Halber Urlaubstag
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             <div style={{ marginBottom: 12 }}>
               <div className="label">Notiz an Admin</div>
               <textarea

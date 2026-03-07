@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { AbsenceRequestStatus } from "@prisma/client";
+import {
+  AbsenceDayPortion,
+  AbsenceRequestStatus,
+  AbsenceType,
+} from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { webpush } from "@/lib/webpush";
@@ -29,7 +33,25 @@ function eachDayInclusive(from: Date, to: Date): Date[] {
   return out;
 }
 
-async function sendPushToUser(userId: string, title: string, body: string, url: string): Promise<void> {
+function portionLabel(
+  type: AbsenceType,
+  dayPortion: AbsenceDayPortion,
+  startDate: string,
+  endDate: string
+): string {
+  if (type === "VACATION" && dayPortion === "HALF_DAY") {
+    return `halber Urlaubstag am ${startDate}`;
+  }
+  if (startDate === endDate) return startDate;
+  return `${startDate} bis ${endDate}`;
+}
+
+async function sendPushToUser(
+  userId: string,
+  title: string,
+  body: string,
+  url: string
+): Promise<void> {
   const vapidReady =
     typeof process.env.VAPID_PUBLIC_KEY === "string" &&
     process.env.VAPID_PUBLIC_KEY.trim() !== "" &&
@@ -87,14 +109,20 @@ async function sendPushToUser(userId: string, title: string, body: string, url: 
 export async function POST(_req: Request, context: RouteContext) {
   const admin = await requireAdmin();
   if (!admin) {
-    return NextResponse.json({ ok: false, error: "Keine Berechtigung." }, { status: 403 });
+    return NextResponse.json(
+      { ok: false, error: "Keine Berechtigung." },
+      { status: 403 }
+    );
   }
 
   const params = await context.params;
   const requestId = params.id.trim();
 
   if (!requestId) {
-    return NextResponse.json({ ok: false, error: "Fehlende Request-ID." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Fehlende Request-ID." },
+      { status: 400 }
+    );
   }
 
   const existing = await prisma.absenceRequest.findUnique({
@@ -111,15 +139,44 @@ export async function POST(_req: Request, context: RouteContext) {
   });
 
   if (!existing) {
-    return NextResponse.json({ ok: false, error: "Antrag nicht gefunden." }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: "Antrag nicht gefunden." },
+      { status: 404 }
+    );
   }
 
   if (!existing.user.isActive) {
-    return NextResponse.json({ ok: false, error: "Mitarbeiter ist nicht aktiv." }, { status: 409 });
+    return NextResponse.json(
+      { ok: false, error: "Mitarbeiter ist nicht aktiv." },
+      { status: 409 }
+    );
   }
 
   if (existing.status !== AbsenceRequestStatus.PENDING) {
-    return NextResponse.json({ ok: false, error: "Nur offene Anträge können genehmigt werden." }, { status: 409 });
+    return NextResponse.json(
+      { ok: false, error: "Nur offene Anträge können genehmigt werden." },
+      { status: 409 }
+    );
+  }
+
+  if (
+    existing.type !== "VACATION" &&
+    existing.dayPortion === AbsenceDayPortion.HALF_DAY
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "Halbe Tage sind nur für Urlaub erlaubt." },
+      { status: 400 }
+    );
+  }
+
+  if (
+    existing.dayPortion === AbsenceDayPortion.HALF_DAY &&
+    toIsoDateUTC(existing.startDate) !== toIsoDateUTC(existing.endDate)
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "Ein halber Urlaubstag darf nur für genau ein Datum beantragt werden." },
+      { status: 400 }
+    );
   }
 
   const days = eachDayInclusive(existing.startDate, existing.endDate);
@@ -134,12 +191,18 @@ export async function POST(_req: Request, context: RouteContext) {
     },
     select: {
       id: true,
+      absenceDate: true,
+      type: true,
+      dayPortion: true,
     },
   });
 
   if (conflictingAbsence) {
     return NextResponse.json(
-      { ok: false, error: "Im Zeitraum existiert bereits eine bestätigte Abwesenheit." },
+      {
+        ok: false,
+        error: "Im Zeitraum existiert bereits eine bestätigte Abwesenheit.",
+      },
       { status: 409 }
     );
   }
@@ -159,6 +222,7 @@ export async function POST(_req: Request, context: RouteContext) {
         userId: existing.userId,
         absenceDate: day,
         type: existing.type,
+        dayPortion: existing.dayPortion,
       })),
       skipDuplicates: true,
     });
@@ -169,10 +233,17 @@ export async function POST(_req: Request, context: RouteContext) {
     };
   });
 
-  const typeLabel = existing.type === "VACATION" ? "Urlaubsantrag" : "Krankheitsantrag";
+  const typeLabel =
+    existing.type === "VACATION" ? "Urlaubsantrag" : "Krankheitsantrag";
+
   const startDate = toIsoDateUTC(existing.startDate);
   const endDate = toIsoDateUTC(existing.endDate);
-  const dateLabel = startDate === endDate ? startDate : `${startDate} bis ${endDate}`;
+  const dateLabel = portionLabel(
+    existing.type,
+    existing.dayPortion,
+    startDate,
+    endDate
+  );
 
   await sendPushToUser(
     existing.userId,
@@ -196,6 +267,7 @@ export async function POST(_req: Request, context: RouteContext) {
         fullName: existing.user.fullName,
       },
       type: existing.type,
+      dayPortion: existing.dayPortion,
       startDate,
       endDate,
     },

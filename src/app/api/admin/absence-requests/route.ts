@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { AbsenceRequestStatus, AbsenceType } from "@prisma/client";
+import {
+  AbsenceDayPortion,
+  AbsenceRequestStatus,
+  AbsenceType,
+} from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 
@@ -18,10 +22,57 @@ function toIsoDateUTC(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+function mapRequest(r: {
+  id: string;
+  startDate: Date;
+  endDate: Date;
+  type: AbsenceType;
+  dayPortion: AbsenceDayPortion;
+  status: AbsenceRequestStatus;
+  noteEmployee: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  decidedAt: Date | null;
+  user: {
+    id: string;
+    fullName: string;
+  };
+  decidedBy: {
+    id: string;
+    fullName: string;
+  } | null;
+}) {
+  return {
+    id: r.id,
+    startDate: toIsoDateUTC(r.startDate),
+    endDate: toIsoDateUTC(r.endDate),
+    type: r.type,
+    dayPortion: r.dayPortion,
+    status: r.status,
+    noteEmployee: r.noteEmployee ?? "",
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+    decidedAt: r.decidedAt ? r.decidedAt.toISOString() : null,
+    user: {
+      id: r.user.id,
+      fullName: r.user.fullName,
+    },
+    decidedBy: r.decidedBy
+      ? {
+          id: r.decidedBy.id,
+          fullName: r.decidedBy.fullName,
+        }
+      : null,
+  };
+}
+
 export async function GET(req: Request) {
   const admin = await requireAdmin();
   if (!admin) {
-    return NextResponse.json({ ok: false, error: "Keine Berechtigung." }, { status: 403 });
+    return NextResponse.json(
+      { ok: false, error: "Keine Berechtigung." },
+      { status: 403 }
+    );
   }
 
   const { searchParams } = new URL(req.url);
@@ -41,14 +92,20 @@ export async function GET(req: Request) {
 
   if (typeParam) {
     if (!isAbsenceType(typeParam)) {
-      return NextResponse.json({ ok: false, error: "Ungültiger Typ." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Ungültiger Typ." },
+        { status: 400 }
+      );
     }
     where.type = typeParam;
   }
 
   if (statusParam) {
     if (!isAbsenceRequestStatus(statusParam)) {
-      return NextResponse.json({ ok: false, error: "Ungültiger Status." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Ungültiger Status." },
+        { status: 400 }
+      );
     }
     where.status = statusParam;
   }
@@ -59,7 +116,10 @@ export async function GET(req: Request) {
 
   if (monthParam) {
     if (!/^\d{4}-\d{2}$/.test(monthParam)) {
-      return NextResponse.json({ ok: false, error: "month muss YYYY-MM sein." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "month muss YYYY-MM sein." },
+        { status: 400 }
+      );
     }
 
     const year = Number(monthParam.slice(0, 4));
@@ -88,10 +148,7 @@ export async function GET(req: Request) {
         },
       },
     },
-    orderBy: [
-      { status: "asc" },
-      { createdAt: "desc" },
-    ],
+    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
   });
 
   const grouped = {
@@ -102,91 +159,11 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    requests: requests.map((r) => ({
-      id: r.id,
-      startDate: toIsoDateUTC(r.startDate),
-      endDate: toIsoDateUTC(r.endDate),
-      type: r.type,
-      status: r.status,
-      noteEmployee: r.noteEmployee ?? "",
-      createdAt: r.createdAt.toISOString(),
-      updatedAt: r.updatedAt.toISOString(),
-      decidedAt: r.decidedAt ? r.decidedAt.toISOString() : null,
-      user: {
-        id: r.user.id,
-        fullName: r.user.fullName,
-      },
-      decidedBy: r.decidedBy
-        ? {
-            id: r.decidedBy.id,
-            fullName: r.decidedBy.fullName,
-          }
-        : null,
-    })),
+    requests: requests.map(mapRequest),
     grouped: {
-      pending: grouped.pending.map((r) => ({
-        id: r.id,
-        startDate: toIsoDateUTC(r.startDate),
-        endDate: toIsoDateUTC(r.endDate),
-        type: r.type,
-        status: r.status,
-        noteEmployee: r.noteEmployee ?? "",
-        createdAt: r.createdAt.toISOString(),
-        updatedAt: r.updatedAt.toISOString(),
-        decidedAt: r.decidedAt ? r.decidedAt.toISOString() : null,
-        user: {
-          id: r.user.id,
-          fullName: r.user.fullName,
-        },
-        decidedBy: r.decidedBy
-          ? {
-              id: r.decidedBy.id,
-              fullName: r.decidedBy.fullName,
-            }
-          : null,
-      })),
-      approved: grouped.approved.map((r) => ({
-        id: r.id,
-        startDate: toIsoDateUTC(r.startDate),
-        endDate: toIsoDateUTC(r.endDate),
-        type: r.type,
-        status: r.status,
-        noteEmployee: r.noteEmployee ?? "",
-        createdAt: r.createdAt.toISOString(),
-        updatedAt: r.updatedAt.toISOString(),
-        decidedAt: r.decidedAt ? r.decidedAt.toISOString() : null,
-        user: {
-          id: r.user.id,
-          fullName: r.user.fullName,
-        },
-        decidedBy: r.decidedBy
-          ? {
-              id: r.decidedBy.id,
-              fullName: r.decidedBy.fullName,
-            }
-          : null,
-      })),
-      rejected: grouped.rejected.map((r) => ({
-        id: r.id,
-        startDate: toIsoDateUTC(r.startDate),
-        endDate: toIsoDateUTC(r.endDate),
-        type: r.type,
-        status: r.status,
-        noteEmployee: r.noteEmployee ?? "",
-        createdAt: r.createdAt.toISOString(),
-        updatedAt: r.updatedAt.toISOString(),
-        decidedAt: r.decidedAt ? r.decidedAt.toISOString() : null,
-        user: {
-          id: r.user.id,
-          fullName: r.user.fullName,
-        },
-        decidedBy: r.decidedBy
-          ? {
-              id: r.decidedBy.id,
-              fullName: r.decidedBy.fullName,
-            }
-          : null,
-      })),
+      pending: grouped.pending.map(mapRequest),
+      approved: grouped.approved.map(mapRequest),
+      rejected: grouped.rejected.map(mapRequest),
     },
   });
 }

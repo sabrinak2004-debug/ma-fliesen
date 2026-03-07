@@ -1,28 +1,32 @@
-// src/app/api/absences/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { AbsenceType, Role } from "@prisma/client";
+import {
+  AbsenceDayPortion,
+  AbsenceType,
+  Role,
+} from "@prisma/client";
 
 type AbsenceBody = {
-  startDate?: unknown; // YYYY-MM-DD
-  endDate?: unknown; // YYYY-MM-DD
-  type?: unknown; // "VACATION" | "SICK"
-  userId?: unknown; // optional (nur Admin)
+  startDate?: unknown;
+  endDate?: unknown;
+  type?: unknown;
+  dayPortion?: unknown;
+  userId?: unknown;
 };
 
 type AbsencePatchBody = {
-  // alter Block
-  from?: unknown; // YYYY-MM-DD
-  to?: unknown; // YYYY-MM-DD
-  type?: unknown; // "VACATION" | "SICK"
+  from?: unknown;
+  to?: unknown;
+  type?: unknown;
+  dayPortion?: unknown;
 
-  // neuer Block (falls nicht gesetzt -> identisch zu oben)
-  newStartDate?: unknown; // YYYY-MM-DD
-  newEndDate?: unknown; // YYYY-MM-DD
-  newType?: unknown; // "VACATION" | "SICK"
+  newStartDate?: unknown;
+  newEndDate?: unknown;
+  newType?: unknown;
+  newDayPortion?: unknown;
 
-  userId?: unknown; // optional (nur Admin)
+  userId?: unknown;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -37,26 +41,30 @@ function isAbsenceType(v: string): v is AbsenceType {
   return v === "VACATION" || v === "SICK";
 }
 
-function isYYYYMM(v: string) {
+function isAbsenceDayPortion(v: string): v is AbsenceDayPortion {
+  return v === "FULL_DAY" || v === "HALF_DAY";
+}
+
+function isYYYYMM(v: string): boolean {
   return /^\d{4}-\d{2}$/.test(v);
 }
 
-function isYYYYMMDD(v: string) {
+function isYYYYMMDD(v: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(v);
 }
 
-function dateOnlyUTC(yyyyMmDd: string) {
+function dateOnlyUTC(yyyyMmDd: string): Date {
   return new Date(`${yyyyMmDd}T00:00:00.000Z`);
 }
 
-function toIsoDateUTC(d: Date) {
+function toIsoDateUTC(d: Date): string {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 
-function eachDayInclusive(from: Date, to: Date) {
+function eachDayInclusive(from: Date, to: Date): Date[] {
   const res: Date[] = [];
   const cur = new Date(from);
   while (cur <= to) {
@@ -68,13 +76,14 @@ function eachDayInclusive(from: Date, to: Date) {
 
 type AbsenceDTO = {
   id: string;
-  absenceDate: string; // YYYY-MM-DD
+  absenceDate: string;
   type: "VACATION" | "SICK";
+  dayPortion: "FULL_DAY" | "HALF_DAY";
   user: { id: string; fullName: string };
 };
 
 type AbsenceDayGroup = {
-  date: string; // YYYY-MM-DD
+  date: string;
   items: AbsenceDTO[];
 };
 
@@ -89,24 +98,18 @@ function okJson(data: unknown, init?: ResponseInit) {
   return NextResponse.json(data, init);
 }
 
-/**
- * GET /api/absences
- *
- * Query:
- * - month=YYYY-MM (optional)
- * - from=YYYY-MM-DD (optional)  -> Alternative zu month
- * - to=YYYY-MM-DD (optional)    -> inclusive gedacht, intern +1 Tag als lt
- * - userId=... (optional, nur Admin)
- */
+function numericDayValue(dayPortion: AbsenceDayPortion): number {
+  return dayPortion === AbsenceDayPortion.HALF_DAY ? 0.5 : 1;
+}
+
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return okJson({ error: "Nicht eingeloggt" }, { status: 401 });
 
   const url = new URL(req.url);
-  const employeeId = url.searchParams.get("employeeId"); // optional
-  const month = (url.searchParams.get("month") ?? "").trim(); // YYYY-MM
-  const fromQ = (url.searchParams.get("from") ?? "").trim(); // YYYY-MM-DD
-  const toQ = (url.searchParams.get("to") ?? "").trim(); // YYYY-MM-DD
+  const month = (url.searchParams.get("month") ?? "").trim();
+  const fromQ = (url.searchParams.get("from") ?? "").trim();
+  const toQ = (url.searchParams.get("to") ?? "").trim();
   const userIdQ = (url.searchParams.get("userId") ?? "").trim();
 
   const isAdmin = session.role === Role.ADMIN;
@@ -133,7 +136,9 @@ export async function GET(req: Request) {
   } else if (fromQ && toQ && isYYYYMMDD(fromQ) && isYYYYMMDD(toQ)) {
     const fromD = dateOnlyUTC(fromQ);
     const toD = dateOnlyUTC(toQ);
-    if (toD < fromD) return okJson({ error: "to darf nicht vor from liegen" }, { status: 400 });
+    if (toD < fromD) {
+      return okJson({ error: "to darf nicht vor from liegen" }, { status: 400 });
+    }
 
     from = fromD;
     toExclusive = new Date(toD);
@@ -144,9 +149,18 @@ export async function GET(req: Request) {
   const rows = await prisma.absence.findMany({
     where: {
       ...effectiveUserWhere,
-      ...(from && toExclusive ? { absenceDate: { gte: from, lt: toExclusive } } : {}),
+      ...(from && toExclusive
+        ? { absenceDate: { gte: from, lt: toExclusive } }
+        : {}),
     },
-    include: { user: { select: { id: true, fullName: true } } },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+        },
+      },
+    },
     orderBy: [{ absenceDate: "asc" }],
   });
 
@@ -154,7 +168,11 @@ export async function GET(req: Request) {
     id: a.id,
     absenceDate: toIsoDateUTC(a.absenceDate),
     type: a.type === "SICK" ? "SICK" : "VACATION",
-    user: { id: a.user.id, fullName: a.user.fullName },
+    dayPortion: a.dayPortion,
+    user: {
+      id: a.user.id,
+      fullName: a.user.fullName,
+    },
   }));
 
   const byDay = new Map<string, AbsenceDTO[]>();
@@ -168,18 +186,32 @@ export async function GET(req: Request) {
     .sort(([d1], [d2]) => (d1 < d2 ? -1 : 1))
     .map(([date, items]) => ({
       date,
-      items: items.slice().sort((x, y) => x.user.fullName.localeCompare(y.user.fullName)),
+      items: items
+        .slice()
+        .sort((x, y) => x.user.fullName.localeCompare(y.user.fullName)),
     }));
 
-  const byUser = new Map<string, { user: { id: string; fullName: string }; sickDays: number; vacationDays: number }>();
+  const byUser = new Map<
+    string,
+    {
+      user: { id: string; fullName: string };
+      sickDays: number;
+      vacationDays: number;
+    }
+  >();
+
   for (const a of absences) {
     const cur = byUser.get(a.user.id) ?? {
       user: { id: a.user.id, fullName: a.user.fullName },
       sickDays: 0,
       vacationDays: 0,
     };
-    if (a.type === "SICK") cur.sickDays += 1;
-    else cur.vacationDays += 1;
+
+    const value = a.dayPortion === "HALF_DAY" ? 0.5 : 1;
+
+    if (a.type === "SICK") cur.sickDays += value;
+    else cur.vacationDays += value;
+
     byUser.set(a.user.id, cur);
   }
 
@@ -200,35 +232,79 @@ export async function GET(req: Request) {
   });
 }
 
-/**
- * POST /api/absences
- * legt pro Tag einen Datensatz an (skipDuplicates=true).
- */
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return okJson({ error: "Nicht eingeloggt" }, { status: 401 });
 
   const raw = (await req.json().catch(() => null)) as unknown;
-  const body: AbsenceBody = isRecord(raw) ? (raw as AbsenceBody) : {};
+  const body: AbsenceBody = isRecord(raw) ? raw : {};
 
   const startDate = getString(body.startDate);
   const endDate = getString(body.endDate);
   const typeStr = getString(body.type);
+  const dayPortionStr = getString(body.dayPortion);
   const userIdFromBody = getString(body.userId);
 
-  if (!startDate || !endDate || !typeStr || !isYYYYMMDD(startDate) || !isYYYYMMDD(endDate) || !isAbsenceType(typeStr)) {
+  if (
+    !startDate ||
+    !endDate ||
+    !typeStr ||
+    !isYYYYMMDD(startDate) ||
+    !isYYYYMMDD(endDate) ||
+    !isAbsenceType(typeStr)
+  ) {
     return okJson({ error: "Ungültige Daten" }, { status: 400 });
+  }
+
+  const dayPortion: AbsenceDayPortion = isAbsenceDayPortion(dayPortionStr)
+    ? dayPortionStr
+    : AbsenceDayPortion.FULL_DAY;
+
+  if (typeStr === "SICK" && dayPortion !== AbsenceDayPortion.FULL_DAY) {
+    return okJson(
+      { error: "Krankheit kann nur ganztägig erfasst werden." },
+      { status: 400 }
+    );
+  }
+
+  if (
+    dayPortion === AbsenceDayPortion.HALF_DAY &&
+    typeStr !== "VACATION"
+  ) {
+    return okJson(
+      { error: "Halbe Tage sind nur für Urlaub erlaubt." },
+      { status: 400 }
+    );
+  }
+
+  if (
+    dayPortion === AbsenceDayPortion.HALF_DAY &&
+    startDate !== endDate
+  ) {
+    return okJson(
+      { error: "Ein halber Urlaubstag darf nur für genau ein Datum angelegt werden." },
+      { status: 400 }
+    );
   }
 
   const start = dateOnlyUTC(startDate);
   const end = dateOnlyUTC(endDate);
-  if (end < start) return okJson({ error: "Enddatum darf nicht vor Startdatum liegen." }, { status: 400 });
+  if (end < start) {
+    return okJson(
+      { error: "Enddatum darf nicht vor Startdatum liegen." },
+      { status: 400 }
+    );
+  }
 
   const isAdmin = session.role === Role.ADMIN;
   const targetUserId = isAdmin && userIdFromBody ? userIdFromBody : session.userId;
-    if (!isAdmin) {
+
+  if (!isAdmin) {
     return okJson(
-      { error: "Mitarbeiter dürfen keine finalen Abwesenheiten direkt anlegen. Bitte Antrag stellen." },
+      {
+        error:
+          "Mitarbeiter dürfen keine finalen Abwesenheiten direkt anlegen. Bitte Antrag stellen.",
+      },
       { status: 403 }
     );
   }
@@ -236,7 +312,12 @@ export async function POST(req: Request) {
   const days = eachDayInclusive(start, end);
 
   const result = await prisma.absence.createMany({
-    data: days.map((d) => ({ userId: targetUserId, absenceDate: d, type: typeStr })),
+    data: days.map((d) => ({
+      userId: targetUserId,
+      absenceDate: d,
+      type: typeStr,
+      dayPortion,
+    })),
     skipDuplicates: true,
   });
 
@@ -246,33 +327,26 @@ export async function POST(req: Request) {
     created: result.count,
     skipped: days.length - result.count,
     userId: targetUserId,
+    dayPortion,
   });
 }
 
-/**
- * PATCH /api/absences
- * Bearbeitet einen BLOCK (Range) für einen Typ:
- * Body:
- * {
- *   from, to, type,
- *   newStartDate?, newEndDate?, newType?,
- *   userId? (nur Admin)
- * }
- */
 export async function PATCH(req: Request) {
   const session = await getSession();
   if (!session) return okJson({ error: "Nicht eingeloggt" }, { status: 401 });
 
   const raw = (await req.json().catch(() => null)) as unknown;
-  const body: AbsencePatchBody = isRecord(raw) ? (raw as AbsencePatchBody) : {};
+  const body: AbsencePatchBody = isRecord(raw) ? raw : {};
 
   const fromStr = getString(body.from);
   const toStr = getString(body.to);
   const typeStr = getString(body.type);
+  const dayPortionStr = getString(body.dayPortion);
 
   const newStartStr = getString(body.newStartDate) || fromStr;
   const newEndStr = getString(body.newEndDate) || toStr;
   const newTypeStr = getString(body.newType) || typeStr;
+  const newDayPortionStr = getString(body.newDayPortion) || dayPortionStr;
 
   const userIdFromBody = getString(body.userId);
 
@@ -290,26 +364,63 @@ export async function PATCH(req: Request) {
     return okJson({ error: "Ungültige Daten" }, { status: 400 });
   }
 
+  const oldDayPortion: AbsenceDayPortion = isAbsenceDayPortion(dayPortionStr)
+    ? dayPortionStr
+    : AbsenceDayPortion.FULL_DAY;
+
+  const newDayPortion: AbsenceDayPortion = isAbsenceDayPortion(newDayPortionStr)
+    ? newDayPortionStr
+    : AbsenceDayPortion.FULL_DAY;
+
+  if (newTypeStr === "SICK" && newDayPortion !== AbsenceDayPortion.FULL_DAY) {
+    return okJson(
+      { error: "Krankheit kann nur ganztägig sein." },
+      { status: 400 }
+    );
+  }
+
+  if (
+    newDayPortion === AbsenceDayPortion.HALF_DAY &&
+    newTypeStr !== "VACATION"
+  ) {
+    return okJson(
+      { error: "Halbe Tage sind nur für Urlaub erlaubt." },
+      { status: 400 }
+    );
+  }
+
+  if (
+    newDayPortion === AbsenceDayPortion.HALF_DAY &&
+    newStartStr !== newEndStr
+  ) {
+    return okJson(
+      { error: "Ein halber Urlaubstag darf nur für genau ein Datum bestehen." },
+      { status: 400 }
+    );
+  }
+
   const from = dateOnlyUTC(fromStr);
   const to = dateOnlyUTC(toStr);
-  if (to < from) return okJson({ error: "to darf nicht vor from liegen" }, { status: 400 });
+  if (to < from) {
+    return okJson({ error: "to darf nicht vor from liegen" }, { status: 400 });
+  }
 
   const newStart = dateOnlyUTC(newStartStr);
   const newEnd = dateOnlyUTC(newEndStr);
-  if (newEnd < newStart) return okJson({ error: "newEndDate darf nicht vor newStartDate liegen" }, { status: 400 });
+  if (newEnd < newStart) {
+    return okJson(
+      { error: "newEndDate darf nicht vor newStartDate liegen" },
+      { status: 400 }
+    );
+  }
 
   const isAdmin = session.role === Role.ADMIN;
   const targetUserId = isAdmin && userIdFromBody ? userIdFromBody : session.userId;
-    if (!isAdmin) {
+  if (!isAdmin) {
     return okJson(
       { error: "Mitarbeiter dürfen finale Abwesenheiten nicht direkt bearbeiten." },
       { status: 403 }
     );
-  }
-
-  // Safety: Employee darf nur sich selbst
-  if (!isAdmin && targetUserId !== session.userId) {
-    return okJson({ error: "Nicht erlaubt" }, { status: 403 });
   }
 
   const deleteFrom = from;
@@ -323,6 +434,7 @@ export async function PATCH(req: Request) {
       where: {
         userId: targetUserId,
         type: typeStr,
+        dayPortion: oldDayPortion,
         absenceDate: { gte: deleteFrom, lt: deleteToExclusive },
       },
     });
@@ -332,18 +444,33 @@ export async function PATCH(req: Request) {
         userId: targetUserId,
         absenceDate: d,
         type: newTypeStr,
+        dayPortion: newDayPortion,
       })),
       skipDuplicates: true,
     });
 
-    return { deleted: del.count, created: created.count, requested: createDays.length };
+    return {
+      deleted: del.count,
+      created: created.count,
+      requested: createDays.length,
+    };
   });
 
   return okJson({
     ok: true,
     userId: targetUserId,
-    old: { from: fromStr, to: toStr, type: typeStr },
-    next: { from: newStartStr, to: newEndStr, type: newTypeStr },
+    old: {
+      from: fromStr,
+      to: toStr,
+      type: typeStr,
+      dayPortion: oldDayPortion,
+    },
+    next: {
+      from: newStartStr,
+      to: newEndStr,
+      type: newTypeStr,
+      dayPortion: newDayPortion,
+    },
     deleted: tx.deleted,
     created: tx.created,
     requested: tx.requested,
@@ -351,11 +478,6 @@ export async function PATCH(req: Request) {
   });
 }
 
-/**
- * DELETE /api/absences
- * - Variante A: ?id=... (wie bisher)
- * - Variante B: ?from=YYYY-MM-DD&to=YYYY-MM-DD&type=VACATION|SICK  -> Block löschen
- */
 export async function DELETE(req: Request) {
   const session = await getSession();
   if (!session) return okJson({ error: "Nicht eingeloggt" }, { status: 401 });
@@ -363,11 +485,10 @@ export async function DELETE(req: Request) {
   const url = new URL(req.url);
   const id = (url.searchParams.get("id") ?? "").trim();
 
-  // ✅ A) Einzelner Tag per ID
   if (id) {
     const a = await prisma.absence.findUnique({ where: { id } });
     if (!a) return okJson({ error: "Nicht gefunden" }, { status: 404 });
-    
+
     const isAdmin = session.role === Role.ADMIN;
     if (!isAdmin) {
       return okJson(
@@ -380,18 +501,34 @@ export async function DELETE(req: Request) {
     return okJson({ ok: true, deleted: 1 });
   }
 
-  // ✅ B) Range löschen
   const fromStr = (url.searchParams.get("from") ?? "").trim();
   const toStr = (url.searchParams.get("to") ?? "").trim();
   const typeStr = (url.searchParams.get("type") ?? "").trim();
+  const dayPortionStr = (url.searchParams.get("dayPortion") ?? "").trim();
 
-  if (!fromStr || !toStr || !typeStr || !isYYYYMMDD(fromStr) || !isYYYYMMDD(toStr) || !isAbsenceType(typeStr)) {
-    return okJson({ error: "id oder (from,to,type) erforderlich" }, { status: 400 });
+  if (
+    !fromStr ||
+    !toStr ||
+    !typeStr ||
+    !isYYYYMMDD(fromStr) ||
+    !isYYYYMMDD(toStr) ||
+    !isAbsenceType(typeStr)
+  ) {
+    return okJson(
+      { error: "id oder (from,to,type) erforderlich" },
+      { status: 400 }
+    );
   }
+
+  const dayPortion: AbsenceDayPortion = isAbsenceDayPortion(dayPortionStr)
+    ? dayPortionStr
+    : AbsenceDayPortion.FULL_DAY;
 
   const from = dateOnlyUTC(fromStr);
   const to = dateOnlyUTC(toStr);
-  if (to < from) return okJson({ error: "to darf nicht vor from liegen" }, { status: 400 });
+  if (to < from) {
+    return okJson({ error: "to darf nicht vor from liegen" }, { status: 400 });
+  }
 
   const isAdmin = session.role === Role.ADMIN;
   if (!isAdmin) {
@@ -401,14 +538,29 @@ export async function DELETE(req: Request) {
     );
   }
 
-  const targetUserId = (url.searchParams.get("userId") ?? "").trim() || session.userId;
+  const targetUserId =
+    (url.searchParams.get("userId") ?? "").trim() || session.userId;
 
   const toExclusive = new Date(to);
   toExclusive.setUTCDate(toExclusive.getUTCDate() + 1);
 
   const del = await prisma.absence.deleteMany({
-    where: { userId: targetUserId, type: typeStr, absenceDate: { gte: from, lt: toExclusive } },
+    where: {
+      userId: targetUserId,
+      type: typeStr,
+      dayPortion,
+      absenceDate: { gte: from, lt: toExclusive },
+    },
   });
 
-  return okJson({ ok: true, deleted: del.count, range: { from: fromStr, to: toStr, type: typeStr } });
+  return okJson({
+    ok: true,
+    deleted: del.count,
+    range: {
+      from: fromStr,
+      to: toStr,
+      type: typeStr,
+      dayPortion,
+    },
+  });
 }

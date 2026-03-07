@@ -5,12 +5,14 @@ import AppShell from "@/components/AppShell";
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AbsenceType = "VACATION" | "SICK";
+type AbsenceDayPortion = "FULL_DAY" | "HALF_DAY";
 
 type AbsenceRequestItem = {
   id: string;
   startDate: string;
   endDate: string;
   type: AbsenceType;
+  dayPortion: AbsenceDayPortion;
   status: RequestStatus;
   noteEmployee: string;
   createdAt: string;
@@ -61,6 +63,10 @@ function isAbsenceType(v: unknown): v is AbsenceType {
   return v === "VACATION" || v === "SICK";
 }
 
+function isAbsenceDayPortion(v: unknown): v is AbsenceDayPortion {
+  return v === "FULL_DAY" || v === "HALF_DAY";
+}
+
 function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
   if (!isRecord(v)) return false;
 
@@ -68,6 +74,7 @@ function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
   const startDate = getStringField(v, "startDate");
   const endDate = getStringField(v, "endDate");
   const type = v["type"];
+  const dayPortion = v["dayPortion"];
   const status = v["status"];
   const noteEmployee = getStringField(v, "noteEmployee");
   const createdAt = getStringField(v, "createdAt");
@@ -76,18 +83,19 @@ function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
   const userRaw = v["user"];
   const decidedByRaw = v["decidedBy"];
 
-  if (
-    !id ||
-    !startDate ||
-    !endDate ||
-    !isAbsenceType(type) ||
-    !isRequestStatus(status) ||
-    noteEmployee === null ||
-    !createdAt ||
-    !updatedAt
-  ) {
-    return false;
-  }
+if (
+  !id ||
+  !startDate ||
+  !endDate ||
+  !isAbsenceType(type) ||
+  !isAbsenceDayPortion(dayPortion) ||
+  !isRequestStatus(status) ||
+  noteEmployee === null ||
+  !createdAt ||
+  !updatedAt
+) {
+  return false;
+}
 
   if (!isRecord(userRaw)) return false;
   const userId = getStringField(userRaw, "id");
@@ -176,6 +184,19 @@ function formatDateTimeDE(iso: string | null): string {
 function rangeLabel(startDate: string, endDate: string): string {
   if (startDate === endDate) return formatDateDE(startDate);
   return `${formatDateDE(startDate)} – ${formatDateDE(endDate)}`;
+}
+
+function portionLabel(dayPortion: AbsenceDayPortion): string {
+  return dayPortion === "HALF_DAY" ? "0,5 Tag" : "1 Tag";
+}
+
+function requestDurationLabel(item: AbsenceRequestItem): string {
+  if (item.dayPortion === "HALF_DAY") {
+    return `Halber Urlaubstag · ${formatDateDE(item.startDate)} · ${portionLabel(item.dayPortion)}`;
+  }
+
+  const days = countDaysInclusive(item.startDate, item.endDate);
+  return `${rangeLabel(item.startDate, item.endDate)} · ${days} ${days === 1 ? "Tag" : "Tage"}`;
 }
 
 function countDaysInclusive(startDate: string, endDate: string): number {
@@ -417,6 +438,10 @@ export default function UrlaubsantraegePage() {
   function renderRequestCard(item: AbsenceRequestItem) {
     const isBusy = busyId === item.id;
     const days = countDaysInclusive(item.startDate, item.endDate);
+    const durationText =
+      item.dayPortion === "HALF_DAY"
+        ? `🌴 Urlaub · ${formatDateDE(item.startDate)} · 0,5 Tag`
+        : `🌴 Urlaub · ${rangeLabel(item.startDate, item.endDate)} · ${days} ${days === 1 ? "Tag" : "Tage"}`;
 
     return (
       <div
@@ -443,7 +468,7 @@ export default function UrlaubsantraegePage() {
             </div>
 
             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 14 }}>
-              🌴 Urlaub · {rangeLabel(item.startDate, item.endDate)} · {days} {days === 1 ? "Tag" : "Tage"}
+              {durationText}
             </div>
 
             <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -496,7 +521,9 @@ export default function UrlaubsantraegePage() {
           <div>
             <div className="label">Zeitraum</div>
             <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
-              {rangeLabel(item.startDate, item.endDate)}
+              {item.dayPortion === "HALF_DAY"
+              ? `${formatDateDE(item.startDate)} (halber Urlaubstag)`
+              : rangeLabel(item.startDate, item.endDate)}
             </div>
           </div>
 
