@@ -25,6 +25,17 @@ type WorkEntry = {
   user: { id: string; fullName: string };
 };
 
+type DayBreak = {
+  id: string;
+  workDate: string; // YYYY-MM-DD
+  breakStartHHMM: string | null;
+  breakEndHHMM: string | null;
+  manualMinutes: number;
+  legalMinutes: number;
+  autoSupplementMinutes: number;
+  effectiveMinutes: number;
+};
+
 function toIsoDateLocal(d: Date) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -160,9 +171,8 @@ type EditForm = {
   activity: string;
   location: string;
   travelMinutes: string;
-  breakMinutes: string;
   noteEmployee: string;
-  userFullName: string; // ✅ nur Anzeige im Modal
+  userFullName: string;
 };
 
 function minutesBetween(startHHMM: string, endHHMM: string) {
@@ -180,82 +190,69 @@ function legalBreakMinutes(grossMinutes: number): number {
   return 0;
 }
 
-function parseOptionalMinutes(input: string): number {
-  const t = input.trim();
-  if (!t) return 0;
-  const n = Number(t.replace(",", "."));
-  if (!Number.isFinite(n)) return 0;
-  return Math.max(0, Math.round(n));
-}
-
 type DayTotals = {
   grossDay: number;
-  breakDay: number;
+  legalBreak: number;
+  manualBreak: number;
+  autoSupplement: number;
+  effectiveBreak: number;
   breakAuto: boolean;
   netDay: number;
-  manualOverride: number; // 0 = none
 };
 
-function computeDayTotals(entries: WorkEntry[], ymd: string, additionalGross: number, overrideBreakInput: string): DayTotals {
-  const grossExisting = entries
-    .filter((e) => toYMD(e.workDate) === ymd)
-    .reduce((s, e) => s + (Number.isFinite(e.grossMinutes) ? e.grossMinutes : 0), 0);
+function computeManualBreakMinutes(startHHMM: string, endHHMM: string): number {
+  if (!startHHMM || !endHHMM) return 0;
+  return minutesBetween(startHHMM, endHHMM);
+}
 
-  const manualExisting = entries
-    .filter((e) => toYMD(e.workDate) === ymd)
-    .reduce((m, e) => {
-      const b = Number.isFinite(e.breakMinutes) ? e.breakMinutes : 0;
-      return b > 0 ? Math.max(m, b) : m;
-    }, 0);
+function computeEffectiveDayBreak(grossDay: number, manualBreak: number): DayTotals {
+  const gross = Math.max(0, Math.round(grossDay));
+  const manual = Math.max(0, Math.round(manualBreak));
+  const legal = legalBreakMinutes(gross);
+  const effective = Math.min(gross, Math.max(manual, legal));
+  const autoSupplement = Math.max(0, effective - Math.min(manual, effective));
 
-  const grossDay = Math.max(0, Math.round(grossExisting + Math.max(0, Math.round(additionalGross))));
-
-  const override = parseOptionalMinutes(overrideBreakInput);
-  const manual = override > 0 ? override : manualExisting;
-
-  if (manual > 0) {
-    const brk = Math.min(manual, grossDay);
-    return {
-      grossDay,
-      breakDay: brk,
-      breakAuto: false,
-      netDay: Math.max(0, grossDay - brk),
-      manualOverride: manual,
-    };
-  }
-
-  const brkAuto = legalBreakMinutes(grossDay);
   return {
-    grossDay,
-    breakDay: brkAuto,
-    breakAuto: true,
-    netDay: Math.max(0, grossDay - brkAuto),
-    manualOverride: 0,
+    grossDay: gross,
+    legalBreak: legal,
+    manualBreak: Math.min(manual, gross),
+    autoSupplement,
+    effectiveBreak: effective,
+    breakAuto: autoSupplement > 0,
+    netDay: Math.max(0, gross - effective),
   };
 }
 
-function buildDayTotalsMap(entries: WorkEntry[]): Map<string, DayTotals> {
+function computeDayTotals(
+  entries: WorkEntry[],
+  dayBreakMap: Map<string, DayBreak>,
+  ymd: string,
+  additionalGross: number,
+  manualBreakOverride: number | null
+): DayTotals {
+  const grossExisting = entries
+    .filter((e) => toYMD(e.workDate) === ymd)
+    .reduce((sum, entry) => sum + (Number.isFinite(entry.grossMinutes) ? entry.grossMinutes : 0), 0);
+
+  const grossDay = Math.max(0, Math.round(grossExisting + Math.max(0, Math.round(additionalGross))));
+  const existingDayBreak = dayBreakMap.get(ymd);
+  const manualBreak =
+    manualBreakOverride !== null
+      ? manualBreakOverride
+      : existingDayBreak?.manualMinutes ?? 0;
+
+  return computeEffectiveDayBreak(grossDay, manualBreak);
+}
+
+function buildDayTotalsMap(entries: WorkEntry[], dayBreakMap: Map<string, DayBreak>): Map<string, DayTotals> {
   const map = new Map<string, DayTotals>();
   const days = new Set(entries.map((e) => toYMD(e.workDate)));
 
   for (const day of days) {
-    map.set(day, computeDayTotals(entries, day, 0, "")); // no additional, no override
+    map.set(day, computeDayTotals(entries, dayBreakMap, day, 0, null));
   }
+
   return map;
-}
-
-function previewNetMinutes(grossMinutes: number, breakInput: string): { net: number; brk: number; auto: boolean } {
-  const gross = Math.max(0, Math.round(grossMinutes));
-  const inputNum = breakInput.trim() ? Number(breakInput) : 0;
-  const valid = Number.isFinite(inputNum) ? inputNum : 0;
-
-  if (valid <= 0) {
-    const brk = legalBreakMinutes(gross);
-    return { net: Math.max(0, gross - brk), brk, auto: true };
-  }
-
-  const brk = Math.min(Math.max(0, Math.round(valid)), gross);
-  return { net: Math.max(0, gross - brk), brk, auto: false };
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -297,8 +294,13 @@ export default function Page() {
   const [activity, setActivity] = useState("");
   const [location, setLocation] = useState("");
   const [travelMinutes, setTravelMinutes] = useState<string>("0");
-  const [breakMinutes, setBreakMinutes] = useState<string>(""); // leer = automatisch
   const [noteEmployee, setNoteEmployee] = useState("");
+
+  const [dayBreaks, setDayBreaks] = useState<DayBreak[]>([]);
+  const [breakStartHHMM, setBreakStartHHMM] = useState("");
+  const [breakEndHHMM, setBreakEndHHMM] = useState("");
+  const [breakSaving, setBreakSaving] = useState(false);
+  const [breakError, setBreakError] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -317,9 +319,28 @@ export default function Page() {
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
 
+  const dayBreakMap = useMemo(() => {
+    const map = new Map<string, DayBreak>();
+    for (const item of dayBreaks) {
+      map.set(item.workDate, item);
+    }
+    return map;
+  }, [dayBreaks]);
+
+  const selectedDayBreak = useMemo(() => {
+    return dayBreakMap.get(workDate) ?? null;
+  }, [dayBreakMap, workDate]);
+
+  const currentBreakFormManualMinutes = useMemo(() => {
+    return computeManualBreakMinutes(breakStartHHMM, breakEndHHMM);
+  }, [breakStartHHMM, breakEndHHMM]);
+
   const dayPreview = useMemo(() => {
-    return computeDayTotals(entries, workDate, grossPreviewMinutes, breakMinutes);
-  }, [entries, workDate, grossPreviewMinutes, breakMinutes]);
+    const overrideManual =
+      breakStartHHMM && breakEndHHMM ? currentBreakFormManualMinutes : 0;
+
+    return computeDayTotals(entries, dayBreakMap, workDate, grossPreviewMinutes, overrideManual);
+  }, [entries, dayBreakMap, workDate, grossPreviewMinutes, breakStartHHMM, breakEndHHMM, currentBreakFormManualMinutes]);
 
   const monthHours = useMemo(() => {
     const month = workDate.slice(0, 7);
@@ -381,12 +402,24 @@ useEffect(() => {
       const r = await fetch("/api/entries");
       const j = (await r.json()) as unknown;
 
-      const list =
-        typeof j === "object" && j !== null && "entries" in j && Array.isArray((j as { entries: unknown }).entries)
+      const entriesList =
+        typeof j === "object" &&
+        j !== null &&
+        "entries" in j &&
+        Array.isArray((j as { entries: unknown }).entries)
           ? (((j as { entries: WorkEntry[] }).entries ?? []) as WorkEntry[])
           : [];
 
-      setEntries(list);
+      const dayBreakList =
+        typeof j === "object" &&
+        j !== null &&
+        "dayBreaks" in j &&
+        Array.isArray((j as { dayBreaks: unknown }).dayBreaks)
+          ? (((j as { dayBreaks: DayBreak[] }).dayBreaks ?? []) as DayBreak[])
+          : [];
+
+      setEntries(entriesList);
+      setDayBreaks(dayBreakList);
     } finally {
       setLoadingEntries(false);
     }
@@ -395,6 +428,12 @@ useEffect(() => {
   useEffect(() => {
     loadEntries();
   }, []);
+
+    useEffect(() => {
+    setBreakStartHHMM(selectedDayBreak?.breakStartHHMM ?? "");
+    setBreakEndHHMM(selectedDayBreak?.breakEndHHMM ?? "");
+    setBreakError(null);
+  }, [selectedDayBreak, workDate]);
 
   async function saveEntry() {
     setError(null);
@@ -413,7 +452,6 @@ useEffect(() => {
         activity: activity.trim(),
         location: location.trim(),
         travelMinutes: Number(travelMinutes) || 0,
-        breakMinutes: breakMinutes.trim() ? Number(breakMinutes) : 0,
         noteEmployee: noteEmployee.trim(),
       };
 
@@ -437,7 +475,6 @@ useEffect(() => {
       setActivity("");
       setLocation("");
       setTravelMinutes("0");
-      setBreakMinutes("");
       setNoteEmployee("");
 
       await loadEntries();
@@ -464,7 +501,6 @@ useEffect(() => {
       activity: e.activity ?? "",
       location: e.location ?? "",
       travelMinutes: String(e.travelMinutes ?? 0),
-      breakMinutes: String(e.breakMinutes ?? 0),
       noteEmployee: e.noteEmployee ?? "",
     });
     setEditOpen(true);
@@ -492,7 +528,6 @@ useEffect(() => {
         activity: edit.activity.trim(),
         location: edit.location.trim(),
         travelMinutes: Number(edit.travelMinutes) || 0,
-        breakMinutes: edit.breakMinutes.trim() ? Number(edit.breakMinutes) : 0,
         noteEmployee: edit.noteEmployee.trim(),
       };
 
@@ -533,9 +568,51 @@ useEffect(() => {
     }
   }
 
+    async function saveDayBreak() {
+    setBreakError(null);
+
+    if ((breakStartHHMM && !breakEndHHMM) || (!breakStartHHMM && breakEndHHMM)) {
+      setBreakError("Bitte Pause von und bis vollständig eingeben.");
+      return;
+    }
+
+    setBreakSaving(true);
+    try {
+      const r = await fetch("/api/day-breaks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workDate,
+          breakStartHHMM,
+          breakEndHHMM,
+        }),
+      });
+
+      const j = (await r.json()) as unknown;
+
+      if (!r.ok) {
+        const msg =
+          typeof j === "object" &&
+          j !== null &&
+          "error" in j &&
+          typeof (j as { error: unknown }).error === "string"
+            ? (j as { error: string }).error
+            : "Pause speichern fehlgeschlagen.";
+        setBreakError(msg);
+        return;
+      }
+
+      await loadEntries();
+    } catch {
+      setBreakError("Netzwerkfehler beim Speichern der Pause.");
+    } finally {
+      setBreakSaving(false);
+    }
+  }
+
   const groupedEntries = useMemo(() => groupByMonthThenDay(entries), [entries]);
 
-  const dayTotalsMap = useMemo(() => buildDayTotalsMap(entries), [entries]);
+  const dayTotalsMap = useMemo(() => buildDayTotalsMap(entries, dayBreakMap), [entries, dayBreakMap]);
 
   const currentMonthKey = useMemo(() => {
     const now = new Date();
@@ -545,25 +622,28 @@ useEffect(() => {
   }, []);
 
   const editPreview = useMemo(() => {
-  if (!edit) {
-    return { grossEntry: 0, grossDay: 0, breakDay: 0, breakAuto: true, netDay: 0 };
-  }
+    if (!edit) {
+      return {
+        grossEntry: 0,
+        grossDay: 0,
+        effectiveBreak: 0,
+        breakAuto: true,
+        netDay: 0,
+      };
+    }
 
-  const grossEntry = minutesBetween(edit.startTime, edit.endTime);
+    const grossEntry = minutesBetween(edit.startTime, edit.endTime);
+    const entriesWithoutThis = entries.filter((entry) => entry.id !== edit.id);
+    const day = computeDayTotals(entriesWithoutThis, dayBreakMap, edit.workDate, grossEntry, null);
 
-  // Für Tagesberechnung: bestehende Entries am Tag, aber ohne den Entry selbst
-  const entriesWithoutThis = entries.filter((e) => e.id !== edit.id);
-
-  const day = computeDayTotals(entriesWithoutThis, edit.workDate, grossEntry, edit.breakMinutes);
-
-  return {
-    grossEntry,
-    grossDay: day.grossDay,
-    breakDay: day.breakDay,
-    breakAuto: day.breakAuto,
-    netDay: day.netDay,
-  };
-}, [edit, entries]);
+    return {
+      grossEntry,
+      grossDay: day.grossDay,
+      effectiveBreak: day.effectiveBreak,
+      breakAuto: day.breakAuto,
+      netDay: day.netDay,
+    };
+  }, [edit, entries, dayBreakMap]);
 
   const meName = me && me.ok ? me.user.fullName : "";
 
@@ -639,11 +719,13 @@ useEffect(() => {
         </div>
 
         <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-            <div style={{ color: "var(--muted)" }}>Arbeitszeit (berechnet)</div>
-            <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(dayPreview.netDay)}</div>
-            <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
-              Tag: Netto {formatHM(dayPreview.netDay)} · Pause {dayPreview.breakDay} Min {dayPreview.breakAuto ? "(auto)" : "(manuell)"}
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+              <div style={{ color: "var(--muted)" }}>Arbeitszeit (Tag berechnet)</div>
+              <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(dayPreview.netDay)}</div>
+            </div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>
+              Brutto {formatHM(dayPreview.grossDay)} · Wirksame Pause {formatPause(dayPreview.effectiveBreak)} · Netto {formatHM(dayPreview.netDay)}
             </div>
           </div>
         </div>
@@ -692,20 +774,8 @@ useEffect(() => {
             />
           </div>
         </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <div className="label">Pause (Min.)</div>
-          <input
-            className="input"
-            inputMode="numeric"
-            placeholder="leer = gesetzlich automatisch"
-            value={breakMinutes}
-            onChange={(e) => setBreakMinutes(e.target.value)}
-          />
-          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-            Wenn du nichts einträgst (oder 0), wird die gesetzliche Pause automatisch abgezogen.
-          </div>
         </div>
+
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
       <button
@@ -715,7 +785,6 @@ useEffect(() => {
           setActivity("");
           setLocation("");
           setTravelMinutes("0");
-          setBreakMinutes("");
           setNoteEmployee("");
         }}
       >
@@ -723,6 +792,80 @@ useEffect(() => {
       </button>
           <button className="btn btn-accent" type="button" onClick={saveEntry} disabled={saving}>
             {saving ? "Speichert..." : "Eintrag speichern"}
+          </button>
+        </div>
+
+            <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
+        <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <span style={{ color: "var(--accent)" }}>⏸</span> Pause erfassen
+        </div>
+
+        {breakError ? (
+          <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
+            <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{breakError}</span>
+          </div>
+        ) : null}
+
+        <div style={{ marginBottom: 12 }}>
+          <div className="label">Datum</div>
+          <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+            {formatDateDE(workDate)}
+          </div>
+        </div>
+
+        <div className="row" style={{ marginBottom: 12 }}>
+          <div>
+            <div className="label">Pause von</div>
+            <input
+              className="input"
+              type="time"
+              value={breakStartHHMM}
+              onChange={(e) => setBreakStartHHMM(e.target.value)}
+            />
+          </div>
+          <div>
+            <div className="label">Pause bis</div>
+            <input
+              className="input"
+              type="time"
+              value={breakEndHHMM}
+              onChange={(e) => setBreakEndHHMM(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+              <div style={{ color: "var(--muted)" }}>Pausenberechnung</div>
+              <div style={{ fontWeight: 900, color: "var(--accent)" }}>
+                {formatPause(dayPreview.effectiveBreak)}
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>
+              Manuell {formatPause(dayPreview.manualBreak)} · Gesetzlich {formatPause(dayPreview.legalBreak)} · Auto-Zusatz {formatPause(dayPreview.autoSupplement)}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>
+          Wenn du weniger Pause einträgst als gesetzlich erforderlich, zieht die App die fehlende Differenz automatisch vom Tag ab.
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+          <button
+            className="btn"
+            type="button"
+            onClick={() => {
+              setBreakStartHHMM("");
+              setBreakEndHHMM("");
+              setBreakError(null);
+            }}
+          >
+            Zurücksetzen
+          </button>
+          <button className="btn btn-accent" type="button" onClick={saveDayBreak} disabled={breakSaving}>
+            {breakSaving ? "Speichert..." : "Pause speichern"}
           </button>
         </div>
       </div>
@@ -770,8 +913,14 @@ useEffect(() => {
               <div style={{ padding: "0 0 12px 0", display: "grid", gap: 10 }}>
                 {m.days.map((d) => {
                   const totals = dayTotalsMap.get(d.date);
-                  const pauseMin = totals ? totals.breakDay : 0;
-                  const pauseLabel = totals ? (totals.breakAuto ? "auto" : "manuell") : "auto";
+                  const pauseMin = totals ? totals.effectiveBreak : 0;
+                  const pauseLabel = totals
+                    ? totals.autoSupplement > 0
+                      ? totals.manualBreak > 0
+                        ? "manuell + auto"
+                        : "auto"
+                      : "manuell"
+                    : "auto";
                   const netDay = totals ? totals.netDay : 0;
 
                   return (
@@ -1024,11 +1173,13 @@ useEffect(() => {
             </div>
 
             <div className="card" style={{ padding: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                <div style={{ color: "var(--muted)" }}>Arbeitszeit (berechnet)</div>
-                <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(editPreview.netDay)}</div>
-                <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
-                  Tag: Netto {formatHM(dayPreview.netDay)} · Pause {dayPreview.breakDay} Min {dayPreview.breakAuto ? "(auto)" : "(manuell)"}
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                  <div style={{ color: "var(--muted)" }}>Arbeitszeit (Tag berechnet)</div>
+                  <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(editPreview.netDay)}</div>
+                </div>
+                <div style={{ marginTop: 2, fontSize: 12, color: "var(--muted)" }}>
+                  Tag: Brutto {formatHM(editPreview.grossDay)} · Wirksame Pause {formatPause(editPreview.effectiveBreak)} · Netto {formatHM(editPreview.netDay)}
                 </div>
               </div>
             </div>
@@ -1070,19 +1221,6 @@ useEffect(() => {
                   value={edit.travelMinutes}
                   onChange={(e) => setEdit((p) => (p ? { ...p, travelMinutes: e.target.value } : p))}
                 />
-              </div>
-            </div>
-            <div>
-              <div className="label">Pause (Min.)</div>
-              <input
-                className="input"
-                inputMode="numeric"
-                placeholder="0/leer = gesetzlich automatisch"
-                value={edit.breakMinutes}
-                onChange={(e) => setEdit((p) => (p ? { ...p, breakMinutes: e.target.value } : p))}
-              />
-              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-                Wenn leer oder 0, wird die gesetzliche Pause automatisch abgezogen.
               </div>
             </div>
           </div>

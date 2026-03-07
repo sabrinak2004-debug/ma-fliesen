@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
+import { Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { Role } from "@prisma/client";
-
-function legalBreakMinutes(grossMinutes: number): number {
-  if (!Number.isFinite(grossMinutes) || grossMinutes <= 0) return 0;
-  if (grossMinutes > 9 * 60) return 45;
-  if (grossMinutes > 6 * 60) return 30;
-  return 0;
-}
+import { computeDayBreakFromGross } from "@/lib/breaks";
 
 function isoDayUTC(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -16,17 +10,19 @@ function isoDayUTC(d: Date): string {
 
 type DayAgg = {
   gross: number;
-  manualBreak: number; // max breakMinutes > 0
+  manualBreak: number;
 };
 
 export async function GET(req: Request) {
   const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+  if (!session) {
+    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+  }
 
   const isAdmin = session.role === Role.ADMIN;
 
   const url = new URL(req.url);
-  const month = url.searchParams.get("month") ?? new Date().toISOString().slice(0, 7); // YYYY-MM
+  const month = url.searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
 
   if (!/^\d{4}-\d{2}$/.test(month)) {
     return NextResponse.json({ error: "month Format muss YYYY-MM sein" }, { status: 400 });
@@ -48,6 +44,13 @@ export async function GET(req: Request) {
     },
   });
 
+  const dayBreaks = await prisma.dayBreak.findMany({
+    where: {
+      ...(isAdmin ? {} : { userId: session.userId }),
+      workDate: { gte: from, lt: to },
+    },
+  });
+
   const absences = await prisma.absence.findMany({
     where: {
       ...(isAdmin ? {} : { userId: session.userId }),
@@ -55,42 +58,47 @@ export async function GET(req: Request) {
     },
   });
 
-  const byUser = users.map((u) => {
-    const e = entries.filter((x) => x.userId === u.id);
-    const a = absences.filter((x) => x.userId === u.id);
+  const dayBreakMap = new Map<string, number>();
 
-  const dayMap = new Map<string, DayAgg>();
+  for (const row of dayBreaks) {
+    const key = `${row.userId}|${isoDayUTC(row.workDate)}`;
+    dayBreakMap.set(key, row.manualMinutes);
+  }
 
-for (const row of e) {
-  const dayKey = isoDayUTC(row.workDate);
-  const cur = dayMap.get(dayKey) ?? { gross: 0, manualBreak: 0 };
+  const byUser = users.map((user) => {
+    const userEntries = entries.filter((entry) => entry.userId === user.id);
+    const userAbsences = absences.filter((absence) => absence.userId === user.id);
 
-  const gross = Number.isFinite(row.grossMinutes) ? row.grossMinutes : 0;
-  const brk = Number.isFinite(row.breakMinutes) ? row.breakMinutes : 0;
+    const dayMap = new Map<string, DayAgg>();
 
-  cur.gross += gross;
-  if (brk > 0) cur.manualBreak = Math.max(cur.manualBreak, brk);
+    for (const row of userEntries) {
+      const dayKey = isoDayUTC(row.workDate);
+      const current = dayMap.get(dayKey) ?? { gross: 0, manualBreak: 0 };
+      current.gross += Math.max(0, row.grossMinutes ?? 0);
+      dayMap.set(dayKey, current);
+    }
 
-  dayMap.set(dayKey, cur);
-}
+    for (const [dayKey, current] of dayMap.entries()) {
+      const manual = dayBreakMap.get(`${user.id}|${dayKey}`) ?? 0;
+      current.manualBreak = manual;
+      dayMap.set(dayKey, current);
+    }
 
-let netMinutesSum = 0;
-for (const v of dayMap.values()) {
-  const grossDay = Math.max(0, Math.round(v.gross));
-  const manual = Math.max(0, Math.round(v.manualBreak));
-  const brkDay = manual > 0 ? Math.min(manual, grossDay) : legalBreakMinutes(grossDay);
-  const netDay = Math.max(0, grossDay - brkDay);
-  netMinutesSum += netDay;
-}
+    let netMinutesSum = 0;
+
+    for (const value of dayMap.values()) {
+      const result = computeDayBreakFromGross(value.gross, value.manualBreak);
+      netMinutesSum += result.netDayMinutes;
+    }
 
     return {
-      fullName: u.fullName,
-      role: u.role,
-      entriesCount: e.length,
+      fullName: user.fullName,
+      role: user.role,
+      entriesCount: userEntries.length,
       workMinutes: netMinutesSum,
-      travelMinutes: e.reduce((s, x) => s + x.travelMinutes, 0),
-      vacationDays: a.filter((x) => x.type === "VACATION").length,
-      sickDays: a.filter((x) => x.type === "SICK").length,
+      travelMinutes: userEntries.reduce((sum, row) => sum + (row.travelMinutes ?? 0), 0),
+      vacationDays: userAbsences.filter((row) => row.type === "VACATION").length,
+      sickDays: userAbsences.filter((row) => row.type === "SICK").length,
     };
   });
 
@@ -102,10 +110,10 @@ for (const v of dayMap.values()) {
     byUser,
     totals: {
       entriesCount: entries.length,
-      workMinutes: byUser.reduce((s, u) => s + u.workMinutes, 0),
-      travelMinutes: byUser.reduce((s, u) => s + u.travelMinutes, 0),
-      vacationDays: byUser.reduce((s, u) => s + u.vacationDays, 0),
-      sickDays: byUser.reduce((s, u) => s + u.sickDays, 0),
+      workMinutes: byUser.reduce((sum, user) => sum + user.workMinutes, 0),
+      travelMinutes: byUser.reduce((sum, user) => sum + user.travelMinutes, 0),
+      vacationDays: byUser.reduce((sum, user) => sum + user.vacationDays, 0),
+      sickDays: byUser.reduce((sum, user) => sum + user.sickDays, 0),
     },
     isAdmin,
   });

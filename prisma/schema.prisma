@@ -19,6 +19,7 @@ model AppUser {
 
 
   entries        WorkEntry[]
+  dayBreaks      DayBreak[]
   absences       Absence[]
   absenceRequests AbsenceRequest[]
   decidedAbsenceRequests AbsenceRequest[] @relation("AbsenceRequestDecidedBy")
@@ -149,6 +150,28 @@ model WorkEntry {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, workDate, startTime, endTime])
+}
+
+model DayBreak {
+  id                    String   @id @default(uuid())
+  userId                String
+  user                  AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workDate              DateTime @db.Date
+
+  breakStartHHMM        String?
+  breakEndHHMM          String?
+
+  manualMinutes         Int      @default(0)
+  legalMinutes          Int      @default(0)
+  autoSupplementMinutes Int      @default(0)
+  effectiveMinutes      Int      @default(0)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([userId, workDate])
+  @@index([userId, workDate])
 }
 
 model PlanEntry {
