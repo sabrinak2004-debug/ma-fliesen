@@ -1138,6 +1138,26 @@ li {
   }
 }
 
+@media (min-width: 769px) {
+  .erfassung-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 24px;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .erfassung-action-btn {
+    width: auto;
+    min-width: 190px;
+    padding-left: 22px;
+    padding-right: 22px;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+}
+
 @media (max-width: 768px) {
   .erfassung-time-row {
     display: grid;
