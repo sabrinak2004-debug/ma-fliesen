@@ -163,6 +163,27 @@ function formatPause(minutes: number): string {
   return formatHM(m);
 }
 
+function formatDateDayLineDE(yyyyMmDd: string) {
+  const parts = yyyyMmDd.split("-");
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const d = Number(parts[2]);
+  const dt = new Date(y, (m || 1) - 1, d || 1);
+
+  const weekday = dt.toLocaleDateString("de-DE", { weekday: "short" }).replace(",", "");
+  const day = String(d).padStart(2, "0");
+  const month = String(m).padStart(2, "0");
+  const year = String(y);
+
+  return `${weekday} ${day}.${month}.${year}`;
+}
+
+function formatMinutesCompact(minutes: number) {
+  const mins = Math.max(0, Math.round(minutes));
+  if (mins < 60) return `${mins} Min`;
+  return formatHM(mins);
+}
+
 function hasCompleteTimeRange(startHHMM: string, endHHMM: string): boolean {
   return /^\d{2}:\d{2}$/.test(startHHMM) && /^\d{2}:\d{2}$/.test(endHHMM);
 }
@@ -337,6 +358,18 @@ export default function Page() {
 
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteEntry, setNoteEntry] = useState<WorkEntry | null>(null);
+
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsEntry, setDetailsEntry] = useState<WorkEntry | null>(null);
+
+  const [breakInfoOpen, setBreakInfoOpen] = useState(false);
+  const [breakInfoDate, setBreakInfoDate] = useState<string>("");
+  const [breakInfoManualStart, setBreakInfoManualStart] = useState<string>("");
+  const [breakInfoManualEnd, setBreakInfoManualEnd] = useState<string>("");
+  const [breakInfoManualMinutes, setBreakInfoManualMinutes] = useState<number>(0);
+  const [breakInfoLegalMinutes, setBreakInfoLegalMinutes] = useState<number>(0);
+  const [breakInfoAutoMinutes, setBreakInfoAutoMinutes] = useState<number>(0);
+  const [breakInfoEffectiveMinutes, setBreakInfoEffectiveMinutes] = useState<number>(0);
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
   const isEntryPreviewActive = useMemo(() => {
@@ -558,6 +591,22 @@ useEffect(() => {
   setNoteEntry(e);
   setNoteOpen(true);
 }
+
+  function openDetailsModal(e: WorkEntry) {
+    setDetailsEntry(e);
+    setDetailsOpen(true);
+  }
+
+  function openBreakInfoModal(dayBreak: DayBreak | null, date: string) {
+    setBreakInfoDate(date);
+    setBreakInfoManualStart(dayBreak?.breakStartHHMM ?? "");
+    setBreakInfoManualEnd(dayBreak?.breakEndHHMM ?? "");
+    setBreakInfoManualMinutes(dayBreak?.manualMinutes ?? 0);
+    setBreakInfoLegalMinutes(dayBreak?.legalMinutes ?? 0);
+    setBreakInfoAutoMinutes(dayBreak?.autoSupplementMinutes ?? 0);
+    setBreakInfoEffectiveMinutes(dayBreak?.effectiveMinutes ?? 0);
+    setBreakInfoOpen(true);
+  }
 
   async function saveEdit() {
     if (!edit) return;
@@ -1160,88 +1209,175 @@ useEffect(() => {
                           userSelect: "none",
                         }}
                       >
-                        <div style={{ display: "grid", gap: 2 }}>
-                          <div style={{ fontWeight: 900 }}>{d.label}</div>
-                          <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                            {d.entries.length} {d.entries.length === 1 ? "Eintrag" : "Einträge"} · Pause {formatPause(pauseMin)} ({pauseLabel})
+                        <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
+                          <div style={{ fontWeight: 900 }}>
+                            {formatDateDayLineDE(d.date)}
+                          </div>
+
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              flexWrap: "wrap",
+                              fontSize: 12,
+                              color: "var(--muted)",
+                            }}
+                          >
+                            <span>
+                              {d.entries.length} {d.entries.length === 1 ? "Eintrag" : "Einträge"}
+                            </span>
+
+                            <span style={{ opacity: 0.5 }}>·</span>
+
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                openBreakInfoModal(dayBreakMap.get(d.date) ?? null, d.date);
+                              }}
+                              style={{
+                                padding: 0,
+                                border: "none",
+                                background: "transparent",
+                                color: "rgba(255,255,255,0.92)",
+                                cursor: "pointer",
+                                fontWeight: 900,
+                              }}
+                              title="Pausen-Details anzeigen"
+                            >
+                              {formatPause(pauseMin)} Pause
+                            </button>
                           </div>
                         </div>
 
-                        <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(netDay)}</div>
+                        <div style={{ fontWeight: 900, color: "var(--accent)", flexShrink: 0 }}>
+                          {formatHM(netDay)}
+                        </div>
                       </summary>
 
                       <div style={{ display: "grid", gap: 12, padding: "10px 0 12px 0" }}>
                         {d.entries.map((e) => {
-                          const grossHM = formatHM(e.grossMinutes ?? 0);
                           const hasTravel = (e.travelMinutes ?? 0) > 0;
 
                           return (
-                            <div key={e.id} className="entry-card" style={{ margin: "0 12px" }}>
-                              <div className="entry-accent" />
-                              <div className="entry-content">
-                                <div className="entry-top">
-                                  <div className="entry-title">
-                                    <div className="entry-name">{e.user?.fullName ?? "Unbekannt"}</div>
-                                    <div className="entry-sub">
-                                      <span>{e.startTime}–{e.endTime} Uhr</span>
-                                    </div>
-                                  </div>
-
-                                  <div className="entry-actions" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                                    <div className="entry-hours">
-                                      <span className="entry-hours-number">{grossHM}</span>
-                                    </div>
-
-                                    {e.noteEmployee.trim() ? (
-                                      <button
-                                        className="icon-btn"
-                                        onClick={() => openNoteModal(e)}
-                                        aria-label="Notiz anzeigen"
-                                        title="Notiz anzeigen"
-                                      >
-                                        📝
-                                      </button>
-                                    ) : null}
-
-                                    <button
-                                      className="icon-btn"
-                                      onClick={() => openEditModal(e)}
-                                      aria-label="Bearbeiten"
-                                      title="Bearbeiten"
-                                    >
-                                      ✏️
-                                    </button>
-
-                                    <button
-                                      className="icon-btn danger"
-                                      onClick={() => deleteEntry(e.id)}
-                                      aria-label="Löschen"
-                                      title="Löschen"
-                                    >
-                                      🗑
-                                    </button>
-                                  </div>
+                            <div
+                              key={e.id}
+                              style={{
+                                margin: "0 12px",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                gap: 10,
+                                padding: "10px 12px",
+                                borderRadius: 12,
+                                background: "rgba(255,255,255,0.02)",
+                                border: "1px solid rgba(255,255,255,0.06)",
+                              }}
+                            >
+                              <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
+                                <div style={{ fontWeight: 1100, color: "var(--accent)" }}>
+                                  {formatHM(e.workMinutes ?? 0)}
                                 </div>
 
-                                <div className="entry-body">
-                                  <div className="entry-line">
-                                    <span className="entry-icon">🧱</span>
-                                    <span className="entry-text">{e.activity}</span>
-                                  </div>
-
-                                  {e.location ? (
-                                    <div className="entry-line">
-                                      <span className="entry-icon">📍</span>
-                                      <span className="entry-text">{e.location}</span>
-                                    </div>
-                                  ) : null}
-
-                                  {hasTravel ? (
-                                    <div className="entry-chips">
-                                      <span className="chip">⏱ {e.travelMinutes} Min</span>
-                                    </div>
-                                  ) : null}
+                                <div style={{ color: "rgba(255,255,255,0.92)", fontWeight: 800 }}>
+                                  {e.startTime}–{e.endTime} Uhr
                                 </div>
+
+                                <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
+                                  {e.activity?.trim() ? e.activity : "Keine Tätigkeit hinterlegt"}
+                                </div>
+
+                                <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
+                                  {e.location?.trim() ? e.location : "Keine Baustelle / Adresse hinterlegt"}
+                                </div>
+
+                                {hasTravel ? (
+                                  <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
+                                    Fahrtzeit: {formatMinutesCompact(e.travelMinutes)}
+                                  </div>
+                                ) : null}
+                              </div>
+
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                  flexWrap: "wrap",
+                                  justifyContent: "flex-end",
+                                  alignSelf: "flex-start",
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => openDetailsModal(e)}
+                                  title="Details anzeigen"
+                                  style={{
+                                    padding: "6px 10px",
+                                    borderRadius: 10,
+                                    border: "1px solid rgba(184,207,58,0.28)",
+                                    background: "rgba(184,207,58,0.10)",
+                                    color: "var(--accent)",
+                                    cursor: "pointer",
+                                    fontWeight: 900,
+                                  }}
+                                >
+                                  ℹ️ Details
+                                </button>
+
+                                {e.noteEmployee.trim() ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => openNoteModal(e)}
+                                    title="Notiz anzeigen"
+                                    style={{
+                                      padding: "6px 10px",
+                                      borderRadius: 10,
+                                      border: "1px solid rgba(90,167,255,0.28)",
+                                      background: "rgba(90,167,255,0.10)",
+                                      color: "rgba(90,167,255,0.95)",
+                                      cursor: "pointer",
+                                      fontWeight: 900,
+                                    }}
+                                  >
+                                    📝 Notiz
+                                  </button>
+                                ) : null}
+
+                                <button
+                                  type="button"
+                                  onClick={() => openEditModal(e)}
+                                  title="Bearbeiten"
+                                  style={{
+                                    padding: "6px 10px",
+                                    borderRadius: 10,
+                                    border: "1px solid rgba(255,255,255,0.14)",
+                                    background: "rgba(255,255,255,0.06)",
+                                    color: "rgba(255,255,255,0.9)",
+                                    cursor: "pointer",
+                                    fontWeight: 900,
+                                  }}
+                                >
+                                  ✏️
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => deleteEntry(e.id)}
+                                  title="Löschen"
+                                  style={{
+                                    padding: "6px 10px",
+                                    borderRadius: 10,
+                                    border: "1px solid rgba(224,75,69,0.35)",
+                                    background: "rgba(224,75,69,0.10)",
+                                    color: "rgba(224,75,69,0.95)",
+                                    cursor: "pointer",
+                                    fontWeight: 1000,
+                                  }}
+                                >
+                                  🗑️
+                                </button>
                               </div>
                             </div>
                           );
@@ -1255,6 +1391,135 @@ useEffect(() => {
           ))}
         </div>
       </div>
+
+            <Modal
+        open={detailsOpen}
+        title="Arbeitszeit-Details"
+        onClose={() => {
+          setDetailsOpen(false);
+          setDetailsEntry(null);
+        }}
+        footer={
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => {
+                setDetailsOpen(false);
+                setDetailsEntry(null);
+              }}
+            >
+              Schließen
+            </button>
+          </div>
+        }
+      >
+        {!detailsEntry ? null : (
+          <div style={{ display: "grid", gap: 12 }}>
+            <div>
+              <div className="label">Datum & Zeit</div>
+              <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+                {formatDateDE(toYMD(detailsEntry.workDate))} · {detailsEntry.startTime}–{detailsEntry.endTime}
+              </div>
+            </div>
+
+            <div>
+              <div className="label">Netto-Arbeitszeit</div>
+              <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+                {formatHM(detailsEntry.workMinutes ?? 0)}
+              </div>
+            </div>
+
+            <div>
+              <div className="label">Baustelle / Adresse</div>
+              <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+                {detailsEntry.location?.trim() ? detailsEntry.location : "—"}
+              </div>
+            </div>
+
+            <div>
+              <div className="label">Ausgeführte Tätigkeit</div>
+              <div
+                className="input"
+                style={{
+                  minHeight: 90,
+                  display: "block",
+                  whiteSpace: "pre-wrap",
+                  paddingTop: 12,
+                  lineHeight: 1.45,
+                }}
+              >
+                {detailsEntry.activity?.trim() ? detailsEntry.activity : "—"}
+              </div>
+            </div>
+
+            <div>
+              <div className="label">Fahrtzeit</div>
+              <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+                {formatMinutesCompact(detailsEntry.travelMinutes ?? 0)}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+            <Modal
+        open={breakInfoOpen}
+        title="Pausen-Details"
+        onClose={() => setBreakInfoOpen(false)}
+        footer={
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => setBreakInfoOpen(false)}
+            >
+              Schließen
+            </button>
+          </div>
+        }
+      >
+        <div style={{ display: "grid", gap: 12 }}>
+          <div>
+            <div className="label">Datum</div>
+            <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+              {formatDateDE(breakInfoDate)}
+            </div>
+          </div>
+
+          <div>
+            <div className="label">Manuell eingetragene Pause</div>
+            <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+              {breakInfoManualStart && breakInfoManualEnd
+                ? `${breakInfoManualStart}–${breakInfoManualEnd} · ${formatMinutesCompact(breakInfoManualMinutes)}`
+                : breakInfoManualMinutes > 0
+                ? formatMinutesCompact(breakInfoManualMinutes)
+                : "Keine manuelle Pause eingetragen"}
+            </div>
+          </div>
+
+          <div>
+            <div className="label">Gesetzlich erforderlich</div>
+            <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+              {formatMinutesCompact(breakInfoLegalMinutes)}
+            </div>
+          </div>
+
+          <div>
+            <div className="label">Automatisch ergänzt</div>
+            <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+              {breakInfoAutoMinutes > 0 ? formatMinutesCompact(breakInfoAutoMinutes) : "Keine automatische Ergänzung"}
+            </div>
+          </div>
+
+          <div>
+            <div className="label">Wirksame Pause gesamt</div>
+            <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+              {formatMinutesCompact(breakInfoEffectiveMinutes)}
+            </div>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         open={noteOpen}
