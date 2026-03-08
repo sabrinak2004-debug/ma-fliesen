@@ -1596,15 +1596,26 @@ export default function AdminDashboardPage() {
 
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
         <div className="section-title" style={{ marginBottom: 10 }}>Monat (gesamt)</div>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ color: "var(--muted)" }}>
-            Arbeitszeit gesamt: <b>{overview ? formatHours1(overview.totals.workMinutes) : "—"}</b>
+
+        <div className="admin-month-summary">
+          <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
+            <span>Arbeitszeit gesamt:</span>
+            <b>{overview ? formatHours1(overview.totals.workMinutes) : "—"}</b>
           </div>
-          <div style={{ color: "var(--muted)" }}>
-            Urlaub: <b>{overview ? overview.totals.vacationDays : "—"}</b> · Krank: <b>{overview ? overview.totals.sickDays : "—"}</b>
+
+          <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
+            <span>Urlaub:</span>
+            <b>{overview ? overview.totals.vacationDays : "—"}</b>
           </div>
-          <div style={{ color: "var(--muted)" }}>
-            Einträge: <b>{overview ? overview.totals.entriesCount : "—"}</b>
+
+          <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
+            <span>Krank:</span>
+            <b>{overview ? overview.totals.sickDays : "—"}</b>
+          </div>
+
+          <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
+            <span>Einträge:</span>
+            <b>{overview ? overview.totals.entriesCount : "—"}</b>
           </div>
         </div>
       </div>
@@ -1984,6 +1995,46 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </div>
+      <style jsx>{`
+        .admin-month-summary {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .admin-month-summary-item {
+          color: var(--muted);
+        }
+
+        @media (max-width: 768px) {
+          .admin-month-summary {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+          }
+
+          .admin-month-summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+          }
+
+          .admin-month-summary-item span {
+            min-width: 0;
+          }
+
+          .admin-month-summary-item b {
+            flex-shrink: 0;
+            text-align: right;
+          }
+        }
+      `}</style>
     </AppShell>
   );
 }
