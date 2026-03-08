@@ -630,14 +630,12 @@ export default function UrlaubsantraegePage() {
           Hier siehst du alle Urlaubsanträge deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.
         </div>
         <div
+          className="mobile-2col"
           style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
-            gap: 12,
             marginTop: 16,
           }}
         >
-          <div style={{ minWidth: 0, width: "100%", height: "82%" }}>
+          <div style={{ minWidth: 0, width: "100%" }}>
             <div className="label">Mitarbeiter</div>
             <select
               className="input"
@@ -645,10 +643,10 @@ export default function UrlaubsantraegePage() {
               onChange={(e) => setSelectedUserId(e.target.value)}
               style={{
                 width: "100%",
-                height: "82%",
                 minWidth: 0,
                 boxSizing: "border-box",
                 display: "block",
+                maxWidth: "100%",
               }}
             >
               <option value="">Alle Mitarbeiter</option>
