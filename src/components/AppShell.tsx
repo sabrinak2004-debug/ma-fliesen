@@ -55,44 +55,6 @@ type NavItem = {
   icon: string;
 };
 
-function mobileItemStyle(active: boolean): React.CSSProperties {
-  return {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    padding: "14px 16px",
-    borderRadius: 14,
-    textDecoration: "none",
-    fontWeight: 900,
-    fontSize: 16,
-    color: active ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.82)",
-    background: active ? "rgba(169,194,63,0.12)" : "transparent",
-    borderLeft: active ? "4px solid #A9C23F" : "4px solid transparent",
-    paddingLeft: active ? 12 : 16,
-    transition: "all 0.15s ease",
-  };
-}
-
-function desktopSidebarItemStyle(active: boolean): React.CSSProperties {
-  return {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    width: "100%",
-    padding: "12px 14px",
-    borderRadius: 14,
-    textDecoration: "none",
-    fontWeight: 800,
-    fontSize: 15,
-    color: active ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.78)",
-    background: active ? "rgba(184,207,58,0.12)" : "transparent",
-    border: active
-      ? "1px solid rgba(184,207,58,0.32)"
-      : "1px solid transparent",
-    boxShadow: active ? "0 0 0 1px rgba(184,207,58,0.06) inset" : "none",
-    transition: "all 0.15s ease",
-  };
-}
 
 export default function AppShell({
   children,
@@ -418,36 +380,33 @@ useEffect(() => {
       <div style={{ height: 6 }} />
 
       {/* Nav */}
-      <nav style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            style={mobileItemStyle(isActive(pathname, item.href))}
-          >
-            <span>{item.icon}</span>
-            <span>{item.label}</span>
-          </Link>
-        ))}
+      <nav className="appshell-mobile-nav">
+        {navItems.map((item) => {
+          const active = isActive(pathname, item.href);
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`appshell-nav-item ${active ? "is-active" : ""}`}
+            >
+              <span className="appshell-nav-icon" aria-hidden="true">
+                {item.icon}
+              </span>
+              <span className="appshell-nav-label">{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       <div style={{ flex: 1 }} />
 
       {/* Logout */}
       <button
-        type="button"
-        onClick={handleLogout}
-        style={{
-          width: "100%",
-          padding: "14px 14px",
-          borderRadius: 18,
-          border: "1px solid #9db02f",
-          background: "#9db02fb6",
-          color: "rgba(20, 12, 12, 0.92)",
-          fontWeight: 900,
-          cursor: "pointer",
-        }}
-      >
+          type="button"
+          onClick={handleLogout}
+          className="appshell-logout-btn"
+        >
         Logout
       </button>
     </div>
@@ -509,46 +468,23 @@ useEffect(() => {
                   <Link
                     key={item.href}
                     href={item.href}
-                    style={desktopSidebarItemStyle(active)}
+                    className={`appshell-nav-item ${active ? "is-active" : ""}`}
                   >
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        width: 22,
-                        display: "inline-flex",
-                        justifyContent: "center",
-                        fontSize: 16,
-                      }}
-                    >
+                    <span className="appshell-nav-icon" aria-hidden="true">
                       {item.icon}
                     </span>
-                    <span style={{ minWidth: 0 }}>{item.label}</span>
+                    <span className="appshell-nav-label">{item.label}</span>
                   </Link>
                 );
               })}
             </nav>
 
             <div className="appshell-sidebar-bottom">
-              <div
-                style={{
-                  padding: 12,
-                  borderRadius: 16,
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  background: "rgba(255,255,255,0.04)",
-                }}
-              >
+              <div className="appshell-sidebar-logout-wrap">
                 <button
                   type="button"
                   onClick={handleLogout}
-                  style={{
-                    width: "100%",
-                    padding: "14px 14px",
-                    border: "1px solid #9db02f",
-                    background: "#9db02f61",
-                    color: "rgba(20, 12, 12, 0.92)",
-                    fontWeight: 900,
-                    cursor: "pointer",
-                  }}
+                  className="appshell-logout-btn"
                 >
                   Logout
                 </button>
