@@ -5,7 +5,6 @@ import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { MousePointerClick } from "lucide-react";
 
-
 /* =========================
    Types (Dashboard Timeline)
    ========================= */
@@ -221,7 +220,7 @@ function isOverviewApiResponse(v: unknown): v is OverviewApiResponse {
    Helpers (Dates, Formatting)
    ========================= */
 
-function monthKey(d: Date) {
+function monthKey(d: Date): string {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   return `${yyyy}-${mm}`;
@@ -231,40 +230,41 @@ function currentYear(): string {
   return String(new Date().getFullYear());
 }
 
-function lastDayOfMonth(ym: string) {
+function lastDayOfMonth(ym: string): string {
   const [y, m] = ym.split("-").map(Number);
   const last = new Date(y, m, 0);
   return String(last.getDate()).padStart(2, "0");
 }
 
 type ExportMode = "MONTH" | "YEAR" | "RANGE";
+type ExportTarget = "ALL" | "SINGLE_EMPLOYEE";
 
-function formatHM(minutes: number) {
+function formatHM(minutes: number): string {
   const m = Number.isFinite(minutes) ? Math.max(0, Math.round(minutes)) : 0;
   const h = Math.floor(m / 60);
   const mm = m % 60;
   return `${h}h ${String(mm).padStart(2, "0")}min`;
 }
 
-function formatHours1(minutes: number) {
+function formatHours1(minutes: number): string {
   const h = minutes / 60;
   return `${h.toFixed(1)}h`;
 }
 
-function formatDateDE(iso: string) {
+function formatDateDE(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   const dd = String(d).padStart(2, "0");
   const mm = String(m).padStart(2, "0");
   return `${dd}.${mm}.${y}`;
 }
 
-function formatMinutesCompact(minutes: number) {
+function formatMinutesCompact(minutes: number): string {
   const mins = Math.max(0, Math.round(minutes));
   if (mins < 60) return `${mins} min`;
   return formatHM(mins);
 }
 
-function absenceTypeLabel(type: "VACATION" | "SICK") {
+function absenceTypeLabel(type: "VACATION" | "SICK"): string {
   return type === "VACATION" ? "Urlaub" : "Krank";
 }
 
@@ -272,26 +272,7 @@ function getDayBreakForDate(dayBreaks: AdminDayBreak[], workDate: string): Admin
   return dayBreaks.find((item) => item.workDate === workDate) ?? null;
 }
 
-function formatBreakInfo(it: AdminTimelineWork) {
-  const manual = it.breakAuto ? 0 : it.breakMinutes;
-  const auto = it.breakAuto ? it.breakMinutes : 0;
-
-  if (manual > 0 && auto > 0) {
-    return `Pause ${manual} min · +${auto} min automatisch`;
-  }
-
-  if (manual > 0) {
-    return `Pause ${manual} min`;
-  }
-
-  if (auto > 0) {
-    return `Pause automatisch +${auto} min`;
-  }
-
-  return "";
-}
-
-function groupWorkItemsByDay(items: AdminTimelineWork[]) {
+function groupWorkItemsByDay(items: AdminTimelineWork[]): Record<string, AdminTimelineWork[]> {
   const grouped: Record<string, AdminTimelineWork[]> = {};
 
   const sorted = items
@@ -303,8 +284,7 @@ function groupWorkItemsByDay(items: AdminTimelineWork[]) {
     });
 
   for (const it of sorted) {
-    const day = it.date; // YYYY-MM-DD
-
+    const day = it.date;
     if (!grouped[day]) grouped[day] = [];
     grouped[day].push(it);
   }
@@ -318,13 +298,13 @@ function groupWorkItemsByDay(items: AdminTimelineWork[]) {
 
 type AbsenceRange = {
   type: "VACATION" | "SICK";
-  from: string; // YYYY-MM-DD
-  to: string; // YYYY-MM-DD
+  from: string;
+  to: string;
   dayPortion: "FULL_DAY" | "HALF_DAY";
   days: number;
 };
 
-function addDaysIso(iso: string, days: number) {
+function addDaysIso(iso: string, days: number): string {
   const [y, m, d] = iso.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
   dt.setDate(dt.getDate() + days);
@@ -421,6 +401,41 @@ function toggleWorkDay(openDays: Set<string>, key: string): Set<string> {
   return next;
 }
 
+/* =========================
+   Download / Share Helpers
+   ========================= */
+
+function getFileNameFromDisposition(disposition: string | null, fallback: string): string {
+  if (!disposition) return fallback;
+
+  const utf8Match = disposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+  if (utf8Match && utf8Match[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      return utf8Match[1];
+    }
+  }
+
+  const plainMatch = disposition.match(/filename\s*=\s*"([^"]+)"/i);
+  if (plainMatch && plainMatch[1]) return plainMatch[1];
+
+  const plainNoQuotesMatch = disposition.match(/filename\s*=\s*([^;]+)/i);
+  if (plainNoQuotesMatch && plainNoQuotesMatch[1]) return plainNoQuotesMatch[1].trim();
+
+  return fallback;
+}
+
+function guessExportFallbackName(url: string): string {
+  if (url.includes("scope=year")) return "export.zip";
+  if (url.includes("scope=month")) return "export.csv";
+  return "export.csv";
+}
+
+type NavigatorWithShare = Navigator & {
+  share?: (data?: ShareData) => Promise<void>;
+  canShare?: (data?: ShareData) => boolean;
+};
 
 /* =========================
    Page
@@ -435,15 +450,14 @@ export default function AdminDashboardPage() {
 
   const [openUsers, setOpenUsers] = useState<Set<string>>(new Set());
   const [openCats, setOpenCats] = useState<Record<string, CatState>>({});
-
   const [openWorkDays, setOpenWorkDays] = useState<Set<string>>(new Set());
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
 
   const [reloadTick, setReloadTick] = useState(0);
-  type KpiModalKind = "ACTIVE" | "MISSING" | "ABSENT" | null;
 
+  type KpiModalKind = "ACTIVE" | "MISSING" | "ABSENT" | null;
   const [kpiModalOpen, setKpiModalOpen] = useState(false);
   const [kpiModalKind, setKpiModalKind] = useState<KpiModalKind>(null);
   const [remindLoadingUserId, setRemindLoadingUserId] = useState<string>("");
@@ -457,38 +471,39 @@ export default function AdminDashboardPage() {
   const [exportYear, setExportYear] = useState<string>(currentYear());
   const [rangeFrom, setRangeFrom] = useState<string>(`${ym}-01`);
   const [rangeTo, setRangeTo] = useState<string>(`${ym}-${lastDayOfMonth(ym)}`);
+  const [exportTarget, setExportTarget] = useState<ExportTarget>("ALL");
+  const [exportEmployeeId, setExportEmployeeId] = useState<string>("");
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportActionError, setExportActionError] = useState<string>("");
 
-      type ExportTarget = "ALL" | "EMPLOYEE";
-    const [exportTarget, setExportTarget] = useState<ExportTarget>("ALL");
-    const [exportEmployeeId, setExportEmployeeId] = useState<string>("");
+  const employeeOptions = useMemo(() => {
+    const list = (dash?.employeesTimeline ?? [])
+      .map((u) => ({ id: u.userId, name: u.fullName }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return list;
+  }, [dash]);
 
-    const employeeOptions = useMemo(() => {
-      const list = (dash?.employeesTimeline ?? [])
-        .map((u) => ({ id: u.userId, name: u.fullName }))
-        .sort((a, b) => a.name.localeCompare(b.name));
-      return list;
-    }, [dash]);
+  const exportTargetError = useMemo(() => {
+    if (exportTarget !== "SINGLE_EMPLOYEE") return "";
+    if (!exportEmployeeId) return "Bitte Mitarbeiter auswählen.";
+    return "";
+  }, [exportTarget, exportEmployeeId]);
 
-    const exportTargetError = useMemo(() => {
-      if (exportTarget !== "EMPLOYEE") return "";
-      if (!exportEmployeeId) return "Bitte Mitarbeiter auswählen.";
-      return "";
-    }, [exportTarget, exportEmployeeId]);
-
-    // Admin Edit WorkEntry Modal
+  // Admin Edit WorkEntry Modal
   const [editOpen, setEditOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editErr, setEditErr] = useState<string>("");
 
   const [editEntryId, setEditEntryId] = useState<string>("");
-  const [editUserLabel, setEditUserLabel] = useState<string>(""); // nur Anzeige
-  const [editDate, setEditDate] = useState<string>(""); // nur Anzeige
-  const [editTime, setEditTime] = useState<string>(""); // nur Anzeige
+  const [editUserLabel, setEditUserLabel] = useState<string>("");
+  const [editDate, setEditDate] = useState<string>("");
+  const [editTime, setEditTime] = useState<string>("");
 
   const [editActivity, setEditActivity] = useState<string>("");
   const [editLocation, setEditLocation] = useState<string>("");
   const [editTravelMinutes, setEditTravelMinutes] = useState<string>("0");
-    const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsUserLabel, setDetailsUserLabel] = useState<string>("");
   const [detailsDate, setDetailsDate] = useState<string>("");
   const [detailsTime, setDetailsTime] = useState<string>("");
@@ -520,11 +535,116 @@ export default function AdminDashboardPage() {
     return arr;
   }, []);
 
-  const startDownload = (url: string) => {
-    window.location.href = url;
-  };
+  const rangeError = useMemo(() => {
+    if (exportMode !== "RANGE") return "";
+    if (!rangeFrom || !rangeTo) return "Bitte Von und Bis auswählen.";
+    if (rangeFrom > rangeTo) return "Von-Datum darf nicht nach dem Bis-Datum liegen.";
+    return "";
+  }, [exportMode, rangeFrom, rangeTo]);
 
-    const openKpiModal = (kind: Exclude<KpiModalKind, null>) => {
+  function buildExportUrl(): string | null {
+    if (exportTarget === "SINGLE_EMPLOYEE" && exportTargetError) return null;
+    if (exportMode === "RANGE" && rangeError) return null;
+
+    const params = new URLSearchParams();
+
+    if (exportTarget === "SINGLE_EMPLOYEE") {
+      params.set("group", "singleEmployee");
+      params.set("userId", exportEmployeeId);
+    } else {
+      params.set("group", "all");
+    }
+
+    if (exportMode === "MONTH") {
+      params.set("scope", "month");
+      params.set("month", exportMonth);
+    } else if (exportMode === "YEAR") {
+      params.set("scope", "year");
+      params.set("year", exportYear);
+    } else {
+      params.set("from", rangeFrom);
+      params.set("to", rangeTo);
+    }
+
+    return `/api/admin/export?${params.toString()}`;
+  }
+
+  function openExportInApp(url: string): void {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  async function shareOrSaveExport(url: string): Promise<void> {
+    setExportBusy(true);
+    setExportActionError("");
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        let message = "Export konnte nicht geladen werden.";
+
+        try {
+          const data: unknown = await response.json();
+          if (isRecord(data) && isString(data["error"])) {
+            message = data["error"];
+          }
+        } catch {
+          // ignore
+        }
+
+        setExportActionError(message);
+        return;
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get("Content-Disposition");
+      const fallbackName = guessExportFallbackName(url);
+      const fileName = getFileNameFromDisposition(disposition, fallbackName);
+      const mimeType = blob.type || "application/octet-stream";
+
+      const file = new File([blob], fileName, {
+        type: mimeType,
+        lastModified: Date.now(),
+      });
+
+      const shareNavigator = navigator as NavigatorWithShare;
+
+      if (
+        typeof shareNavigator.share === "function" &&
+        typeof shareNavigator.canShare === "function" &&
+        shareNavigator.canShare({ files: [file] })
+      ) {
+        await shareNavigator.share({
+          title: fileName,
+          files: [file],
+        });
+        return;
+      }
+
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = fileName;
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+      }, 1000);
+    } catch {
+      setExportActionError("Export konnte nicht heruntergeladen oder geteilt werden.");
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
+  const openKpiModal = (kind: Exclude<KpiModalKind, null>) => {
     setKpiModalKind(kind);
     setRemindErr("");
     setRemindSuccess("");
@@ -577,43 +697,24 @@ export default function AdminDashboardPage() {
     setExportYear(currentYear());
     setRangeFrom(`${month}-01`);
     setRangeTo(`${month}-${lastDayOfMonth(month)}`);
-
     setExportTarget("ALL");
     setExportEmployeeId("");
-
+    setExportActionError("");
+    setExportBusy(false);
     setExportOpen(true);
   };
 
-  const rangeError = useMemo(() => {
-    if (exportMode !== "RANGE") return "";
-    if (!rangeFrom || !rangeTo) return "Bitte Von und Bis auswählen.";
-    if (rangeFrom > rangeTo) return "Von-Datum darf nicht nach dem Bis-Datum liegen.";
-    return "";
-  }, [exportMode, rangeFrom, rangeTo]);
+  const doExport = async (mode: "OPEN" | "SHARE") => {
+    const url = buildExportUrl();
+    if (!url) return;
 
-  const doExport = () => {
-    if (exportTarget === "EMPLOYEE" && exportTargetError) return;
-
-    const empParam =
-      exportTarget === "EMPLOYEE" && exportEmployeeId
-        ? `&employeeId=${encodeURIComponent(exportEmployeeId)}`
-        : "";
-
-    if (exportMode === "MONTH") {
-      startDownload(`/api/admin/export?scope=month&month=${encodeURIComponent(exportMonth)}${empParam}`);
+    if (mode === "OPEN") {
+      openExportInApp(url);
       setExportOpen(false);
       return;
     }
 
-    if (exportMode === "YEAR") {
-      startDownload(`/api/admin/export?scope=year&year=${encodeURIComponent(exportYear)}${empParam}`);
-      setExportOpen(false);
-      return;
-    }
-
-    if (rangeError) return;
-    startDownload(`/api/admin/export?from=${encodeURIComponent(rangeFrom)}&to=${encodeURIComponent(rangeTo)}${empParam}`);
-    setExportOpen(false);
+    await shareOrSaveExport(url);
   };
 
   useEffect(() => {
@@ -649,7 +750,6 @@ export default function AdminDashboardPage() {
           return;
         }
 
-        // overview ist Admin-fähig, aber wir prüfen Shape
         if (!ro.ok || !isOverviewApiResponse(jo) || jo.isAdmin !== true) {
           setDash(jd);
           setOverview(null);
@@ -679,14 +779,16 @@ export default function AdminDashboardPage() {
       <button
         type="button"
         onClick={() => setExportOpen(false)}
+        disabled={exportBusy}
         style={{
           padding: "10px 14px",
-          cursor: "pointer",
+          cursor: exportBusy ? "not-allowed" : "pointer",
           fontWeight: 900,
           borderRadius: 12,
           border: "1px solid rgba(255,255,255,0.12)",
           background: "rgba(255,255,255,0.06)",
           color: "rgba(255,255,255,0.9)",
+          opacity: exportBusy ? 0.7 : 1,
         }}
       >
         Abbrechen
@@ -694,46 +796,63 @@ export default function AdminDashboardPage() {
 
       <button
         type="button"
-        onClick={doExport}
-        disabled={(exportMode === "RANGE" && Boolean(rangeError)) || Boolean(exportTargetError)}
+        onClick={() => void doExport("OPEN")}
+        disabled={Boolean(rangeError) || Boolean(exportTargetError) || exportBusy}
         style={{
           padding: "10px 14px",
-          cursor: ((exportMode === "RANGE" && rangeError) || exportTargetError) ? "not-allowed" : "pointer",
+          cursor: rangeError || exportTargetError || exportBusy ? "not-allowed" : "pointer",
           fontWeight: 1000,
           borderRadius: 12,
           border: "1px solid rgba(184,207,58,0.35)",
-          background: exportMode === "RANGE" && rangeError ? "rgba(184,207,58,0.06)" : "rgba(184,207,58,0.12)",
+          background: "rgba(184,207,58,0.12)",
           color: "var(--accent)",
-          opacity: ((exportMode === "RANGE" && rangeError) || exportTargetError) ? 0.7 : 1,
+          opacity: rangeError || exportTargetError || exportBusy ? 0.7 : 1,
         }}
-        title="Download starten"
+        title="Export in App öffnen"
       >
-        Download starten
+        In App öffnen
+      </button>
+
+      <button
+        type="button"
+        onClick={() => void doExport("SHARE")}
+        disabled={Boolean(rangeError) || Boolean(exportTargetError) || exportBusy}
+        style={{
+          padding: "10px 14px",
+          cursor: rangeError || exportTargetError || exportBusy ? "not-allowed" : "pointer",
+          fontWeight: 1000,
+          borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.14)",
+          background: "rgba(255,255,255,0.08)",
+          color: "rgba(255,255,255,0.92)",
+          opacity: rangeError || exportTargetError || exportBusy ? 0.7 : 1,
+        }}
+        title="Export teilen oder sichern"
+      >
+        {exportBusy ? "Lade…" : "Teilen / Sichern"}
       </button>
     </>
   );
 
-    function openEditWork(uName: string, it: AdminTimelineWork) {
+  function openEditWork(uName: string, it: AdminTimelineWork) {
     setEditErr("");
     setEditEntryId(it.id);
     setEditUserLabel(uName);
     setEditDate(it.date);
     setEditTime(`${it.startHHMM}–${it.endHHMM}`);
-
     setEditActivity(it.activity ?? "");
     setEditLocation(it.location ?? "");
     setEditTravelMinutes(String(it.travelMinutes ?? 0));
-
     setEditOpen(true);
   }
 
   function openEmployeeNote(uName: string, it: AdminTimelineWork) {
-  setNoteUserLabel(uName);
-  setNoteDate(it.date);
-  setNoteTime(`${it.startHHMM}–${it.endHHMM}`);
-  setNoteText(it.noteEmployee ?? "");
-  setNoteOpen(true);
-}
+    setNoteUserLabel(uName);
+    setNoteDate(it.date);
+    setNoteTime(`${it.startHHMM}–${it.endHHMM}`);
+    setNoteText(it.noteEmployee ?? "");
+    setNoteOpen(true);
+  }
 
   function openWorkDetails(uName: string, it: AdminTimelineWork) {
     setDetailsUserLabel(uName);
@@ -777,7 +896,6 @@ export default function AdminDashboardPage() {
           activity: editActivity,
           location: editLocation,
           travelMinutes,
-          // startTime/endTime NICHT schicken (Admin darf Zeit nicht ändern)
         }),
       });
 
@@ -788,7 +906,6 @@ export default function AdminDashboardPage() {
         return;
       }
 
-      // schnell & sicher: Dashboard neu laden (einfach month einmal "neu setzen")
       setEditOpen(false);
       setReloadTick((x) => x + 1);
     } catch {
@@ -814,7 +931,6 @@ export default function AdminDashboardPage() {
         return;
       }
 
-      // neu laden
       setReloadTick((x) => x + 1);
     } catch {
       alert("Netzwerkfehler beim Löschen.");
@@ -858,200 +974,218 @@ export default function AdminDashboardPage() {
           >
             ⬇️ Export
           </button>
-          {/* ✅ Export Modal */}
-<Modal
-  open={exportOpen}
-  onClose={() => setExportOpen(false)}
-  title="Export (Admin)"
-  footer={exportFooter}
-  maxWidth={720}
->
-  <div style={{ display: "grid", gap: 12 }}>
-    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-      {([
-        { key: "MONTH", label: "Monat (CSV)" },
-        { key: "YEAR", label: "Jahr (ZIP)" },
-        { key: "RANGE", label: "Zeitraum (CSV)" },
-      ] as Array<{ key: ExportMode; label: string }>).map((m) => (
-        <button
-          key={m.key}
-          type="button"
-          onClick={() => setExportMode(m.key)}
-          style={{
-            borderRadius: 999,
-            padding: "8px 12px",
-            border: "1px solid rgba(255,255,255,0.14)",
-            background: exportMode === m.key ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
-            color: "rgba(255,255,255,0.92)",
-            cursor: "pointer",
-            fontSize: 13,
-            fontWeight: 900,
-          }}
-        >
-          {m.label}
-        </button>
-      ))}
-      {/* ✅ Ziel: Alle oder pro Mitarbeiter */}
-<div style={{ display: "grid", gap: 8, marginTop: 6 }}>
-  <div style={{ fontSize: 12, color: "var(--muted)" }}>Export-Ziel</div>
 
-  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-    <button
-      type="button"
-      onClick={() => {
-        setExportTarget("ALL");
-        setExportEmployeeId("");
-      }}
-      style={{
-        borderRadius: 999,
-        padding: "8px 12px",
-        border: "1px solid rgba(255,255,255,0.14)",
-        background: exportTarget === "ALL" ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
-        color: "rgba(255,255,255,0.92)",
-        cursor: "pointer",
-        fontSize: 13,
-        fontWeight: 900,
-      }}
-    >
-      Alle gesammelt
-    </button>
+          <Modal
+            open={exportOpen}
+            onClose={() => setExportOpen(false)}
+            title="Export (Admin)"
+            footer={exportFooter}
+            maxWidth={720}
+          >
+            <div style={{ display: "grid", gap: 12 }}>
+              {exportActionError ? (
+                <div
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(224,75,69,0.28)",
+                    background: "rgba(224,75,69,0.10)",
+                    color: "rgba(224,75,69,0.95)",
+                    fontWeight: 900,
+                  }}
+                >
+                  {exportActionError}
+                </div>
+              ) : null}
 
-    <button
-      type="button"
-      onClick={() => setExportTarget("EMPLOYEE")}
-      style={{
-        borderRadius: 999,
-        padding: "8px 12px",
-        border: "1px solid rgba(255,255,255,0.14)",
-        background: exportTarget === "EMPLOYEE" ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
-        color: "rgba(255,255,255,0.92)",
-        cursor: "pointer",
-        fontSize: 13,
-        fontWeight: 900,
-      }}
-    >
-      Pro Mitarbeiter
-    </button>
-  </div>
-  </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {([
+                  { key: "MONTH", label: "Monat (CSV)" },
+                  { key: "YEAR", label: "Jahr (ZIP)" },
+                  { key: "RANGE", label: "Zeitraum (CSV)" },
+                ] as Array<{ key: ExportMode; label: string }>).map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => setExportMode(m.key)}
+                    style={{
+                      borderRadius: 999,
+                      padding: "8px 12px",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      background: exportMode === m.key ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
+                      color: "rgba(255,255,255,0.92)",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
 
-  {exportTarget === "EMPLOYEE" ? (
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter auswählen</div>
-      <select
-        value={exportEmployeeId}
-        onChange={(e) => setExportEmployeeId(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "10px 12px",
-          borderRadius: 12,
-          border: "1px solid rgba(255,255,255,0.18)",
-          background: "rgba(0,0,0,0.25)",
-          color: "rgba(255,255,255,0.92)",
-          outline: "none",
-        }}
-      >
-        <option value="" style={{ color: "black" }}>
-          — Bitte wählen —
-        </option>
-        {employeeOptions.map((u) => (
-          <option key={u.id} value={u.id} style={{ color: "black" }}>
-            {u.name}
-          </option>
-        ))}
-      </select>
+              <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>Export-Ziel</div>
 
-      {exportTargetError ? (
-        <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>{exportTargetError}</div>
-      ) : null}
-    </div>
-  ) : null}
-</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExportTarget("ALL");
+                      setExportEmployeeId("");
+                    }}
+                    style={{
+                      borderRadius: 999,
+                      padding: "8px 12px",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      background: exportTarget === "ALL" ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
+                      color: "rgba(255,255,255,0.92)",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: 900,
+                    }}
+                  >
+                    Alle gesammelt
+                  </button>
 
+                  <button
+                    type="button"
+                    onClick={() => setExportTarget("SINGLE_EMPLOYEE")}
+                    style={{
+                      borderRadius: 999,
+                      padding: "8px 12px",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      background: exportTarget === "SINGLE_EMPLOYEE" ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
+                      color: "rgba(255,255,255,0.92)",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: 900,
+                    }}
+                  >
+                    Einzelner Mitarbeiter
+                  </button>
+                </div>
+              </div>
 
-    {exportMode === "MONTH" ? (
-      <div style={{ display: "grid", gap: 8 }}>
-        <div style={{ fontSize: 12, color: "var(--muted)" }}>Monat auswählen</div>
-        <input
-          type="month"
-          value={exportMonth}
-          onChange={(e) => setExportMonth(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px 12px",
-            borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.18)",
-            background: "rgba(0,0,0,0.25)",
-            color: "rgba(255,255,255,0.92)",
-          }}
-        />
-      </div>
-    ) : null}
+              {exportTarget === "SINGLE_EMPLOYEE" ? (
+                <div style={{ display: "grid", gap: 6 }}>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter auswählen</div>
+                  <select
+                    value={exportEmployeeId}
+                    onChange={(e) => setExportEmployeeId(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.18)",
+                      background: "rgba(0,0,0,0.25)",
+                      color: "rgba(255,255,255,0.92)",
+                      outline: "none",
+                    }}
+                  >
+                    <option value="" style={{ color: "black" }}>
+                      — Bitte wählen —
+                    </option>
+                    {employeeOptions.map((u) => (
+                      <option key={u.id} value={u.id} style={{ color: "black" }}>
+                        {u.name}
+                      </option>
+                    ))}
+                  </select>
 
-    {exportMode === "YEAR" ? (
-      <div style={{ display: "grid", gap: 8 }}>
-        <div style={{ fontSize: 12, color: "var(--muted)" }}>Jahr auswählen</div>
-        <select
-          value={exportYear}
-          onChange={(e) => setExportYear(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px 12px",
-            borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.18)",
-            background: "rgba(0,0,0,0.25)",
-            color: "rgba(255,255,255,0.92)",
-          }}
-        >
-          {years.map((y) => (
-            <option key={y} value={y} style={{ color: "black" }}>
-              {y}
-            </option>
-          ))}
-        </select>
-      </div>
-    ) : null}
+                  {exportTargetError ? (
+                    <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>
+                      {exportTargetError}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
-    {exportMode === "RANGE" ? (
-      <div style={{ display: "grid", gap: 10 }}>
-        <div style={{ fontSize: 12, color: "var(--muted)" }}>Zeitraum auswählen</div>
+              {exportMode === "MONTH" ? (
+                <div style={{ display: "grid", gap: 8 }}>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Monat auswählen</div>
+                  <input
+                    type="month"
+                    value={exportMonth}
+                    onChange={(e) => setExportMonth(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.18)",
+                      background: "rgba(0,0,0,0.25)",
+                      color: "rgba(255,255,255,0.92)",
+                    }}
+                  />
+                </div>
+              ) : null}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <input
-            type="date"
-            value={rangeFrom}
-            onChange={(e) => setRangeFrom(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.18)",
-              background: "rgba(0,0,0,0.25)",
-              color: "rgba(255,255,255,0.92)",
-            }}
-          />
-          <input
-            type="date"
-            value={rangeTo}
-            onChange={(e) => setRangeTo(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.18)",
-              background: "rgba(0,0,0,0.25)",
-              color: "rgba(255,255,255,0.92)",
-            }}
-          />
-        </div>
+              {exportMode === "YEAR" ? (
+                <div style={{ display: "grid", gap: 8 }}>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Jahr auswählen</div>
+                  <select
+                    value={exportYear}
+                    onChange={(e) => setExportYear(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.18)",
+                      background: "rgba(0,0,0,0.25)",
+                      color: "rgba(255,255,255,0.92)",
+                    }}
+                  >
+                    {years.map((y) => (
+                      <option key={y} value={y} style={{ color: "black" }}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
 
-        {rangeError ? (
-          <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>{rangeError}</div>
-        ) : null}
-      </div>
-    ) : null}
-  </div>
-</Modal>
+              {exportMode === "RANGE" ? (
+                <div style={{ display: "grid", gap: 10 }}>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Zeitraum auswählen</div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <input
+                      type="date"
+                      value={rangeFrom}
+                      onChange={(e) => setRangeFrom(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: 12,
+                        border: "1px solid rgba(255,255,255,0.18)",
+                        background: "rgba(0,0,0,0.25)",
+                        color: "rgba(255,255,255,0.92)",
+                      }}
+                    />
+                    <input
+                      type="date"
+                      value={rangeTo}
+                      onChange={(e) => setRangeTo(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: 12,
+                        border: "1px solid rgba(255,255,255,0.18)",
+                        background: "rgba(0,0,0,0.25)",
+                        color: "rgba(255,255,255,0.92)",
+                      }}
+                    />
+                  </div>
+
+                  {rangeError ? (
+                    <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>
+                      {rangeError}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </Modal>
         </div>
       </div>
 
@@ -1185,9 +1319,7 @@ export default function AdminDashboardPage() {
                 ))}
               </div>
             ) : (
-              <div style={{ color: "var(--muted)" }}>
-                Heute fehlen aktuell keine Einträge.
-              </div>
+              <div style={{ color: "var(--muted)" }}>Heute fehlen aktuell keine Einträge.</div>
             )
           ) : null}
 
@@ -1216,9 +1348,7 @@ export default function AdminDashboardPage() {
                 ))}
               </div>
             ) : (
-              <div style={{ color: "var(--muted)" }}>
-                Heute sind keine Mitarbeiter abwesend.
-              </div>
+              <div style={{ color: "var(--muted)" }}>Heute sind keine Mitarbeiter abwesend.</div>
             )
           ) : null}
         </div>
@@ -1346,60 +1476,60 @@ export default function AdminDashboardPage() {
         </div>
       </Modal>
 
-<Modal
-  open={noteOpen}
-  onClose={() => setNoteOpen(false)}
-  title="Mitarbeiter-Notiz"
-  footer={
-    <button
-      type="button"
-      onClick={() => setNoteOpen(false)}
-      style={{
-        padding: "10px 14px",
-        cursor: "pointer",
-        fontWeight: 900,
-        borderRadius: 12,
-        border: "1px solid rgba(255,255,255,0.12)",
-        background: "rgba(255,255,255,0.06)",
-        color: "rgba(255,255,255,0.9)",
-      }}
-    >
-      Schließen
-    </button>
-  }
-  maxWidth={640}
->
-  <div style={{ display: "grid", gap: 12 }}>
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter</div>
-      <div style={{ fontWeight: 1000 }}>{noteUserLabel}</div>
-    </div>
-
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={{ fontSize: 12, color: "var(--muted)" }}>Datum & Zeit</div>
-      <div style={{ fontWeight: 1000 }}>
-        {formatDateDE(noteDate)} · {noteTime}
-      </div>
-    </div>
-
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={{ fontSize: 12, color: "var(--muted)" }}>Notiz</div>
-      <div
-        style={{
-          whiteSpace: "pre-wrap",
-          padding: "12px 14px",
-          borderRadius: 12,
-          border: "1px solid rgba(255,255,255,0.10)",
-          background: "rgba(0,0,0,0.22)",
-          color: "rgba(255,255,255,0.92)",
-          minHeight: 90,
-        }}
+      <Modal
+        open={noteOpen}
+        onClose={() => setNoteOpen(false)}
+        title="Mitarbeiter-Notiz"
+        footer={
+          <button
+            type="button"
+            onClick={() => setNoteOpen(false)}
+            style={{
+              padding: "10px 14px",
+              cursor: "pointer",
+              fontWeight: 900,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.9)",
+            }}
+          >
+            Schließen
+          </button>
+        }
+        maxWidth={640}
       >
-        {noteText.trim() ? noteText : "Keine Notiz vorhanden."}
-      </div>
-    </div>
-  </div>
-</Modal>
+        <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter</div>
+            <div style={{ fontWeight: 1000 }}>{noteUserLabel}</div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Datum & Zeit</div>
+            <div style={{ fontWeight: 1000 }}>
+              {formatDateDE(noteDate)} · {noteTime}
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>Notiz</div>
+            <div
+              style={{
+                whiteSpace: "pre-wrap",
+                padding: "12px 14px",
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.10)",
+                background: "rgba(0,0,0,0.22)",
+                color: "rgba(255,255,255,0.92)",
+                minHeight: 90,
+              }}
+            >
+              {noteText.trim() ? noteText : "Keine Notiz vorhanden."}
+            </div>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         open={editOpen}
@@ -1523,11 +1653,7 @@ export default function AdminDashboardPage() {
         </div>
       ) : null}
 
-
-      {/* KPI Cards */}
       <div className="kpi-grid" style={{ marginBottom: 14 }}>
-        
-        {/* Aktive Mitarbeiter */}
         <div
           className="card kpi group hover:shadow-lg transition"
           onClick={() => openKpiModal("ACTIVE")}
@@ -1548,8 +1674,6 @@ export default function AdminDashboardPage() {
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>👥</div>
         </div>
 
-
-        {/* Fehlende Einträge */}
         <div
           className="card kpi group hover:shadow-lg transition"
           onClick={() => openKpiModal("MISSING")}
@@ -1570,8 +1694,6 @@ export default function AdminDashboardPage() {
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>⚠️</div>
         </div>
 
-
-        {/* Abwesenheiten */}
         <div
           className="card kpi group hover:shadow-lg transition"
           onClick={() => openKpiModal("ABSENT")}
@@ -1591,11 +1713,12 @@ export default function AdminDashboardPage() {
 
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌴</div>
         </div>
-        
       </div>
 
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
-        <div className="section-title" style={{ marginBottom: 10 }}>Monat (gesamt)</div>
+        <div className="section-title" style={{ marginBottom: 10 }}>
+          Monat (gesamt)
+        </div>
 
         <div className="admin-month-summary">
           <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
@@ -1620,7 +1743,6 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Nach Mitarbeiter */}
       <div className="card" style={{ padding: 18 }}>
         <div className="section-title" style={{ marginBottom: 12 }}>Nach Mitarbeiter</div>
 
@@ -1643,14 +1765,13 @@ export default function AdminDashboardPage() {
                   .reduce((sum, it) => sum + it.workMinutes, 0);
 
                 return (
-                <div
-                  key={u.userId}
-                  className="list-item"
-                  style={{
-                    listStyle: "none",
-                  }}
-                >
-                    {/* Employee header */}
+                  <div
+                    key={u.userId}
+                    className="list-item"
+                    style={{
+                      listStyle: "none",
+                    }}
+                  >
                     <div
                       style={{
                         display: "flex",
@@ -1667,7 +1788,6 @@ export default function AdminDashboardPage() {
                       <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(totalWorkMinutes)}</div>
                     </div>
 
-                    {/* Employee body */}
                     {open ? (
                       <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                         {(() => {
@@ -1711,211 +1831,211 @@ export default function AdminDashboardPage() {
 
                           return (
                             <div style={{ display: "grid", gap: 10 }}>
-                              {/* ARBEIT */}
                               {sectionHeader("WORK", "🛠 Arbeitszeiten", `${workItems.length} Eintrag${workItems.length === 1 ? "" : "e"}`)}
-                      {cat.WORK ? (
-                        workItems.length > 0 ? (
-                          <div style={{ display: "grid", gap: 10 }}>
-                            {Object.entries(groupWorkItemsByDay(workItems)).map(([dayKey, dayItems]) => {
-                              const dayToggleKey = `${u.userId}__${dayKey}`;
-                              const dayOpen = openWorkDays.has(dayToggleKey);
+                              {cat.WORK ? (
+                                workItems.length > 0 ? (
+                                  <div style={{ display: "grid", gap: 10 }}>
+                                    {Object.entries(groupWorkItemsByDay(workItems)).map(([dayKey, dayItems]) => {
+                                      const dayToggleKey = `${u.userId}__${dayKey}`;
+                                      const dayOpen = openWorkDays.has(dayToggleKey);
 
-                              const dayTotalMinutes = dayItems.reduce((sum, it) => sum + it.workMinutes, 0);
-                              const dayEntriesCount = dayItems.length;
-                              const dayBreak = getDayBreakForDate(u.dayBreaks, dayKey);
-                              const dayPauseMinutes = dayBreak?.effectiveMinutes ?? 0;
+                                      const dayTotalMinutes = dayItems.reduce((sum, it) => sum + it.workMinutes, 0);
+                                      const dayEntriesCount = dayItems.length;
+                                      const dayBreak = getDayBreakForDate(u.dayBreaks, dayKey);
+                                      const dayPauseMinutes = dayBreak?.effectiveMinutes ?? 0;
 
-                              return (
-                                <div
-                                  key={dayKey}
-                                  style={{
-                                    display: "grid",
-                                    gap: 6,
-                                    padding: "10px 12px",
-                                    borderRadius: 12,
-                                    background: "rgba(255,255,255,0.02)",
-                                    border: "1px solid rgba(255,255,255,0.06)",
-                                  }}
-                                >
-                                  <div
-                                    onClick={() => setOpenWorkDays((prev) => toggleWorkDay(prev, dayToggleKey))}
-                                    style={{
-                                      display: "flex",
-                                      justifyContent: "space-between",
-                                      alignItems: "center",
-                                      gap: 10,
-                                      cursor: "pointer",
-                                      padding: "8px 10px",
-                                      borderRadius: 10,
-                                      background: "rgba(255,255,255,0.03)",
-                                      border: "1px solid rgba(255,255,255,0.06)",
-                                      fontWeight: 1000,
-                                    }}
-                                    title="Tag ein-/ausklappen"
-                                  >
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                                      <span>{dayOpen ? "▼" : "▶"}</span>
-                                      <span>{formatDateDE(dayKey)}</span>
-                                      <span style={{ opacity: 0.5 }}>·</span>
-                                      <span style={{ color: "var(--accent)" }}>{formatHM(dayTotalMinutes)}</span>
-                                      <span style={{ opacity: 0.5 }}>·</span>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openDayBreakInfo(u.fullName, dayKey, dayBreak);
-                                        }}
-                                        style={{
-                                          padding: 0,
-                                          border: "none",
-                                          background: "transparent",
-                                          color: "rgba(255,255,255,0.92)",
-                                          cursor: "pointer",
-                                          fontWeight: 900,
-                                        }}
-                                        title="Pausen-Details anzeigen"
-                                      >
-                                        {formatMinutesCompact(dayPauseMinutes)} Pause
-                                      </button>
-                                    </div>
-
-                                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                                      <div style={{ color: "var(--muted-2)", fontSize: 12, fontWeight: 900 }}>
-                                        {dayEntriesCount} Eintrag{dayEntriesCount === 1 ? "" : "e"}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {dayOpen ? (
-                                    <div style={{ display: "grid", gap: 6, paddingLeft: 10 }}>
-                                      {dayItems.map((it) => (
-                                                                                <div
-                                          key={it.id}
+                                      return (
+                                        <div
+                                          key={dayKey}
                                           style={{
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            gap: 10,
-                                            padding: "8px 10px",
-                                            borderRadius: 10,
+                                            display: "grid",
+                                            gap: 6,
+                                            padding: "10px 12px",
+                                            borderRadius: 12,
                                             background: "rgba(255,255,255,0.02)",
                                             border: "1px solid rgba(255,255,255,0.06)",
                                           }}
                                         >
-                                          <div style={{ display: "grid", gap: 2 }}>
-                                            <div style={{ fontWeight: 1100, color: "var(--accent)" }}>
-                                              {formatHM(it.workMinutes)}
-                                            </div>
-
-                                            <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
-                                              {it.location && it.location.trim() ? it.location : "Keine Baustelle / Adresse hinterlegt"}
-                                            </div>
-                                          </div>
-
                                           <div
+                                            onClick={() => setOpenWorkDays((prev) => toggleWorkDay(prev, dayToggleKey))}
                                             style={{
                                               display: "flex",
+                                              justifyContent: "space-between",
                                               alignItems: "center",
-                                              gap: 8,
-                                              flexWrap: "wrap",
-                                              justifyContent: "flex-end",
+                                              gap: 10,
+                                              cursor: "pointer",
+                                              padding: "8px 10px",
+                                              borderRadius: 10,
+                                              background: "rgba(255,255,255,0.03)",
+                                              border: "1px solid rgba(255,255,255,0.06)",
+                                              fontWeight: 1000,
                                             }}
+                                            title="Tag ein-/ausklappen"
                                           >
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                openWorkDetails(u.fullName, it);
-                                              }}
-                                              title="Details anzeigen"
-                                              style={{
-                                                padding: "6px 10px",
-                                                borderRadius: 10,
-                                                border: "1px solid rgba(184,207,58,0.28)",
-                                                background: "rgba(184,207,58,0.10)",
-                                                color: "var(--accent)",
-                                                cursor: "pointer",
-                                                fontWeight: 900,
-                                              }}
-                                            >
-                                              ℹ️ Details
-                                            </button>
-
-                                            {it.noteEmployee && it.noteEmployee.trim() ? (
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                              <span>{dayOpen ? "▼" : "▶"}</span>
+                                              <span>{formatDateDE(dayKey)}</span>
+                                              <span style={{ opacity: 0.5 }}>·</span>
+                                              <span style={{ color: "var(--accent)" }}>{formatHM(dayTotalMinutes)}</span>
+                                              <span style={{ opacity: 0.5 }}>·</span>
                                               <button
                                                 type="button"
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  openEmployeeNote(u.fullName, it);
+                                                  openDayBreakInfo(u.fullName, dayKey, dayBreak);
                                                 }}
-                                                title="Mitarbeiter-Notiz anzeigen"
                                                 style={{
-                                                  padding: "6px 10px",
-                                                  borderRadius: 10,
-                                                  border: "1px solid rgba(90,167,255,0.28)",
-                                                  background: "rgba(90,167,255,0.10)",
-                                                  color: "rgba(90,167,255,0.95)",
+                                                  padding: 0,
+                                                  border: "none",
+                                                  background: "transparent",
+                                                  color: "rgba(255,255,255,0.92)",
                                                   cursor: "pointer",
                                                   fontWeight: 900,
                                                 }}
+                                                title="Pausen-Details anzeigen"
                                               >
-                                                📝 Notiz
+                                                {formatMinutesCompact(dayPauseMinutes)} Pause
                                               </button>
-                                            ) : null}
+                                            </div>
 
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                openEditWork(u.fullName, it);
-                                              }}
-                                              title="Bearbeiten (ohne Zeit)"
-                                              style={{
-                                                padding: "6px 10px",
-                                                borderRadius: 10,
-                                                border: "1px solid rgba(255,255,255,0.14)",
-                                                background: "rgba(255,255,255,0.06)",
-                                                color: "rgba(255,255,255,0.9)",
-                                                cursor: "pointer",
-                                                fontWeight: 900,
-                                              }}
-                                            >
-                                              ✏️
-                                            </button>
-
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                deleteWorkEntry(it.id);
-                                              }}
-                                              title="Löschen"
-                                              style={{
-                                                padding: "6px 10px",
-                                                borderRadius: 10,
-                                                border: "1px solid rgba(224,75,69,0.35)",
-                                                background: "rgba(224,75,69,0.10)",
-                                                color: "rgba(224,75,69,0.95)",
-                                                cursor: "pointer",
-                                                fontWeight: 1000,
-                                              }}
-                                            >
-                                              🗑️
-                                            </button>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                                              <div style={{ color: "var(--muted-2)", fontSize: 12, fontWeight: 900 }}>
+                                                {dayEntriesCount} Eintrag{dayEntriesCount === 1 ? "" : "e"}
+                                              </div>
+                                            </div>
                                           </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : null}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div style={{ color: "var(--muted)", paddingLeft: 6 }}>Keine Arbeitszeiten im Monat.</div>
-                        )
-                      ) : null}
 
-                              {/* KRANK */}
+                                          {dayOpen ? (
+                                            <div style={{ display: "grid", gap: 6, paddingLeft: 10 }}>
+                                              {dayItems.map((it) => (
+                                                <div
+                                                  key={it.id}
+                                                  style={{
+                                                    display: "flex",
+                                                    justifyContent: "space-between",
+                                                    gap: 10,
+                                                    padding: "8px 10px",
+                                                    borderRadius: 10,
+                                                    background: "rgba(255,255,255,0.02)",
+                                                    border: "1px solid rgba(255,255,255,0.06)",
+                                                  }}
+                                                >
+                                                  <div style={{ display: "grid", gap: 2 }}>
+                                                    <div style={{ fontWeight: 1100, color: "var(--accent)" }}>
+                                                      {formatHM(it.workMinutes)}
+                                                    </div>
+
+                                                    <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
+                                                      {it.location && it.location.trim()
+                                                        ? it.location
+                                                        : "Keine Baustelle / Adresse hinterlegt"}
+                                                    </div>
+                                                  </div>
+
+                                                  <div
+                                                    style={{
+                                                      display: "flex",
+                                                      alignItems: "center",
+                                                      gap: 8,
+                                                      flexWrap: "wrap",
+                                                      justifyContent: "flex-end",
+                                                    }}
+                                                  >
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openWorkDetails(u.fullName, it);
+                                                      }}
+                                                      title="Details anzeigen"
+                                                      style={{
+                                                        padding: "6px 10px",
+                                                        borderRadius: 10,
+                                                        border: "1px solid rgba(184,207,58,0.28)",
+                                                        background: "rgba(184,207,58,0.10)",
+                                                        color: "var(--accent)",
+                                                        cursor: "pointer",
+                                                        fontWeight: 900,
+                                                      }}
+                                                    >
+                                                      ℹ️ Details
+                                                    </button>
+
+                                                    {it.noteEmployee && it.noteEmployee.trim() ? (
+                                                      <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          openEmployeeNote(u.fullName, it);
+                                                        }}
+                                                        title="Mitarbeiter-Notiz anzeigen"
+                                                        style={{
+                                                          padding: "6px 10px",
+                                                          borderRadius: 10,
+                                                          border: "1px solid rgba(90,167,255,0.28)",
+                                                          background: "rgba(90,167,255,0.10)",
+                                                          color: "rgba(90,167,255,0.95)",
+                                                          cursor: "pointer",
+                                                          fontWeight: 900,
+                                                        }}
+                                                      >
+                                                        📝 Notiz
+                                                      </button>
+                                                    ) : null}
+
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openEditWork(u.fullName, it);
+                                                      }}
+                                                      title="Bearbeiten (ohne Zeit)"
+                                                      style={{
+                                                        padding: "6px 10px",
+                                                        borderRadius: 10,
+                                                        border: "1px solid rgba(255,255,255,0.14)",
+                                                        background: "rgba(255,255,255,0.06)",
+                                                        color: "rgba(255,255,255,0.9)",
+                                                        cursor: "pointer",
+                                                        fontWeight: 900,
+                                                      }}
+                                                    >
+                                                      ✏️
+                                                    </button>
+
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        deleteWorkEntry(it.id);
+                                                      }}
+                                                      title="Löschen"
+                                                      style={{
+                                                        padding: "6px 10px",
+                                                        borderRadius: 10,
+                                                        border: "1px solid rgba(224,75,69,0.35)",
+                                                        background: "rgba(224,75,69,0.10)",
+                                                        color: "rgba(224,75,69,0.95)",
+                                                        cursor: "pointer",
+                                                        fontWeight: 1000,
+                                                      }}
+                                                    >
+                                                      🗑️
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          ) : null}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <div style={{ color: "var(--muted)", paddingLeft: 6 }}>Keine Arbeitszeiten im Monat.</div>
+                                )
+                              ) : null}
+
                               {sectionHeader("SICK", "🌡 Krankheit", `${sickRanges.length} Zeitraum${sickRanges.length === 1 ? "" : "e"}`)}
                               {cat.SICK ? (
                                 sickRanges.length > 0 ? (
@@ -1929,6 +2049,7 @@ export default function AdminDashboardPage() {
                                           : r.from === r.to
                                           ? `${from} · ${formatDayCountDE(r.days)}`
                                           : `${from}–${to} · ${formatDayCountDE(r.days)}`;
+
                                       return (
                                         <div
                                           key={`s-${idx}`}
@@ -1950,7 +2071,6 @@ export default function AdminDashboardPage() {
                                 )
                               ) : null}
 
-                              {/* URLAUB */}
                               {sectionHeader("VACATION", "🌴 Urlaub", `${vacationRanges.length} Zeitraum${vacationRanges.length === 1 ? "" : "e"}`)}
                               {cat.VACATION ? (
                                 vacationRanges.length > 0 ? (
@@ -1964,6 +2084,7 @@ export default function AdminDashboardPage() {
                                           : r.from === r.to
                                           ? `${from} · ${formatDayCountDE(r.days)}`
                                           : `${from}–${to} · ${formatDayCountDE(r.days)}`;
+
                                       return (
                                         <div
                                           key={`v-${idx}`}
@@ -1995,6 +2116,7 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </div>
+
       <style jsx>{`
         .admin-month-summary {
           display: flex;
