@@ -810,13 +810,23 @@ useEffect(() => {
         </div>
 
         <div className="row erfassung-time-row" style={{ marginBottom: 12 }}>
-          <div>
+          <div className="erfassung-time-field">
             <div className="label">Beginn</div>
-            <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+            <input
+              className="input erfassung-time-input"
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            />
           </div>
-          <div>
+          <div className="erfassung-time-field">
             <div className="label">Ende</div>
-            <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+            <input
+              className="input erfassung-time-input"
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            />
           </div>
         </div>
 
@@ -896,24 +906,29 @@ useEffect(() => {
         </div>
 
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-      <button
-        className="btn"
-        type="button"
-        onClick={() => {
-          setWorkDate(toIsoDateLocal(new Date()));
-          setStartTime("");
-          setEndTime("");
-          setActivity("");
-          setLocation("");
-          setTravelMinutes("0");
-          setNoteEmployee("");
-          setError(null);
-        }}
-      >
-        Abbrechen
-      </button>
-          <button className="btn btn-accent" type="button" onClick={saveEntry} disabled={saving}>
+        <div className="erfassung-actions">
+          <button
+            className="btn erfassung-action-btn"
+            type="button"
+            onClick={() => {
+              setWorkDate(toIsoDateLocal(new Date()));
+              setStartTime("");
+              setEndTime("");
+              setActivity("");
+              setLocation("");
+              setTravelMinutes("0");
+              setNoteEmployee("");
+              setError(null);
+            }}
+          >
+            Abbrechen
+          </button>
+          <button
+            className="btn btn-accent erfassung-action-btn"
+            type="button"
+            onClick={saveEntry}
+            disabled={saving}
+          >
             {saving ? "Speichert..." : "Eintrag speichern"}
           </button>
         </div>
@@ -938,19 +953,19 @@ useEffect(() => {
         </div>
 
         <div className="row erfassung-time-row" style={{ marginBottom: 12 }}>
-          <div>
+          <div className="erfassung-time-field">
             <div className="label">Pause von</div>
             <input
-              className="input"
+              className="input erfassung-time-input"
               type="time"
               value={breakStartHHMM}
               onChange={(e) => setBreakStartHHMM(e.target.value)}
             />
           </div>
-          <div>
+          <div className="erfassung-time-field">
             <div className="label">Pause bis</div>
             <input
-              className="input"
+              className="input erfassung-time-input"
               type="time"
               value={breakEndHHMM}
               onChange={(e) => setBreakEndHHMM(e.target.value)}
@@ -979,9 +994,9 @@ useEffect(() => {
           Die gesetzliche Pause richtet sich nach der gesamten Arbeitszeit des Tages. Falls du zu wenig Pause einträgst, ergänzt die App die fehlende Differenz automatisch.
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+        <div className="erfassung-actions">
           <button
-            className="btn"
+            className="btn erfassung-action-btn"
             type="button"
             onClick={() => {
               setBreakStartHHMM("");
@@ -991,7 +1006,12 @@ useEffect(() => {
           >
             Zurücksetzen
           </button>
-          <button className="btn btn-accent" type="button" onClick={saveDayBreak} disabled={breakSaving}>
+          <button
+            className="btn btn-accent erfassung-action-btn"
+            type="button"
+            onClick={saveDayBreak}
+            disabled={breakSaving}
+          >
             {breakSaving ? "Speichert..." : "Pause speichern"}
           </button>
         </div>

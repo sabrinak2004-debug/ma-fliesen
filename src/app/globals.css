@@ -964,3 +964,42 @@ li {
     overflow-x: hidden;
   }
 }
+
+@media (max-width: 768px) {
+  .erfassung-time-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .erfassung-time-row > .erfassung-time-field {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .erfassung-time-input {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    display: block;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .erfassung-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .erfassung-action-btn {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    justify-content: center;
+  }
+}
