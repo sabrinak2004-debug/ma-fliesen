@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
-import { Hand } from "lucide-react";
+import { MousePointerClick } from "lucide-react";
 
 
 /* =========================
@@ -1532,9 +1532,7 @@ export default function AdminDashboardPage() {
           title="Liste aktiver Mitarbeiter öffnen"
         >
           <div>
-            <div className="small">Aktive Mitarbeiter · Details
-              <Hand size={14} />
-            </div>
+            <div className="small">Aktive Mitarbeiter · Details < MousePointerClick size={14} /></div>
             <div className="big">{dash?.cards.employeesActive ?? "—"}</div>
           </div>
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>👥</div>
