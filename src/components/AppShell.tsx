@@ -48,13 +48,11 @@ function initialsFromName(fullName: string) {
   return (a + b).toUpperCase();
 }
 
-
 type NavItem = {
   href: string;
   label: string;
   icon: string;
 };
-
 
 export default function AppShell({
   children,
@@ -70,7 +68,6 @@ export default function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-
 
   useEffect(() => {
     let alive = true;
@@ -137,11 +134,14 @@ export default function AppShell({
       if (!(target instanceof Node)) return;
       if (!menuRef.current.contains(target)) setMenuOpen(false);
     }
+
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setMenuOpen(false);
     }
+
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
+
     return () => {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
@@ -149,7 +149,8 @@ export default function AppShell({
   }, []);
 
   const isAdmin = session?.role === "ADMIN";
-    const employeeNavItems: NavItem[] = [
+
+  const employeeNavItems: NavItem[] = [
     { href: "/erfassung", label: "Erfassung", icon: "⊞" },
     { href: "/kalender", label: "Kalender", icon: "🗓" },
     { href: "/uebersicht", label: "Übersicht", icon: "▦" },
@@ -167,15 +168,15 @@ export default function AppShell({
   const navItems = isAdmin ? adminNavItems : employeeNavItems;
 
   useEffect(() => {
-  setMobileOpen(false);
-}, [pathname]);
+    setMobileOpen(false);
+  }, [pathname]);
 
-useEffect(() => {
-  document.body.style.overflow = mobileOpen ? "hidden" : "";
-  return () => {
-    document.body.style.overflow = "";
-  };
-}, [mobileOpen]);
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
 
   async function handleLogout() {
     try {
@@ -201,217 +202,246 @@ useEffect(() => {
   return (
     <div style={{ padding: "18px 0 42px" }}>
       <div className="container-app">
-{/* MOBILE TOPBAR (nur < md) */}
-<div
-  className="md:hidden"
-  style={{
-    position: "relative",
-    zIndex: 1,
-    left: 0,
-    right: 0,
-    padding: 12,
-    paddingTop: "calc(12px + env(safe-area-inset-top))",
-    marginBottom: 12,
-    background: "rgba(14,16,14,0.92)", // --bg-main
-    backdropFilter: "blur(10px)",
-    border: "1px solid rgba(255,255,255,0.10)", // --border-light
-    borderRadius: 18,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-  }}
->
-  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-    {/* Burger */}
-    <button
-      type="button"
-      onClick={() => setMobileOpen(true)}
-      aria-label="Menü öffnen"
-      style={{
-        width: 44,
-        height: 44,
-        borderRadius: 14,
-        border: "1px solid rgba(255,255,255,0.14)",
-        background: "rgba(255,255,255,0.06)",
-        color: "rgba(255,255,255,0.95)",
-        fontSize: 18,
-        fontWeight: 900,
-        cursor: "pointer",
-      }}
-    >
-      ☰
-    </button>
-
-    {/* Brand (Logo wirklich mittig) */}
-    <div style={{ minWidth: 0, flex: 1 }}>
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0 }}>
-          <Image
-            src="/logo-ma-fliesen.jpeg"
-            alt="ma-fliesen Logo"
-            width={110}
-            height={34}
-            priority
-            style={{ objectFit: "contain" }}
-          />
-          <div
-            style={{
-              fontWeight: 900,
-              color: "rgba(255,255,255,0.95)",
-              lineHeight: 1.05,
-              marginTop: 6,
-            }}
-          >
-            ma-fliesen
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              marginTop: 2,
-              color: "rgba(255,255,255,0.65)",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              maxWidth: 220,
-            }}
-          >
-            {activeLabel ?? "#wirkönnendas"}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {/* Avatar */}
-    <div
-      aria-hidden="true"
-      style={{
-        width: 44,
-        height: 44,
-        borderRadius: 14,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        border: "1px solid rgba(255,255,255,0.14)",
-        background: "rgba(255,255,255,0.06)",
-        color: "rgba(255,255,255,0.95)",
-        fontWeight: 900,
-      }}
-    >
-      {userInitials}
-    </div>
-  </div>
-</div>
-
-{/* MOBILE SIDEBAR (nur < md) */}
-{mobileOpen && (
-  <div className="md:hidden" style={{ position: "fixed", inset: 0, zIndex: 80, overflow: "hidden" }}>
-    {/* Overlay (dunkel, leicht transparent) */}
-    <button
-      type="button"
-      aria-label="Menü schließen"
-      onClick={() => setMobileOpen(false)}
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: "rgba(0,0,0,0.45)",
-        border: "none",
-        padding: 0,
-      }}
-    />
-
-    {/* Drawer (dark + green accent) */}
-    <div
-      style={{
-        position: "absolute",
-        left: 0,
-        top: 0,
-        height: "100%",
-        width: 320,
-        maxWidth: "86vw",
-        background: "#161916", // --bg-card
-        color: "rgba(255,255,255,0.92)", // --text-main
-        boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
-        padding: 16,
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-        borderRight: "1px solid rgba(255,255,255,0.10)",
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 900, fontSize: 12, color: "rgba(255,255,255,0.65)" }}>
-            {isAdmin ? "Admin" : "Mitarbeiter"}
-          </div>
-          <div style={{ fontWeight: 900, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {userName}
-          </div>
-
-          {/* kleiner grüner Akzent */}
-          <div
-            style={{
-              marginTop: 10,
-              height: 4,
-              width: 54,
-              borderRadius: 99,
-              background: "#A9C23F", // accent green
-            }}
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setMobileOpen(false)}
-          aria-label="Schließen"
+        {/* MOBILE TOPBAR (nur < md) */}
+        <div
+          className="md:hidden"
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            border: "1px solid rgba(255,255,255,0.14)",
-            background: "rgba(255,255,255,0.06)",
-            color: "rgba(255,255,255,0.95)",
-            cursor: "pointer",
-            fontWeight: 900,
+            position: "relative",
+            zIndex: 1,
+            left: 0,
+            right: 0,
+            padding: 12,
+            paddingTop: "calc(12px + env(safe-area-inset-top))",
+            marginBottom: 12,
+            background: "rgba(14,16,14,0.92)",
+            backdropFilter: "blur(10px)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            borderRadius: 18,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
           }}
         >
-          ✕
-        </button>
-      </div>
-
-      <div style={{ height: 6 }} />
-
-      {/* Nav */}
-      <nav className="appshell-mobile-nav">
-        {navItems.map((item) => {
-          const active = isActive(pathname, item.href);
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`appshell-nav-item ${active ? "is-active" : ""}`}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Menü öffnen"
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.95)",
+                fontSize: 18,
+                fontWeight: 900,
+                cursor: "pointer",
+              }}
             >
-              <span className="appshell-nav-icon" aria-hidden="true">
-                {item.icon}
-              </span>
-              <span className="appshell-nav-label">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+              ☰
+            </button>
 
-      <div style={{ flex: 1 }} />
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    minWidth: 0,
+                  }}
+                >
+                  <Image
+                    src="/logo-ma-fliesen.jpeg"
+                    alt="ma-fliesen Logo"
+                    width={110}
+                    height={34}
+                    priority
+                    style={{ objectFit: "contain" }}
+                  />
+                  <div
+                    style={{
+                      fontWeight: 900,
+                      color: "rgba(255,255,255,0.95)",
+                      lineHeight: 1.05,
+                      marginTop: 6,
+                    }}
+                  >
+                    ma-fliesen
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      marginTop: 2,
+                      color: "rgba(255,255,255,0.65)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      maxWidth: 220,
+                    }}
+                  >
+                    {activeLabel ?? "#wirkönnendas"}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      {/* Logout */}
-      <button
-          type="button"
-          onClick={handleLogout}
-          className="appshell-logout-btn"
-        >
-        Logout
-      </button>
-    </div>
-  </div>
-)}
+            <div
+              aria-hidden="true"
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.95)",
+                fontWeight: 900,
+              }}
+            >
+              {userInitials}
+            </div>
+          </div>
+        </div>
+
+        {/* MOBILE SIDEBAR (nur < md) */}
+        {mobileOpen && (
+          <div
+            className="md:hidden"
+            style={{ position: "fixed", inset: 0, zIndex: 80, overflow: "hidden" }}
+          >
+            <button
+              type="button"
+              aria-label="Menü schließen"
+              onClick={() => setMobileOpen(false)}
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "rgba(0,0,0,0.45)",
+                border: "none",
+                padding: 0,
+              }}
+            />
+
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                height: "100%",
+                width: 320,
+                maxWidth: "86vw",
+                background: "#161916",
+                color: "rgba(255,255,255,0.92)",
+                boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
+                padding: 16,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                borderRight: "1px solid rgba(255,255,255,0.10)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontWeight: 900,
+                      fontSize: 12,
+                      color: "rgba(255,255,255,0.65)",
+                    }}
+                  >
+                    {isAdmin ? "Admin" : "Mitarbeiter"}
+                  </div>
+                  <div
+                    style={{
+                      fontWeight: 900,
+                      marginTop: 2,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {userName}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 10,
+                      height: 4,
+                      width: 54,
+                      borderRadius: 99,
+                      background: "#A9C23F",
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen(false)}
+                  aria-label="Schließen"
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 14,
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    background: "rgba(255,255,255,0.06)",
+                    color: "rgba(255,255,255,0.95)",
+                    cursor: "pointer",
+                    fontWeight: 900,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ height: 6 }} />
+
+              <nav className="appshell-mobile-nav">
+                {navItems.map((item) => {
+                  const active = isActive(pathname, item.href);
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`appshell-nav-item ${active ? "is-active" : ""}`}
+                    >
+                      <span className="appshell-nav-icon" aria-hidden="true">
+                        {item.icon}
+                      </span>
+                      <span className="appshell-nav-label">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              <div style={{ flex: 1 }} />
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="appshell-logout-btn"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* MOBILE CONTENT */}
         <div className="md:hidden" style={{ minWidth: 0 }}>
@@ -420,7 +450,6 @@ useEffect(() => {
 
         {/* DESKTOP LAYOUT */}
         <div className="appshell-desktop hidden md:grid">
-          {/* Sidebar */}
           <aside className="appshell-sidebar">
             <div className="appshell-sidebar-top">
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -492,7 +521,6 @@ useEffect(() => {
             </div>
           </aside>
 
-          {/* Content */}
           <div className="appshell-content">
             <div className="topbar" style={{ padding: 14, marginBottom: 18 }}>
               <div
@@ -504,15 +532,28 @@ useEffect(() => {
                 }}
               >
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 900, fontSize: 22, lineHeight: 1.1 }}>
+                  <div
+                    style={{
+                      fontWeight: 900,
+                      fontSize: 22,
+                      lineHeight: 1.1,
+                    }}
+                  >
                     {activeLabel ?? "ma-fliesen"}
                   </div>
-                  <div style={{ color: "var(--muted-2)", fontSize: 13, marginTop: 4 }}>
+                  <div
+                    style={{
+                      color: "var(--muted-2)",
+                      fontSize: 13,
+                      marginTop: 4,
+                    }}
+                  >
                     {isAdmin ? "Adminbereich" : "Mitarbeiterbereich"}
                   </div>
                 </div>
 
                 <div
+                  ref={menuRef}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -548,18 +589,30 @@ useEffect(() => {
                       lineHeight: 1.1,
                     }}
                   >
-                    <div className="appshell-username" style={{ fontWeight: 800, fontSize: 13 }}>
+                    <div
+                      className="appshell-username"
+                      style={{ fontWeight: 800, fontSize: 13 }}
+                    >
                       {userName}
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        marginTop: 2,
+                      }}
+                    >
                       <span
                         style={{
                           fontSize: 11,
                           fontWeight: 800,
                           padding: "3px 8px",
                           borderRadius: 999,
-                          background: isAdmin ? "rgba(0,200,255,0.14)" : "rgba(255,255,255,0.06)",
+                          background: isAdmin
+                            ? "rgba(0,200,255,0.14)"
+                            : "rgba(255,255,255,0.06)",
                           border: "1px solid rgba(255,255,255,0.10)",
                           color: "rgba(255,255,255,0.92)",
                         }}
