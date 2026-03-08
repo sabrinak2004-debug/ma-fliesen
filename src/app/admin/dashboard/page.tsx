@@ -55,7 +55,7 @@ type AdminEmployeeTimeline = {
 type CatKey = "WORK" | "SICK" | "VACATION";
 type CatState = Record<CatKey, boolean>;
 
-const defaultCatState: CatState = { WORK: true, SICK: true, VACATION: true };
+const defaultCatState: CatState = { WORK: false, SICK: false, VACATION: false };
 
 /* =========================
    Types (Dashboard + Overview)
