@@ -52,6 +52,9 @@ type OverviewUserSummary = {
   sickDays: number;
   usedVacationDaysYtd: number;
   remainingVacationDays: number;
+  baseTargetMinutes: number;
+  targetMinutes: number;
+  holidayCountInMonth: number;
 };
 
 type OverviewTotals = {
@@ -62,12 +65,15 @@ type OverviewTotals = {
   sickDays: number;
   usedVacationDaysYtd: number;
   remainingVacationDays: number;
+  baseTargetMinutes: number;
+  targetMinutes: number;
 };
 
 type OverviewResponse = {
   month?: string;
-  targetMinutes?: number;
   annualVacationDays?: number;
+  dailyTargetMinutes?: number;
+  workingDaysInMonth?: number;
   byUser?: OverviewUserSummary[];
   totals?: OverviewTotals;
   isAdmin?: boolean;
@@ -331,6 +337,9 @@ export default function UebersichtPage() {
   const [remainingVacationDays, setRemainingVacationDays] = useState<number>(30);
   const [annualVacationDays, setAnnualVacationDays] = useState<number>(30);
   const [usedVacationDaysYtd, setUsedVacationDaysYtd] = useState<number>(0);
+  const [targetMinutes, setTargetMinutes] = useState<number>(0);
+  const [baseTargetMinutes, setBaseTargetMinutes] = useState<number>(0);
+  const [holidayCountInMonth, setHolidayCountInMonth] = useState<number>(0);
 
   const initialYm = useMemo(() => monthKey(new Date()), []);
   const [selectedYear, setSelectedYear] = useState<string>(currentYear());
@@ -417,15 +426,39 @@ export default function UebersichtPage() {
                 ? firstUser.remainingVacationDays
                 : nextAnnualVacationDays
             );
+
+            setBaseTargetMinutes(
+              typeof firstUser.baseTargetMinutes === "number" && Number.isFinite(firstUser.baseTargetMinutes)
+                ? firstUser.baseTargetMinutes
+                : 0
+            );
+
+            setTargetMinutes(
+              typeof firstUser.targetMinutes === "number" && Number.isFinite(firstUser.targetMinutes)
+                ? firstUser.targetMinutes
+                : 0
+            );
+
+            setHolidayCountInMonth(
+              typeof firstUser.holidayCountInMonth === "number" && Number.isFinite(firstUser.holidayCountInMonth)
+                ? firstUser.holidayCountInMonth
+                : 0
+            );
           } else {
             setUsedVacationDaysYtd(0);
             setRemainingVacationDays(nextAnnualVacationDays);
+            setBaseTargetMinutes(0);
+            setTargetMinutes(0);
+            setHolidayCountInMonth(0);
           }
         } else {
           setIsAdmin(false);
           setAnnualVacationDays(30);
           setUsedVacationDaysYtd(0);
           setRemainingVacationDays(30);
+          setBaseTargetMinutes(0);
+          setTargetMinutes(0);
+          setHolidayCountInMonth(0);
         }
       } finally {
         setLoading(false);
@@ -461,8 +494,7 @@ export default function UebersichtPage() {
     return monthAbsences.filter((a) => a.type === "SICK").length;
   }, [absenceSummaryByUser, monthAbsences]);
 
-  const targetMinutes = 160 * 60;
-  const progress = Math.min(1, targetMinutes === 0 ? 0 : totalMinutes / targetMinutes);
+  const progress = Math.min(1, targetMinutes <= 0 ? 0 : totalMinutes / targetMinutes);
 
   const byEmployee = useMemo(() => {
     type Acc = {
@@ -877,7 +909,20 @@ const resetAbsFilters = () => {
               Arbeitsstunden · {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
             </div>
             <div className="big">{toHours(totalMinutes).toFixed(1)}h</div>
-            <div className="small">Soll: 160h</div>
+            <div className="small">
+              Soll: {toHours(targetMinutes).toFixed(1)}h
+            </div>
+            <div
+              className="small"
+              style={{
+                marginTop: 6,
+                fontSize: 11,
+                lineHeight: 1.35,
+                color: "var(--muted-2)",
+              }}
+            >
+              Automatisch berechnet aus Werktagen (Mo–Fr) abzüglich Feiertage, Urlaub und Krankheit
+            </div>
           </div>
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>⏱</div>
         </div>
@@ -919,8 +964,16 @@ const resetAbsFilters = () => {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ color: "var(--muted)" }}>
             Noch {Math.max(0, (targetMinutes - totalMinutes) / 60).toFixed(1)}h bis zum Monatssoll
+            {baseTargetMinutes > 0 ? (
+              <span>
+                {" "}· Feiertage berücksichtigt
+                {holidayCountInMonth > 0 ? ` (${holidayCountInMonth})` : ""}
+              </span>
+            ) : null}
           </div>
-          <div style={{ fontWeight: 900 }}>{toHours(totalMinutes).toFixed(1)}h / 160h</div>
+          <div style={{ fontWeight: 900 }}>
+            {toHours(totalMinutes).toFixed(1)}h / {toHours(targetMinutes).toFixed(1)}h
+          </div>
         </div>
 
         <div className="card" style={{ padding: 10 }}>

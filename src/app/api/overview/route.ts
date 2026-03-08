@@ -18,6 +18,96 @@ function absencePortionValue(dayPortion: AbsenceDayPortion): number {
 }
 
 const ANNUAL_VACATION_DAYS = 30;
+const DAILY_TARGET_MINUTES = 8 * 60;
+
+function toIsoDateUTC(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function createUTCDate(year: number, monthIndexZeroBased: number, day: number): Date {
+  return new Date(Date.UTC(year, monthIndexZeroBased, day));
+}
+
+function isWeekdayMondayToFridayUTC(d: Date): boolean {
+  const day = d.getUTCDay();
+  return day >= 1 && day <= 5;
+}
+
+function easterSundayUTC(year: number): Date {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+  return createUTCDate(year, month - 1, day);
+}
+
+function addDaysUTC(date: Date, days: number): Date {
+  const copy = new Date(date.getTime());
+  copy.setUTCDate(copy.getUTCDate() + days);
+  return copy;
+}
+
+function getBadenWuerttembergHolidaySet(year: number): Set<string> {
+  const easter = easterSundayUTC(year);
+
+  const fixedDates: Date[] = [
+    createUTCDate(year, 0, 1),   // Neujahr
+    createUTCDate(year, 0, 6),   // Heilige Drei Könige
+    createUTCDate(year, 4, 1),   // Tag der Arbeit
+    createUTCDate(year, 9, 3),   // Tag der Deutschen Einheit
+    createUTCDate(year, 10, 1),  // Allerheiligen
+    createUTCDate(year, 11, 25), // 1. Weihnachtstag
+    createUTCDate(year, 11, 26), // 2. Weihnachtstag
+  ];
+
+  const movableDates: Date[] = [
+    addDaysUTC(easter, -2),  // Karfreitag
+    addDaysUTC(easter, 1),   // Ostermontag
+    addDaysUTC(easter, 39),  // Christi Himmelfahrt
+    addDaysUTC(easter, 50),  // Pfingstmontag
+    addDaysUTC(easter, 60),  // Fronleichnam
+  ];
+
+  return new Set(
+    [...fixedDates, ...movableDates].map((date) => toIsoDateUTC(date))
+  );
+}
+
+function countWorkingDaysInMonthExcludingHolidays(
+  year: number,
+  monthOneBased: number,
+  holidaySet: Set<string>
+): number {
+  let count = 0;
+  const firstDay = createUTCDate(year, monthOneBased - 1, 1);
+  const nextMonth = createUTCDate(year, monthOneBased, 1);
+
+  for (
+    let current = new Date(firstDay.getTime());
+    current < nextMonth;
+    current = addDaysUTC(current, 1)
+  ) {
+    if (!isWeekdayMondayToFridayUTC(current)) continue;
+    if (holidaySet.has(toIsoDateUTC(current))) continue;
+    count += 1;
+  }
+
+  return count;
+}
 
 export async function GET(req: Request) {
   const session = await getSession();
@@ -40,7 +130,11 @@ export async function GET(req: Request) {
   const to = new Date(Date.UTC(y, m, 1));
 
   const yearFrom = new Date(Date.UTC(y, 0, 1));
-  const yearTo = new Date(Date.UTC(y, m, 1)); // exklusiv => zählt bis Ende des gefilterten Monats
+  const yearTo = new Date(Date.UTC(y, m, 1)); // exklusiv => bis Ende des gefilterten Monats
+
+  const holidaySet = getBadenWuerttembergHolidaySet(y);
+  const baseWorkingDays = countWorkingDaysInMonthExcludingHolidays(y, m, holidaySet);
+  const baseTargetMinutes = baseWorkingDays * DAILY_TARGET_MINUTES;
 
   const users = await prisma.appUser.findMany({
     where: isAdmin ? { isActive: true } : { id: session.userId, isActive: true },
@@ -117,6 +211,18 @@ export async function GET(req: Request) {
 
     const remainingVacationDays = Math.max(0, ANNUAL_VACATION_DAYS - usedVacationDaysYtd);
 
+    const absenceReductionMinutes = userAbsences.reduce((sum, row) => {
+      const dayIso = isoDayUTC(row.absenceDate);
+      const date = new Date(`${dayIso}T00:00:00.000Z`);
+
+      if (!isWeekdayMondayToFridayUTC(date)) return sum;
+      if (holidaySet.has(dayIso)) return sum;
+
+      return sum + absencePortionValue(row.dayPortion) * DAILY_TARGET_MINUTES;
+    }, 0);
+
+    const targetMinutes = Math.max(0, baseTargetMinutes - absenceReductionMinutes);
+
     return {
       fullName: user.fullName,
       role: user.role,
@@ -131,15 +237,19 @@ export async function GET(req: Request) {
         .reduce((sum, row) => sum + absencePortionValue(row.dayPortion), 0),
       usedVacationDaysYtd,
       remainingVacationDays,
+      baseTargetMinutes,
+      targetMinutes,
+      holidayCountInMonth: Array.from(holidaySet.values()).filter((dayIso) => {
+        return dayIso.startsWith(`${month}-`);
+      }).length,
     };
   });
 
-  const targetMinutes = 160 * 60;
-
   return NextResponse.json({
     month,
-    targetMinutes,
     annualVacationDays: ANNUAL_VACATION_DAYS,
+    dailyTargetMinutes: DAILY_TARGET_MINUTES,
+    workingDaysInMonth: baseWorkingDays,
     byUser,
     totals: {
       entriesCount: entries.length,
@@ -149,6 +259,8 @@ export async function GET(req: Request) {
       sickDays: byUser.reduce((sum, user) => sum + user.sickDays, 0),
       usedVacationDaysYtd: byUser.reduce((sum, user) => sum + user.usedVacationDaysYtd, 0),
       remainingVacationDays: byUser.reduce((sum, user) => sum + user.remainingVacationDays, 0),
+      baseTargetMinutes: byUser.reduce((sum, user) => sum + user.baseTargetMinutes, 0),
+      targetMinutes: byUser.reduce((sum, user) => sum + user.targetMinutes, 0),
     },
     isAdmin,
   });
