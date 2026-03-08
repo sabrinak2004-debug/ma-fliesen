@@ -823,7 +823,7 @@ useEffect(() => {
               />
             </div>
           </div>
-          <div/>
+          <div />
         </div>
 
         <div className="row erfassung-time-row" style={{ marginBottom: 12 }}>

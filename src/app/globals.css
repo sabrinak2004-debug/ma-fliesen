@@ -992,11 +992,11 @@ li {
 
 @media (max-width: 768px) {
   .erfassung-date-desktop {
-    display: none;
+    display: none !important;
   }
 
   .erfassung-date-mobile {
-    display: flex;
+    display: flex !important;
   }
 
   .date-display-input {
