@@ -1356,29 +1356,26 @@ export default function KalenderPage() {
                     }}
                     title={fmtDateTitle(w.date)}
                   >
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                      <div style={{ fontSize: 12, color: "var(--muted)" }}>{w.label}</div>
-                      <div
-                        style={{
-                          width: 30,
-                          height: 30,
-                          borderRadius: 999,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontWeight: 900,
-                          background: w.isToday ? "rgb(127, 142, 42)" : "rgba(109, 144, 110, 0.02)",
-                          border: w.isToday
-                            ? "1px solid hsla(151, 76%, 25%, 0.18)"
-                            : "1px solid rgba(255,255,255,0.08)",
-                          flex: "0 0 auto",
-                        }}
-                      >
-                        {w.dayNum}
+                    <div className="calendar-week-cell-head">
+                      <div className="calendar-week-cell-daylabel">
+                        <span className="calendar-week-cell-weekday">{w.label}</span>
+                        <span
+                          className={
+                            w.isToday
+                              ? "calendar-week-cell-daynumber calendar-week-cell-daynumber-today"
+                              : "calendar-week-cell-daynumber"
+                          }
+                        >
+                          {w.dayNum}
+                        </span>
                       </div>
+
+                      <span className="calendar-week-cell-datefull">
+                        {w.date}
+                      </span>
                     </div>
 
-                    <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <div className="calendar-week-cell-tags">
                       {info?.hasPlan ? (
                         <span style={pillStyle()}>
                           <span style={smallDot("rgba(184, 207, 58, 0.95)")} /> Termine
@@ -1396,25 +1393,22 @@ export default function KalenderPage() {
                           <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> Krank
                         </span>
                       ) : null}
+
+                      {!info?.hasPlan && !info?.hasVacation && !info?.hasSick ? (
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: "var(--muted)",
+                          }}
+                        >
+                          Keine Einträge
+                        </span>
+                      ) : null}
                     </div>
 
-                    {isAdmin && info?.hasPlan && info.planPreview ? (
+                    {info?.hasPlan && info.planPreview ? (
                       <div
-                        className="calendar-desktop-preview"
-                        style={{
-                          marginTop: 10,
-                          fontSize: 11,
-                          lineHeight: "14px",
-                          color: "var(--muted)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          whiteSpace: "normal",
-                          wordBreak: "break-word",
-                          overflowWrap: "anywhere",
-                        }}
+                        className="calendar-week-cell-preview"
                         title={info.planPreview}
                       >
                         {info.planPreview}
