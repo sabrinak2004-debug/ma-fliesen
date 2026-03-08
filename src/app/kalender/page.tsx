@@ -1781,7 +1781,7 @@ export default function KalenderPage() {
                   Start
                 </div>
                 <input
-                  className="input admin-time-input"
+                  className="input"
                   type="time"
                   value={apptStart}
                   onChange={(e) => setApptStart(e.target.value)}
@@ -1792,7 +1792,7 @@ export default function KalenderPage() {
                   Ende
                 </div>
                 <input
-                  className="input admin-time-input"
+                  className="input"
                   type="time"
                   value={apptEnd}
                   onChange={(e) => setApptEnd(e.target.value)}
@@ -2024,7 +2024,7 @@ export default function KalenderPage() {
                     Start
                   </div>
                   <input
-                    className="input absence-date-input"
+                    className="input"
                     type="date"
                     value={absenceStart}
                     onChange={(e) => setAbsenceStart(e.target.value)}
@@ -2037,7 +2037,7 @@ export default function KalenderPage() {
                     Ende
                   </div>
                   <input
-                    className="input absence-date-input"
+                    className="input"
                     type="date"
                     value={absenceEnd}
                     onChange={(e) => setAbsenceEnd(e.target.value)}
