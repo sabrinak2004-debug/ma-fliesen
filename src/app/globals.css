@@ -515,16 +515,16 @@ li {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   flex: 1;
 }
 
 .calendar-main-title {
   font-weight: 900;
-  font-size: 20px;
+  font-size: 18px;
   text-align: center;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .calendar-nav-btn {
@@ -536,11 +536,7 @@ li {
 }
 
 .calendar-google-desktop {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: none;
 }
 
 .calendar-grid-scroll {
@@ -549,8 +545,8 @@ li {
 
 .calendar-week-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 8px;
 }
 
 .calendar-week-cell-head {
@@ -624,34 +620,60 @@ li {
 .calendar-month-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 10px;
+  gap: 6px;
 }
 
 .calendar-weekday-head {
   color: var(--muted-2);
-  font-size: 12px;
+  font-size: 11px;
   text-align: center;
 }
 
 .calendar-week-cell {
-  height: 110px;
-  border-radius: 16px;
+  min-height: unset;
+  height: auto;
+  border-radius: 14px;
   text-align: left;
-  padding: 12px;
+  padding: 10px 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   cursor: pointer;
 }
 
+.calendar-week-cell-head {
+  align-items: center;
+}
+
+.calendar-week-cell-weekday {
+  font-size: 13px;
+  min-width: 28px;
+}
+
+.calendar-week-cell-daynumber,
+.calendar-week-cell-daynumber-today {
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+}
+
+.calendar-week-cell-preview {
+  font-size: 12px;
+  line-height: 15px;
+}
+
 .calendar-month-cell {
-  height: 86px;
-  border-radius: 16px;
+  height: 64px;
+  border-radius: 14px;
   text-align: left;
-  padding: 10px;
+  padding: 6px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.calendar-month-cell .calendar-day-number {
+  font-size: 13px;
 }
 
 .calendar-day-number {
@@ -702,6 +724,24 @@ li {
   display: block;
 }
 
+.calendar-google-below-toggle {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.calendar-google-below-toggle .btn {
+  width: 100%;
+  max-width: 320px;
+}
+
+.calendar-grid-scroll {
+  width: 100%;
+  overflow-x: visible;
+  padding-bottom: 0;
+}
+
 /* ===== Nur Mobile ===== */
 @media (max-width: 767px) {
   .calendar-mobile-header {
@@ -720,14 +760,14 @@ li {
     display: none !important;
   }
 
-  .calendar-google-mobile {
+  .calendar-google-below-toggle {
     display: flex;
     width: 100%;
     justify-content: center;
     margin-top: 2px;
   }
 
-  .calendar-google-mobile .btn {
+  .calendar-google-below-toggle .btn {
     width: 100%;
     max-width: 320px;
   }

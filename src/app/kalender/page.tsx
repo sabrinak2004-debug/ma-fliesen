@@ -1271,7 +1271,7 @@ export default function KalenderPage() {
             </div>
 
             {isAdminOwnCalendar ? (
-              <div className="calendar-google-mobile">
+              <div className="calendar-google-below-toggle">
                 <button
                   className="btn"
                   type="button"
