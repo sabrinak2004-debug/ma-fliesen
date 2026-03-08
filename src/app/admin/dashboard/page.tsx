@@ -1523,23 +1523,25 @@ export default function AdminDashboardPage() {
         </div>
       ) : null}
 
+
       {/* KPI Cards */}
       <div className="kpi-grid" style={{ marginBottom: 14 }}>
-
+        
         {/* Aktive Mitarbeiter */}
         <div
-          className="card kpi group relative hover:shadow-lg transition"
+          className="card kpi group hover:shadow-lg transition"
           onClick={() => openKpiModal("ACTIVE")}
           style={{ cursor: "pointer" }}
           title="Liste aktiver Mitarbeiter öffnen"
         >
-          {/* Hover Icon */}
-          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
-            <MousePointerClick size={16} />
-          </div>
-
           <div>
-            <div className="small">Aktive Mitarbeiter</div>
+            <div className="small flex items-center gap-1">
+              Aktive Mitarbeiter
+              <span className="opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
+                <MousePointerClick size={14} />
+              </span>
+            </div>
+
             <div className="big">{dash?.cards.employeesActive ?? "—"}</div>
           </div>
 
@@ -1549,18 +1551,19 @@ export default function AdminDashboardPage() {
 
         {/* Fehlende Einträge */}
         <div
-          className="card kpi group relative hover:shadow-lg transition"
+          className="card kpi group hover:shadow-lg transition"
           onClick={() => openKpiModal("MISSING")}
           style={{ cursor: "pointer" }}
           title="Liste fehlender Einträge öffnen"
         >
-          {/* Hover Icon */}
-          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
-            <MousePointerClick size={16} />
-          </div>
-
           <div>
-            <div className="small">Fehlende Einträge (heute)</div>
+            <div className="small flex items-center gap-1">
+              Fehlende Einträge (heute)
+              <span className="opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
+                <MousePointerClick size={14} />
+              </span>
+            </div>
+
             <div className="big">{dash?.cards.missingToday ?? "—"}</div>
           </div>
 
@@ -1570,24 +1573,25 @@ export default function AdminDashboardPage() {
 
         {/* Abwesenheiten */}
         <div
-          className="card kpi group relative hover:shadow-lg transition"
+          className="card kpi group hover:shadow-lg transition"
           onClick={() => openKpiModal("ABSENT")}
           style={{ cursor: "pointer" }}
           title="Liste heutiger Abwesenheiten öffnen"
         >
-          {/* Hover Icon */}
-          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
-            <MousePointerClick size={16} />
-          </div>
-
           <div>
-            <div className="small">Abwesenheiten (heute)</div>
+            <div className="small flex items-center gap-1">
+              Abwesenheiten (heute)
+              <span className="opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
+                <MousePointerClick size={14} />
+              </span>
+            </div>
+
             <div className="big">{dash?.cards.absencesToday ?? "—"}</div>
           </div>
 
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌴</div>
         </div>
-
+        
       </div>
 
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
