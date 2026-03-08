@@ -804,7 +804,16 @@ useEffect(() => {
         <div className="row" style={{ marginBottom: 12 }}>
           <div>
             <div className="label">Datum</div>
-            <input className="input" type="date" value={workDate} onChange={(e) => setWorkDate(e.target.value)} />
+            <div className="date-display-input">
+              <div className="date-display-value">{formatDateDE(workDate)}</div>
+              <input
+                className="date-display-native-input"
+                type="date"
+                value={workDate}
+                onChange={(e) => setWorkDate(e.target.value)}
+                aria-label="Datum auswählen"
+              />
+            </div>
           </div>
           <div />
         </div>
