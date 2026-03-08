@@ -809,7 +809,7 @@ useEffect(() => {
           <div />
         </div>
 
-        <div className="row" style={{ marginBottom: 12 }}>
+        <div className="row erfassung-time-row" style={{ marginBottom: 12 }}>
           <div>
             <div className="label">Beginn</div>
             <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
@@ -937,7 +937,7 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className="row" style={{ marginBottom: 12 }}>
+        <div className="row erfassung-time-row" style={{ marginBottom: 12 }}>
           <div>
             <div className="label">Pause von</div>
             <input

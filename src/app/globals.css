@@ -937,3 +937,30 @@ li {
     min-width: 0;
   }
 }
+
+@media (max-width: 768px) {
+  .erfassung-time-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .erfassung-time-row > div {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .erfassung-time-row .input,
+  .erfassung-time-row input[type="time"] {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    display: block;
+  }
+
+  .card {
+    overflow-x: hidden;
+  }
+}
