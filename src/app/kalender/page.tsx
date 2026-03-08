@@ -1775,21 +1775,30 @@ export default function KalenderPage() {
               </div>
             )}
 
-            <div className="calendar-form-grid-2" style={{ marginBottom: 10 }}>
-              <div>
+            <div className="calendar-form-grid-2 admin-time-grid-mobile-fix" style={{ marginBottom: 10 }}>
+              <div className="admin-time-grid-item">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Start
                 </div>
-                <input className="input" type="time" value={apptStart} onChange={(e) => setApptStart(e.target.value)} />
+                <input
+                  className="input admin-time-input"
+                  type="time"
+                  value={apptStart}
+                  onChange={(e) => setApptStart(e.target.value)}
+                />
               </div>
-              <div>
+              <div className="admin-time-grid-item">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Ende
                 </div>
-                <input className="input" type="time" value={apptEnd} onChange={(e) => setApptEnd(e.target.value)} />
+                <input
+                  className="input admin-time-input"
+                  type="time"
+                  value={apptEnd}
+                  onChange={(e) => setApptEnd(e.target.value)}
+                />
               </div>
             </div>
-
             <div className="calendar-form-grid-2" style={{ marginBottom: 10 }}>
               <div>
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
@@ -2009,13 +2018,13 @@ export default function KalenderPage() {
 
             <div style={{ marginBottom: 12 }}>
               <div className="label">{selectedRequestBlock ? "Antragsdetails" : "Abwesenheit beantragen"}</div>
-              <div className="calendar-form-grid-2">
-                <div>
+              <div className="calendar-form-grid-2 absence-date-grid-mobile-fix">
+                <div className="absence-date-grid-item">
                   <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                     Start
                   </div>
                   <input
-                    className="input"
+                    className="input absence-date-input"
                     type="date"
                     value={absenceStart}
                     onChange={(e) => setAbsenceStart(e.target.value)}
@@ -2023,12 +2032,12 @@ export default function KalenderPage() {
                   />
                 </div>
 
-                <div>
+                <div className="absence-date-grid-item">
                   <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                     Ende
                   </div>
                   <input
-                    className="input"
+                    className="input absence-date-input"
                     type="date"
                     value={absenceEnd}
                     onChange={(e) => setAbsenceEnd(e.target.value)}
