@@ -447,7 +447,14 @@ export default function KrankheitsantraegePage() {
               🤒 Krank · {rangeLabel(item.startDate, item.endDate)} · {days} {days === 1 ? "Tag" : "Tage"}
             </div>
 
-            <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div
+              style={{
+                marginTop: 8,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
               <span
                 style={{
                   ...statusStyle(item.status),
@@ -528,12 +535,10 @@ export default function KrankheitsantraegePage() {
 
         {item.status === "PENDING" ? (
           <div
+            className="mobile-actions"
             style={{
               marginTop: 14,
-              display: "flex",
-              gap: 10,
               justifyContent: "flex-end",
-              flexWrap: "wrap",
             }}
           >
             <button
@@ -543,6 +548,7 @@ export default function KrankheitsantraegePage() {
               onClick={() => {
                 void rejectRequest(item.id);
               }}
+              style={{ flex: "1 1 220px" }}
             >
               {isBusy ? "Verarbeitet..." : "Ablehnen"}
             </button>
@@ -554,6 +560,7 @@ export default function KrankheitsantraegePage() {
               onClick={() => {
                 void approveRequest(item.id);
               }}
+              style={{ flex: "1 1 220px" }}
             >
               {isBusy ? "Verarbeitet..." : "Genehmigen"}
             </button>
@@ -604,14 +611,12 @@ export default function KrankheitsantraegePage() {
           Hier siehst du alle Krankheitsanträge deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.
         </div>
         <div
+          className="mobile-2col"
           style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
-            gap: 12,
             marginTop: 16,
           }}
         >
-          <div style={{ minWidth: 0, width: "100%",height: "82%" }}>
+          <div style={{ minWidth: 0, width: "100%" }}>
             <div className="label">Mitarbeiter</div>
             <select
               className="input"
@@ -619,7 +624,6 @@ export default function KrankheitsantraegePage() {
               onChange={(e) => setSelectedUserId(e.target.value)}
               style={{
                 width: "100%",
-                height: "82%",
                 minWidth: 0,
                 boxSizing: "border-box",
                 display: "block",
@@ -650,9 +654,6 @@ export default function KrankheitsantraegePage() {
             />
           </div>
         </div>
-      </div>
-
-
         {error ? (
           <div
             className="card"
@@ -665,6 +666,7 @@ export default function KrankheitsantraegePage() {
             <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
           </div>
         ) : null}
+      </div>
     
 
 
@@ -729,7 +731,7 @@ export default function KrankheitsantraegePage() {
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
               {approvedItems.length === 0 ? (
                 <div className="card" style={{ padding: 14, opacity: 0.85 }}>
-                  Keine genehmigten Krankheitsanträge.
+                  Keine genehmigten Krankheitsanträge für diesen Filter.
                 </div>
               ) : (
                 approvedItems.map(renderRequestCard)
@@ -760,7 +762,7 @@ export default function KrankheitsantraegePage() {
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
               {rejectedItems.length === 0 ? (
                 <div className="card" style={{ padding: 14, opacity: 0.85 }}>
-                  Keine abgelehnten Krankheitsanträge.
+                  Keine abgelehnten Krankheitsanträge für diesen Filter.
                 </div>
               ) : (
                 rejectedItems.map(renderRequestCard)

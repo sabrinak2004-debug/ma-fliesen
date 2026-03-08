@@ -801,12 +801,9 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className="row" style={{ marginBottom: 12 }}>
-          <div>
-            <div className="label">Datum</div>
-            <input className="input" type="date" value={workDate} onChange={(e) => setWorkDate(e.target.value)} />
-          </div>
-          <div />
+        <div style={{ marginBottom: 12 }}>
+          <div className="label">Datum</div>
+          <input className="input" type="date" value={workDate} onChange={(e) => setWorkDate(e.target.value)} />
         </div>
 
         <div className="row" style={{ marginBottom: 12 }}>
@@ -822,7 +819,15 @@ useEffect(() => {
 
         <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
               <div style={{ color: "var(--muted)" }}>Arbeitszeit (Tag berechnet)</div>
               <div style={{ fontWeight: 900, color: "var(--accent)" }}>
                 {dayPreview ? formatHM(dayPreview.netDay) : ""}
@@ -896,24 +901,37 @@ useEffect(() => {
         </div>
 
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-      <button
-        className="btn"
-        type="button"
-        onClick={() => {
-          setWorkDate(toIsoDateLocal(new Date()));
-          setStartTime("");
-          setEndTime("");
-          setActivity("");
-          setLocation("");
-          setTravelMinutes("0");
-          setNoteEmployee("");
-          setError(null);
-        }}
-      >
-        Abbrechen
-      </button>
-          <button className="btn btn-accent" type="button" onClick={saveEntry} disabled={saving}>
+        <div
+          className="mobile-actions"
+          style={{
+            justifyContent: "flex-end",
+          }}
+        >
+          <button
+            className="btn"
+            type="button"
+            onClick={() => {
+              setWorkDate(toIsoDateLocal(new Date()));
+              setStartTime("");
+              setEndTime("");
+              setActivity("");
+              setLocation("");
+              setTravelMinutes("0");
+              setNoteEmployee("");
+              setError(null);
+            }}
+            style={{ flex: "1 1 220px" }}
+          >
+            Abbrechen
+          </button>
+
+          <button
+            className="btn btn-accent"
+            type="button"
+            onClick={saveEntry}
+            disabled={saving}
+            style={{ flex: "1 1 220px" }}
+          >
             {saving ? "Speichert..." : "Eintrag speichern"}
           </button>
         </div>
@@ -960,7 +978,15 @@ useEffect(() => {
 
         <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
               <div style={{ color: "var(--muted)" }}>Pausenberechnung</div>
               <div style={{ fontWeight: 900, color: "var(--accent)" }}>
                 {breakPreviewText.rightValue}
@@ -979,7 +1005,12 @@ useEffect(() => {
           Die gesetzliche Pause richtet sich nach der gesamten Arbeitszeit des Tages. Falls du zu wenig Pause einträgst, ergänzt die App die fehlende Differenz automatisch.
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+        <div
+          className="mobile-actions"
+          style={{
+            justifyContent: "flex-end",
+          }}
+        >
           <button
             className="btn"
             type="button"
@@ -988,10 +1019,18 @@ useEffect(() => {
               setBreakEndHHMM("");
               setBreakError(null);
             }}
+            style={{ flex: "1 1 220px" }}
           >
             Zurücksetzen
           </button>
-          <button className="btn btn-accent" type="button" onClick={saveDayBreak} disabled={breakSaving}>
+
+          <button
+            className="btn btn-accent"
+            type="button"
+            onClick={saveDayBreak}
+            disabled={breakSaving}
+            style={{ flex: "1 1 220px" }}
+          >
             {breakSaving ? "Speichert..." : "Pause speichern"}
           </button>
         </div>
@@ -1001,11 +1040,8 @@ useEffect(() => {
       <div className="card" style={{ padding: 18 }}>
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            display: "grid",
             gap: 12,
-            flexWrap: "wrap",
             marginBottom: 12,
           }}
         >
@@ -1013,7 +1049,7 @@ useEffect(() => {
             Alle Einträge
           </div>
 
-          <div style={{ minWidth: 160 }}>
+          <div style={{ minWidth: 0, width: "100%", maxWidth: 260 }}>
             <div className="label">Jahr</div>
             <select
               className="input"
@@ -1074,6 +1110,7 @@ useEffect(() => {
                   alignItems: "center",
                   justifyContent: "space-between",
                   gap: 10,
+                  flexWrap: "wrap",
                   userSelect: "none",
                 }}
               >
@@ -1120,6 +1157,7 @@ useEffect(() => {
                           alignItems: "center",
                           justifyContent: "space-between",
                           gap: 10,
+                          flexWrap: "wrap",
                           userSelect: "none",
                         }}
                       >
@@ -1142,7 +1180,13 @@ useEffect(() => {
                             <div key={e.id} className="entry-card" style={{ margin: "0 12px" }}>
                               <div className="entry-accent" />
                               <div className="entry-content">
-                                <div className="entry-top">
+                                <div
+                                  className="entry-top"
+                                  style={{
+                                    display: "grid",
+                                    gap: 12,
+                                  }}
+                                >
                                   <div className="entry-title">
                                     <div className="entry-name">{e.user?.fullName ?? "Unbekannt"}</div>
                                     <div className="entry-sub">
@@ -1150,7 +1194,16 @@ useEffect(() => {
                                     </div>
                                   </div>
 
-                                  <div className="entry-actions" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                                  <div
+                                    className="entry-actions"
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 10,
+                                      flexWrap: "wrap",
+                                      justifyContent: "flex-start",
+                                    }}
+                                  >
                                     <div className="entry-hours">
                                       <span className="entry-hours-number">{grossHM}</span>
                                     </div>
@@ -1227,7 +1280,7 @@ useEffect(() => {
           setNoteEntry(null);
         }}
         footer={
-          <div style={{ display: "flex", gap: 10 }}>
+          <div className="mobile-actions">
             <button
               className="btn"
               type="button"
@@ -1235,6 +1288,7 @@ useEffect(() => {
                 setNoteOpen(false);
                 setNoteEntry(null);
               }}
+              style={{ flex: "1 1 220px" }}
             >
               Schließen
             </button>
@@ -1279,7 +1333,7 @@ useEffect(() => {
           setEditError(null);
         }}
         footer={
-          <div style={{ display: "flex", gap: 10 }}>
+          <div className="mobile-actions">
             <button
               className="btn"
               type="button"
@@ -1288,10 +1342,18 @@ useEffect(() => {
                 setEdit(null);
                 setEditError(null);
               }}
+              style={{ flex: "1 1 220px" }}
             >
               Abbrechen
             </button>
-            <button className="btn btn-accent" type="button" onClick={saveEdit} disabled={editSaving}>
+
+            <button
+              className="btn btn-accent"
+              type="button"
+              onClick={saveEdit}
+              disabled={editSaving}
+              style={{ flex: "1 1 220px" }}
+            >
               {editSaving ? "Speichert..." : "Änderungen speichern"}
             </button>
           </div>
@@ -1315,17 +1377,14 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="row">
-              <div>
-                <div className="label">Datum</div>
-                <input
-                  className="input"
-                  type="date"
-                  value={edit.workDate}
-                  onChange={(e) => setEdit((p) => (p ? { ...p, workDate: e.target.value } : p))}
-                />
-              </div>
-              <div />
+            <div>
+              <div className="label">Datum</div>
+              <input
+                className="input"
+                type="date"
+                value={edit.workDate}
+                onChange={(e) => setEdit((p) => (p ? { ...p, workDate: e.target.value } : p))}
+              />
             </div>
 
             <div className="row">
@@ -1389,16 +1448,14 @@ useEffect(() => {
               />
             </div>
 
-            <div className="row">
-              <div>
-                <div className="label">Fahrzeit (Min.)</div>
-                <input
-                  className="input"
-                  inputMode="numeric"
-                  value={edit.travelMinutes}
-                  onChange={(e) => setEdit((p) => (p ? { ...p, travelMinutes: e.target.value } : p))}
-                />
-              </div>
+            <div>
+              <div className="label">Fahrzeit (Min.)</div>
+              <input
+                className="input"
+                inputMode="numeric"
+                value={edit.travelMinutes}
+                onChange={(e) => setEdit((p) => (p ? { ...p, travelMinutes: e.target.value } : p))}
+              />
             </div>
           </div>
         )}

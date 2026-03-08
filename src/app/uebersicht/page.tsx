@@ -693,6 +693,8 @@ const resetAbsFilters = () => {
             onClick={openExportModal}
             className="card"
             style={{
+              width: "100%",
+              maxWidth: 220,
               padding: "10px 14px",
               cursor: "pointer",
               fontWeight: 900,
@@ -791,7 +793,7 @@ const resetAbsFilters = () => {
             <div style={{ display: "grid", gap: 10 }}>
               <div style={{ fontSize: 12, color: "var(--muted)" }}>Zeitraum auswählen</div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div className="mobile-modal-grid-2">
                 <div style={{ display: "grid", gap: 6 }}>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>Von</div>
                   <input
@@ -850,24 +852,23 @@ const resetAbsFilters = () => {
               style={{
                 color: "var(--muted)",
                 fontSize: 15,
-                lineHeight: 1.4,
-                wordBreak: "break-word",
+                lineHeight: 1.45,
               }}
             >
               Daten für{" "}
-              <span style={{ fontWeight: 900, color: "rgba(255,255,255,0.92)" }}>
+              <span
+                style={{
+                  fontWeight: 900,
+                  color: "rgba(255,255,255,0.92)",
+                  whiteSpace: "normal",
+                }}
+              >
                 {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
               </span>
             </div>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              gap: 10,
-            }}
-          >
+          <div className="mobile-2col">
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Jahr</div>
               <select
@@ -961,7 +962,13 @@ const resetAbsFilters = () => {
       {/* Progress */}
       <div className="card card-olive" style={{ padding: 18, marginBottom: 14 }}>
         Monatsfortschritt – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <div
+          style={{
+            display: "grid",
+            gap: 10,
+            marginBottom: 10,
+          }}
+        >
           <div style={{ color: "var(--muted)" }}>
             Noch {Math.max(0, (targetMinutes - totalMinutes) / 60).toFixed(1)}h bis zum Monatssoll
             {baseTargetMinutes > 0 ? (
@@ -991,7 +998,15 @@ const resetAbsFilters = () => {
 
       {/* ✅ Abwesenheiten + Filter */}
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "baseline",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
           <div className="section-title">
             Abwesenheiten – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
           </div>
@@ -1014,7 +1029,9 @@ const resetAbsFilters = () => {
           style={{
             marginTop: 12,
             display: "grid",
-            gridTemplateColumns: isAdmin ? "minmax(0,1.4fr) minmax(0,1fr) auto" : "minmax(0,1fr) auto",
+            gridTemplateColumns: isAdmin
+              ? "minmax(0,1fr)"
+              : "minmax(0,1fr)",
             gap: 10,
           }}
         >
@@ -1027,29 +1044,31 @@ const resetAbsFilters = () => {
             />
           ) : null}
 
-          <select value={absType} onChange={(e) => setAbsType(e.target.value as AbsFilterType)} style={selectStyle()}>
-            <option value="ALL">Alle Typen</option>
-            <option value="SICK">Krank</option>
-            <option value="VACATION">Urlaub</option>
-          </select>
+          <div className="mobile-2col">
+            <select value={absType} onChange={(e) => setAbsType(e.target.value as AbsFilterType)} style={selectStyle()}>
+              <option value="ALL">Alle Typen</option>
+              <option value="SICK">Krank</option>
+              <option value="VACATION">Urlaub</option>
+            </select>
 
-          <button
-            type="button"
-            onClick={resetAbsFilters}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.18)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.92)",
-              cursor: "pointer",
-              fontWeight: 900,
-              whiteSpace: "nowrap",
-            }}
-            title="Filter zurücksetzen"
-          >
-            ↺ Reset
-          </button>
+            <button
+              type="button"
+              onClick={resetAbsFilters}
+              style={{
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.18)",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.92)",
+                cursor: "pointer",
+                fontWeight: 900,
+                whiteSpace: "nowrap",
+              }}
+              title="Filter zurücksetzen"
+            >
+              ↺ Reset
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -1066,10 +1085,8 @@ const resetAbsFilters = () => {
                   key={`${b.user.id}-${b.type}-${b.from}-${b.to}`}
                   className="list-item"
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 12,
+                    display: "grid",
+                    gap: 10,
                     padding: "12px 12px",
                     borderRadius: 14,
                   }}
@@ -1091,7 +1108,9 @@ const resetAbsFilters = () => {
                     </span>
                   </div>
 
-                  <div style={{ fontWeight: 900, color: "rgba(255,255,255,0.92)" }}>{b.user.fullName}</div>
+                  <div style={{ fontWeight: 900, color: "rgba(255,255,255,0.92)" }}>
+                    {b.user.fullName}
+                  </div>
                 </div>
               );
             })}
@@ -1134,7 +1153,15 @@ const resetAbsFilters = () => {
                         <div style={{ fontWeight: 900 }}>{p.name}</div>
                       </div>
 
-                      <div style={{ color: "var(--muted-2)", marginTop: 8, display: "flex", gap: 18, flexWrap: "wrap" }}>
+                      <div
+                        style={{
+                          color: "var(--muted-2)",
+                          marginTop: 8,
+                          display: "flex",
+                          gap: 12,
+                          flexWrap: "wrap",
+                        }}
+                      >
                         <span>🧾 {p.entries} Einträge</span>
                         <span>🚗 {p.km.toFixed(0)} km</span>
                         {p.sick > 0 ? (
@@ -1150,7 +1177,9 @@ const resetAbsFilters = () => {
                       </div>
                     </div>
 
-                    <div style={{ fontWeight: 900, color: "var(--accent)", fontSize: 18 }}>{toHours(p.minutes).toFixed(1)}h</div>
+                    <div style={{ fontWeight: 900, color: "var(--accent)", fontSize: 18 }}>
+                      {toHours(p.minutes).toFixed(1)}h
+                    </div>
                   </div>
                 </div>
               ))}
