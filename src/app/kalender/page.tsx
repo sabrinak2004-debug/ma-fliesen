@@ -10,19 +10,18 @@ type CalendarDay = {
   hasWork: boolean;
   hasVacation: boolean;
   hasSick: boolean;
-  hasPlan: boolean; // Admin: "hat Termine"
-  planPreview: string | null; // Admin: Termin-Preview
+  hasPlan: boolean;
+  planPreview: string | null;
 };
 
 type CalendarResponse = { ok: true; days: CalendarDay[] } | { ok: false; error: string };
 
 type AbsenceType = "VACATION" | "SICK";
-
 type AbsenceDayPortion = "FULL_DAY" | "HALF_DAY";
 
 type AbsenceDTO = {
   id: string;
-  absenceDate: string; // YYYY-MM-DD
+  absenceDate: string;
   type: AbsenceType;
   dayPortion: AbsenceDayPortion;
   user: { id: string; fullName: string };
@@ -96,7 +95,7 @@ type SessionDTO = {
 
 type CalendarEventDTO = {
   id: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   startHHMM: string;
   endHHMM: string;
   title: string;
@@ -104,23 +103,19 @@ type CalendarEventDTO = {
   notes: string | null;
 };
 
-// UI-only Kategorien (werden NICHT in DB gespeichert)
 type EventCategory = "KUNDE" | "BAUSTELLE" | "INTERN" | "PRIVAT";
-
-// Admin Modal Mode: steuert, ob Datum wählbar ist
 type AdminApptMode = "create-global" | "create-from-day" | "edit";
-
-// UI View mode
 type CalendarViewMode = "MONTH" | "WEEK";
 
-// ---------- helpers (no any) ----------
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
+
 function getStringField(obj: Record<string, unknown>, key: string): string | null {
   const v = obj[key];
   return typeof v === "string" ? v : null;
 }
+
 function getBooleanField(obj: Record<string, unknown>, key: string): boolean | null {
   const v = obj[key];
   return typeof v === "boolean" ? v : null;
@@ -142,7 +137,8 @@ function isCalendarDay(v: unknown): v is CalendarDay {
   const hasSick = getBooleanField(v, "hasSick");
   const hasPlan = getBooleanField(v, "hasPlan");
   const planPreviewRaw = v["planPreview"];
-  const planPreview = planPreviewRaw === null || typeof planPreviewRaw === "string" ? planPreviewRaw : undefined;
+  const planPreview =
+    planPreviewRaw === null || typeof planPreviewRaw === "string" ? planPreviewRaw : undefined;
 
   return (
     typeof date === "string" &&
@@ -178,8 +174,8 @@ function isAbsenceDTO(v: unknown): v is AbsenceDTO {
   const user = v["user"];
 
   if (!id || !absenceDate || !isAbsenceType(type) || !isAbsenceDayPortion(dayPortion)) {
-      return false;
-    }
+    return false;
+  }
   if (!isRecord(user)) return false;
   const uid = getStringField(user, "id");
   const fullName = getStringField(user, "fullName");
@@ -337,24 +333,25 @@ function parseAppointmentsResponse(j: unknown): CalendarEventDTO[] {
   return events.filter(isCalendarEventDTO);
 }
 
-function extractErrorMessage(j: unknown, fallback: string) {
+function extractErrorMessage(j: unknown, fallback: string): string {
   if (!isRecord(j)) return fallback;
   const e = j["error"];
   return typeof e === "string" && e.trim() ? e : fallback;
 }
 
-// ---------- date helpers ----------
-function monthKey(d: Date) {
+function monthKey(d: Date): string {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   return `${yyyy}-${mm}`;
 }
-function addMonths(d: Date, diff: number) {
+
+function addMonths(d: Date, diff: number): Date {
   const x = new Date(d);
   x.setMonth(x.getMonth() + diff);
   return x;
 }
-function addDaysYMD(ymd: string, diff: number) {
+
+function addDaysYMD(ymd: string, diff: number): string {
   const [y, m, d] = ymd.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
   dt.setDate(dt.getDate() + diff);
@@ -363,7 +360,8 @@ function addDaysYMD(ymd: string, diff: number) {
   const dd = String(dt.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
-function fmtDateTitle(ymd: string) {
+
+function fmtDateTitle(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
   return dt.toLocaleDateString("de-DE", {
@@ -373,22 +371,26 @@ function fmtDateTitle(ymd: string) {
     year: "numeric",
   });
 }
-function dateInRange(date: string, start: string, end: string) {
+
+function dateInRange(date: string, start: string, end: string): boolean {
   return start <= date && date <= end;
 }
-function toYMDLocal(d: Date) {
+
+function toYMDLocal(d: Date): string {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
-function ymdToDateLocal(ymd: string) {
+
+function ymdToDateLocal(ymd: string): Date {
   const [y, m, d] = ymd.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
-function startOfWeekMonday(d: Date) {
+
+function startOfWeekMonday(d: Date): Date {
   const x = new Date(d);
-  const day = (x.getDay() + 6) % 7; // Mo=0
+  const day = (x.getDay() + 6) % 7;
   x.setDate(x.getDate() - day);
   x.setHours(0, 0, 0, 0);
   return x;
@@ -396,7 +398,6 @@ function startOfWeekMonday(d: Date) {
 
 function getISOWeek(date: Date): number {
   const tmp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  // Donnerstag entscheidet über die ISO-Woche
   tmp.setUTCDate(tmp.getUTCDate() + 4 - (tmp.getUTCDay() || 7));
   const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
   const weekNo = Math.ceil((((tmp.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
@@ -409,7 +410,6 @@ function buildBlocks(absences: AbsenceDTO[]): AbsenceBlock[] {
     .sort((x, y) => (x.absenceDate < y.absenceDate ? -1 : x.absenceDate > y.absenceDate ? 1 : 0));
 
   const blocks: AbsenceBlock[] = [];
-
   const byKey = new Map<string, AbsenceDTO[]>();
 
   for (const row of rows) {
@@ -421,8 +421,8 @@ function buildBlocks(absences: AbsenceDTO[]): AbsenceBlock[] {
 
   for (const [key, list] of byKey.entries()) {
     const [typeRaw, dayPortionRaw] = key.split("__");
-    const type = typeRaw === "SICK" ? "SICK" : "VACATION";
-    const dayPortion = dayPortionRaw === "HALF_DAY" ? "HALF_DAY" : "FULL_DAY";
+    const type: AbsenceType = typeRaw === "SICK" ? "SICK" : "VACATION";
+    const dayPortion: AbsenceDayPortion = dayPortionRaw === "HALF_DAY" ? "HALF_DAY" : "FULL_DAY";
 
     if (list.length === 0) continue;
 
@@ -430,7 +430,7 @@ function buildBlocks(absences: AbsenceDTO[]): AbsenceBlock[] {
     let curEnd = list[0].absenceDate;
     let idsByDate: Record<string, string> = { [list[0].absenceDate]: list[0].id };
 
-    for (let i = 1; i < list.length; i++) {
+    for (let i = 1; i < list.length; i += 1) {
       const d = list[i].absenceDate;
       const expectedNext = addDaysYMD(curEnd, 1);
 
@@ -469,7 +469,7 @@ function buildBlocks(absences: AbsenceDTO[]): AbsenceBlock[] {
   return blocks;
 }
 
-function blockLabel(b: AbsenceBlock) {
+function blockLabel(b: AbsenceBlock): string {
   const icon = b.type === "VACATION" ? "🌴" : "🤒";
   const name = b.type === "VACATION" ? "Urlaub" : "Krank";
 
@@ -508,7 +508,7 @@ function requestStatusLabel(status: AbsenceRequestStatus): string {
   return "Abgelehnt";
 }
 
-function requestBlockLabel(b: AbsenceRequestBlock) {
+function requestBlockLabel(b: AbsenceRequestBlock): string {
   const icon = b.type === "VACATION" ? "🌴" : "🤒";
 
   if (b.type === "VACATION" && b.dayPortion === "HALF_DAY") {
@@ -520,7 +520,6 @@ function requestBlockLabel(b: AbsenceRequestBlock) {
   return `${icon} ${name} (${span})`;
 }
 
-// ---------- UI-only category persistence ----------
 const CAT_STORAGE_KEY = "mafliesen_admin_event_categories_v1";
 
 function isEventCategory(v: unknown): v is EventCategory {
@@ -543,7 +542,7 @@ function safeReadCategoryMap(): Record<string, EventCategory> {
   }
 }
 
-function safeWriteCategoryMap(map: Record<string, EventCategory>) {
+function safeWriteCategoryMap(map: Record<string, EventCategory>): void {
   try {
     window.localStorage.setItem(CAT_STORAGE_KEY, JSON.stringify(map));
   } catch {
@@ -551,7 +550,7 @@ function safeWriteCategoryMap(map: Record<string, EventCategory>) {
   }
 }
 
-function categoryLabel(c: EventCategory) {
+function categoryLabel(c: EventCategory): string {
   if (c === "KUNDE") return "Kunde";
   if (c === "BAUSTELLE") return "Baustelle";
   if (c === "INTERN") return "Intern";
@@ -615,7 +614,6 @@ export default function KalenderPage() {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
 
-  // EMPLOYEE only:
   const [monthAbsences, setMonthAbsences] = useState<AbsenceDTO[]>([]);
   const [absLoading, setAbsLoading] = useState(false);
   const [monthRequests, setMonthRequests] = useState<AbsenceRequestDTO[]>([]);
@@ -625,19 +623,16 @@ export default function KalenderPage() {
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>("");
 
-  // EMPLOYEE only:
   const [dayPlans, setDayPlans] = useState<PlanEntry[]>([]);
   const [plansLoading, setPlansLoading] = useState(false);
   const [plansError, setPlansError] = useState<string | null>(null);
 
-  // EMPLOYEE only:
   const [absenceStart, setAbsenceStart] = useState<string>("");
   const [absenceEnd, setAbsenceEnd] = useState<string>("");
   const [absenceType, setAbsenceType] = useState<AbsenceType>("VACATION");
   const [absenceDayPortion, setAbsenceDayPortion] = useState<AbsenceDayPortion>("FULL_DAY");
   const [selectedRequestBlock, setSelectedRequestBlock] = useState<AbsenceRequestBlock | null>(null);
 
-  // ADMIN only:
   const [dayAppointments, setDayAppointments] = useState<CalendarEventDTO[]>([]);
   const [apptLoading, setApptLoading] = useState(false);
   const [apptError, setApptError] = useState<string | null>(null);
@@ -645,9 +640,9 @@ export default function KalenderPage() {
   const [adminMode, setAdminMode] = useState<AdminApptMode>("create-from-day");
 
   const [apptEditingId, setApptEditingId] = useState<string | null>(null);
-  const [apptCategory, setApptCategory] = useState<EventCategory>("KUNDE"); // UI-only
+  const [apptCategory, setApptCategory] = useState<EventCategory>("KUNDE");
   const [apptTitle, setApptTitle] = useState<string>("");
-  const [apptDate, setApptDate] = useState<string>(""); // ✅ Datum im Admin-Form (für global + edit)
+  const [apptDate, setApptDate] = useState<string>("");
   const [apptStart, setApptStart] = useState<string>("08:00");
   const [apptEnd, setApptEnd] = useState<string>("09:00");
   const [apptLocation, setApptLocation] = useState<string>("");
@@ -660,8 +655,8 @@ export default function KalenderPage() {
 
   const ym = useMemo(() => monthKey(cursor), [cursor]);
   const isAdmin = session?.role === "ADMIN";
-  const isAdminOwnCalendar = isAdmin && !selectedUserId;      // Admin sieht eigene Termine
-  const isAdminViewingEmployee = isAdmin && !!selectedUserId; // Admin sieht Mitarbeiter-Kalender
+  const isAdminOwnCalendar = isAdmin && !selectedUserId;
+  const isAdminViewingEmployee = isAdmin && !!selectedUserId;
 
   const title = useMemo(() => {
     if (viewMode === "WEEK") {
@@ -676,24 +671,17 @@ export default function KalenderPage() {
     return `${m.charAt(0).toUpperCase()}${m.slice(1)} ${cursor.getFullYear()}`;
   }, [cursor, viewMode]);
 
-const weekMeta = useMemo(() => {
-  if (viewMode !== "WEEK") return null;
+  const weekMeta = useMemo(() => {
+    if (viewMode !== "WEEK") return null;
 
-  const ws = startOfWeekMonday(cursor);
-  const we = new Date(ws);
-  we.setDate(we.getDate() + 6);
+    const ws = startOfWeekMonday(cursor);
+    const kw = getISOWeek(ws);
 
-  const kw = getISOWeek(ws);
-
-  const fmt = (d: Date) =>
-    d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
-
-  return { kw, ws, we, rangeLabel: `${fmt(ws)} – ${fmt(we)}` };
-}, [cursor, viewMode]);
+    return { kw, ws };
+  }, [cursor, viewMode]);
 
   const todayYMD = useMemo(() => toYMDLocal(new Date()), []);
 
-  // Session laden
   useEffect(() => {
     let alive = true;
 
@@ -721,30 +709,28 @@ const weekMeta = useMemo(() => {
     };
   }, []);
 
-  // Admin: Mitarbeiterliste laden
-useEffect(() => {
-  if (!isAdmin) return;
+  useEffect(() => {
+    if (!isAdmin) return;
 
-  fetch("/api/users")
-    .then((r) => r.json())
-    .then((j: unknown) => {
-      if (!isRecord(j) || j["ok"] !== true) return;
-      const list = j["users"];
-      if (!Array.isArray(list)) return;
+    fetch("/api/users")
+      .then((r) => r.json())
+      .then((j: unknown) => {
+        if (!isRecord(j) || j["ok"] !== true) return;
+        const list = j["users"];
+        if (!Array.isArray(list)) return;
 
-      const parsed: UserOption[] = [];
-      for (const it of list) {
-        if (!isRecord(it)) continue;
-        const id = getStringField(it, "id");
-        const fullName = getStringField(it, "fullName");
-        if (id && fullName) parsed.push({ id, fullName });
-      }
-      setUsers(parsed);
-    })
-    .catch(() => setUsers([]));
-}, [isAdmin]);
+        const parsed: UserOption[] = [];
+        for (const it of list) {
+          if (!isRecord(it)) continue;
+          const id = getStringField(it, "id");
+          const fullName = getStringField(it, "fullName");
+          if (id && fullName) parsed.push({ id, fullName });
+        }
+        setUsers(parsed);
+      })
+      .catch(() => setUsers([]));
+  }, [isAdmin]);
 
-  // UI-only Categories (Admin): localStorage
   useEffect(() => {
     if (!isAdmin) return;
     setCategoryMap(safeReadCategoryMap());
@@ -755,7 +741,7 @@ useEffect(() => {
     safeWriteCategoryMap(categoryMap);
   }, [categoryMap, isAdmin]);
 
-  async function loadCalendar() {
+  async function loadCalendar(): Promise<void> {
     setLoading(true);
     try {
       const qs = new URLSearchParams({ month: ym });
@@ -769,7 +755,7 @@ useEffect(() => {
     }
   }
 
-  async function loadAbsencesMonth() {
+  async function loadAbsencesMonth(): Promise<void> {
     setAbsLoading(true);
     try {
       const r = await fetch(`/api/absences?${new URLSearchParams({ month: ym }).toString()}`);
@@ -780,7 +766,7 @@ useEffect(() => {
     }
   }
 
-    async function loadRequestsMonth() {
+  async function loadRequestsMonth(): Promise<void> {
     setReqLoading(true);
     try {
       const r = await fetch(`/api/absence-requests?${new URLSearchParams({ month: ym }).toString()}`);
@@ -791,7 +777,7 @@ useEffect(() => {
     }
   }
 
-    async function reloadMonthAll() {
+  async function reloadMonthAll(): Promise<void> {
     if (isAdmin) {
       await loadCalendar();
       return;
@@ -819,12 +805,7 @@ useEffect(() => {
 
   const requestBlocksForSelectedDay = useMemo(() => {
     if (!selectedDate || isAdmin) return [];
-
-    return requestBlocks.filter(
-      (b) =>
-        b.status === "PENDING" &&
-        dateInRange(selectedDate, b.start, b.end)
-    );
+    return requestBlocks.filter((b) => b.status === "PENDING" && dateInRange(selectedDate, b.start, b.end));
   }, [requestBlocks, selectedDate, isAdmin]);
 
   const grid = useMemo(() => {
@@ -836,9 +817,9 @@ useEffect(() => {
     const daysInMonth = last.getDate();
 
     const cells: Array<{ date: string; day: number; inMonth: boolean }> = [];
-    for (let i = 0; i < firstDay; i++) cells.push({ date: "", day: 0, inMonth: false });
+    for (let i = 0; i < firstDay; i += 1) cells.push({ date: "", day: 0, inMonth: false });
 
-    for (let d = 1; d <= daysInMonth; d++) {
+    for (let d = 1; d <= daysInMonth; d += 1) {
       const dd = String(d).padStart(2, "0");
       const date = `${ym}-${dd}`;
       cells.push({ date, day: d, inMonth: true });
@@ -851,7 +832,7 @@ useEffect(() => {
   const weekDays = useMemo(() => {
     const ws = startOfWeekMonday(cursor);
     const out: Array<{ date: string; label: string; dayNum: string; isToday: boolean }> = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 7; i += 1) {
       const d = new Date(ws);
       d.setDate(ws.getDate() + i);
       const ymd = toYMDLocal(d);
@@ -862,8 +843,7 @@ useEffect(() => {
     return out;
   }, [cursor, todayYMD]);
 
-  // EMPLOYEE: Plan laden
-  async function loadPlansForDay(date: string) {
+  async function loadPlansForDay(date: string): Promise<void> {
     setPlansLoading(true);
     setPlansError(null);
 
@@ -887,8 +867,7 @@ useEffect(() => {
     }
   }
 
-  // ADMIN: Termine laden
-  async function loadAppointmentsForDay(date: string) {
+  async function loadAppointmentsForDay(date: string): Promise<void> {
     setApptLoading(true);
     setApptError(null);
     try {
@@ -911,7 +890,7 @@ useEffect(() => {
     }
   }
 
-  function resetAppointmentForm() {
+  function resetAppointmentForm(): void {
     setApptEditingId(null);
     setApptCategory("KUNDE");
     setApptTitle("");
@@ -924,26 +903,25 @@ useEffect(() => {
     setError(null);
   }
 
-  function openDay(date: string) {
+  function openDay(date: string): void {
     setSelectedDate(date);
     setOpen(true);
     setError(null);
 
     if (isAdmin) {
-      // ✅ Klick auf Tag: Datum NICHT wählbar
       setAdminMode("create-from-day");
       resetAppointmentForm();
-      setApptDate(date); // intern trotzdem gesetzt
+      setApptDate(date);
       setDayAppointments([]);
       void loadAppointmentsForDay(date);
       return;
     }
 
-    // EMPLOYEE init:
     setSelectedRequestBlock(null);
     setAbsenceStart(date);
     setAbsenceEnd(date);
     setAbsenceType("VACATION");
+    setAbsenceDayPortion("FULL_DAY");
     setRequestNote("");
 
     setDayPlans([]);
@@ -953,27 +931,22 @@ useEffect(() => {
     void loadPlansForDay(date);
   }
 
-  // ✅ Admin: Floating + Button -> "global create" (Datum wählbar)
-  function openNewEventGlobal() {
+  function openNewEventGlobal(): void {
     const now = new Date();
     const ymd = toYMDLocal(now);
 
     setCursor(now);
-    setSelectedDate(ymd); // Modal-Titel bleibt schön
+    setSelectedDate(ymd);
     setOpen(true);
 
     setAdminMode("create-global");
     resetAppointmentForm();
-
-    // Default Datum = heute (aber frei änderbar)
     setApptDate(ymd);
 
-    // Agenda für heute laden (optional, fühlt sich nice an)
     void loadAppointmentsForDay(ymd);
   }
 
-  // EMPLOYEE: Abwesenheit bearbeiten
-  function startNewRequest() {
+  function startNewRequest(): void {
     setSelectedRequestBlock(null);
     if (selectedDate) {
       setAbsenceStart(selectedDate);
@@ -984,7 +957,7 @@ useEffect(() => {
     setRequestNote("");
   }
 
-  function showRequestDetails(block: AbsenceRequestBlock) {
+  function showRequestDetails(block: AbsenceRequestBlock): void {
     setSelectedRequestBlock(block);
     setAbsenceStart(block.start);
     setAbsenceEnd(block.end);
@@ -994,7 +967,7 @@ useEffect(() => {
     setError(null);
   }
 
-  function cancelRequestView() {
+  function cancelRequestView(): void {
     setSelectedRequestBlock(null);
     if (selectedDate) {
       setAbsenceStart(selectedDate);
@@ -1005,8 +978,7 @@ useEffect(() => {
     setRequestNote("");
   }
 
-  // EMPLOYEE: speichern
-  async function saveAbsence() {
+  async function saveAbsence(): Promise<void> {
     setError(null);
 
     if (!absenceStart || !absenceEnd) {
@@ -1066,14 +1038,11 @@ useEffect(() => {
   }
 
   function effectiveAdminDate(): string {
-    // ✅ create-from-day: Datum fix = selectedDate
     if (adminMode === "create-from-day") return selectedDate;
-    // ✅ create-global + edit: Datum kommt aus apptDate
     return apptDate.trim();
   }
 
-  // ADMIN: Termin speichern (create/update)
-  async function saveAppointment() {
+  async function saveAppointment(): Promise<void> {
     const date = effectiveAdminDate();
     if (!date) {
       setApptError("Bitte Datum auswählen.");
@@ -1081,8 +1050,8 @@ useEffect(() => {
     }
 
     setApptError(null);
-    const title = apptTitle.trim();
-    if (!title) {
+    const titleValue = apptTitle.trim();
+    if (!titleValue) {
       setApptError("Bitte Titel eingeben.");
       return;
     }
@@ -1101,7 +1070,7 @@ useEffect(() => {
             date,
             startHHMM: apptStart,
             endHHMM: apptEnd,
-            title,
+            title: titleValue,
             location: apptLocation.trim(),
             notes: apptNotes.trim(),
           }),
@@ -1112,14 +1081,14 @@ useEffect(() => {
           return;
         }
       } else {
-        const r = await fetch(`/api/admin/appointments`, {
+        const r = await fetch("/api/admin/appointments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             date,
             startHHMM: apptStart,
             endHHMM: apptEnd,
-            title,
+            title: titleValue,
             location: apptLocation.trim(),
             notes: apptNotes.trim(),
           }),
@@ -1130,7 +1099,6 @@ useEffect(() => {
           return;
         }
 
-        // nach Create: Kategorie UI-only -> id aus Response ziehen und local speichern
         if (isRecord(j) && j["ok"] === true) {
           const ev = j["event"];
           if (isCalendarEventDTO(ev)) {
@@ -1139,14 +1107,11 @@ useEffect(() => {
         }
       }
 
-      // ✅ Wenn Datum geändert wurde (Edit / Global), Modal & Agenda auf neues Datum schalten
       setSelectedDate(date);
 
       await Promise.all([loadAppointmentsForDay(date), reloadMonthAll()]);
       resetAppointmentForm();
 
-      // Nach Save bleiben wir im "create-from-day" wenn man auf einem Tag ist,
-      // global bleibt global (fühlt sich wie Apple an)
       if (adminMode === "edit") setAdminMode("create-from-day");
     } catch {
       setApptError("Netzwerkfehler beim Speichern.");
@@ -1155,21 +1120,21 @@ useEffect(() => {
     }
   }
 
-  function editAppointment(a: CalendarEventDTO) {
+  function editAppointment(a: CalendarEventDTO): void {
     setAdminMode("edit");
     setApptEditingId(a.id);
     setApptTitle(a.title);
-    setApptDate(a.date); // ✅ Datum beim Bearbeiten wählbar
+    setApptDate(a.date);
     setApptStart(a.startHHMM);
     setApptEnd(a.endHHMM);
     setApptLocation(a.location ?? "");
     setApptNotes(a.notes ?? "");
-    setApptCategory(categoryMap[a.id] ?? "KUNDE"); // UI-only
+    setApptCategory(categoryMap[a.id] ?? "KUNDE");
     setApptError(null);
     setError(null);
   }
 
-  async function deleteAppointment(id: string) {
+  async function deleteAppointment(id: string): Promise<void> {
     if (!selectedDate) return;
     setApptError(null);
     setSaving(true);
@@ -1196,13 +1161,11 @@ useEffect(() => {
     }
   }
 
-  // wenn Admin im Formular Kategorie ändert, für Edit direkt local merken
   useEffect(() => {
     if (!isAdmin) return;
     if (!apptEditingId) return;
     setCategoryMap((prev) => ({ ...prev, [apptEditingId]: apptCategory }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apptCategory]);
+  }, [apptCategory, apptEditingId, isAdmin]);
 
   const floatingStyle: React.CSSProperties = {
     position: "fixed",
@@ -1238,26 +1201,18 @@ useEffect(() => {
     background: active ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.00)",
     color: "var(--text)",
     borderRadius: 12,
-    padding: "8px 10px",
+    padding: "8px 14px",
     cursor: "pointer",
     fontWeight: 800,
-    fontSize: 12,
+    fontSize: 13,
   });
 
   return (
     <AppShell activeLabel="#wirkönnendas">
       <div className="card card-olive" style={{ padding: 18, position: "relative" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            marginBottom: 14,
-          }}
-        >
+        <div className="calendar-mobile-header">
           <button
-            className="btn"
+            className="btn calendar-nav-btn"
             onClick={() => {
               if (viewMode === "WEEK") {
                 const x = new Date(cursor);
@@ -1271,41 +1226,41 @@ useEffect(() => {
             ‹
           </button>
 
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          <div className="calendar-title-column">
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-  <div style={{ fontWeight: 900, fontSize: 20 }}>{title}</div>
-  {isAdmin ? (
-  <div style={{ marginTop: 8 }}>
-    <select
-      value={selectedUserId}
-      onChange={(e) => setSelectedUserId(e.target.value)}
-      className="input"
-      style={{ maxWidth: 280 }}
-    >
-      <option value="">Meine Admin-Termine</option>
-      {users.map((u) => (
-        <option key={u.id} value={u.id}>
-          {u.fullName}
-        </option>
-      ))}
-    </select>
+              <div className="calendar-main-title">{title}</div>
 
-    {isAdminViewingEmployee ? (
-      <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
-        Mitarbeiteransicht (read-only): Kalender zeigt Plan/Urlaub/Krank des Mitarbeiters.
-      </div>
-    ) : null}
-  </div>
-) : null}
+              {isAdmin ? (
+                <div style={{ marginTop: 8, width: "100%" }}>
+                  <select
+                    value={selectedUserId}
+                    onChange={(e) => setSelectedUserId(e.target.value)}
+                    className="input"
+                    style={{ maxWidth: 320 }}
+                  >
+                    <option value="">Meine Admin-Termine</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.fullName}
+                      </option>
+                    ))}
+                  </select>
 
-  {viewMode === "WEEK" && weekMeta ? (
-    <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 800 }}>
-      KW {weekMeta.kw}
-    </div>
-  ) : null}
-</div>
+                  {isAdminViewingEmployee ? (
+                    <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)", textAlign: "center" }}>
+                      Mitarbeiteransicht (read-only): Kalender zeigt Plan/Urlaub/Krank des Mitarbeiters.
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
-            {/* ✅ Monat/Woche Toggle */}
+              {viewMode === "WEEK" && weekMeta ? (
+                <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 800 }}>
+                  KW {weekMeta.kw}
+                </div>
+              ) : null}
+            </div>
+
             <div style={segmentedWrap}>
               <button type="button" style={segBtn(viewMode === "MONTH")} onClick={() => setViewMode("MONTH")}>
                 Monat
@@ -1314,10 +1269,24 @@ useEffect(() => {
                 Woche
               </button>
             </div>
+
+            {isAdminOwnCalendar ? (
+              <div className="calendar-google-mobile">
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/api/admin/google/connect";
+                  }}
+                >
+                  Google Kalender verbinden
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <button
-            className="btn"
+            className="btn calendar-nav-btn"
             onClick={() => {
               if (viewMode === "WEEK") {
                 const x = new Date(cursor);
@@ -1330,253 +1299,250 @@ useEffect(() => {
           >
             ›
           </button>
-{isAdminOwnCalendar ? (
-  <div
-    style={{
-      display: "flex",
-      gap: 8,
-      marginTop: 8,
-      flexWrap: "wrap",
-      justifyContent: "center",
-    }}
-  >
-    <button
-      className="btn"
-      type="button"
-      onClick={() => {
-        window.location.href = "/api/admin/google/connect";
-      }}
-    >
-      Google Kalender verbinden
-    </button>
-  </div>
-) : null}
+
+          {isAdminOwnCalendar ? (
+            <div className="calendar-google-desktop">
+              <button
+                className="btn"
+                type="button"
+                onClick={() => {
+                  window.location.href = "/api/admin/google/connect";
+                }}
+              >
+                Google Kalender verbinden
+              </button>
+            </div>
+          ) : null}
         </div>
 
-        {/* ===================== WEEK VIEW ===================== */}
         {viewMode === "WEEK" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10 }}>
-            {weekDays.map((w) => {
-              const info = dayMap.get(w.date);
-              const inThisMonth = monthKey(ymdToDateLocal(w.date)) === ym;
+          <div className="calendar-grid-scroll">
+            <div className="calendar-week-grid">
+              {weekDays.map((w) => {
+                const info = dayMap.get(w.date);
+                const inThisMonth = monthKey(ymdToDateLocal(w.date)) === ym;
 
-              const border =
-                info?.hasSick
-                  ? "rgba(224, 75, 69, 0.65)"
-                  : info?.hasVacation
-                  ? "rgba(90, 167, 255, 0.65)"
-                  : info?.hasPlan
-                  ? "rgba(184, 207, 58, 0.65)"
-                  : "var(--border)";
+                const border =
+                  info?.hasSick
+                    ? "rgba(224, 75, 69, 0.65)"
+                    : info?.hasVacation
+                    ? "rgba(90, 167, 255, 0.65)"
+                    : info?.hasPlan
+                    ? "rgba(184, 207, 58, 0.65)"
+                    : "var(--border)";
 
-              const bg =
-                info?.hasSick
-                  ? "rgba(224, 75, 69, 0.16)"
-                  : info?.hasVacation
-                  ? "rgba(90, 167, 255, 0.12)"
-                  : info?.hasPlan
-                  ? "rgba(184, 207, 58, 0.10)"
-                  : "rgba(255,255,255,0.02)";
+                const bg =
+                  info?.hasSick
+                    ? "rgba(224, 75, 69, 0.16)"
+                    : info?.hasVacation
+                    ? "rgba(90, 167, 255, 0.12)"
+                    : info?.hasPlan
+                    ? "rgba(184, 207, 58, 0.10)"
+                    : "rgba(255,255,255,0.02)";
 
-              return (
-                <button
-                  key={w.date}
-                  className="card"
-                  onClick={() => {
-                    // wenn Woche in Nachbarmonat geht: Cursor auf den Tag setzen -> lädt richtigen Monat automatisch
-                    const dt = ymdToDateLocal(w.date);
-                    setCursor(dt);
-                    openDay(w.date);
-                  }}
-                  style={{
-                    height: 110,
-                    borderColor: border,
-                    background: bg,
-                    borderRadius: 16,
-                    opacity: inThisMonth ? 1 : 0.75,
-                    textAlign: "left",
-                    padding: 12,
-                    overflow: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
-                    cursor: "pointer",
-                  }}
-                  title={fmtDateTitle(w.date)}
-                >
-                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-                    <div style={{ fontSize: 12, color: "var(--muted)" }}>{w.label}</div>
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 999,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: 900,
-                        background: w.isToday ? "rgb(127, 142, 42)" : "rgba(109, 144, 110, 0.02)",
-                        border: w.isToday ? "1px solid hsla(151, 76%, 25%, 0.18)" : "1px solid rgba(255,255,255,0.08)",
-                      }}
-                    >
-                      {w.dayNum}
+                return (
+                  <button
+                    key={w.date}
+                    className="card calendar-week-cell"
+                    onClick={() => {
+                      const dt = ymdToDateLocal(w.date);
+                      setCursor(dt);
+                      openDay(w.date);
+                    }}
+                    style={{
+                      borderColor: border,
+                      background: bg,
+                      opacity: inThisMonth ? 1 : 0.75,
+                    }}
+                    title={fmtDateTitle(w.date)}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                      <div style={{ fontSize: 12, color: "var(--muted)" }}>{w.label}</div>
+                      <div
+                        style={{
+                          width: 30,
+                          height: 30,
+                          borderRadius: 999,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 900,
+                          background: w.isToday ? "rgb(127, 142, 42)" : "rgba(109, 144, 110, 0.02)",
+                          border: w.isToday
+                            ? "1px solid hsla(151, 76%, 25%, 0.18)"
+                            : "1px solid rgba(255,255,255,0.08)",
+                          flex: "0 0 auto",
+                        }}
+                      >
+                        {w.dayNum}
+                      </div>
                     </div>
-                  </div>
 
-                  <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                    {info?.hasPlan ? (
-                      <span style={pillStyle()}>
-                        <span style={smallDot("rgba(184, 207, 58, 0.95)")} /> Termine
-                      </span>
-                    ) : null}
+                    <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      {info?.hasPlan ? (
+                        <span style={pillStyle()}>
+                          <span style={smallDot("rgba(184, 207, 58, 0.95)")} /> Termine
+                        </span>
+                      ) : null}
 
-                    {!isAdmin && info?.hasVacation ? (
-                      <span style={pillStyle()}>
-                        <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> Urlaub
-                      </span>
-                    ) : null}
+                      {!isAdmin && info?.hasVacation ? (
+                        <span style={pillStyle()}>
+                          <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> Urlaub
+                        </span>
+                      ) : null}
 
-                    {!isAdmin && info?.hasSick ? (
-                      <span style={pillStyle()}>
-                        <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> Krank
-                      </span>
-                    ) : null}
-                  </div>
-
-                  {isAdmin && info?.hasPlan && info.planPreview ? (
-                    <div
-                      style={{
-                        marginTop: 10,
-                        fontSize: 11,
-                        lineHeight: "14px",
-                        color: "var(--muted)",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        whiteSpace: "normal",
-                        wordBreak: "break-word",
-                        overflowWrap: "anywhere",
-                      }}
-                      title={info.planPreview}
-                    >
-                      {info.planPreview}
+                      {!isAdmin && info?.hasSick ? (
+                        <span style={pillStyle()}>
+                          <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> Krank
+                        </span>
+                      ) : null}
                     </div>
-                  ) : null}
-                </button>
-              );
-            })}
+
+                    {isAdmin && info?.hasPlan && info.planPreview ? (
+                      <div
+                        className="calendar-desktop-preview"
+                        style={{
+                          marginTop: 10,
+                          fontSize: 11,
+                          lineHeight: "14px",
+                          color: "var(--muted)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          whiteSpace: "normal",
+                          wordBreak: "break-word",
+                          overflowWrap: "anywhere",
+                        }}
+                        title={info.planPreview}
+                      >
+                        {info.planPreview}
+                      </div>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ) : (
-          /* ===================== MONTH VIEW ===================== */
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10 }}>
-              {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((w) => (
-                <div key={w} style={{ color: "var(--muted-2)", fontSize: 12, textAlign: "center" }}>
-                  {w}
-                </div>
-              ))}
+            <div className="calendar-grid-scroll">
+              <div className="calendar-month-grid">
+                {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((w) => (
+                  <div key={w} className="calendar-weekday-head">
+                    {w}
+                  </div>
+                ))}
 
-              {loading ? (
-                <div style={{ gridColumn: "1 / -1", color: "var(--muted)" }}>Lade Kalender...</div>
-              ) : (
-                grid.map((c, idx) => {
-                  const info = c.inMonth && c.date ? dayMap.get(c.date) : undefined;
+                {loading ? (
+                  <div style={{ gridColumn: "1 / -1", color: "var(--muted)" }}>Lade Kalender...</div>
+                ) : (
+                  grid.map((c, idx) => {
+                    const info = c.inMonth && c.date ? dayMap.get(c.date) : undefined;
 
-                  const border =
-                    info?.hasSick
-                      ? "rgba(224, 75, 69, 0.65)"
-                      : info?.hasVacation
-                      ? "rgba(90, 167, 255, 0.65)"
-                      : info?.hasPlan
-                      ? "rgba(184, 207, 58, 0.65)"
-                      : "var(--border)";
+                    const border =
+                      info?.hasSick
+                        ? "rgba(224, 75, 69, 0.65)"
+                        : info?.hasVacation
+                        ? "rgba(90, 167, 255, 0.65)"
+                        : info?.hasPlan
+                        ? "rgba(184, 207, 58, 0.65)"
+                        : "var(--border)";
 
-                  const bg =
-                    info?.hasSick
-                      ? "rgba(224, 75, 69, 0.18)"
-                      : info?.hasVacation
-                      ? "rgba(90, 167, 255, 0.14)"
-                      : info?.hasPlan
-                      ? "rgba(184, 207, 58, 0.10)"
-                      : "rgba(255,255,255,0.02)";
+                    const bg =
+                      info?.hasSick
+                        ? "rgba(224, 75, 69, 0.18)"
+                        : info?.hasVacation
+                        ? "rgba(90, 167, 255, 0.14)"
+                        : info?.hasPlan
+                        ? "rgba(184, 207, 58, 0.10)"
+                        : "rgba(255,255,255,0.02)";
 
-                  const isToday = c.date === todayYMD;
+                    const isToday = c.date === todayYMD;
 
-                  return (
-                    <button
-                      key={idx}
-                      className="card"
-                      disabled={!c.inMonth}
-                      onClick={() => c.inMonth && c.date && openDay(c.date)}
-                      style={{
-                        height: 86,
-                        borderColor: isToday ? "rgba(255,255,255,0.22)" : border,
-                        background: bg,
-                        borderRadius: 16,
-                        opacity: c.inMonth ? 1 : 0.25,
-                        cursor: c.inMonth ? "pointer" : "default",
-                        textAlign: "left",
-                        padding: 10,
-                        overflow: "hidden",
-                        display: "flex",
-                        flexDirection: "column",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <div style={{ fontWeight: 900 }}>{c.inMonth ? c.day : ""}</div>
-
-                        {/* Today indicator */}
-                        {isToday ? (
+                    return (
+                      <button
+                        key={`${c.date}-${idx}`}
+                        className="card calendar-month-cell"
+                        disabled={!c.inMonth}
+                        onClick={() => c.inMonth && c.date && openDay(c.date)}
+                        style={{
+                          borderColor: isToday ? "rgba(255,255,255,0.22)" : border,
+                          background: bg,
+                          opacity: c.inMonth ? 1 : 0.25,
+                          cursor: c.inMonth ? "pointer" : "default",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                           <div
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: 999,
-                              background: "rgba(226, 255, 62, 0.95)",
-                              boxShadow: "0 0 0 3px rgba(226, 255, 62, 0.36)",
-                            }}
-                            title="Heute"
-                          />
-                        ) : null}
-                      </div>
+                            className={isToday ? "calendar-day-number calendar-day-number-today-mobile" : "calendar-day-number"}
+                            style={{ fontWeight: 900 }}
+                          >
+                            {c.inMonth ? c.day : ""}
+                          </div>
 
-                      {/* Mini dots wie Apple */}
-                      <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "center" }}>
-                        {info?.hasPlan ? <span style={smallDot("rgba(184, 207, 58, 0.95)")} /> : null}
-                        {!isAdmin && info?.hasVacation ? <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> : null}
-                        {!isAdmin && info?.hasSick ? <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> : null}
-                      </div>
-
-                      {info?.hasPlan && info.planPreview ? (
-                        <div
-                          style={{
-                            marginTop: 8,
-                            fontSize: 11,
-                            lineHeight: "14px",
-                            color: "var(--muted)",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            whiteSpace: "normal",
-                            wordBreak: "break-word",
-                            overflowWrap: "anywhere",
-                            minHeight: 0,
-                          }}
-                          title={info.planPreview}
-                        >
-                          {info.planPreview}
+                          {isToday ? (
+                            <div
+                              className="calendar-today-dot-desktop"
+                              style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: 999,
+                                background: "rgba(226, 255, 62, 0.95)",
+                                boxShadow: "0 0 0 3px rgba(226, 255, 62, 0.36)",
+                              }}
+                              title="Heute"
+                            />
+                          ) : null}
                         </div>
-                      ) : null}
-                    </button>
-                  );
-                })
-              )}
+
+                        <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                          {info?.hasPlan ? <span style={smallDot("rgba(184, 207, 58, 0.95)")} /> : null}
+                          {!isAdmin && info?.hasVacation ? <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> : null}
+                          {!isAdmin && info?.hasSick ? <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> : null}
+                        </div>
+
+                        {info?.hasPlan && info.planPreview ? (
+                          <div
+                            className="calendar-desktop-preview"
+                            style={{
+                              marginTop: 8,
+                              fontSize: 11,
+                              lineHeight: "14px",
+                              color: "var(--muted)",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              whiteSpace: "normal",
+                              wordBreak: "break-word",
+                              overflowWrap: "anywhere",
+                              minHeight: 0,
+                            }}
+                            title={info.planPreview}
+                          >
+                            {info.planPreview}
+                          </div>
+                        ) : null}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
             </div>
 
-            <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 14, color: "var(--muted)" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 14,
+                alignItems: "center",
+                marginTop: 14,
+                color: "var(--muted)",
+                flexWrap: "wrap",
+              }}
+            >
               {isAdmin ? (
                 <div>
                   <span className="badge-dot dot-work" /> Termine
@@ -1604,12 +1570,11 @@ useEffect(() => {
         )}
       </div>
 
-      {/* ✅ Floating + Button (nur Admin) */}
       {isAdminOwnCalendar ? (
-  <button type="button" aria-label="Neuer Termin" title="Neuer Termin" onClick={openNewEventGlobal} style={floatingStyle}>
-    +
-  </button>
-) : null}
+        <button type="button" aria-label="Neuer Termin" title="Neuer Termin" onClick={openNewEventGlobal} style={floatingStyle}>
+          +
+        </button>
+      ) : null}
 
       <Modal
         open={open}
@@ -1623,7 +1588,6 @@ useEffect(() => {
         onClose={() => setOpen(false)}
         maxWidth={980}
       >
-        {/* ================= ADMIN MODAL ================= */}
         {isAdminOwnCalendar ? (
           <>
             {apptError && (
@@ -1631,8 +1595,8 @@ useEffect(() => {
                 <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{apptError}</span>
               </div>
             )}
-            {/* Agenda */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+
+            <div className="calendar-modal-agenda-head">
               <div>
                 <div style={{ fontWeight: 900, fontSize: 16 }}>Agenda</div>
                 <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 2 }}>
@@ -1640,7 +1604,6 @@ useEffect(() => {
                 </div>
               </div>
 
-              {/* Quick: Heute */}
               <button
                 className="btn"
                 type="button"
@@ -1673,7 +1636,7 @@ useEffect(() => {
                   return (
                     <div
                       key={a.id}
-                      className="card"
+                      className="card calendar-appt-card"
                       style={{
                         padding: 12,
                         display: "flex",
@@ -1683,7 +1646,7 @@ useEffect(() => {
                     >
                       <div style={categoryDotStyle(cat)} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                        <div className="calendar-appt-head">
                           <div style={{ minWidth: 0 }}>
                             <div style={{ fontWeight: 900, fontSize: 14 }}>
                               {a.startHHMM}–{a.endHHMM}
@@ -1702,8 +1665,7 @@ useEffect(() => {
                             </div>
                           </div>
 
-                          {/* Mini actions */}
-                          <div style={{ display: "flex", gap: 8 }}>
+                          <div className="calendar-appt-actions">
                             <button
                               type="button"
                               onClick={() => editAppointment(a)}
@@ -1743,7 +1705,15 @@ useEffect(() => {
                           <span style={pillStyle()}>{categoryLabel(cat)}</span>
 
                           {a.location ? (
-                            <span style={{ color: "var(--muted)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <span
+                              style={{
+                                color: "var(--muted)",
+                                fontSize: 13,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
                               📍 {a.location}
                             </span>
                           ) : null}
@@ -1765,8 +1735,7 @@ useEffect(() => {
 
             <div style={{ height: 1, background: "var(--border)", opacity: 0.7, margin: "12px 0" }} />
 
-            {/* Form */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
+            <div className="calendar-modal-form-head">
               <div style={{ fontWeight: 900 }}>
                 {apptEditingId ? "Termin bearbeiten" : adminMode === "create-global" ? "Neuer Termin" : "Termin eintragen"}
               </div>
@@ -1786,8 +1755,7 @@ useEffect(() => {
               ) : null}
             </div>
 
-            {/* ✅ Datum nur bei global create + edit */}
-            {(adminMode === "create-global" || adminMode === "edit") ? (
+            {adminMode === "create-global" || adminMode === "edit" ? (
               <div style={{ marginBottom: 10 }}>
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Datum
@@ -1799,13 +1767,21 @@ useEffect(() => {
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Datum
                 </div>
-                <div style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.03)", color: "var(--muted)" }}>
+                <div
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    background: "rgba(255,255,255,0.03)",
+                    color: "var(--muted)",
+                  }}
+                >
                   {selectedDate || "—"}
                 </div>
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+            <div className="calendar-form-grid-2" style={{ marginBottom: 10 }}>
               <div>
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Start
@@ -1820,7 +1796,7 @@ useEffect(() => {
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+            <div className="calendar-form-grid-2" style={{ marginBottom: 10 }}>
               <div>
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Kategorie (UI-only)
@@ -1830,7 +1806,9 @@ useEffect(() => {
                   value={apptCategory}
                   onChange={(e) => {
                     const v = e.target.value;
-                    if (v === "KUNDE" || v === "BAUSTELLE" || v === "INTERN" || v === "PRIVAT") setApptCategory(v);
+                    if (v === "KUNDE" || v === "BAUSTELLE" || v === "INTERN" || v === "PRIVAT") {
+                      setApptCategory(v);
+                    }
                   }}
                 >
                   <option value="KUNDE">Kunde</option>
@@ -1844,7 +1822,12 @@ useEffect(() => {
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Titel
                 </div>
-                <input className="input" value={apptTitle} onChange={(e) => setApptTitle(e.target.value)} placeholder="z. B. Kundentermin" />
+                <input
+                  className="input"
+                  value={apptTitle}
+                  onChange={(e) => setApptTitle(e.target.value)}
+                  placeholder="z. B. Kundentermin"
+                />
               </div>
             </div>
 
@@ -1852,7 +1835,12 @@ useEffect(() => {
               <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                 Ort (optional)
               </div>
-              <input className="input" value={apptLocation} onChange={(e) => setApptLocation(e.target.value)} placeholder="z. B. Baustelle / Adresse" />
+              <input
+                className="input"
+                value={apptLocation}
+                onChange={(e) => setApptLocation(e.target.value)}
+                placeholder="z. B. Baustelle / Adresse"
+              />
             </div>
 
             <div style={{ marginBottom: 12 }}>
@@ -1873,30 +1861,30 @@ useEffect(() => {
               {saving ? "Speichert..." : apptEditingId ? "Änderungen speichern" : "Eintragen"}
             </button>
           </>
-) : isAdminViewingEmployee ? (
-  <>
-    {/* ================= ADMIN: Mitarbeiter Read-only ================= */}
-    <div className="card" style={{ padding: 12, opacity: 0.9 }}>
-      Du siehst gerade den Kalender eines Mitarbeiters.  
-      Bearbeitung/Termine sind in dieser Ansicht deaktiviert.
-    </div>
+        ) : isAdminViewingEmployee ? (
+          <>
+            <div className="card" style={{ padding: 12, opacity: 0.9 }}>
+              Du siehst gerade den Kalender eines Mitarbeiters.
+              Bearbeitung/Termine sind in dieser Ansicht deaktiviert.
+            </div>
 
-    {selectedDate ? (
-      <div className="card" style={{ padding: 12, marginTop: 10 }}>
-        <div style={{ fontWeight: 900, marginBottom: 6 }}>Tagesinfo</div>
-        <div style={{ color: "var(--muted)", fontSize: 13 }}>
-          {dayMap.get(selectedDate)?.planPreview ? `Plan: ${dayMap.get(selectedDate)?.planPreview}` : "Kein Plan/Preview vorhanden."}
-        </div>
-        <div style={{ marginTop: 8, display: "flex", gap: 10, flexWrap: "wrap", color: "var(--muted)" }}>
-          {dayMap.get(selectedDate)?.hasPlan ? <span style={pillStyle()}>Termine/Plan</span> : null}
-          {dayMap.get(selectedDate)?.hasVacation ? <span style={pillStyle()}>Urlaub</span> : null}
-          {dayMap.get(selectedDate)?.hasSick ? <span style={pillStyle()}>Krank</span> : null}
-        </div>
-      </div>
-    ) : null}
-  </>
-) : (
-          /* ================= EMPLOYEE MODAL (dein bisheriges) ================= */
+            {selectedDate ? (
+              <div className="card" style={{ padding: 12, marginTop: 10 }}>
+                <div style={{ fontWeight: 900, marginBottom: 6 }}>Tagesinfo</div>
+                <div style={{ color: "var(--muted)", fontSize: 13 }}>
+                  {dayMap.get(selectedDate)?.planPreview
+                    ? `Plan: ${dayMap.get(selectedDate)?.planPreview}`
+                    : "Kein Plan/Preview vorhanden."}
+                </div>
+                <div style={{ marginTop: 8, display: "flex", gap: 10, flexWrap: "wrap", color: "var(--muted)" }}>
+                  {dayMap.get(selectedDate)?.hasPlan ? <span style={pillStyle()}>Termine/Plan</span> : null}
+                  {dayMap.get(selectedDate)?.hasVacation ? <span style={pillStyle()}>Urlaub</span> : null}
+                  {dayMap.get(selectedDate)?.hasSick ? <span style={pillStyle()}>Krank</span> : null}
+                </div>
+              </div>
+            ) : null}
+          </>
+        ) : (
           <>
             <div style={{ marginBottom: 14 }}>
               <div className="label">Dein Einsatzplan</div>
@@ -2006,11 +1994,7 @@ useEffect(() => {
                         ) : null}
 
                         <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                          <button
-                            className="btn"
-                            type="button"
-                            onClick={() => showRequestDetails(b)}
-                          >
+                          <button className="btn" type="button" onClick={() => showRequestDetails(b)}>
                             Details
                           </button>
                         </div>
@@ -2031,7 +2015,7 @@ useEffect(() => {
 
             <div style={{ marginBottom: 12 }}>
               <div className="label">{selectedRequestBlock ? "Antragsdetails" : "Abwesenheit beantragen"}</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div className="calendar-form-grid-2">
                 <div>
                   <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                     Start
@@ -2060,7 +2044,7 @@ useEffect(() => {
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+            <div className="calendar-form-grid-2" style={{ marginBottom: 12 }}>
               <button
                 className={`btn ${absenceType === "VACATION" ? "btn-accent" : ""}`}
                 type="button"
@@ -2087,7 +2071,7 @@ useEffect(() => {
             {absenceType === "VACATION" ? (
               <div style={{ marginBottom: 12 }}>
                 <div className="label">Umfang</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div className="calendar-form-grid-2">
                   <button
                     className={`btn ${absenceDayPortion === "FULL_DAY" ? "btn-accent" : ""}`}
                     type="button"
@@ -2123,21 +2107,11 @@ useEffect(() => {
             </div>
 
             {selectedRequestBlock ? (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={cancelRequestView}
-                  style={{ width: "100%" }}
-                >
+              <div className="calendar-form-grid-2">
+                <button className="btn" type="button" onClick={cancelRequestView} style={{ width: "100%" }}>
                   Schließen
                 </button>
-                <button
-                  className="btn btn-accent"
-                  type="button"
-                  onClick={startNewRequest}
-                  style={{ width: "100%" }}
-                >
+                <button className="btn btn-accent" type="button" onClick={startNewRequest} style={{ width: "100%" }}>
                   Neuer Antrag
                 </button>
               </div>
