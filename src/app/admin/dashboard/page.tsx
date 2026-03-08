@@ -796,7 +796,7 @@ export default function AdminDashboardPage() {
 
       <button
         type="button"
-        onClick={() => void doExport("OPEN")}
+        onClick={() => void doExport("SHARE")}
         disabled={Boolean(rangeError) || Boolean(exportTargetError) || exportBusy}
         style={{
           padding: "10px 14px",
@@ -808,28 +808,9 @@ export default function AdminDashboardPage() {
           color: "var(--accent)",
           opacity: rangeError || exportTargetError || exportBusy ? 0.7 : 1,
         }}
-        title="In App öffnen"
-      >
-        In App öffnen
-      </button>
-
-      <button
-        type="button"
-        onClick={() => void doExport("SHARE")}
-        disabled={Boolean(rangeError) || Boolean(exportTargetError) || exportBusy}
-        style={{
-          padding: "10px 14px",
-          cursor: rangeError || exportTargetError || exportBusy ? "not-allowed" : "pointer",
-          fontWeight: 1000,
-          borderRadius: 12,
-          border: "1px solid rgba(255,255,255,0.14)",
-          background: "rgba(255,255,255,0.08)",
-          color: "rgba(255,255,255,0.92)",
-          opacity: rangeError || exportTargetError || exportBusy ? 0.7 : 1,
-        }}
         title="Export teilen oder sichern"
       >
-        {exportBusy ? "Lade…" : "Teilen/Sichern"}
+        Teilen/Sichern
       </button>
     </>
   );
