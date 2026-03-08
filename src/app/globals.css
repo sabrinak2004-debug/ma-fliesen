@@ -936,34 +936,12 @@ li {
     width: 95%;
     min-width: 0;
   }
-}
-
-@media (max-width: 768px) {
-  .erfassung-time-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-    width: 100%;
-  }
-
-  .erfassung-time-row > div {
-    min-width: 0;
-    width: 100%;
-  }
-
-  .erfassung-time-row .input,
-  .erfassung-time-row input[type="time"] {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    display: block;
-  }
 
   .card {
     overflow-x: hidden;
   }
 }
+
 
 @media (max-width: 768px) {
   .erfassung-time-row {
@@ -1004,38 +982,55 @@ li {
   }
 }
 
-.date-display-input {
-  position: relative;
-  width: 100%;
-  min-width: 0;
-  min-height: 56px;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  box-sizing: border-box;
-  overflow: hidden;
+.erfassung-date-desktop {
+  display: block;
 }
 
-.date-display-value {
-  width: 100%;
-  min-width: 0;
-  color: var(--text);
-  font: inherit;
-  line-height: 1.2;
-  pointer-events: none;
+.erfassung-date-mobile {
+  display: none;
 }
 
-.date-display-native-input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  box-sizing: border-box;
-  appearance: none;
-  -webkit-appearance: none;
+@media (max-width: 768px) {
+  .erfassung-date-desktop {
+    display: none;
+  }
+
+  .erfassung-date-mobile {
+    display: flex;
+  }
+
+  .date-display-input {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    min-height: 56px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.35);
+    align-items: center;
+    padding: 0 20px;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .date-display-value {
+    width: 100%;
+    min-width: 0;
+    color: var(--text);
+    font: inherit;
+    line-height: 1.2;
+    pointer-events: none;
+  }
+
+  .date-display-native-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    box-sizing: border-box;
+    appearance: none;
+    -webkit-appearance: none;
+  }
 }

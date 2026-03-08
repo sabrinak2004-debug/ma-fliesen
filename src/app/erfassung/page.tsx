@@ -804,7 +804,15 @@ useEffect(() => {
         <div className="row" style={{ marginBottom: 12 }}>
           <div>
             <div className="label">Datum</div>
-            <div className="date-display-input">
+
+            <input
+              className="input erfassung-date-desktop"
+              type="date"
+              value={workDate}
+              onChange={(e) => setWorkDate(e.target.value)}
+            />
+
+            <div className="date-display-input erfassung-date-mobile">
               <div className="date-display-value">{formatDateDE(workDate)}</div>
               <input
                 className="date-display-native-input"
@@ -815,7 +823,7 @@ useEffect(() => {
               />
             </div>
           </div>
-          <div />
+          <div/>
         </div>
 
         <div className="row erfassung-time-row" style={{ marginBottom: 12 }}>
