@@ -247,25 +247,17 @@ useEffect(() => {
     zIndex: 1,
     left: 0,
     right: 0,
-    padding: "10px 12px",
-    paddingTop: "max(10px, env(safe-area-inset-top))",
-    marginBottom: 10,
-    background: "rgba(14,16,14,0.92)",
+    padding: 12,
+    paddingTop: "calc(12px + env(safe-area-inset-top))",
+    marginBottom: 12,
+    background: "rgba(14,16,14,0.92)", // --bg-main
     backdropFilter: "blur(10px)",
-    WebkitBackdropFilter: "blur(10px)",
-    border: "1px solid rgba(255,255,255,0.10)",
+    border: "1px solid rgba(255,255,255,0.10)", // --border-light
     borderRadius: 18,
-    boxShadow: "0 10px 24px rgba(0,0,0,0.22)",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
   }}
 >
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "44px minmax(0, 1fr) 44px",
-      alignItems: "center",
-      gap: 10,
-    }}
-  >
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
     {/* Burger */}
     <button
       type="button"
@@ -293,33 +285,30 @@ useEffect(() => {
           <Image
             src="/logo-ma-fliesen.jpeg"
             alt="ma-fliesen Logo"
-            width={84}
-            height={28}
+            width={110}
+            height={34}
             priority
-            style={{ objectFit: "contain", height: "auto" }}
+            style={{ objectFit: "contain" }}
           />
           <div
             style={{
               fontWeight: 900,
-              fontSize: 13,
               color: "rgba(255,255,255,0.95)",
               lineHeight: 1.05,
-              marginTop: 4,
-              textAlign: "center",
+              marginTop: 6,
             }}
           >
             ma-fliesen
           </div>
           <div
             style={{
-              fontSize: 11,
+              fontSize: 12,
               marginTop: 2,
               color: "rgba(255,255,255,0.65)",
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              maxWidth: 180,
-              textAlign: "center",
+              maxWidth: 220,
             }}
           >
             {activeLabel ?? "#wirkönnendas"}

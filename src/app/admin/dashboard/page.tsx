@@ -823,13 +823,7 @@ export default function AdminDashboardPage() {
 
   return (
     <AppShell activeLabel="Admin-Übersicht">
-      <div
-        className="mobile-2col"
-        style={{
-          alignItems: "end",
-          marginBottom: 12,
-        }}
-      >
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
         <div style={{ display: "grid", gap: 6 }}>
           <div style={{ fontSize: 12, color: "var(--muted)" }}>Monat (für Übersicht + Export)</div>
           <input
@@ -837,7 +831,6 @@ export default function AdminDashboardPage() {
             value={month}
             onChange={(e) => setMonth(e.target.value)}
             style={{
-              width: "100%",
               padding: "10px 12px",
               borderRadius: 12,
               border: "1px solid rgba(255,255,255,0.18)",
@@ -848,12 +841,11 @@ export default function AdminDashboardPage() {
           />
         </div>
 
-        <div style={{ display: "flex", alignItems: "end", width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "end" }}>
           <button
             onClick={openExportModal}
             className="card"
             style={{
-              width: "100%",
               padding: "10px 14px",
               cursor: "pointer",
               fontWeight: 900,
@@ -875,7 +867,7 @@ export default function AdminDashboardPage() {
   maxWidth={720}
 >
   <div style={{ display: "grid", gap: 12 }}>
-    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "stretch" }}>
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
       {([
         { key: "MONTH", label: "Monat (CSV)" },
         { key: "YEAR", label: "Jahr (ZIP)" },
@@ -1024,7 +1016,7 @@ export default function AdminDashboardPage() {
       <div style={{ display: "grid", gap: 10 }}>
         <div style={{ fontSize: 12, color: "var(--muted)" }}>Zeitraum auswählen</div>
 
-        <div className="mobile-modal-grid-2">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <input
             type="date"
             value={rangeFrom}
@@ -1136,7 +1128,6 @@ export default function AdminDashboardPage() {
                       justifyContent: "space-between",
                       alignItems: "center",
                       gap: 10,
-                      flexWrap: "wrap",
                       padding: "10px 12px",
                       borderRadius: 12,
                       border: "1px solid rgba(255,255,255,0.08)",
@@ -1165,7 +1156,6 @@ export default function AdminDashboardPage() {
                       justifyContent: "space-between",
                       alignItems: "center",
                       gap: 10,
-                      flexWrap: "wrap",
                       padding: "10px 12px",
                       borderRadius: 12,
                       border: "1px solid rgba(255,255,255,0.08)",
@@ -1180,7 +1170,6 @@ export default function AdminDashboardPage() {
                       disabled={remindLoadingUserId === person.userId}
                       style={{
                         padding: "8px 12px",
-                        minWidth: 140,
                         borderRadius: 10,
                         border: "1px solid rgba(184,207,58,0.35)",
                         background: "rgba(184,207,58,0.12)",
@@ -1210,7 +1199,6 @@ export default function AdminDashboardPage() {
                     key={`${person.userId}-${person.type}`}
                     style={{
                       display: "flex",
-                      flexWrap: "wrap",
                       justifyContent: "space-between",
                       alignItems: "center",
                       gap: 10,
@@ -1474,18 +1462,34 @@ export default function AdminDashboardPage() {
           <div style={{ display: "grid", gap: 6 }}>
             <div style={{ fontSize: 12, color: "var(--muted)" }}>Tätigkeit</div>
             <input
-              className="input"
               value={editActivity}
               onChange={(e) => setEditActivity(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.18)",
+                background: "rgba(0,0,0,0.25)",
+                color: "rgba(255,255,255,0.92)",
+                outline: "none",
+              }}
             />
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
             <div style={{ fontSize: 12, color: "var(--muted)" }}>Ort</div>
             <input
-              className="input"
               value={editLocation}
               onChange={(e) => setEditLocation(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.18)",
+                background: "rgba(0,0,0,0.25)",
+                color: "rgba(255,255,255,0.92)",
+                outline: "none",
+              }}
             />
           </div>
 
@@ -1493,10 +1497,18 @@ export default function AdminDashboardPage() {
             <div style={{ display: "grid", gap: 6 }}>
               <div style={{ fontSize: 12, color: "var(--muted)" }}>Fahrtzeit (Min)</div>
               <input
-                className="input"
                 inputMode="numeric"
                 value={editTravelMinutes}
                 onChange={(e) => setEditTravelMinutes(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  background: "rgba(0,0,0,0.25)",
+                  color: "rgba(255,255,255,0.92)",
+                  outline: "none",
+                }}
               />
             </div>
           </div>
@@ -1523,12 +1535,9 @@ export default function AdminDashboardPage() {
           title="Liste aktiver Mitarbeiter öffnen"
         >
           <div>
-            <div
-              className="small"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}
-            >
-              <span>Aktive Mitarbeiter</span>
-              <span style={{ display: "inline-flex", alignItems: "center", opacity: 0.8 }}>
+            <div className="small flex items-center gap-1">
+              Aktive Mitarbeiter
+              <span className="opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
                 <MousePointerClick size={14} />
               </span>
             </div>
@@ -1548,12 +1557,9 @@ export default function AdminDashboardPage() {
           title="Liste fehlender Einträge öffnen"
         >
           <div>
-            <div
-              className="small"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}
-            >
-              <span>Fehlende Einträge (heute)</span>
-              <span style={{ display: "inline-flex", alignItems: "center", opacity: 0.8 }}>
+            <div className="small flex items-center gap-1">
+              Fehlende Einträge (heute)
+              <span className="opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
                 <MousePointerClick size={14} />
               </span>
             </div>
@@ -1567,18 +1573,15 @@ export default function AdminDashboardPage() {
 
         {/* Abwesenheiten */}
         <div
-          className="card kpi"
+          className="card kpi group hover:shadow-lg transition"
           onClick={() => openKpiModal("ABSENT")}
           style={{ cursor: "pointer" }}
           title="Liste heutiger Abwesenheiten öffnen"
         >
           <div>
-            <div
-              className="small"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}
-            >
-              <span>Abwesenheiten (heute)</span>
-              <span style={{ display: "inline-flex", alignItems: "center", opacity: 0.8 }}>
+            <div className="small flex items-center gap-1">
+              Abwesenheiten (heute)
+              <span className="opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
                 <MousePointerClick size={14} />
               </span>
             </div>
@@ -1593,12 +1596,7 @@ export default function AdminDashboardPage() {
 
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
         <div className="section-title" style={{ marginBottom: 10 }}>Monat (gesamt)</div>
-        <div
-          style={{
-            display: "grid",
-            gap: 10,
-          }}
-        >
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ color: "var(--muted)" }}>
             Arbeitszeit gesamt: <b>{overview ? formatHours1(overview.totals.workMinutes) : "—"}</b>
           </div>
@@ -1648,7 +1646,6 @@ export default function AdminDashboardPage() {
                         justifyContent: "space-between",
                         gap: 12,
                         flexWrap: "wrap",
-                        alignItems: "center",
                         cursor: "pointer",
                         fontWeight: 900,
                       }}
@@ -1736,7 +1733,6 @@ export default function AdminDashboardPage() {
                                       justifyContent: "space-between",
                                       alignItems: "center",
                                       gap: 10,
-                                      flexWrap: "wrap",
                                       cursor: "pointer",
                                       padding: "8px 10px",
                                       borderRadius: 10,
@@ -1782,10 +1778,11 @@ export default function AdminDashboardPage() {
                                   {dayOpen ? (
                                     <div style={{ display: "grid", gap: 6, paddingLeft: 10 }}>
                                       {dayItems.map((it) => (
-                                        <div
+                                                                                <div
                                           key={it.id}
                                           style={{
-                                            display: "grid",
+                                            display: "flex",
+                                            justifyContent: "space-between",
                                             gap: 10,
                                             padding: "8px 10px",
                                             borderRadius: 10,
@@ -1809,7 +1806,7 @@ export default function AdminDashboardPage() {
                                               alignItems: "center",
                                               gap: 8,
                                               flexWrap: "wrap",
-                                              justifyContent: "flex-start",
+                                              justifyContent: "flex-end",
                                             }}
                                           >
                                             <button

@@ -471,14 +471,7 @@ export default function UrlaubsantraegePage() {
               {durationText}
             </div>
 
-            <div
-              style={{
-                marginTop: 8,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
+            <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span
                 style={{
                   ...statusStyle(item.status),
@@ -561,10 +554,12 @@ export default function UrlaubsantraegePage() {
 
         {item.status === "PENDING" ? (
           <div
-            className="mobile-actions"
             style={{
               marginTop: 14,
+              display: "flex",
+              gap: 10,
               justifyContent: "flex-end",
+              flexWrap: "wrap",
             }}
           >
             <button
@@ -574,7 +569,6 @@ export default function UrlaubsantraegePage() {
               onClick={() => {
                 void rejectRequest(item.id);
               }}
-              style={{ flex: "1 1 220px" }}
             >
               {isBusy ? "Verarbeitet..." : "Ablehnen"}
             </button>
@@ -586,7 +580,6 @@ export default function UrlaubsantraegePage() {
               onClick={() => {
                 void approveRequest(item.id);
               }}
-              style={{ flex: "1 1 220px" }}
             >
               {isBusy ? "Verarbeitet..." : "Genehmigen"}
             </button>
@@ -637,12 +630,14 @@ export default function UrlaubsantraegePage() {
           Hier siehst du alle Urlaubsanträge deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.
         </div>
         <div
-          className="mobile-2col"
           style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+            gap: 12,
             marginTop: 16,
           }}
         >
-          <div style={{ minWidth: 0, width: "100%" }}>
+          <div style={{ minWidth: 0, width: "100%", height: "82%" }}>
             <div className="label">Mitarbeiter</div>
             <select
               className="input"
@@ -650,6 +645,7 @@ export default function UrlaubsantraegePage() {
               onChange={(e) => setSelectedUserId(e.target.value)}
               style={{
                 width: "100%",
+                height: "82%",
                 minWidth: 0,
                 boxSizing: "border-box",
                 display: "block",

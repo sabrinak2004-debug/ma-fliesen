@@ -616,7 +616,7 @@ export default function KrankheitsantraegePage() {
             marginTop: 16,
           }}
         >
-          <div style={{ minWidth: 0, width: "100%" }}>
+          <div style={{ minWidth: 0, width: "100%",height: "82%" }}>
             <div className="label">Mitarbeiter</div>
             <select
               className="input"
@@ -624,6 +624,7 @@ export default function KrankheitsantraegePage() {
               onChange={(e) => setSelectedUserId(e.target.value)}
               style={{
                 width: "100%",
+                height: "82%",
                 minWidth: 0,
                 boxSizing: "border-box",
                 display: "block",
@@ -654,6 +655,9 @@ export default function KrankheitsantraegePage() {
             />
           </div>
         </div>
+      </div>
+
+
         {error ? (
           <div
             className="card"
@@ -666,7 +670,6 @@ export default function KrankheitsantraegePage() {
             <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
           </div>
         ) : null}
-      </div>
     
 
 
@@ -731,7 +734,7 @@ export default function KrankheitsantraegePage() {
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
               {approvedItems.length === 0 ? (
                 <div className="card" style={{ padding: 14, opacity: 0.85 }}>
-                  Keine genehmigten Krankheitsanträge für diesen Filter.
+                  Keine genehmigten Krankheitsanträge.
                 </div>
               ) : (
                 approvedItems.map(renderRequestCard)
@@ -762,7 +765,7 @@ export default function KrankheitsantraegePage() {
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
               {rejectedItems.length === 0 ? (
                 <div className="card" style={{ padding: 14, opacity: 0.85 }}>
-                  Keine abgelehnten Krankheitsanträge für diesen Filter.
+                  Keine abgelehnten Krankheitsanträge.
                 </div>
               ) : (
                 rejectedItems.map(renderRequestCard)

@@ -1206,10 +1206,10 @@ useEffect(() => {
 
   const floatingStyle: React.CSSProperties = {
     position: "fixed",
-    right: 16,
-    bottom: "calc(16px + env(safe-area-inset-bottom))",
-    width: 54,
-    height: 54,
+    right: 22,
+    bottom: 22,
+    width: 56,
+    height: 56,
     borderRadius: 18,
     border: "1px solid rgba(255,255,255,0.12)",
     background: "rgba(184, 207, 58, 0.95)",
@@ -1248,101 +1248,64 @@ useEffect(() => {
     <AppShell activeLabel="#wirkönnendas">
       <div className="card card-olive" style={{ padding: 18, position: "relative" }}>
         <div
-          className="mobile-stack"
           style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
             marginBottom: 14,
           }}
         >
-          <div
-            className="mobile-2col"
-            style={{
-              alignItems: "center",
+          <button
+            className="btn"
+            onClick={() => {
+              if (viewMode === "WEEK") {
+                const x = new Date(cursor);
+                x.setDate(x.getDate() - 7);
+                setCursor(x);
+              } else {
+                setCursor((d) => addMonths(d, -1));
+              }
             }}
           >
-            <button
-              className="btn"
-              type="button"
-              onClick={() => {
-                if (viewMode === "WEEK") {
-                  const x = new Date(cursor);
-                  x.setDate(x.getDate() - 7);
-                  setCursor(x);
-                } else {
-                  setCursor((d) => addMonths(d, -1));
-                }
-              }}
-              style={{ width: "100%" }}
-            >
-              ‹
-            </button>
+            ‹
+          </button>
 
-            <button
-              className="btn"
-              type="button"
-              onClick={() => {
-                if (viewMode === "WEEK") {
-                  const x = new Date(cursor);
-                  x.setDate(x.getDate() + 7);
-                  setCursor(x);
-                } else {
-                  setCursor((d) => addMonths(d, 1));
-                }
-              }}
-              style={{ width: "100%" }}
-            >
-              ›
-            </button>
-          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+  <div style={{ fontWeight: 900, fontSize: 20 }}>{title}</div>
+  {isAdmin ? (
+  <div style={{ marginTop: 8 }}>
+    <select
+      value={selectedUserId}
+      onChange={(e) => setSelectedUserId(e.target.value)}
+      className="input"
+      style={{ maxWidth: 280 }}
+    >
+      <option value="">Meine Admin-Termine</option>
+      {users.map((u) => (
+        <option key={u.id} value={u.id}>
+          {u.fullName}
+        </option>
+      ))}
+    </select>
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 8,
-              textAlign: "center",
-            }}
-          >
-            <div style={{ fontWeight: 900, fontSize: 20, lineHeight: 1.15 }}>{title}</div>
+    {isAdminViewingEmployee ? (
+      <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>
+        Mitarbeiteransicht (read-only): Kalender zeigt Plan/Urlaub/Krank des Mitarbeiters.
+      </div>
+    ) : null}
+  </div>
+) : null}
 
-            {viewMode === "WEEK" && weekMeta ? (
-              <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 800 }}>
-                KW {weekMeta.kw}
-              </div>
-            ) : null}
+  {viewMode === "WEEK" && weekMeta ? (
+    <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 800 }}>
+      KW {weekMeta.kw}
+    </div>
+  ) : null}
+</div>
 
-            {isAdmin ? (
-              <div style={{ width: "100%", maxWidth: 340 }}>
-                <select
-                  value={selectedUserId}
-                  onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="input"
-                  style={{ width: "100%" }}
-                >
-                  <option value="">Meine Admin-Termine</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.fullName}
-                    </option>
-                  ))}
-                </select>
-
-                {isAdminViewingEmployee ? (
-                  <div
-                    style={{
-                      marginTop: 6,
-                      fontSize: 12,
-                      color: "var(--muted)",
-                      lineHeight: 1.4,
-                      textAlign: "center",
-                    }}
-                  >
-                    Mitarbeiteransicht (read-only): Kalender zeigt Plan, Urlaub und Krank des Mitarbeiters.
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
+            {/* ✅ Monat/Woche Toggle */}
             <div style={segmentedWrap}>
               <button type="button" style={segBtn(viewMode === "MONTH")} onClick={() => setViewMode("MONTH")}>
                 Monat
@@ -1351,28 +1314,48 @@ useEffect(() => {
                 Woche
               </button>
             </div>
-
-            {isAdminOwnCalendar ? (
-              <div style={{ width: "100%", maxWidth: 340 }}>
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={() => {
-                    window.location.href = "/api/admin/google/connect";
-                  }}
-                  style={{ width: "100%" }}
-                >
-                  Google Kalender verbinden
-                </button>
-              </div>
-            ) : null}
           </div>
+
+          <button
+            className="btn"
+            onClick={() => {
+              if (viewMode === "WEEK") {
+                const x = new Date(cursor);
+                x.setDate(x.getDate() + 7);
+                setCursor(x);
+              } else {
+                setCursor((d) => addMonths(d, 1));
+              }
+            }}
+          >
+            ›
+          </button>
+{isAdminOwnCalendar ? (
+  <div
+    style={{
+      display: "flex",
+      gap: 8,
+      marginTop: 8,
+      flexWrap: "wrap",
+      justifyContent: "center",
+    }}
+  >
+    <button
+      className="btn"
+      type="button"
+      onClick={() => {
+        window.location.href = "/api/admin/google/connect";
+      }}
+    >
+      Google Kalender verbinden
+    </button>
+  </div>
+) : null}
         </div>
 
         {/* ===================== WEEK VIEW ===================== */}
         {viewMode === "WEEK" ? (
-          <div className="mobile-scroll-x">
-            <div className="mobile-week-grid" style={{ minWidth: 560 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10 }}>
             {weekDays.map((w) => {
               const info = dayMap.get(w.date);
               const inThisMonth = monthKey(ymdToDateLocal(w.date)) === ym;
@@ -1406,7 +1389,7 @@ useEffect(() => {
                     openDay(w.date);
                   }}
                   style={{
-                    height: 104,
+                    height: 110,
                     borderColor: border,
                     background: bg,
                     borderRadius: 16,
@@ -1484,12 +1467,10 @@ useEffect(() => {
               );
             })}
           </div>
-        </div>
         ) : (
           /* ===================== MONTH VIEW ===================== */
           <>
-            <div className="mobile-scroll-x">
-              <div className="mobile-calendar-grid" style={{ minWidth: 320 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 10 }}>
               {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((w) => (
                 <div key={w} style={{ color: "var(--muted-2)", fontSize: 12, textAlign: "center" }}>
                   {w}
@@ -1529,7 +1510,7 @@ useEffect(() => {
                       disabled={!c.inMonth}
                       onClick={() => c.inMonth && c.date && openDay(c.date)}
                       style={{
-                        height: 78,
+                        height: 86,
                         borderColor: isToday ? "rgba(255,255,255,0.22)" : border,
                         background: bg,
                         borderRadius: 16,
@@ -1594,18 +1575,8 @@ useEffect(() => {
                 })
               )}
             </div>
-          </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: 14,
-                alignItems: "center",
-                marginTop: 14,
-                color: "var(--muted)",
-                flexWrap: "wrap",
-              }}
-            >
+            <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 14, color: "var(--muted)" }}>
               {isAdmin ? (
                 <div>
                   <span className="badge-dot dot-work" /> Termine
@@ -1834,7 +1805,7 @@ useEffect(() => {
               </div>
             )}
 
-            <div className="mobile-modal-grid-2" style={{ marginBottom: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
               <div>
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Start
@@ -1849,7 +1820,7 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="mobile-modal-grid-2" style={{ marginBottom: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
               <div>
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Kategorie (UI-only)
@@ -1906,8 +1877,8 @@ useEffect(() => {
   <>
     {/* ================= ADMIN: Mitarbeiter Read-only ================= */}
     <div className="card" style={{ padding: 12, opacity: 0.9 }}>
-      Du siehst gerade den Kalender eines Mitarbeiters.
-      Bearbeitung und Terminverwaltung sind in dieser Ansicht deaktiviert.
+      Du siehst gerade den Kalender eines Mitarbeiters.  
+      Bearbeitung/Termine sind in dieser Ansicht deaktiviert.
     </div>
 
     {selectedDate ? (
@@ -2060,7 +2031,7 @@ useEffect(() => {
 
             <div style={{ marginBottom: 12 }}>
               <div className="label">{selectedRequestBlock ? "Antragsdetails" : "Abwesenheit beantragen"}</div>
-              <div className="mobile-modal-grid-2">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
                   <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                     Start
@@ -2116,7 +2087,7 @@ useEffect(() => {
             {absenceType === "VACATION" ? (
               <div style={{ marginBottom: 12 }}>
                 <div className="label">Umfang</div>
-                 <div className="mobile-modal-grid-2" style={{ marginBottom: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <button
                     className={`btn ${absenceDayPortion === "FULL_DAY" ? "btn-accent" : ""}`}
                     type="button"
@@ -2152,7 +2123,7 @@ useEffect(() => {
             </div>
 
             {selectedRequestBlock ? (
-              <div className="mobile-modal-grid-2">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <button
                   className="btn"
                   type="button"
