@@ -647,6 +647,9 @@ export default function UrlaubsantraegePage() {
                 boxSizing: "border-box",
                 display: "block",
                 maxWidth: "100%",
+                borderRadius: 18,
+                appearance: "none",
+                WebkitAppearance: "none",
               }}
             >
               <option value="">Alle Mitarbeiter</option>
@@ -658,7 +661,7 @@ export default function UrlaubsantraegePage() {
             </select>
           </div>
 
-          <div style={{ minWidth: 0, width: "100%" }}>
+          <div style={{ minWidth: 0, width: "100%", overflow: "hidden" }}>
             <div className="label">Monat</div>
             <input
               className="input"
@@ -670,6 +673,11 @@ export default function UrlaubsantraegePage() {
                 minWidth: 0,
                 boxSizing: "border-box",
                 display: "block",
+                maxWidth: "100%",
+                borderRadius: 18,
+                appearance: "none",
+                WebkitAppearance: "none",
+                overflow: "hidden",
               }}
             />
           </div>
