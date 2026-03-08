@@ -1278,7 +1278,15 @@ export default function KalenderPage() {
                   onClick={() => {
                     window.location.href = "/api/admin/google/connect";
                   }}
+                  style={{ display: "flex", alignItems: "center", gap: 8 }}
                 >
+                  <svg width="16" height="16" viewBox="0 0 48 48">
+                    <path fill="#4285F4" d="M24 9.5c3.1 0 5.9 1.1 8.1 3.2l6-6C34.6 2.5 29.6 0 24 0 14.6 0 6.6 5.5 2.7 13.5l7.4 5.7C12.1 13.2 17.6 9.5 24 9.5z"/>
+                    <path fill="#34A853" d="M46.5 24.5c0-1.6-.1-3.2-.4-4.7H24v9h12.7c-.5 2.8-2.1 5.1-4.4 6.7l7 5.5C43.8 37 46.5 31.2 46.5 24.5z"/>
+                    <path fill="#FBBC05" d="M10.1 28.7c-.5-1.4-.8-2.9-.8-4.5s.3-3.1.8-4.5l-7.4-5.7C1 17.2 0 20.5 0 24s1 6.8 2.7 9.8l7.4-5.1z"/>
+                    <path fill="#EA4335" d="M24 48c6.5 0 12-2.1 16-5.7l-7-5.5c-2 1.3-4.6 2-9 2-6.4 0-11.9-4.3-13.8-10.1l-7.4 5.7C6.6 42.5 14.6 48 24 48z"/>
+                  </svg>
+
                   Google Kalender verbinden
                 </button>
               </div>
@@ -1308,7 +1316,15 @@ export default function KalenderPage() {
                 onClick={() => {
                   window.location.href = "/api/admin/google/connect";
                 }}
+                style={{ display: "flex", alignItems: "center", gap: 8 }}
               >
+                <svg width="16" height="16" viewBox="0 0 48 48">
+                  <path fill="#4285F4" d="M24 9.5c3.1 0 5.9 1.1 8.1 3.2l6-6C34.6 2.5 29.6 0 24 0 14.6 0 6.6 5.5 2.7 13.5l7.4 5.7C12.1 13.2 17.6 9.5 24 9.5z"/>
+                  <path fill="#34A853" d="M46.5 24.5c0-1.6-.1-3.2-.4-4.7H24v9h12.7c-.5 2.8-2.1 5.1-4.4 6.7l7 5.5C43.8 37 46.5 31.2 46.5 24.5z"/>
+                  <path fill="#FBBC05" d="M10.1 28.7c-.5-1.4-.8-2.9-.8-4.5s.3-3.1.8-4.5l-7.4-5.7C1 17.2 0 20.5 0 24s1 6.8 2.7 9.8l7.4-5.1z"/>
+                  <path fill="#EA4335" d="M24 48c6.5 0 12-2.1 16-5.7l-7-5.5c-2 1.3-4.6 2-9 2-6.4 0-11.9-4.3-13.8-10.1l-7.4 5.7C6.6 42.5 14.6 48 24 48z"/>
+                </svg>
+
                 Google Kalender verbinden
               </button>
             </div>
