@@ -42,12 +42,39 @@ type AbsencesApiResponse = {
   range?: { from: string; to: string };
 };
 
+type OverviewUserSummary = {
+  fullName: string;
+  role: "EMPLOYEE" | "ADMIN";
+  entriesCount: number;
+  workMinutes: number;
+  travelMinutes: number;
+  vacationDays: number;
+  sickDays: number;
+  usedVacationDaysYtd: number;
+  remainingVacationDays: number;
+};
+
+type OverviewTotals = {
+  entriesCount: number;
+  workMinutes: number;
+  travelMinutes: number;
+  vacationDays: number;
+  sickDays: number;
+  usedVacationDaysYtd: number;
+  remainingVacationDays: number;
+};
+
 type OverviewResponse = {
+  month?: string;
+  targetMinutes?: number;
+  annualVacationDays?: number;
+  byUser?: OverviewUserSummary[];
+  totals?: OverviewTotals;
   isAdmin?: boolean;
 };
 
 function isOverviewResponse(x: unknown): x is OverviewResponse {
-  return typeof x === "object" && x !== null && ("isAdmin" in x || Object.keys(x as object).length >= 0);
+  return typeof x === "object" && x !== null;
 }
 
 function isAbsencesApiResponse(x: unknown): x is AbsencesApiResponse {
@@ -301,6 +328,9 @@ export default function UebersichtPage() {
   const [loading, setLoading] = useState(true);
 
   const [isAdmin, setIsAdmin] = useState(false);
+  const [remainingVacationDays, setRemainingVacationDays] = useState<number>(30);
+  const [annualVacationDays, setAnnualVacationDays] = useState<number>(30);
+  const [usedVacationDaysYtd, setUsedVacationDaysYtd] = useState<number>(0);
 
   const initialYm = useMemo(() => monthKey(new Date()), []);
   const [selectedYear, setSelectedYear] = useState<string>(currentYear());
@@ -363,8 +393,40 @@ export default function UebersichtPage() {
         setAbsences(a);
         setAbsenceSummaryByUser(summary);
 
-        if (isOverviewResponse(jo)) setIsAdmin(Boolean(jo.isAdmin));
-        else setIsAdmin(false);
+        if (isOverviewResponse(jo)) {
+          setIsAdmin(Boolean(jo.isAdmin));
+
+          const nextAnnualVacationDays =
+            typeof jo.annualVacationDays === "number" && Number.isFinite(jo.annualVacationDays)
+              ? jo.annualVacationDays
+              : 30;
+
+          setAnnualVacationDays(nextAnnualVacationDays);
+
+          if (Array.isArray(jo.byUser) && jo.byUser.length > 0) {
+            const firstUser = jo.byUser[0];
+
+            setUsedVacationDaysYtd(
+              typeof firstUser.usedVacationDaysYtd === "number" && Number.isFinite(firstUser.usedVacationDaysYtd)
+                ? firstUser.usedVacationDaysYtd
+                : 0
+            );
+
+            setRemainingVacationDays(
+              typeof firstUser.remainingVacationDays === "number" && Number.isFinite(firstUser.remainingVacationDays)
+                ? firstUser.remainingVacationDays
+                : nextAnnualVacationDays
+            );
+          } else {
+            setUsedVacationDaysYtd(0);
+            setRemainingVacationDays(nextAnnualVacationDays);
+          }
+        } else {
+          setIsAdmin(false);
+          setAnnualVacationDays(30);
+          setUsedVacationDaysYtd(0);
+          setRemainingVacationDays(30);
+        }
       } finally {
         setLoading(false);
       }
@@ -823,10 +885,23 @@ const resetAbsFilters = () => {
 
         <div className="card kpi">
           <div>
-            <div className="small">Urlaubstage</div>
-            <div className="big">{vacDays}</div>
+            <div className="small">
+              Urlaubstage · {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+            </div>
+            <div className="big">{String(vacDays).replace(".", ",")}</div>
           </div>
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌴</div>
+        </div>
+
+        <div className="card kpi">
+          <div>
+            <div className="small">Resturlaub</div>
+            <div className="big">{String(remainingVacationDays).replace(".", ",")}</div>
+            <div className="small">
+              {String(usedVacationDaysYtd).replace(".", ",")} von {annualVacationDays} Tagen verbraucht
+            </div>
+          </div>
+          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🗓</div>
         </div>
 
         <div className="card kpi">

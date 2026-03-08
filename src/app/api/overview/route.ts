@@ -17,6 +17,8 @@ function absencePortionValue(dayPortion: AbsenceDayPortion): number {
   return dayPortion === AbsenceDayPortion.HALF_DAY ? 0.5 : 1;
 }
 
+const ANNUAL_VACATION_DAYS = 30;
+
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) {
@@ -33,8 +35,12 @@ export async function GET(req: Request) {
   }
 
   const [y, m] = month.split("-").map(Number);
+
   const from = new Date(Date.UTC(y, m - 1, 1));
   const to = new Date(Date.UTC(y, m, 1));
+
+  const yearFrom = new Date(Date.UTC(y, 0, 1));
+  const yearTo = new Date(Date.UTC(y, m, 1)); // exklusiv => zählt bis Ende des gefilterten Monats
 
   const users = await prisma.appUser.findMany({
     where: isAdmin ? { isActive: true } : { id: session.userId, isActive: true },
@@ -62,6 +68,14 @@ export async function GET(req: Request) {
     },
   });
 
+  const yearVacationAbsences = await prisma.absence.findMany({
+    where: {
+      ...(isAdmin ? {} : { userId: session.userId }),
+      type: "VACATION",
+      absenceDate: { gte: yearFrom, lt: yearTo },
+    },
+  });
+
   const dayBreakMap = new Map<string, number>();
 
   for (const row of dayBreaks) {
@@ -72,6 +86,7 @@ export async function GET(req: Request) {
   const byUser = users.map((user) => {
     const userEntries = entries.filter((entry) => entry.userId === user.id);
     const userAbsences = absences.filter((absence) => absence.userId === user.id);
+    const userYearVacationAbsences = yearVacationAbsences.filter((absence) => absence.userId === user.id);
 
     const dayMap = new Map<string, DayAgg>();
 
@@ -95,6 +110,13 @@ export async function GET(req: Request) {
       netMinutesSum += result.netDayMinutes;
     }
 
+    const usedVacationDaysYtd = userYearVacationAbsences.reduce(
+      (sum, row) => sum + absencePortionValue(row.dayPortion),
+      0
+    );
+
+    const remainingVacationDays = Math.max(0, ANNUAL_VACATION_DAYS - usedVacationDaysYtd);
+
     return {
       fullName: user.fullName,
       role: user.role,
@@ -107,6 +129,8 @@ export async function GET(req: Request) {
       sickDays: userAbsences
         .filter((row) => row.type === "SICK")
         .reduce((sum, row) => sum + absencePortionValue(row.dayPortion), 0),
+      usedVacationDaysYtd,
+      remainingVacationDays,
     };
   });
 
@@ -115,6 +139,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     month,
     targetMinutes,
+    annualVacationDays: ANNUAL_VACATION_DAYS,
     byUser,
     totals: {
       entriesCount: entries.length,
@@ -122,6 +147,8 @@ export async function GET(req: Request) {
       travelMinutes: byUser.reduce((sum, user) => sum + user.travelMinutes, 0),
       vacationDays: byUser.reduce((sum, user) => sum + user.vacationDays, 0),
       sickDays: byUser.reduce((sum, user) => sum + user.sickDays, 0),
+      usedVacationDaysYtd: byUser.reduce((sum, user) => sum + user.usedVacationDaysYtd, 0),
+      remainingVacationDays: byUser.reduce((sum, user) => sum + user.remainingVacationDays, 0),
     },
     isAdmin,
   });
