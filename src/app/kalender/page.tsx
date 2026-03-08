@@ -1235,7 +1235,7 @@ export default function KalenderPage() {
                   <select
                     value={selectedUserId}
                     onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="input"
+                    className="input calendar-user-select"
                     style={{ maxWidth: 320 }}
                   >
                     <option value="">Meine Admin-Termine</option>

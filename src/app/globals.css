@@ -130,6 +130,12 @@ body {
   outline: none;
 }
 
+.calendar-user-select {
+  border-radius: 18px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
 .input:focus, .textarea:focus, .select:focus {
   border-color: rgba(184, 207, 58, 0.55);
   box-shadow: 0 0 0 3px rgba(184, 207, 58, 0.10);
@@ -916,7 +922,7 @@ li {
     .calendar-form-grid-2.absence-date-grid-mobile-fix,
   .calendar-form-grid-2.admin-time-grid-mobile-fix {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 10px;
+    gap: 20px;
     width: 100%;
   }
 
