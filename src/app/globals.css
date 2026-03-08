@@ -685,9 +685,9 @@ li {
   }
 
   .calendar-week-cell {
-    min-height: 96px;
-    height: 96px;
-    padding: 7px;
+    min-height: 90px;
+    height: 90px;
+    padding: 6px;
     border-radius: 14px;
   }
 
