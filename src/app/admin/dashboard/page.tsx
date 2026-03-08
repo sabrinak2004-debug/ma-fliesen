@@ -585,7 +585,7 @@ export default function AdminDashboardPage() {
       });
 
       if (!response.ok) {
-        let message = "Export konnte nicht geladen werden.";
+        let message = "Export konnte nicht heruntergeladen werden.";
 
         try {
           const data: unknown = await response.json();
@@ -638,7 +638,7 @@ export default function AdminDashboardPage() {
         URL.revokeObjectURL(objectUrl);
       }, 1000);
     } catch {
-      setExportActionError("Export konnte nicht heruntergeladen oder geteilt werden.");
+      setExportActionError("Export konnte nicht geteilt werden.");
     } finally {
       setExportBusy(false);
     }
@@ -808,9 +808,9 @@ export default function AdminDashboardPage() {
           color: "var(--accent)",
           opacity: rangeError || exportTargetError || exportBusy ? 0.7 : 1,
         }}
-        title="Export in App öffnen"
+        title="Herunterladen"
       >
-        In App öffnen
+        Download
       </button>
 
       <button
@@ -827,9 +827,9 @@ export default function AdminDashboardPage() {
           color: "rgba(255,255,255,0.92)",
           opacity: rangeError || exportTargetError || exportBusy ? 0.7 : 1,
         }}
-        title="Export teilen oder sichern"
+        title="Export teilen"
       >
-        {exportBusy ? "Lade…" : "Teilen / Sichern"}
+        {exportBusy ? "Lade…" : "Teilen"}
       </button>
     </>
   );
