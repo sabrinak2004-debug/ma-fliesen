@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { assertEmployeeMayEditDate } from "@/lib/timesheetLock";
+import { assertEmployeeMayEditDate, berlinTodayYMD, consumeTimeEntryUnlock } from "@/lib/timesheetLock";
 import { computeDayBreakFromGross, minutesBetweenHHMM } from "@/lib/breaks";
 
 function dateOnly(yyyyMmDd: string) {
@@ -258,6 +258,10 @@ export async function POST(req: Request) {
   });
 
   await syncDailyBreakAllocation(targetUserId, workDate);
+
+  if (!isAdmin && workDate !== berlinTodayYMD()) {
+    await consumeTimeEntryUnlock(session.userId, workDate);
+  }
 
   const fresh = await prisma.dayBreak.findUnique({
     where: {

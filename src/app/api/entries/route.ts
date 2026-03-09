@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { assertEmployeeMayEditDate } from "@/lib/timesheetLock";
+import { assertEmployeeMayEditDate, berlinTodayYMD, consumeTimeEntryUnlock } from "@/lib/timesheetLock";
 import { computeDayBreakFromGross } from "@/lib/breaks";
 
 function dateOnly(yyyyMmDd: string) {
@@ -446,7 +446,9 @@ export async function POST(req: Request) {
     },
   });
 
-  await syncDailyBreakAllocation(targetUserId, workDate);
+  if (!isAdmin && workDate !== berlinTodayYMD()) {
+    await consumeTimeEntryUnlock(session.userId, workDate);
+  }
 
   const createdFresh = await prisma.workEntry.findUnique({
     where: { id: created.id },
@@ -615,6 +617,10 @@ export async function PATCH(req: Request) {
 
   await syncDailyBreakAllocation(targetUserId, workDate);
 
+  if (!isAdmin && workDate !== berlinTodayYMD()) {
+    await consumeTimeEntryUnlock(session.userId, workDate);
+  }
+
   if (oldUserId !== targetUserId || oldWorkDateYMD !== workDate) {
     await syncDailyBreakAllocation(oldUserId, oldWorkDateYMD);
   }
@@ -694,8 +700,11 @@ export async function DELETE(req: Request) {
 
   const deleted = await prisma.workEntry.delete({ where: { id } });
   const ymd = toIsoDateUTC(deleted.workDate);
-
   await syncDailyBreakAllocation(deleted.userId, ymd);
+
+  if (!isAdmin && ymd !== berlinTodayYMD()) {
+    await consumeTimeEntryUnlock(session.userId, ymd);
+  }
 
   return NextResponse.json({ ok: true });
 }

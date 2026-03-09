@@ -4,17 +4,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
-type AbsenceType = "VACATION" | "SICK";
-type AbsenceDayPortion = "FULL_DAY" | "HALF_DAY";
 
-type AbsenceRequestItem = {
+type TimeEntryCorrectionRequestItem = {
   id: string;
   startDate: string;
   endDate: string;
-  type: AbsenceType;
-  dayPortion: AbsenceDayPortion;
   status: RequestStatus;
   noteEmployee: string;
+  noteAdmin: string;
   createdAt: string;
   updatedAt: string;
   decidedAt: string | null;
@@ -33,18 +30,20 @@ type UserOption = {
   fullName: string;
 };
 
-type AdminRequestsResponse = {
-  ok: true;
-  requests: AbsenceRequestItem[];
-  grouped: {
-    pending: AbsenceRequestItem[];
-    approved: AbsenceRequestItem[];
-    rejected: AbsenceRequestItem[];
-  };
-} | {
-  ok: false;
-  error: string;
-};
+type AdminCorrectionRequestsResponse =
+  | {
+      ok: true;
+      requests: TimeEntryCorrectionRequestItem[];
+      grouped: {
+        pending: TimeEntryCorrectionRequestItem[];
+        approved: TimeEntryCorrectionRequestItem[];
+        rejected: TimeEntryCorrectionRequestItem[];
+      };
+    }
+  | {
+      ok: false;
+      error: string;
+    };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -59,43 +58,33 @@ function isRequestStatus(v: unknown): v is RequestStatus {
   return v === "PENDING" || v === "APPROVED" || v === "REJECTED";
 }
 
-function isAbsenceType(v: unknown): v is AbsenceType {
-  return v === "VACATION" || v === "SICK";
-}
-
-function isAbsenceDayPortion(v: unknown): v is AbsenceDayPortion {
-  return v === "FULL_DAY" || v === "HALF_DAY";
-}
-
-function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
+function isTimeEntryCorrectionRequestItem(v: unknown): v is TimeEntryCorrectionRequestItem {
   if (!isRecord(v)) return false;
 
   const id = getStringField(v, "id");
   const startDate = getStringField(v, "startDate");
   const endDate = getStringField(v, "endDate");
-  const type = v["type"];
-  const dayPortion = v["dayPortion"];
   const status = v["status"];
   const noteEmployee = getStringField(v, "noteEmployee");
+  const noteAdmin = getStringField(v, "noteAdmin");
   const createdAt = getStringField(v, "createdAt");
   const updatedAt = getStringField(v, "updatedAt");
   const decidedAtRaw = v["decidedAt"];
   const userRaw = v["user"];
   const decidedByRaw = v["decidedBy"];
 
-if (
-  !id ||
-  !startDate ||
-  !endDate ||
-  !isAbsenceType(type) ||
-  !isAbsenceDayPortion(dayPortion) ||
-  !isRequestStatus(status) ||
-  noteEmployee === null ||
-  !createdAt ||
-  !updatedAt
-) {
-  return false;
-}
+  if (
+    !id ||
+    !startDate ||
+    !endDate ||
+    !isRequestStatus(status) ||
+    noteEmployee === null ||
+    noteAdmin === null ||
+    !createdAt ||
+    !updatedAt
+  ) {
+    return false;
+  }
 
   if (!isRecord(userRaw)) return false;
   const userId = getStringField(userRaw, "id");
@@ -105,7 +94,7 @@ if (
   const decidedAt = decidedAtRaw === null || typeof decidedAtRaw === "string" ? decidedAtRaw : undefined;
   if (decidedAt === undefined) return false;
 
-  let decidedBy: AbsenceRequestItem["decidedBy"] = null;
+  let decidedBy: TimeEntryCorrectionRequestItem["decidedBy"] = null;
   if (decidedByRaw !== null) {
     if (!isRecord(decidedByRaw)) return false;
     const decidedById = getStringField(decidedByRaw, "id");
@@ -117,7 +106,7 @@ if (
   return true;
 }
 
-function parseAdminRequestsResponse(v: unknown): AdminRequestsResponse {
+function parseAdminCorrectionRequestsResponse(v: unknown): AdminCorrectionRequestsResponse {
   if (!isRecord(v)) {
     return { ok: false, error: "Unerwartete Antwort." };
   }
@@ -142,10 +131,10 @@ function parseAdminRequestsResponse(v: unknown): AdminRequestsResponse {
     return { ok: false, error: "Unerwartete Antwort." };
   }
 
-  const requests = requestsRaw.filter(isAbsenceRequestItem);
-  const pending = pendingRaw.filter(isAbsenceRequestItem);
-  const approved = approvedRaw.filter(isAbsenceRequestItem);
-  const rejected = rejectedRaw.filter(isAbsenceRequestItem);
+  const requests = requestsRaw.filter(isTimeEntryCorrectionRequestItem);
+  const pending = pendingRaw.filter(isTimeEntryCorrectionRequestItem);
+  const approved = approvedRaw.filter(isTimeEntryCorrectionRequestItem);
+  const rejected = rejectedRaw.filter(isTimeEntryCorrectionRequestItem);
 
   return {
     ok: true,
@@ -184,19 +173,6 @@ function formatDateTimeDE(iso: string | null): string {
 function rangeLabel(startDate: string, endDate: string): string {
   if (startDate === endDate) return formatDateDE(startDate);
   return `${formatDateDE(startDate)} – ${formatDateDE(endDate)}`;
-}
-
-function portionLabel(dayPortion: AbsenceDayPortion): string {
-  return dayPortion === "HALF_DAY" ? "0,5 Tag" : "1 Tag";
-}
-
-function requestDurationLabel(item: AbsenceRequestItem): string {
-  if (item.dayPortion === "HALF_DAY") {
-    return `Halber Urlaubstag · ${formatDateDE(item.startDate)} · ${portionLabel(item.dayPortion)}`;
-  }
-
-  const days = countDaysInclusive(item.startDate, item.endDate);
-  return `${rangeLabel(item.startDate, item.endDate)} · ${days} ${days === 1 ? "Tag" : "Tage"}`;
 }
 
 function countDaysInclusive(startDate: string, endDate: string): number {
@@ -258,8 +234,8 @@ function currentMonthValue(): string {
   return `${y}-${m}`;
 }
 
-export default function UrlaubsantraegePage() {
-  const [items, setItems] = useState<AbsenceRequestItem[]>([]);
+export default function NachtragsanfragenPage() {
+  const [items, setItems] = useState<TimeEntryCorrectionRequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -274,7 +250,6 @@ export default function UrlaubsantraegePage() {
 
     try {
       const params = new URLSearchParams();
-      params.set("type", "VACATION");
 
       if (selectedMonth) {
         params.set("month", selectedMonth);
@@ -284,24 +259,24 @@ export default function UrlaubsantraegePage() {
         params.set("userId", selectedUserId);
       }
 
-      const response = await fetch(`/api/admin/absence-requests?${params.toString()}`, {
+      const response = await fetch(`/api/admin/time-entry-correction-requests?${params.toString()}`, {
         method: "GET",
         cache: "no-store",
       });
 
       const json: unknown = await response.json().catch(() => ({}));
-      const parsed = parseAdminRequestsResponse(json);
+      const parsed = parseAdminCorrectionRequestsResponse(json);
 
       if (!response.ok || !parsed.ok) {
         setItems([]);
-        setError(parsed.ok ? "Urlaubsanträge konnten nicht geladen werden." : parsed.error);
+        setError(parsed.ok ? "Nachtragsanfragen konnten nicht geladen werden." : parsed.error);
         return;
       }
 
       setItems(parsed.requests);
     } catch {
       setItems([]);
-      setError("Netzwerkfehler beim Laden der Urlaubsanträge.");
+      setError("Netzwerkfehler beim Laden der Nachtragsanfragen.");
     } finally {
       setLoading(false);
     }
@@ -364,7 +339,7 @@ export default function UrlaubsantraegePage() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/admin/absence-requests/${encodeURIComponent(id)}/approve`, {
+      const response = await fetch(`/api/admin/time-entry-correction-requests/${encodeURIComponent(id)}/approve`, {
         method: "POST",
       });
 
@@ -392,7 +367,7 @@ export default function UrlaubsantraegePage() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/admin/absence-requests/${encodeURIComponent(id)}/reject`, {
+      const response = await fetch(`/api/admin/time-entry-correction-requests/${encodeURIComponent(id)}/reject`, {
         method: "POST",
       });
 
@@ -435,13 +410,9 @@ export default function UrlaubsantraegePage() {
     return users.find((user) => user.id === selectedUserId)?.fullName ?? "Ausgewählter Mitarbeiter";
   }, [users, selectedUserId]);
 
-  function renderRequestCard(item: AbsenceRequestItem) {
+  function renderRequestCard(item: TimeEntryCorrectionRequestItem) {
     const isBusy = busyId === item.id;
     const days = countDaysInclusive(item.startDate, item.endDate);
-    const durationText =
-      item.dayPortion === "HALF_DAY"
-        ? `🌴 Urlaub · ${formatDateDE(item.startDate)} · 0,5 Tag`
-        : `🌴 Urlaub · ${rangeLabel(item.startDate, item.endDate)} · ${days} ${days === 1 ? "Tag" : "Tage"}`;
 
     return (
       <div
@@ -468,7 +439,7 @@ export default function UrlaubsantraegePage() {
             </div>
 
             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 14 }}>
-              {durationText}
+              🕘 Nachtrag · {rangeLabel(item.startDate, item.endDate)} · {days} {days === 1 ? "Tag" : "Tage"}
             </div>
 
             <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -521,9 +492,7 @@ export default function UrlaubsantraegePage() {
           <div>
             <div className="label">Zeitraum</div>
             <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
-              {item.dayPortion === "HALF_DAY"
-              ? `${formatDateDE(item.startDate)} (halber Urlaubstag)`
-              : rangeLabel(item.startDate, item.endDate)}
+              {rangeLabel(item.startDate, item.endDate)}
             </div>
           </div>
 
@@ -541,6 +510,23 @@ export default function UrlaubsantraegePage() {
               }}
             >
               {item.noteEmployee.trim() || "Keine Notiz vorhanden."}
+            </div>
+          </div>
+
+          <div>
+            <div className="label">Admin-Notiz</div>
+            <div
+              className="input"
+              style={{
+                minHeight: 90,
+                display: "block",
+                paddingTop: 12,
+                whiteSpace: "pre-wrap",
+                lineHeight: 1.45,
+                opacity: item.noteAdmin.trim() ? 1 : 0.7,
+              }}
+            >
+              {item.noteAdmin.trim() || "Keine Notiz vorhanden."}
             </div>
           </div>
 
@@ -594,10 +580,10 @@ export default function UrlaubsantraegePage() {
       <div className="kpi-grid" style={{ marginBottom: 14 }}>
         <div className="card kpi">
           <div>
-            <div className="small">Offene Urlaubsanträge</div>
+            <div className="small">Offene Nachtragsanfragen</div>
             <div className="big">{pendingItems.length}</div>
           </div>
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌴</div>
+          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🕘</div>
         </div>
 
         <div className="card kpi">
@@ -622,13 +608,14 @@ export default function UrlaubsantraegePage() {
           className="section-title"
           style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}
         >
-          <span style={{ color: "var(--accent)" }}>🌴</span>
-          Urlaubsanträge
+          <span style={{ color: "var(--accent)" }}>🕘</span>
+          Nachtragsanfragen
         </div>
 
         <div style={{ color: "var(--muted)", fontSize: 14 }}>
-          Hier siehst du alle Urlaubsanträge deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.
+          Hier siehst du alle Nachtragsanfragen deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.
         </div>
+
         <div
           className="mobile-2col"
           style={{
@@ -699,7 +686,7 @@ export default function UrlaubsantraegePage() {
 
       {loading ? (
         <div className="card" style={{ padding: 18 }}>
-          Lädt Urlaubsanträge...
+          Lädt Nachtragsanfragen...
         </div>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
@@ -727,7 +714,7 @@ export default function UrlaubsantraegePage() {
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
               {pendingItems.length === 0 ? (
                 <div className="card" style={{ padding: 14, opacity: 0.85 }}>
-                  Keine offenen Urlaubsanträge für diesen Filter.
+                  Keine offenen Nachtragsanfragen für diesen Filter.
                 </div>
               ) : (
                 pendingItems.map(renderRequestCard)
@@ -758,7 +745,7 @@ export default function UrlaubsantraegePage() {
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
               {approvedItems.length === 0 ? (
                 <div className="card" style={{ padding: 14, opacity: 0.85 }}>
-                  Keine genehmigten Urlaubsanträge für diesen Filter.
+                  Keine genehmigten Nachtragsanfragen für diesen Filter.
                 </div>
               ) : (
                 approvedItems.map(renderRequestCard)
@@ -789,7 +776,7 @@ export default function UrlaubsantraegePage() {
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
               {rejectedItems.length === 0 ? (
                 <div className="card" style={{ padding: 14, opacity: 0.85 }}>
-                  Keine abgelehnten Urlaubsanträge für diesen Filter.
+                  Keine abgelehnten Nachtragsanfragen für diesen Filter.
                 </div>
               ) : (
                 rejectedItems.map(renderRequestCard)

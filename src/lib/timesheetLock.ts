@@ -182,6 +182,35 @@ export async function hasActiveTimeEntryUnlock(
   return true;
 }
 
+export async function consumeTimeEntryUnlock(
+  userId: string,
+  workDateYMD: string
+): Promise<void> {
+  const unlock = await prisma.timeEntryUnlock.findUnique({
+    where: {
+      userId_workDate: {
+        userId,
+        workDate: parseIsoDateToUtc(workDateYMD),
+      },
+    },
+    select: {
+      id: true,
+      usedAt: true,
+    },
+  });
+
+  if (!unlock || unlock.usedAt) {
+    return;
+  }
+
+  await prisma.timeEntryUnlock.update({
+    where: { id: unlock.id },
+    data: {
+      usedAt: new Date(),
+    },
+  });
+}
+
 export async function assertEmployeeMayEditDate(args: {
   role: "ADMIN" | "EMPLOYEE";
   userId: string;

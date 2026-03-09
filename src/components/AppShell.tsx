@@ -162,6 +162,7 @@ export default function AppShell({
     { href: "/admin/wochenplan", label: "Wochenplan", icon: "🧑‍💼" },
     { href: "/admin/urlaubsantraege", label: "Urlaubsanträge", icon: "🌴" },
     { href: "/admin/krankheitsantraege", label: "Krankheitsanträge", icon: "🤒" },
+    { href: "/admin/nachtragsanfragen", label: "Nachtragsanfragen", icon: "🕘" },
     { href: "/admin/password-reset", label: "Passwort-Reset", icon: "🔐" },
   ];
 
