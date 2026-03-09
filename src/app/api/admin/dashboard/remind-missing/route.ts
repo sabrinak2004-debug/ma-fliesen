@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { Role } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { webpush } from "@/lib/webpush";
+import { sendPushToUser } from "@/lib/webpush";
+import { berlinTodayYMD, getMissingRequiredWorkDates } from "@/lib/timesheetLock";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -11,71 +12,6 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
-}
-
-function dateOnlyLocalIso(d: Date) {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-async function sendPushToUser(userId: string, title: string, body: string, url: string): Promise<number> {
-  const vapidReady =
-    typeof process.env.VAPID_PUBLIC_KEY === "string" &&
-    process.env.VAPID_PUBLIC_KEY.trim() !== "" &&
-    typeof process.env.VAPID_PRIVATE_KEY === "string" &&
-    process.env.VAPID_PRIVATE_KEY.trim() !== "";
-
-  if (!vapidReady) return 0;
-
-  const subs = await prisma.pushSubscription.findMany({
-    where: {
-      userId,
-      user: {
-        isActive: true,
-      },
-    },
-    select: {
-      endpoint: true,
-      p256dh: true,
-      auth: true,
-    },
-  });
-
-  if (subs.length === 0) return 0;
-
-  const payload = JSON.stringify({
-    title,
-    body,
-    url,
-  });
-
-  let successCount = 0;
-
-  await Promise.all(
-    subs.map(async (sub) => {
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: {
-              p256dh: sub.p256dh,
-              auth: sub.auth,
-            },
-          },
-          payload
-        );
-        successCount += 1;
-      } catch {
-        await prisma.pushSubscription.deleteMany({
-          where: { endpoint: sub.endpoint },
-        });
-      }
-    })
-  );
-
-  return successCount;
 }
 
 export async function POST(req: Request) {
@@ -119,47 +55,28 @@ export async function POST(req: Request) {
   if (!employee) {
     return NextResponse.json({ ok: false, error: "Mitarbeiter nicht gefunden." }, { status: 404 });
   }
+  const todayYMD = berlinTodayYMD();
+  const missingDates = await getMissingRequiredWorkDates(employee.id, todayYMD);
 
-  const todayIso = dateOnlyLocalIso(new Date());
-  const todayDate = new Date(`${todayIso}T00:00:00.000Z`);
-
-  const [absenceToday, workToday] = await Promise.all([
-    prisma.absence.findFirst({
-      where: {
-        userId: employee.id,
-        absenceDate: todayDate,
-      },
-      select: { id: true },
-    }),
-    prisma.workEntry.findFirst({
-      where: {
-        userId: employee.id,
-        workDate: todayDate,
-      },
-      select: { id: true },
-    }),
-  ]);
-
-  if (absenceToday) {
+  if (missingDates.length === 0) {
     return NextResponse.json(
-      { ok: false, error: "Für diesen Mitarbeiter ist heute eine Abwesenheit eingetragen." },
+      { ok: false, error: "Für diesen Mitarbeiter gibt es aktuell keine überfälligen fehlenden Arbeitseinträge." },
       { status: 409 }
     );
   }
 
-  if (workToday) {
-    return NextResponse.json(
-      { ok: false, error: "Der Mitarbeiter hat seine Arbeitszeit heute bereits eingetragen." },
-      { status: 409 }
-    );
-  }
+  const oldestMissingDate = missingDates[0];
+  const newestMissingDate = missingDates[missingDates.length - 1];
+  const rangeLabel =
+    oldestMissingDate === newestMissingDate
+      ? oldestMissingDate
+      : `${oldestMissingDate} bis ${newestMissingDate}`;
 
-  const sentCount = await sendPushToUser(
-    employee.id,
-    "Erinnerung Arbeitszeit",
-    "Bitte trage deine Arbeitszeit für heute noch ein. Deadline: spätestens 23:30 Uhr.",
-    "/erfassung"
-  );
+  const sentCount = await sendPushToUser(employee.id, {
+    title: "Erinnerung fehlende Arbeitseinträge",
+    body: `Dir fehlen noch Arbeitseinträge für ${rangeLabel}. Bitte trage zuerst die ältesten fehlenden Tage nach oder stelle einen Nachtragsantrag.`,
+    url: "/erfassung",
+  });
 
   if (sentCount === 0) {
     return NextResponse.json(
@@ -173,5 +90,8 @@ export async function POST(req: Request) {
     userId: employee.id,
     fullName: employee.fullName,
     sentCount,
+    missingDatesCount: missingDates.length,
+    oldestMissingDate,
+    newestMissingDate,
   });
 }

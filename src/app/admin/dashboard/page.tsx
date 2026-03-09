@@ -69,6 +69,7 @@ type DashboardCards = {
   missingWeek: number;
   monthWorkMinutes: number;
   employeesActive: number;
+  overdueMissingGeneral: number;
 };
 
 type DashboardPersonRow = {
@@ -82,6 +83,14 @@ type DashboardAbsenceRow = {
   type: "VACATION" | "SICK";
 };
 
+type DashboardOverdueMissingRow = {
+  userId: string;
+  fullName: string;
+  missingDatesCount: number;
+  oldestMissingDate: string;
+  newestMissingDate: string;
+};
+
 type AdminDashboardApiOk = {
   ok: true;
   todayIso: string;
@@ -91,6 +100,7 @@ type AdminDashboardApiOk = {
   todayActiveEmployees: DashboardPersonRow[];
   todayMissingEmployees: DashboardPersonRow[];
   todayAbsentEmployees: DashboardAbsenceRow[];
+  overdueMissingEmployees: DashboardOverdueMissingRow[];
   employeesTimeline: AdminEmployeeTimeline[];
 };
 
@@ -148,6 +158,17 @@ function isDashboardAbsenceRow(v: unknown): v is DashboardAbsenceRow {
   );
 }
 
+function isDashboardOverdueMissingRow(v: unknown): v is DashboardOverdueMissingRow {
+  if (!isRecord(v)) return false;
+  return (
+    isString(v["userId"]) &&
+    isString(v["fullName"]) &&
+    isNumber(v["missingDatesCount"]) &&
+    isString(v["oldestMissingDate"]) &&
+    isString(v["newestMissingDate"])
+  );
+}
+
 function isAdminDashboardOk(v: unknown): v is AdminDashboardApiOk {
   if (!isRecord(v)) return false;
   if (v.ok !== true) return false;
@@ -159,12 +180,14 @@ function isAdminDashboardOk(v: unknown): v is AdminDashboardApiOk {
   const todayActiveEmployees = v["todayActiveEmployees"];
   const todayMissingEmployees = v["todayMissingEmployees"];
   const todayAbsentEmployees = v["todayAbsentEmployees"];
+  const overdueMissingEmployees = v["overdueMissingEmployees"];
 
   if (!isRecord(cards) || !isRecord(weekRange) || !isRecord(monthRange)) return false;
   if (!Array.isArray(employeesTimeline)) return false;
   if (!Array.isArray(todayActiveEmployees)) return false;
   if (!Array.isArray(todayMissingEmployees)) return false;
   if (!Array.isArray(todayAbsentEmployees)) return false;
+  if (!Array.isArray(overdueMissingEmployees)) return false;
 
   return (
     isString(v["todayIso"]) &&
@@ -178,9 +201,11 @@ function isAdminDashboardOk(v: unknown): v is AdminDashboardApiOk {
     isNumber(cards["missingWeek"]) &&
     isNumber(cards["monthWorkMinutes"]) &&
     isNumber(cards["employeesActive"]) &&
+    isNumber(cards["overdueMissingGeneral"]) &&
     todayActiveEmployees.every(isDashboardPersonRow) &&
     todayMissingEmployees.every(isDashboardPersonRow) &&
-    todayAbsentEmployees.every(isDashboardAbsenceRow)
+    todayAbsentEmployees.every(isDashboardAbsenceRow) &&
+    overdueMissingEmployees.every(isDashboardOverdueMissingRow)
   );
 }
 
@@ -266,6 +291,12 @@ function formatMinutesCompact(minutes: number): string {
 
 function absenceTypeLabel(type: "VACATION" | "SICK"): string {
   return type === "VACATION" ? "Urlaub" : "Krank";
+}
+
+function overdueRangeLabel(oldestMissingDate: string, newestMissingDate: string): string {
+  return oldestMissingDate === newestMissingDate
+    ? formatDateDE(oldestMissingDate)
+    : `${formatDateDE(oldestMissingDate)} – ${formatDateDE(newestMissingDate)}`;
 }
 
 function getDayBreakForDate(dayBreaks: AdminDayBreak[], workDate: string): AdminDayBreak | null {
@@ -457,7 +488,7 @@ export default function AdminDashboardPage() {
 
   const [reloadTick, setReloadTick] = useState(0);
 
-  type KpiModalKind = "ACTIVE" | "MISSING" | "ABSENT" | null;
+  type KpiModalKind = "ACTIVE" | "MISSING" | "ABSENT" | "OVERDUE_GENERAL" | null;
   const [kpiModalOpen, setKpiModalOpen] = useState(false);
   const [kpiModalKind, setKpiModalKind] = useState<KpiModalKind>(null);
   const [remindLoadingUserId, setRemindLoadingUserId] = useState<string>("");
@@ -682,7 +713,7 @@ export default function AdminDashboardPage() {
         return;
       }
 
-      setRemindSuccess(`Reminder an ${fullName} gesendet.`);
+      setRemindSuccess(`Push an ${fullName} gesendet.`);
       setReloadTick((x) => x + 1);
     } catch {
       setRemindErr("Netzwerkfehler beim Senden des Reminders.");
@@ -1180,6 +1211,8 @@ export default function AdminDashboardPage() {
             ? "Fehlende Einträge heute"
             : kpiModalKind === "ABSENT"
             ? "Abwesenheiten heute"
+            : kpiModalKind === "OVERDUE_GENERAL"
+            ? "Abwesenheiten (allgemein)"
             : ""
         }
         footer={
@@ -1278,24 +1311,9 @@ export default function AdminDashboardPage() {
                     }}
                   >
                     <div style={{ fontWeight: 900 }}>{person.fullName}</div>
-
-                    <button
-                      type="button"
-                      onClick={() => sendMissingReminder(person.userId, person.fullName)}
-                      disabled={remindLoadingUserId === person.userId}
-                      style={{
-                        padding: "8px 12px",
-                        borderRadius: 10,
-                        border: "1px solid rgba(184,207,58,0.35)",
-                        background: "rgba(184,207,58,0.12)",
-                        color: "var(--accent)",
-                        cursor: remindLoadingUserId === person.userId ? "not-allowed" : "pointer",
-                        fontWeight: 1000,
-                        opacity: remindLoadingUserId === person.userId ? 0.7 : 1,
-                      }}
-                    >
-                      {remindLoadingUserId === person.userId ? "Sende…" : "Push senden"}
-                    </button>
+                    <div style={{ color: "var(--muted-2)", fontSize: 12, fontWeight: 900 }}>
+                      heute offen
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1330,6 +1348,55 @@ export default function AdminDashboardPage() {
               </div>
             ) : (
               <div style={{ color: "var(--muted)" }}>Heute sind keine Mitarbeiter abwesend.</div>
+            )
+          ) : null}
+          {kpiModalKind === "OVERDUE_GENERAL" ? (
+            (dash?.overdueMissingEmployees ?? []).length > 0 ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                {(dash?.overdueMissingEmployees ?? []).map((person) => (
+                  <div
+                    key={person.userId}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(255,255,255,0.03)",
+                    }}
+                  >
+                    <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
+                      <div style={{ fontWeight: 900 }}>{person.fullName}</div>
+                      <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
+                        {person.missingDatesCount} überfällige Tage · {overdueRangeLabel(person.oldestMissingDate, person.newestMissingDate)}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => sendMissingReminder(person.userId, person.fullName)}
+                      disabled={remindLoadingUserId === person.userId}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: 10,
+                        border: "1px solid rgba(184,207,58,0.35)",
+                        background: "rgba(184,207,58,0.12)",
+                        color: "var(--accent)",
+                        cursor: remindLoadingUserId === person.userId ? "not-allowed" : "pointer",
+                        fontWeight: 1000,
+                        opacity: remindLoadingUserId === person.userId ? 0.7 : 1,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {remindLoadingUserId === person.userId ? "Sende…" : "Push senden"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color: "var(--muted)" }}>Aktuell gibt es keine allgemeinen überfälligen fehlenden Arbeitseinträge.</div>
             )
           ) : null}
         </div>
@@ -1693,6 +1760,25 @@ export default function AdminDashboardPage() {
           </div>
 
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌴</div>
+        </div>
+        <div
+          className="card kpi group hover:shadow-lg transition"
+          onClick={() => openKpiModal("OVERDUE_GENERAL")}
+          style={{ cursor: "pointer" }}
+          title="Liste allgemeiner überfälliger fehlender Arbeitseinträge öffnen"
+        >
+          <div>
+            <div className="small flex items-center gap-1">
+              Abwesenheiten (allgemein)
+              <span className="opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
+                <MousePointerClick size={14} />
+              </span>
+            </div>
+
+            <div className="big">{dash?.cards.overdueMissingGeneral ?? "—"}</div>
+          </div>
+
+          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🕘</div>
         </div>
       </div>
 

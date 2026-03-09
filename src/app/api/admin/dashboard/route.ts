@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { Role, AbsenceType } from "@prisma/client";
+import { berlinTodayYMD, getMissingRequiredWorkDates } from "@/lib/timesheetLock";
 
 function dateOnlyLocalIso(d: Date) {
   const yyyy = d.getFullYear();
@@ -63,6 +64,14 @@ type DashboardAbsenceRow = {
   type: "VACATION" | "SICK";
 };
 
+type DashboardOverdueMissingRow = {
+  userId: string;
+  fullName: string;
+  missingDatesCount: number;
+  oldestMissingDate: string;
+  newestMissingDate: string;
+};
+
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) {
@@ -74,7 +83,7 @@ export async function GET(req: Request) {
   }
 
   const now = new Date();
-  const todayIso = dateOnlyLocalIso(now);
+  const todayIso = berlinTodayYMD(now);
   const url = new URL(req.url);
   const monthParam = url.searchParams.get("month") ?? todayIso.slice(0, 7);
 
@@ -146,6 +155,34 @@ export async function GET(req: Request) {
 
   const absencesToday = absentTodayEmployees.length;
   const missingToday = missingTodayEmployees.length;
+
+  const overdueMissingEmployeesRaw = await Promise.all(
+    employees.map(async (employee) => {
+      const missingDates = await getMissingRequiredWorkDates(employee.id, todayIso);
+
+      if (missingDates.length === 0) {
+        return null;
+      }
+
+      return {
+        userId: employee.id,
+        fullName: employee.fullName,
+        missingDatesCount: missingDates.length,
+        oldestMissingDate: missingDates[0],
+        newestMissingDate: missingDates[missingDates.length - 1],
+      };
+    })
+  );
+
+  const overdueMissingEmployees: DashboardOverdueMissingRow[] =
+    overdueMissingEmployeesRaw
+      .filter((row): row is DashboardOverdueMissingRow => row !== null)
+      .sort((a, b) => {
+        if (a.oldestMissingDate !== b.oldestMissingDate) {
+          return a.oldestMissingDate < b.oldestMissingDate ? -1 : 1;
+        }
+        return a.fullName.localeCompare(b.fullName);
+      });
 
   const weekDays: string[] = [];
   {
@@ -350,10 +387,12 @@ export async function GET(req: Request) {
       missingWeek,
       monthWorkMinutes: monthWorkAgg._sum.workMinutes ?? 0,
       employeesActive: employees.length,
+      overdueMissingGeneral: overdueMissingEmployees.length,
     },
     todayActiveEmployees: activeEmployeesToday,
     todayMissingEmployees: missingTodayEmployees,
     todayAbsentEmployees: absentTodayEmployees,
+    overdueMissingEmployees,
     employeesTimeline,
   });
 }
