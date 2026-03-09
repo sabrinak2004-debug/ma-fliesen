@@ -1212,7 +1212,7 @@ export default function AdminDashboardPage() {
             : kpiModalKind === "ABSENT"
             ? "Abwesenheiten heute"
             : kpiModalKind === "OVERDUE_GENERAL"
-            ? "Abwesenheiten (allgemein)"
+            ? "Fehlende Einträge (allgemein)"
             : ""
         }
         footer={
@@ -1769,7 +1769,7 @@ export default function AdminDashboardPage() {
         >
           <div>
             <div className="small flex items-center gap-1">
-              Abwesenheiten (allgemein)
+              Fehlende Einträge (allgemein)
               <span className="opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
                 <MousePointerClick size={14} />
               </span>
