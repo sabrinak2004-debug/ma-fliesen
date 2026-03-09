@@ -157,8 +157,8 @@ export default function AppShell({
   ];
 
   const adminNavItems: NavItem[] = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: "▦" },
     { href: "/kalender", label: "Termine", icon: "🗓" },
-    { href: "/admin/dashboard", label: "Admin-Übersicht", icon: "▦" },
     { href: "/admin/wochenplan", label: "Wochenplan", icon: "🧑‍💼" },
     { href: "/admin/urlaubsantraege", label: "Urlaubsanträge", icon: "🌴" },
     { href: "/admin/krankheitsantraege", label: "Krankheitsanträge", icon: "🤒" },

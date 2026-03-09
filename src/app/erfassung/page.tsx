@@ -50,6 +50,60 @@ type TimeEntryCorrectionRequest = {
   decidedAt: string | null;
 };
 
+type TimeEntryCorrectionRequestStatusResponse = {
+  ok: true;
+  workDate: string;
+  hasActiveUnlock: boolean;
+  pendingRequest: {
+    id: string;
+    startDate: string;
+    endDate: string;
+    status: "PENDING";
+  } | null;
+  latestDecisionRequest: {
+    id: string;
+    startDate: string;
+    endDate: string;
+    status: "APPROVED" | "REJECTED";
+  } | null;
+};
+
+function isTimeEntryCorrectionRequestStatusResponse(
+  v: unknown
+): v is TimeEntryCorrectionRequestStatusResponse {
+  if (!isRecord(v)) return false;
+  if (v["ok"] !== true) return false;
+  if (!isString(v["workDate"])) return false;
+  if (typeof v["hasActiveUnlock"] !== "boolean") return false;
+
+  const pendingRequest = v["pendingRequest"];
+  const latestDecisionRequest = v["latestDecisionRequest"];
+
+  const isRequestRange = (value: unknown): value is {
+    id: string;
+    startDate: string;
+    endDate: string;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+  } => {
+    if (!isRecord(value)) return false;
+    return (
+      isString(value["id"]) &&
+      isString(value["startDate"]) &&
+      isString(value["endDate"]) &&
+      (
+        value["status"] === "PENDING" ||
+        value["status"] === "APPROVED" ||
+        value["status"] === "REJECTED"
+      )
+    );
+  };
+
+  const pendingOk = pendingRequest === null || isRequestRange(pendingRequest);
+  const latestOk = latestDecisionRequest === null || isRequestRange(latestDecisionRequest);
+
+  return pendingOk && latestOk;
+}
+
 function toIsoDateLocal(d: Date) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -103,21 +157,6 @@ function sortEntriesDesc(a: WorkEntry, b: WorkEntry) {
   if (da !== db) return da > db ? -1 : 1;
   if (a.startTime !== b.startTime) return a.startTime > b.startTime ? -1 : 1;
   return 0;
-}
-function groupByMonthYear(entries: WorkEntry[]) {
-  const map = new Map<string, WorkEntry[]>();
-  for (const e of entries) {
-    const key = monthKeyFromWorkDate(e.workDate);
-    const arr = map.get(key) ?? [];
-    arr.push(e);
-    map.set(key, arr);
-  }
-  const keys = Array.from(map.keys()).sort(sortMonthKeysDesc);
-  return keys.map((k) => ({
-    key: k,
-    label: monthLabelDE(k),
-    entries: (map.get(k) ?? []).slice().sort(sortEntriesDesc),
-  }));
 }
 
 type DayGroup = {
@@ -314,6 +353,10 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
 
+function isString(v: unknown): v is string {
+  return typeof v === "string";
+}
+
 type SessionData = {
   userId: string;
   fullName: string;
@@ -400,6 +443,9 @@ export default function Page() {
   const [correctionNote, setCorrectionNote] = useState("");
   const [correctionRequests, setCorrectionRequests] = useState<TimeEntryCorrectionRequest[]>([]);
   const [loadingCorrectionRequests, setLoadingCorrectionRequests] = useState(false);
+  const [selectedCorrectionStatus, setSelectedCorrectionStatus] =
+    useState<TimeEntryCorrectionRequestStatusResponse | null>(null);
+  const [loadingSelectedCorrectionStatus, setLoadingSelectedCorrectionStatus] = useState(false);
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
   const isEntryPreviewActive = useMemo(() => {
@@ -557,11 +603,42 @@ useEffect(() => {
       setLoadingCorrectionRequests(false);
     }
   }
+  async function loadSelectedCorrectionStatus(dateYMD: string) {
+    if (!isPastWorkDate(dateYMD)) {
+      setSelectedCorrectionStatus(null);
+      return;
+    }
+
+    setLoadingSelectedCorrectionStatus(true);
+    try {
+      const r = await fetch(
+        `/api/time-entry-correction-requests/status?workDate=${encodeURIComponent(dateYMD)}`,
+        {
+          method: "GET",
+          cache: "no-store",
+        }
+      );
+
+      const j = (await r.json()) as unknown;
+
+      if (!r.ok || !isTimeEntryCorrectionRequestStatusResponse(j)) {
+        setSelectedCorrectionStatus(null);
+        return;
+      }
+
+      setSelectedCorrectionStatus(j);
+    } finally {
+      setLoadingSelectedCorrectionStatus(false);
+    }
+  }
 
   useEffect(() => {
     loadEntries();
     loadCorrectionRequests();
   }, []);
+  useEffect(() => {
+    void loadSelectedCorrectionStatus(workDate);
+  }, [workDate]);
 
     useEffect(() => {
     setBreakStartHHMM(selectedDayBreak?.breakStartHHMM ?? "");
@@ -615,6 +692,7 @@ useEffect(() => {
 
       await loadEntries();
       await loadCorrectionRequests();
+      await loadSelectedCorrectionStatus(workDate);
     } catch {
       setError("Netzwerkfehler beim Speichern.");
     } finally {
@@ -710,6 +788,8 @@ useEffect(() => {
         setEntries((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
       } else {
         await loadEntries();
+        await loadCorrectionRequests();
+        await loadSelectedCorrectionStatus(edit.workDate);
       }
 
       setEditOpen(false);
@@ -756,6 +836,7 @@ useEffect(() => {
       }
       await loadEntries();
       await loadCorrectionRequests();
+      await loadSelectedCorrectionStatus(workDate);
     } catch {
       setBreakError("Netzwerkfehler beim Speichern der Pause.");
     } finally {
@@ -768,6 +849,16 @@ useEffect(() => {
 
     if (!canCreateCorrectionRequest) {
       setCorrectionError("Ein Nachtragsantrag ist nur für vergangene Tage möglich.");
+      return;
+    }
+
+    if (hasActiveUnlockForSelectedDate) {
+      setCorrectionError("Für diesen Tag existiert bereits eine aktive Freigabe.");
+      return;
+    }
+
+    if (pendingCorrectionRequestForSelectedDate) {
+      setCorrectionError("Für diesen Tag existiert bereits ein offener Nachtragsantrag.");
       return;
     }
 
@@ -799,6 +890,7 @@ useEffect(() => {
       setCorrectionSuccess("Nachtragsantrag wurde erfolgreich gesendet.");
       setCorrectionNote("");
       await loadCorrectionRequests();
+      await loadSelectedCorrectionStatus(workDate);
     } catch {
       setCorrectionError("Netzwerkfehler beim Senden des Nachtragsantrags.");
     } finally {
@@ -927,6 +1019,21 @@ useEffect(() => {
       return request.startDate <= workDate && request.endDate >= workDate;
     }) ?? null;
   }, [correctionRequests, workDate]);
+  const hasActiveUnlockForSelectedDate = selectedCorrectionStatus?.hasActiveUnlock ?? false;
+
+  const latestDecisionRequestForSelectedDate =
+    selectedCorrectionStatus?.latestDecisionRequest ?? null;
+
+  const shouldShowCorrectionRequestButton = useMemo(() => {
+    if (!canCreateCorrectionRequest) return false;
+    if (hasActiveUnlockForSelectedDate) return false;
+    if (pendingCorrectionRequestForSelectedDate) return false;
+    return true;
+  }, [
+    canCreateCorrectionRequest,
+    hasActiveUnlockForSelectedDate,
+    pendingCorrectionRequestForSelectedDate,
+  ]);
 
   return (
     <AppShell activeLabel="#wirkönnendas">
@@ -992,42 +1099,124 @@ useEffect(() => {
             style={{
               padding: 12,
               marginBottom: 12,
-              borderColor: "rgba(255, 196, 0, 0.30)",
-              background: "rgba(255, 196, 0, 0.08)",
+              borderColor: hasActiveUnlockForSelectedDate
+                ? "rgba(184, 207, 58, 0.30)"
+                : pendingCorrectionRequestForSelectedDate
+                ? "rgba(90, 167, 255, 0.28)"
+                : latestDecisionRequestForSelectedDate?.status === "REJECTED"
+                ? "rgba(224, 75, 69, 0.30)"
+                : "rgba(255, 196, 0, 0.30)",
+              background: hasActiveUnlockForSelectedDate
+                ? "rgba(184, 207, 58, 0.08)"
+                : pendingCorrectionRequestForSelectedDate
+                ? "rgba(90, 167, 255, 0.08)"
+                : latestDecisionRequestForSelectedDate?.status === "REJECTED"
+                ? "rgba(224, 75, 69, 0.08)"
+                : "rgba(255, 196, 0, 0.08)",
             }}
           >
             <div style={{ display: "grid", gap: 8 }}>
-              <div style={{ fontWeight: 800, color: "rgba(255, 214, 102, 0.95)" }}>
+              <div
+                style={{
+                  fontWeight: 800,
+                  color: hasActiveUnlockForSelectedDate
+                    ? "var(--accent)"
+                    : pendingCorrectionRequestForSelectedDate
+                    ? "rgba(90, 167, 255, 0.95)"
+                    : latestDecisionRequestForSelectedDate?.status === "REJECTED"
+                    ? "rgba(224, 75, 69, 0.95)"
+                    : "rgba(255, 214, 102, 0.95)",
+                }}
+              >
                 Vergangener Tag ausgewählt
               </div>
 
-              <div style={{ fontSize: 13, color: "var(--text)" }}>
-                Vergangene Tage sind für Mitarbeiter gesperrt. Falls dir bis zu diesem Datum noch Arbeitseinträge fehlen, kannst du hier einen Nachtragsantrag an den Admin senden.
-              </div>
+              {loadingSelectedCorrectionStatus ? (
+                <div style={{ fontSize: 13, color: "var(--muted)" }}>
+                  Status für den ausgewählten Tag wird geladen...
+                </div>
+              ) : hasActiveUnlockForSelectedDate ? (
+                <>
+                  <div style={{ fontSize: 13, color: "var(--text)" }}>
+                    Dieser Tag wurde vom Admin für den Nachtrag freigegeben. Du kannst ihn jetzt bearbeiten.
+                  </div>
 
-              {pendingCorrectionRequestForSelectedDate ? (
-                <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                  Für diesen Zeitraum existiert bereits ein offener Nachtragsantrag (
-                  {formatCorrectionRange(
-                    pendingCorrectionRequestForSelectedDate.startDate,
-                    pendingCorrectionRequestForSelectedDate.endDate
-                  )}
-                  ).
-                </div>
+                  {latestDecisionRequestForSelectedDate?.status === "APPROVED" ? (
+                    <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                      Genehmigter Zeitraum:{" "}
+                      {formatCorrectionRange(
+                        latestDecisionRequestForSelectedDate.startDate,
+                        latestDecisionRequestForSelectedDate.endDate
+                      )}
+                    </div>
+                  ) : null}
+                </>
+              ) : pendingCorrectionRequestForSelectedDate ? (
+                <>
+                  <div style={{ fontSize: 13, color: "var(--text)" }}>
+                    Für diesen Tag existiert bereits ein offener Nachtragsantrag.
+                  </div>
+
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                    Offener Zeitraum:{" "}
+                    {formatCorrectionRange(
+                      pendingCorrectionRequestForSelectedDate.startDate,
+                      pendingCorrectionRequestForSelectedDate.endDate
+                    )}
+                  </div>
+                </>
+              ) : latestDecisionRequestForSelectedDate?.status === "REJECTED" ? (
+                <>
+                  <div style={{ fontSize: 13, color: "var(--text)" }}>
+                    Der letzte Nachtragsantrag für diesen Zeitraum wurde abgelehnt.
+                  </div>
+
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                    Letzte Entscheidung für:{" "}
+                    {formatCorrectionRange(
+                      latestDecisionRequestForSelectedDate.startDate,
+                      latestDecisionRequestForSelectedDate.endDate
+                    )}
+                  </div>
+
+                  {shouldShowCorrectionRequestButton ? (
+                    <div>
+                      <button
+                        className="btn"
+                        type="button"
+                        onClick={() => {
+                          setCorrectionError(null);
+                          setCorrectionSuccess(null);
+                          setCorrectionOpen(true);
+                        }}
+                      >
+                        Neuen Nachtragsantrag senden
+                      </button>
+                    </div>
+                  ) : null}
+                </>
               ) : (
-                <div>
-                  <button
-                    className="btn"
-                    type="button"
-                    onClick={() => {
-                      setCorrectionError(null);
-                      setCorrectionSuccess(null);
-                      setCorrectionOpen(true);
-                    }}
-                  >
-                    Nachtragsantrag senden
-                  </button>
-                </div>
+                <>
+                  <div style={{ fontSize: 13, color: "var(--text)" }}>
+                    Vergangene Tage sind für Mitarbeiter gesperrt. Falls dir bis zu diesem Datum noch Arbeitseinträge fehlen, kannst du hier einen Nachtragsantrag an den Admin senden.
+                  </div>
+
+                  {shouldShowCorrectionRequestButton ? (
+                    <div>
+                      <button
+                        className="btn"
+                        type="button"
+                        onClick={() => {
+                          setCorrectionError(null);
+                          setCorrectionSuccess(null);
+                          setCorrectionOpen(true);
+                        }}
+                      >
+                        Nachtragsantrag senden
+                      </button>
+                    </div>
+                  ) : null}
+                </>
               )}
             </div>
           </div>
@@ -1335,13 +1524,6 @@ useEffect(() => {
                 {m.days.map((d) => {
                   const totals = dayTotalsMap.get(d.date);
                   const pauseMin = totals ? totals.effectiveBreak : 0;
-                  const pauseLabel = totals
-                    ? totals.autoSupplement > 0
-                      ? totals.manualBreak > 0
-                        ? "manuell + auto"
-                        : "auto"
-                      : "manuell"
-                    : "auto";
                   const netDay = totals ? totals.netDay : 0;
 
                   return (
@@ -1800,8 +1982,10 @@ useEffect(() => {
           </div>
 
           <div style={{ fontSize: 12, color: "var(--muted)" }}>
-            {loadingCorrectionRequests
-              ? "Bestehende Nachtragsanträge werden geladen..."
+            {loadingSelectedCorrectionStatus || loadingCorrectionRequests
+              ? "Bestehende Nachtragsinformationen werden geladen..."
+              : hasActiveUnlockForSelectedDate
+              ? "Für den ausgewählten Tag existiert bereits eine aktive Freigabe. Ein neuer Antrag ist aktuell nicht nötig."
               : pendingCorrectionRequestForSelectedDate
               ? `Hinweis: Für ${formatCorrectionRange(
                   pendingCorrectionRequestForSelectedDate.startDate,
