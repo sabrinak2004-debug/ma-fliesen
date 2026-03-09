@@ -32,6 +32,9 @@ model AppUser {
   PasswordResetRequests PasswordResetRequest[]
   googleCalendarConnections GoogleCalendarConnection[]
   pushSubscriptions PushSubscription[]
+  timeEntryCorrectionRequests TimeEntryCorrectionRequest[]
+  decidedTimeEntryCorrectionRequests TimeEntryCorrectionRequest[] @relation("TimeEntryCorrectionRequestDecidedBy")
+  timeEntryUnlocks TimeEntryUnlock[]
 
   // ✅ NEU: Upload-Relation
   uploadedPlanEntryDocuments PlanEntryDocument[] @relation("UploadedBy")
@@ -299,6 +302,52 @@ model PushSubscription {
   user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model TimeEntryCorrectionRequest {
+  id        String   @id @default(uuid())
+  userId    String
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+
+  status       TimeEntryCorrectionRequestStatus @default(PENDING)
+  noteEmployee String?
+  noteAdmin    String?
+
+  decidedAt   DateTime?
+  decidedById String?
+  decidedBy   AppUser? @relation("TimeEntryCorrectionRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  unlocks   TimeEntryUnlock[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([startDate, endDate])
+  @@index([decidedById])
+}
+
+model TimeEntryUnlock {
+  id        String   @id @default(uuid())
+  userId    String
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workDate  DateTime @db.Date
+
+  requestId String?
+  request   TimeEntryCorrectionRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+
+  expiresAt DateTime?
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, workDate])
+  @@index([userId, workDate])
+  @@index([requestId])
+}
+
 enum Role {
   EMPLOYEE
   ADMIN
@@ -315,6 +364,12 @@ enum AbsenceDayPortion {
 }
 
 enum AbsenceRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TimeEntryCorrectionRequestStatus {
   PENDING
   APPROVED
   REJECTED

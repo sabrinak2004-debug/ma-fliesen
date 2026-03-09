@@ -36,6 +36,20 @@ type DayBreak = {
   effectiveMinutes: number;
 };
 
+type TimeEntryCorrectionRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+type TimeEntryCorrectionRequest = {
+  id: string;
+  startDate: string;
+  endDate: string;
+  status: TimeEntryCorrectionRequestStatus;
+  noteEmployee: string;
+  noteAdmin: string;
+  createdAt: string;
+  updatedAt: string;
+  decidedAt: string | null;
+};
+
 function toIsoDateLocal(d: Date) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -324,6 +338,15 @@ function isMeApiResponse(v: unknown): v is MeApiResponse {
   return isRecord(v) && "session" in v && (v.session === null || isSessionData(v.session));
 }
 
+function isPastWorkDate(dateYMD: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateYMD)) return false;
+  return dateYMD < toIsoDateLocal(new Date());
+}
+
+function formatCorrectionRange(startDate: string, endDate: string): string {
+  return startDate === endDate ? startDate : `${startDate} bis ${endDate}`;
+}
+
 export default function Page() {
   const router = useRouter();
   const [me, setMe] = useState<MeResponse | null>(null);
@@ -370,6 +393,13 @@ export default function Page() {
   const [breakInfoLegalMinutes, setBreakInfoLegalMinutes] = useState<number>(0);
   const [breakInfoAutoMinutes, setBreakInfoAutoMinutes] = useState<number>(0);
   const [breakInfoEffectiveMinutes, setBreakInfoEffectiveMinutes] = useState<number>(0);
+  const [correctionOpen, setCorrectionOpen] = useState(false);
+  const [correctionSaving, setCorrectionSaving] = useState(false);
+  const [correctionError, setCorrectionError] = useState<string | null>(null);
+  const [correctionSuccess, setCorrectionSuccess] = useState<string | null>(null);
+  const [correctionNote, setCorrectionNote] = useState("");
+  const [correctionRequests, setCorrectionRequests] = useState<TimeEntryCorrectionRequest[]>([]);
+  const [loadingCorrectionRequests, setLoadingCorrectionRequests] = useState(false);
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
   const isEntryPreviewActive = useMemo(() => {
@@ -504,8 +534,33 @@ useEffect(() => {
     }
   }
 
+  async function loadCorrectionRequests() {
+    setLoadingCorrectionRequests(true);
+    try {
+      const r = await fetch("/api/time-entry-correction-requests", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      const j = (await r.json()) as unknown;
+
+      const requestsList =
+        typeof j === "object" &&
+        j !== null &&
+        "requests" in j &&
+        Array.isArray((j as { requests: unknown }).requests)
+          ? ((j as { requests: TimeEntryCorrectionRequest[] }).requests ?? [])
+          : [];
+
+      setCorrectionRequests(requestsList);
+    } finally {
+      setLoadingCorrectionRequests(false);
+    }
+  }
+
   useEffect(() => {
     loadEntries();
+    loadCorrectionRequests();
   }, []);
 
     useEffect(() => {
@@ -559,6 +614,7 @@ useEffect(() => {
       setNoteEmployee("");
 
       await loadEntries();
+      await loadCorrectionRequests();
     } catch {
       setError("Netzwerkfehler beim Speichern.");
     } finally {
@@ -698,14 +754,58 @@ useEffect(() => {
         setBreakError(msg);
         return;
       }
-
       await loadEntries();
+      await loadCorrectionRequests();
     } catch {
       setBreakError("Netzwerkfehler beim Speichern der Pause.");
     } finally {
       setBreakSaving(false);
     }
   }
+  async function submitCorrectionRequest() {
+    setCorrectionError(null);
+    setCorrectionSuccess(null);
+
+    if (!canCreateCorrectionRequest) {
+      setCorrectionError("Ein Nachtragsantrag ist nur für vergangene Tage möglich.");
+      return;
+    }
+
+    setCorrectionSaving(true);
+    try {
+      const r = await fetch("/api/time-entry-correction-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetDate: workDate,
+          noteEmployee: correctionNote.trim(),
+        }),
+      });
+
+      const j = (await r.json()) as unknown;
+
+      if (!r.ok) {
+        const msg =
+          typeof j === "object" &&
+          j !== null &&
+          "error" in j &&
+          typeof (j as { error: unknown }).error === "string"
+            ? (j as { error: string }).error
+            : "Nachtragsantrag konnte nicht erstellt werden.";
+        setCorrectionError(msg);
+        return;
+      }
+
+      setCorrectionSuccess("Nachtragsantrag wurde erfolgreich gesendet.");
+      setCorrectionNote("");
+      await loadCorrectionRequests();
+    } catch {
+      setCorrectionError("Netzwerkfehler beim Senden des Nachtragsantrags.");
+    } finally {
+      setCorrectionSaving(false);
+    }
+  }
+
   const groupedEntries = useMemo(() => groupByMonthThenDay(entries), [entries]);
 
   const availableYears = useMemo(() => {
@@ -817,6 +917,17 @@ useEffect(() => {
 
   const meName = me && me.ok ? me.user.fullName : "";
 
+  const canCreateCorrectionRequest = useMemo(() => {
+    return Boolean(me && me.ok && isPastWorkDate(workDate));
+  }, [me, workDate]);
+
+  const pendingCorrectionRequestForSelectedDate = useMemo(() => {
+    return correctionRequests.find((request) => {
+      if (request.status !== "PENDING") return false;
+      return request.startDate <= workDate && request.endDate >= workDate;
+    }) ?? null;
+  }, [correctionRequests, workDate]);
+
   return (
     <AppShell activeLabel="#wirkönnendas">
 
@@ -874,6 +985,53 @@ useEffect(() => {
           </div>
           <div />
         </div>
+
+        {canCreateCorrectionRequest ? (
+          <div
+            className="card"
+            style={{
+              padding: 12,
+              marginBottom: 12,
+              borderColor: "rgba(255, 196, 0, 0.30)",
+              background: "rgba(255, 196, 0, 0.08)",
+            }}
+          >
+            <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ fontWeight: 800, color: "rgba(255, 214, 102, 0.95)" }}>
+                Vergangener Tag ausgewählt
+              </div>
+
+              <div style={{ fontSize: 13, color: "var(--text)" }}>
+                Vergangene Tage sind für Mitarbeiter gesperrt. Falls dir bis zu diesem Datum noch Arbeitseinträge fehlen, kannst du hier einen Nachtragsantrag an den Admin senden.
+              </div>
+
+              {pendingCorrectionRequestForSelectedDate ? (
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                  Für diesen Zeitraum existiert bereits ein offener Nachtragsantrag (
+                  {formatCorrectionRange(
+                    pendingCorrectionRequestForSelectedDate.startDate,
+                    pendingCorrectionRequestForSelectedDate.endDate
+                  )}
+                  ).
+                </div>
+              ) : (
+                <div>
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => {
+                      setCorrectionError(null);
+                      setCorrectionSuccess(null);
+                      setCorrectionOpen(true);
+                    }}
+                  >
+                    Nachtragsantrag senden
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null}
 
         <div className="row erfassung-time-row" style={{ marginBottom: 12 }}>
           <div className="erfassung-time-field">
@@ -1569,6 +1727,89 @@ useEffect(() => {
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        open={correctionOpen}
+        title="Nachtragsantrag senden"
+        onClose={() => {
+          setCorrectionOpen(false);
+          setCorrectionError(null);
+          setCorrectionSuccess(null);
+        }}
+        footer={
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => {
+                setCorrectionOpen(false);
+                setCorrectionError(null);
+                setCorrectionSuccess(null);
+              }}
+            >
+              Schließen
+            </button>
+            <button
+              className="btn btn-accent"
+              type="button"
+              onClick={submitCorrectionRequest}
+              disabled={correctionSaving}
+            >
+              {correctionSaving ? "Sendet..." : "Antrag senden"}
+            </button>
+          </div>
+        }
+      >
+        <div style={{ display: "grid", gap: 12 }}>
+          {correctionError ? (
+            <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
+              <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>
+                {correctionError}
+              </span>
+            </div>
+          ) : null}
+
+          {correctionSuccess ? (
+            <div className="card" style={{ padding: 12, borderColor: "rgba(184, 207, 58, 0.28)" }}>
+              <span style={{ color: "var(--accent)", fontWeight: 700 }}>
+                {correctionSuccess}
+              </span>
+            </div>
+          ) : null}
+
+          <div>
+            <div className="label">Ausgewähltes Datum</div>
+            <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+              {formatDateDE(workDate)}
+            </div>
+          </div>
+
+          <div style={{ fontSize: 13, color: "var(--muted)" }}>
+            Der Server ermittelt automatisch den ältesten fehlenden Arbeitstag bis zu diesem Datum und erstellt daraus den passenden Nachtragszeitraum.
+          </div>
+
+          <div>
+            <div className="label">Notiz für Admin</div>
+            <textarea
+              className="textarea"
+              placeholder="Optional: kurze Begründung oder Hinweis"
+              value={correctionNote}
+              onChange={(e) => setCorrectionNote(e.target.value)}
+            />
+          </div>
+
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>
+            {loadingCorrectionRequests
+              ? "Bestehende Nachtragsanträge werden geladen..."
+              : pendingCorrectionRequestForSelectedDate
+              ? `Hinweis: Für ${formatCorrectionRange(
+                  pendingCorrectionRequestForSelectedDate.startDate,
+                  pendingCorrectionRequestForSelectedDate.endDate
+                )} existiert bereits ein offener Antrag.`
+              : "Für den ausgewählten Tag existiert aktuell kein offener Nachtragsantrag."}
+          </div>
+        </div>
       </Modal>
 
       {/* ✅ EDIT MODAL */}

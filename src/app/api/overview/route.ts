@@ -4,6 +4,7 @@ import Holidays from "date-holidays";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { computeDayBreakFromGross } from "@/lib/breaks";
+import { berlinTodayYMD, getMissingRequiredWorkDates } from "@/lib/timesheetLock";
 
 function isoDayUTC(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -142,7 +143,7 @@ export async function GET(req: Request) {
     dayBreakMap.set(key, row.manualMinutes);
   }
 
-  const byUser = users.map((user) => {
+  const byUser = await Promise.all(users.map(async (user) => {
     const userEntries = entries.filter((entry) => entry.userId === user.id);
     const userAbsences = absences.filter((absence) => absence.userId === user.id);
     const userYearVacationAbsences = yearVacationAbsences.filter(
@@ -201,11 +202,19 @@ export async function GET(req: Request) {
     }, 0);
 
     const targetMinutes = Math.max(0, baseTargetMinutes - absenceReductionMinutes);
+    const missingRequiredWorkDates = await getMissingRequiredWorkDates(
+      user.id,
+      berlinTodayYMD()
+    );
 
+    const oldestMissingRequiredWorkDate =
+      missingRequiredWorkDates.length > 0 ? missingRequiredWorkDates[0] : null;
     return {
       userId: user.id,
       fullName: user.fullName,
       role: user.role,
+      missingRequiredWorkDatesCount: missingRequiredWorkDates.length,
+      oldestMissingRequiredWorkDate,
       entriesCount: userEntries.length,
       workMinutes: netMinutesSum,
       travelMinutes: userEntries.reduce(
@@ -221,7 +230,7 @@ export async function GET(req: Request) {
       holidayCountInMonth: holidaySet.size,
       workingDaysInMonth,
     };
-  });
+  }));
 
   return NextResponse.json({
     month,

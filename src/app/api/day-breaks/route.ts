@@ -205,8 +205,9 @@ export async function POST(req: Request) {
   }
 
   try {
-    assertEmployeeMayEditDate({
+    await assertEmployeeMayEditDate({
       role: session.role,
+      userId: session.userId,
       workDateYMD: workDate,
     });
   } catch (error: unknown) {

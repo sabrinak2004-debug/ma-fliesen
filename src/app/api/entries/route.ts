@@ -393,8 +393,9 @@ export async function POST(req: Request) {
   }
 
   try {
-    assertEmployeeMayEditDate({
+    await assertEmployeeMayEditDate({
       role: session.role,
+      userId: session.userId,
       workDateYMD: workDate,
     });
   } catch (error: unknown) {
@@ -521,8 +522,9 @@ export async function PATCH(req: Request) {
   if (!isAdmin) {
     const existingYMD = toIsoDateUTC(existing.workDate);
     try {
-      assertEmployeeMayEditDate({
+      await assertEmployeeMayEditDate({
         role: session.role,
+        userId: session.userId,
         workDateYMD: existingYMD,
       });
     } catch (error: unknown) {
@@ -553,8 +555,9 @@ export async function PATCH(req: Request) {
 
   if (!isAdmin) {
     try {
-      assertEmployeeMayEditDate({
+      await assertEmployeeMayEditDate({
         role: session.role,
+        userId: session.userId,
         workDateYMD: workDate,
       });
     } catch (error: unknown) {
@@ -678,8 +681,9 @@ export async function DELETE(req: Request) {
   if (!isAdmin) {
     const ymd = toIsoDateUTC(entry.workDate);
     try {
-      assertEmployeeMayEditDate({
+      await assertEmployeeMayEditDate({
         role: session.role,
+        userId: session.userId,
         workDateYMD: ymd,
       });
     } catch (error: unknown) {
