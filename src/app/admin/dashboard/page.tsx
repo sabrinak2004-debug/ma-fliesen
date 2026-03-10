@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
-import { MousePointerClick } from "lucide-react";
+import { Info } from "lucide-react";
 
 /* =========================
    Types (Dashboard Timeline)
@@ -1744,16 +1744,32 @@ export default function AdminDashboardPage() {
         <div
           className="card kpi group hover:shadow-lg transition"
           onClick={() => openKpiModal("ACTIVE")}
-          style={{ cursor: "pointer" }}
+          style={{
+            cursor: "pointer",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
           title="Liste aktiver Mitarbeiter öffnen"
         >
           <div>
-            <div className="small flex items-center gap-1">
-              Aktive Mitarbeiter
-              <span className="opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
-                <MousePointerClick size={14} />
-              </span>
-            </div>
+            <div style={{ display: "grid", gap: 6 }}>
+              <div className="small">Aktive Mitarbeiter</div>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "var(--muted-2)",
+                    lineHeight: 1,
+                  }}
+                >
+                  <span>Details</span>
+                  <Info size={14} />
+                </div>
+              </div>
 
             <div className="big">{dash?.cards.employeesActive ?? "—"}</div>
           </div>
@@ -1764,16 +1780,32 @@ export default function AdminDashboardPage() {
         <div
           className="card kpi group hover:shadow-lg transition"
           onClick={() => openKpiModal("MISSING")}
-          style={{ cursor: "pointer" }}
+          style={{
+            cursor: "pointer",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
           title="Liste fehlender Einträge öffnen"
         >
           <div>
-            <div className="small flex items-center gap-1">
-              Fehlende Einträge (heute)
-              <span className="opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
-                <MousePointerClick size={14} />
-              </span>
+           <div style={{ display: "grid", gap: 6 }}>
+            <div className="small">Fehlende Einträge (heute)</div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+                fontWeight: 700,
+                color: "var(--muted-2)",
+                lineHeight: 1,
+              }}
+            >
+              <span>Details</span>
+              <Info size={14} />
             </div>
+          </div>
 
             <div className="big">{dash?.cards.missingToday ?? "—"}</div>
           </div>
@@ -1784,15 +1816,31 @@ export default function AdminDashboardPage() {
         <div
           className="card kpi group hover:shadow-lg transition"
           onClick={() => openKpiModal("ABSENT")}
-          style={{ cursor: "pointer" }}
+          style={{
+            cursor: "pointer",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
           title="Liste heutiger Abwesenheiten öffnen"
         >
           <div>
-            <div className="small flex items-center gap-1">
-              Abwesenheiten (heute)
-              <span className="opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
-                <MousePointerClick size={14} />
-              </span>
+            <div style={{ display: "grid", gap: 6 }}>
+              <div className="small">Abwesenheiten (heute)</div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "var(--muted-2)",
+                  lineHeight: 1,
+                }}
+              >
+                <span>Details</span>
+                <Info size={14} />
+              </div>
             </div>
 
             <div className="big">{dash?.cards.absencesToday ?? "—"}</div>
@@ -1803,15 +1851,31 @@ export default function AdminDashboardPage() {
         <div
           className="card kpi group hover:shadow-lg transition"
           onClick={() => openKpiModal("OVERDUE_GENERAL")}
-          style={{ cursor: "pointer" }}
+          style={{
+            cursor: "pointer",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
           title="Liste allgemeiner überfälliger fehlender Arbeitseinträge öffnen"
         >
           <div>
-            <div className="small flex items-center gap-1">
-              Fehlende Einträge (allgemein)
-              <span className="opacity-0 group-hover:opacity-80 transition-opacity text-gray-400">
-                <MousePointerClick size={14} />
-              </span>
+            <div style={{ display: "grid", gap: 6 }}>
+              <div className="small">Fehlende Einträge (allgemein)</div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "var(--muted-2)",
+                  lineHeight: 1,
+                }}
+              >
+                <span>Details</span>
+                <Info size={14} />
+              </div>
             </div>
 
             <div className="big">{dash?.cards.overdueMissingGeneral ?? "—"}</div>
