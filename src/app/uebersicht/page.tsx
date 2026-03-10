@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
@@ -111,6 +112,13 @@ function monthKey(d: Date) {
 
 function toHours(min: number) {
   return min / 60;
+}
+
+function formatMinutesAsHM(minutes: number): string {
+  const safeMinutes = Number.isFinite(minutes) ? Math.max(0, Math.round(minutes)) : 0;
+  const hours = Math.floor(safeMinutes / 60);
+  const mins = safeMinutes % 60;
+  return `${hours}h ${String(mins).padStart(2, "0")}min`;
 }
 
 
@@ -401,6 +409,8 @@ export default function UebersichtPage() {
   // ✅ Abwesenheiten Filter State
   const [absQuery, setAbsQuery] = useState<string>("");
   const [absType, setAbsType] = useState<AbsFilterType>("ALL");
+  const [workDetailsOpen, setWorkDetailsOpen] = useState(false);
+  const [progressDetailsOpen, setProgressDetailsOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -954,6 +964,81 @@ const resetAbsFilters = () => {
         </div>
       </Modal>
 
+      <Modal
+        open={workDetailsOpen}
+        onClose={() => setWorkDetailsOpen(false)}
+        title="Details Arbeitsstunden"
+        footer={
+          <button
+            type="button"
+            onClick={() => setWorkDetailsOpen(false)}
+            style={{
+              padding: "10px 14px",
+              cursor: "pointer",
+              fontWeight: 900,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.9)",
+            }}
+          >
+            Schließen
+          </button>
+        }
+        maxWidth={640}
+      >
+        <div style={{ display: "grid", gap: 12 }}>
+          <div className="small">Soll (Brutto): {formatMinutesAsHM(targetMinutes)}</div>
+          <div className="small">Soll (Netto): {formatMinutesAsHM(netTargetMinutes)}</div>
+          <div className="small">Überstunden (Brutto): {formatMinutesAsHM(Math.max(0, overtimeGrossMinutes))}</div>
+          <div className="small">Überstunden (Netto): {formatMinutesAsHM(Math.max(0, overtimeNetMinutes))}</div>
+          <div
+            className="small"
+            style={{
+              fontSize: 12,
+              lineHeight: 1.45,
+              color: "var(--muted)",
+            }}
+          >
+            Brutto ohne Urlaub, Krankheit und Feiertage. Netto berücksichtigt bezahlte Urlaubstage,
+            Krankheitstage und Feiertage zusätzlich.
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={progressDetailsOpen}
+        onClose={() => setProgressDetailsOpen(false)}
+        title="Details Monatsfortschritt"
+        footer={
+          <button
+            type="button"
+            onClick={() => setProgressDetailsOpen(false)}
+            style={{
+              padding: "10px 14px",
+              cursor: "pointer",
+              fontWeight: 900,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.9)",
+            }}
+          >
+            Schließen
+          </button>
+        }
+        maxWidth={640}
+      >
+        <div style={{ display: "grid", gap: 12 }}>
+          <div className="small">Arbeitszeit aktuell: {formatMinutesAsHM(totalMinutes)}</div>
+          <div className="small">Monatssoll (Brutto): {formatMinutesAsHM(targetMinutes)}</div>
+          <div className="small">Monatssoll (Netto): {formatMinutesAsHM(netTargetMinutes)}</div>
+          <div className="small">Überstunden (Brutto): {formatMinutesAsHM(Math.max(0, overtimeGrossMinutes))}</div>
+          <div className="small">Überstunden (Netto): {formatMinutesAsHM(Math.max(0, overtimeNetMinutes))}</div>
+          <div className="small">Feiertage im Monat: {holidayCountInMonth}</div>
+        </div>
+      </Modal>
+
       {/* Globaler Filter oben */}
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
         <div style={{ display: "grid", gap: 14 }}>
@@ -1023,29 +1108,34 @@ const resetAbsFilters = () => {
             <div className="small">
               Arbeitsstunden · {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
             </div>
-            <div className="big">{toHours(totalMinutes).toFixed(1)}h</div>
-            <div className="small">
-              Soll (Brutto): {toHours(targetMinutes).toFixed(1)}h
-            </div>
-            <div className="small">
-              Soll (Netto): {toHours(netTargetMinutes).toFixed(1)}h
-            </div>
-            <div className="small">
-              Überstunden (Brutto): {toHours(overtimeGrossMinutes).toFixed(1)}h
-            </div>
-            <div className="small">
-              Überstunden (Netto): {toHours(overtimeNetMinutes).toFixed(1)}h
-            </div>
+            <div className="big">{formatMinutesAsHM(totalMinutes)}</div>
             <div
               className="small"
               style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
                 marginTop: 6,
-                fontSize: 11,
-                lineHeight: 1.35,
-                color: "var(--muted-2)",
               }}
             >
-              Brutto ohne Urlaub, Krankheit und Feiertage. Netto berücksichtigt bezahlte Urlaubstage, Krankheitstage und Feiertage zusätzlich.
+              Details
+              <button
+                type="button"
+                onClick={() => setWorkDetailsOpen(true)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--muted-2)",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+                title="Details zu Arbeitsstunden anzeigen"
+              >
+                <Info size={15} />
+              </button>
             </div>
           </div>
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>⏱</div>
@@ -1057,13 +1147,10 @@ const resetAbsFilters = () => {
             <div className="small">
               Urlaubstage · {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
             </div>
-            <div className="big">{String(vacDays).replace(".", ",")}</div>
-            <div className="small">
-              {formatHoursInfo(vacationMinutesInfo)} davon Urlaub
-            </div>
-            {unpaidVacationDaysValue > 0 ? (
+              <div className="big">{String(vacDays).replace(".", ",")}</div>
+              {unpaidVacationDaysValue > 0 ? (
               <div className="small">
-                {String(unpaidVacationDaysValue).replace(".", ",")} Tage unbezahlt ({formatHoursInfo(unpaidAbsenceMinutes)})
+                {String(unpaidVacationDaysValue).replace(".", ",")} Tage unbezahlt
               </div>
             ) : null}
           </div>
@@ -1085,9 +1172,6 @@ const resetAbsFilters = () => {
           <div>
             <div className="small">Krankheitstage</div>
             <div className="big">{sickDays}</div>
-            <div className="small">
-              {formatHoursInfo(sickMinutesInfo)} davon krank
-            </div>
           </div>
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌡</div>
         </div>
@@ -1098,7 +1182,7 @@ const resetAbsFilters = () => {
         Monatsfortschritt – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ color: "var(--muted)" }}>
-            Noch {Math.max(0, (targetMinutes - totalMinutes) / 60).toFixed(1)}h bis zum Monatssoll (Brutto)
+            Noch {formatMinutesAsHM(Math.max(0, targetMinutes - totalMinutes))} bis zum Monatssoll
             {baseTargetMinutes > 0 ? (
               <span>
                 {" "}· Feiertage berücksichtigt
@@ -1106,11 +1190,25 @@ const resetAbsFilters = () => {
               </span>
             ) : null}
           </div>
-          <div style={{ fontWeight: 900 }}>
-            {toHours(totalMinutes).toFixed(1)}h / {toHours(targetMinutes).toFixed(1)}h
-            <span style={{ marginLeft: 8, color: "var(--muted)" }}>
-              · Netto: {toHours(overtimeNetMinutes).toFixed(1)}h Überstunden
-            </span>
+          <div style={{ fontWeight: 900, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span>{formatMinutesAsHM(totalMinutes)} / {formatMinutesAsHM(targetMinutes)}</span>
+            <button
+              type="button"
+              onClick={() => setProgressDetailsOpen(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "none",
+                background: "transparent",
+                color: "var(--muted-2)",
+                cursor: "pointer",
+                padding: 0,
+              }}
+              title="Details zum Monatsfortschritt anzeigen"
+            >
+              <Info size={15} />
+            </button>
           </div>
         </div>
 
@@ -1296,7 +1394,9 @@ const resetAbsFilters = () => {
                       </div>
                     </div>
 
-                    <div style={{ fontWeight: 900, color: "var(--accent)", fontSize: 18 }}>{toHours(p.minutes).toFixed(1)}h</div>
+                    <div style={{ fontWeight: 900, color: "var(--accent)", fontSize: 18 }}>
+                      {formatMinutesAsHM(p.minutes)}
+                    </div>
                   </div>
                 </div>
               ))}

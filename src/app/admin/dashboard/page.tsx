@@ -1875,21 +1875,6 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
-            <span>Überstunden (Netto):</span>
-            <b>
-              {overview
-                ? formatHoursInfoFromMinutes(
-                    overview.totals.workMinutes -
-                      overview.totals.targetMinutes +
-                      overview.totals.vacationMinutes +
-                      overview.totals.sickMinutes +
-                      overview.totals.holidayMinutes
-                  )
-                : "—"}
-            </b>
-          </div>
-
-          <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
             <span>Einträge:</span>
             <b>{overview ? overview.totals.entriesCount : "—"}</b>
           </div>
