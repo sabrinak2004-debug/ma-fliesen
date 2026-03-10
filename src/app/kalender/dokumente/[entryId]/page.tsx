@@ -95,7 +95,7 @@ export default function KalenderDokumentePage() {
   }
 
   function revokePreviewUrl(): void {
-    if (previewUrl) {
+    if (previewUrl && previewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(previewUrl);
     }
     setPreviewUrl(null);
@@ -154,10 +154,19 @@ export default function KalenderDokumentePage() {
     try {
       setErr(null);
 
+      revokePreviewUrl();
+
+      if (doc.mimeType === "application/pdf") {
+        setPreviewUrl(buildFileUrl(doc.id, "inline"));
+        setPreviewMimeType(doc.mimeType);
+        setPreviewTitle(doc.title || doc.fileName);
+        setPreviewOpen(true);
+        return;
+      }
+
       const blob = await fetchDocumentBlob(doc.id, "inline");
       const blobUrl = URL.createObjectURL(blob);
 
-      revokePreviewUrl();
       setPreviewUrl(blobUrl);
       setPreviewMimeType(doc.mimeType);
       setPreviewTitle(doc.title || doc.fileName);
@@ -167,33 +176,43 @@ export default function KalenderDokumentePage() {
     }
   }
 
-  async function shareDocument(doc: DocItem): Promise<void> {
-    try {
-      setErr(null);
+    async function shareDocument(doc: DocItem): Promise<void> {
+      try {
+        setErr(null);
 
-      const blob = await fetchDocumentBlob(doc.id, "attachment");
-      const file = new File([blob], doc.fileName, { type: doc.mimeType });
+        const blob = await fetchDocumentBlob(doc.id, "attachment");
+        const file = new File([blob], doc.fileName, { type: doc.mimeType });
 
-      const shareNavigator = navigator as ShareNavigator;
+        const shareNavigator = navigator as ShareNavigator;
 
-      if (
-        typeof navigator.share === "function" &&
-        typeof shareNavigator.canShare === "function" &&
-        shareNavigator.canShare({ files: [file] })
-      ) {
-        await navigator.share({
-          files: [file],
-          title: doc.title,
-          text: doc.fileName,
-        });
-        return;
+        if (
+          typeof navigator.share === "function" &&
+          typeof shareNavigator.canShare === "function" &&
+          shareNavigator.canShare({ files: [file] })
+        ) {
+          await navigator.share({
+            files: [file],
+            title: doc.title,
+            text: doc.fileName,
+          });
+          return;
+        }
+
+        setErr("Auf diesem Gerät ist 'Teilen / Sichern' hier nicht verfügbar.");
+      } catch (error: unknown) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          setErr(null);
+          return;
+        }
+
+        if (error instanceof Error && error.name === "AbortError") {
+          setErr(null);
+          return;
+        }
+
+        setErr("Dokument konnte nicht geteilt bzw. gespeichert werden.");
       }
-
-      setErr("Auf diesem Gerät ist 'Teilen / Sichern' hier nicht verfügbar.");
-    } catch {
-      setErr("Dokument konnte nicht geteilt bzw. gespeichert werden.");
     }
-  }
 
   async function loadDocs(): Promise<void> {
     if (!entryId) return;
@@ -231,7 +250,7 @@ export default function KalenderDokumentePage() {
 
   useEffect(() => {
     return () => {
-      if (previewUrl) {
+      if (previewUrl && previewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(previewUrl);
       }
     };
