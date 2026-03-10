@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Document, Page, pdfjs } from "react-pdf";
 import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 type DocItem = {
   id: string;
@@ -72,9 +78,6 @@ function canPreviewMime(mimeType: string): boolean {
   return mimeType === "application/pdf" || mimeType.startsWith("image/");
 }
 
-function shouldOpenPdfOutsideApp(mimeType: string): boolean {
-  return mimeType === "application/pdf" && isMobileDevice();
-}
 
 export default function KalenderDokumentePage() {
   const router = useRouter();
@@ -89,6 +92,9 @@ export default function KalenderDokumentePage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewMimeType, setPreviewMimeType] = useState<string>("");
   const [previewTitle, setPreviewTitle] = useState<string>("");
+
+  const [pdfPageCount, setPdfPageCount] = useState<number>(0);
+  const [pdfWidth, setPdfWidth] = useState<number>(900);
 
   function backToCalendar(): void {
     router.push("/kalender");
@@ -110,7 +116,15 @@ export default function KalenderDokumentePage() {
     setPreviewOpen(false);
     setPreviewMimeType("");
     setPreviewTitle("");
+    setPdfPageCount(0);
   }
+
+      function updatePdfWidth(): void {
+      if (typeof window === "undefined") return;
+
+      const nextWidth = Math.max(280, Math.min(window.innerWidth - 32, 920));
+      setPdfWidth(nextWidth);
+    }
 
   async function fetchDocumentBlob(docId: string, disposition: "inline" | "attachment"): Promise<Blob> {
     const response = await fetch(buildFileUrl(docId, disposition), {
@@ -160,15 +174,12 @@ export default function KalenderDokumentePage() {
 
         revokePreviewUrl();
 
-        if (shouldOpenPdfOutsideApp(doc.mimeType)) {
-          window.open(buildFileUrl(doc.id, "inline"), "_blank", "noopener,noreferrer");
-          return;
-        }
-
         if (doc.mimeType === "application/pdf") {
+          updatePdfWidth();
           setPreviewUrl(buildFileUrl(doc.id, "inline"));
           setPreviewMimeType(doc.mimeType);
           setPreviewTitle(doc.title || doc.fileName);
+          setPdfPageCount(0);
           setPreviewOpen(true);
           return;
         }
@@ -258,6 +269,21 @@ export default function KalenderDokumentePage() {
   }, [entryId]);
 
   useEffect(() => {
+      if (!previewOpen || previewMimeType !== "application/pdf") return;
+
+      updatePdfWidth();
+
+      const onResize = (): void => {
+        updatePdfWidth();
+      };
+
+      window.addEventListener("resize", onResize);
+      return () => {
+        window.removeEventListener("resize", onResize);
+      };
+    }, [previewOpen, previewMimeType]);
+
+  useEffect(() => {
     return () => {
       if (previewUrl && previewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(previewUrl);
@@ -319,7 +345,7 @@ export default function KalenderDokumentePage() {
                       void previewDocument(d);
                     }}
                   >
-                    {shouldOpenPdfOutsideApp(d.mimeType) ? "PDF öffnen" : "In App ansehen"}
+                    In App ansehen
                   </button>
 
                   <button
@@ -392,16 +418,39 @@ export default function KalenderDokumentePage() {
             }}
           >
             {previewMimeType === "application/pdf" ? (
-              <iframe
-                src={previewUrl}
-                title={previewTitle}
+              <div
                 style={{
-                  width: "100%",
-                  height: "100%",
-                  border: "none",
-                  background: "white",
+                  minHeight: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  padding: 16,
                 }}
-              />
+              >
+                <Document
+                  file={previewUrl}
+                  onLoadSuccess={({ numPages }: { numPages: number }) => {
+                    setPdfPageCount(numPages);
+                    setErr(null);
+                  }}
+                  onLoadError={() => {
+                    setErr("PDF konnte nicht angezeigt werden.");
+                  }}
+                  loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
+                  error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
+                >
+                  <div style={{ display: "grid", gap: 16, justifyItems: "center" }}>
+                    {Array.from({ length: pdfPageCount }, (_, index) => (
+                      <Page
+                        key={`pdf-page-${index + 1}`}
+                        pageNumber={index + 1}
+                        width={pdfWidth}
+                        renderTextLayer={false}
+                        renderAnnotationLayer={false}
+                      />
+                    ))}
+                  </div>
+                </Document>
+              </div>
             ) : (
               <div
                 style={{
