@@ -100,7 +100,7 @@ export default function KalenderDokumentePage() {
   const [previewTitle, setPreviewTitle] = useState<string>("");
   const [pdfPageCount, setPdfPageCount] = useState<number>(0);
   const [pdfWidth, setPdfWidth] = useState<number>(900);
-  const [previewPdfData, setPreviewPdfData] = useState<ArrayBuffer | null>(null);
+  const [previewPdfData, setPreviewPdfData] = useState<Uint8Array | null>(null);
   const [previewDocxHtml, setPreviewDocxHtml] = useState<string>("");
 
   function backToCalendar(): void {
@@ -206,7 +206,7 @@ export default function KalenderDokumentePage() {
         updatePdfWidth();
 
         const buffer = await fetchDocumentArrayBuffer(doc.id, "inline");
-        setPreviewPdfData(buffer);
+        setPreviewPdfData(new Uint8Array(buffer));
         setPreviewMimeType(doc.mimeType);
         setPreviewTitle(doc.title || doc.fileName);
         setPreviewOpen(true);
@@ -493,13 +493,14 @@ export default function KalenderDokumentePage() {
                 }}
               >
                 <Document
-                  file={previewPdfData}
+                  file={{ data: previewPdfData }}
+                  key={previewTitle}
                   onLoadSuccess={({ numPages }: { numPages: number }) => {
                     setPdfPageCount(numPages);
                     setErr(null);
                   }}
-                  onLoadError={() => {
-                    setErr("PDF konnte nicht geladen werden.");
+                  onLoadError={(error: Error) => {
+                    setErr(`PDF konnte nicht geladen werden: ${error.message}`);
                   }}
                   loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
                   error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
