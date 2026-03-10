@@ -72,6 +72,10 @@ function canPreviewMime(mimeType: string): boolean {
   return mimeType === "application/pdf" || mimeType.startsWith("image/");
 }
 
+function shouldOpenPdfOutsideApp(mimeType: string): boolean {
+  return mimeType === "application/pdf" && isMobileDevice();
+}
+
 export default function KalenderDokumentePage() {
   const router = useRouter();
   const params = useParams<{ entryId: string }>();
@@ -146,35 +150,40 @@ export default function KalenderDokumentePage() {
   }
 
   async function previewDocument(doc: DocItem): Promise<void> {
-    if (!canPreviewMime(doc.mimeType)) {
-      setErr("Dieser Dateityp kann in der App nicht angezeigt werden.");
-      return;
-    }
-
-    try {
-      setErr(null);
-
-      revokePreviewUrl();
-
-      if (doc.mimeType === "application/pdf") {
-        setPreviewUrl(buildFileUrl(doc.id, "inline"));
-        setPreviewMimeType(doc.mimeType);
-        setPreviewTitle(doc.title || doc.fileName);
-        setPreviewOpen(true);
+      if (!canPreviewMime(doc.mimeType)) {
+        setErr("Dieser Dateityp kann in der App nicht angezeigt werden.");
         return;
       }
 
-      const blob = await fetchDocumentBlob(doc.id, "inline");
-      const blobUrl = URL.createObjectURL(blob);
+      try {
+        setErr(null);
 
-      setPreviewUrl(blobUrl);
-      setPreviewMimeType(doc.mimeType);
-      setPreviewTitle(doc.title || doc.fileName);
-      setPreviewOpen(true);
-    } catch {
-      setErr("Dokument konnte nicht in der App geöffnet werden.");
+        revokePreviewUrl();
+
+        if (shouldOpenPdfOutsideApp(doc.mimeType)) {
+          window.open(buildFileUrl(doc.id, "inline"), "_blank", "noopener,noreferrer");
+          return;
+        }
+
+        if (doc.mimeType === "application/pdf") {
+          setPreviewUrl(buildFileUrl(doc.id, "inline"));
+          setPreviewMimeType(doc.mimeType);
+          setPreviewTitle(doc.title || doc.fileName);
+          setPreviewOpen(true);
+          return;
+        }
+
+        const blob = await fetchDocumentBlob(doc.id, "inline");
+        const blobUrl = URL.createObjectURL(blob);
+
+        setPreviewUrl(blobUrl);
+        setPreviewMimeType(doc.mimeType);
+        setPreviewTitle(doc.title || doc.fileName);
+        setPreviewOpen(true);
+      } catch {
+        setErr("Dokument konnte nicht in der App geöffnet werden.");
+      }
     }
-  }
 
     async function shareDocument(doc: DocItem): Promise<void> {
       try {
@@ -310,7 +319,7 @@ export default function KalenderDokumentePage() {
                       void previewDocument(d);
                     }}
                   >
-                    In App ansehen
+                    {shouldOpenPdfOutsideApp(d.mimeType) ? "PDF öffnen" : "In App ansehen"}
                   </button>
 
                   <button
