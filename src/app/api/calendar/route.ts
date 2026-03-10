@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { Role } from "@prisma/client";
+import Holidays from "date-holidays";
 
 function toIsoDateUTC(d: Date) {
   const y = d.getUTCFullYear();
@@ -14,6 +15,29 @@ function toHHMMUTC(d: Date) {
   const hh = String(d.getUTCHours()).padStart(2, "0");
   const mm = String(d.getUTCMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
+}
+
+type HolidayInfo = {
+  name: string;
+};
+
+function getHolidayMapForMonth(year: number, monthOneBased: number): Map<string, HolidayInfo> {
+  const hd = new Holidays("DE", "BW");
+  const holidays = hd.getHolidays(year);
+
+  const monthPrefix = `${year}-${String(monthOneBased).padStart(2, "0")}`;
+  const map = new Map<string, HolidayInfo>();
+
+  for (const holiday of holidays) {
+    const iso = holiday.date.slice(0, 10);
+    if (!iso.startsWith(`${monthPrefix}-`)) continue;
+
+    map.set(iso, {
+      name: holiday.name,
+    });
+  }
+
+  return map;
 }
 
 type PlanPreviewItem = {
@@ -40,6 +64,7 @@ export async function GET(req: Request) {
   const [y, m] = month.split("-").map(Number);
   const from = new Date(Date.UTC(y, m - 1, 1));
   const to = new Date(Date.UTC(y, m, 1));
+  const holidayMap = getHolidayMapForMonth(y, m);
 
   const me = await prisma.appUser.findUnique({
     where: { id: session.userId },
@@ -85,15 +110,18 @@ if (me.role === Role.ADMIN && !userIdParam) {
               })
               .join(" | ");
 
-      return {
-        date,
-        hasWork: false,
-        hasVacation: false,
-        hasSick: false,
-        // Wir nutzen hasPlan/planPreview als "Termin vorhanden"
-        hasPlan: eventSet.has(date),
-        planPreview: preview,
-      };
+const holiday = holidayMap.get(date);
+
+        return {
+          date,
+          hasWork: false,
+          hasVacation: false,
+          hasSick: false,
+          hasPlan: eventSet.has(date),
+          planPreview: preview,
+          hasHoliday: !!holiday,
+          holidayName: holiday?.name ?? null,
+        };
     });
 
     return NextResponse.json({ ok: true, days });
@@ -177,6 +205,8 @@ if (me.role === Role.ADMIN && userIdParam) {
             })
             .join(" | ");
 
+    const holiday = holidayMap.get(date);
+
     return {
       date,
       hasWork: workSet.has(date) || planSet.has(date),
@@ -184,6 +214,8 @@ if (me.role === Role.ADMIN && userIdParam) {
       hasSick: sickSet.has(date),
       hasPlan: planSet.has(date),
       planPreview,
+      hasHoliday: !!holiday,
+      holidayName: holiday?.name ?? null,
     };
   });
 

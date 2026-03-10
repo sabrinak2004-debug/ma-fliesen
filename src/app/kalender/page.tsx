@@ -12,6 +12,8 @@ type CalendarDay = {
   hasSick: boolean;
   hasPlan: boolean;
   planPreview: string | null;
+  hasHoliday: boolean;
+  holidayName: string | null;
 };
 
 type CalendarResponse = { ok: true; days: CalendarDay[] } | { ok: false; error: string };
@@ -139,6 +141,10 @@ function isCalendarDay(v: unknown): v is CalendarDay {
   const planPreviewRaw = v["planPreview"];
   const planPreview =
     planPreviewRaw === null || typeof planPreviewRaw === "string" ? planPreviewRaw : undefined;
+  const hasHoliday = getBooleanField(v, "hasHoliday");
+  const holidayNameRaw = v["holidayName"];
+  const holidayName =
+    holidayNameRaw === null || typeof holidayNameRaw === "string" ? holidayNameRaw : undefined;
 
   return (
     typeof date === "string" &&
@@ -146,7 +152,9 @@ function isCalendarDay(v: unknown): v is CalendarDay {
     typeof hasVacation === "boolean" &&
     typeof hasSick === "boolean" &&
     typeof hasPlan === "boolean" &&
-    (planPreview === null || typeof planPreview === "string")
+    typeof hasHoliday === "boolean" &&
+    (planPreview === null || typeof planPreview === "string") &&
+    (holidayName === null || typeof holidayName === "string")
   );
 }
 
@@ -586,6 +594,10 @@ function pillStyle(): React.CSSProperties {
     gap: 8,
     lineHeight: "16px",
   };
+}
+
+function holidayDotColor(): string {
+  return "rgba(255, 196, 0, 0.95)";
 }
 
 function smallDot(color: string): React.CSSProperties {
@@ -1343,6 +1355,8 @@ export default function KalenderPage() {
                     ? "rgba(224, 75, 69, 0.65)"
                     : info?.hasVacation
                     ? "rgba(90, 167, 255, 0.65)"
+                    : info?.hasHoliday
+                    ? "rgba(255, 196, 0, 0.65)"
                     : info?.hasPlan
                     ? "rgba(184, 207, 58, 0.65)"
                     : "var(--border)";
@@ -1352,6 +1366,8 @@ export default function KalenderPage() {
                     ? "rgba(224, 75, 69, 0.16)"
                     : info?.hasVacation
                     ? "rgba(90, 167, 255, 0.12)"
+                    : info?.hasHoliday
+                    ? "rgba(255, 196, 0, 0.12)"
                     : info?.hasPlan
                     ? "rgba(184, 207, 58, 0.10)"
                     : "rgba(255,255,255,0.02)";
@@ -1398,6 +1414,12 @@ export default function KalenderPage() {
                         </span>
                       ) : null}
 
+                      {info?.hasHoliday ? (
+                        <span style={pillStyle()} title={info.holidayName ?? "Gesetzlicher Feiertag"}>
+                          <span style={smallDot(holidayDotColor())} /> Feiertag
+                        </span>
+                      ) : null}
+
                       {!isAdmin && info?.hasVacation ? (
                         <span style={pillStyle()}>
                           <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> Urlaub
@@ -1410,7 +1432,7 @@ export default function KalenderPage() {
                         </span>
                       ) : null}
 
-                      {!info?.hasPlan && !info?.hasVacation && !info?.hasSick ? (
+                      {!info?.hasPlan && !info?.hasVacation && !info?.hasSick && !info?.hasHoliday ? (
                         <span
                           style={{
                             fontSize: 12,
@@ -1428,6 +1450,16 @@ export default function KalenderPage() {
                         title={info.planPreview}
                       >
                         {info.planPreview}
+                      </div>
+                    ) : null}
+
+                    {info?.hasHoliday && info.holidayName ? (
+                      <div
+                        className="calendar-week-cell-preview"
+                        title={info.holidayName}
+                        style={{ color: "rgba(255, 196, 0, 0.95)" }}
+                      >
+                        🎉 {info.holidayName}
                       </div>
                     ) : null}
                   </button>
@@ -1456,6 +1488,8 @@ export default function KalenderPage() {
                         ? "rgba(224, 75, 69, 0.65)"
                         : info?.hasVacation
                         ? "rgba(90, 167, 255, 0.65)"
+                        : info?.hasHoliday
+                        ? "rgba(255, 196, 0, 0.65)"
                         : info?.hasPlan
                         ? "rgba(184, 207, 58, 0.65)"
                         : "var(--border)";
@@ -1465,6 +1499,8 @@ export default function KalenderPage() {
                         ? "rgba(224, 75, 69, 0.18)"
                         : info?.hasVacation
                         ? "rgba(90, 167, 255, 0.14)"
+                        : info?.hasHoliday
+                        ? "rgba(255, 196, 0, 0.12)"
                         : info?.hasPlan
                         ? "rgba(184, 207, 58, 0.10)"
                         : "rgba(255,255,255,0.02)";
@@ -1509,6 +1545,7 @@ export default function KalenderPage() {
 
                         <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                           {info?.hasPlan ? <span style={smallDot("rgba(184, 207, 58, 0.95)")} /> : null}
+                          {info?.hasHoliday ? <span style={smallDot(holidayDotColor())} /> : null}
                           {!isAdmin && info?.hasVacation ? <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> : null}
                           {!isAdmin && info?.hasSick ? <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> : null}
                         </div>
@@ -1536,6 +1573,29 @@ export default function KalenderPage() {
                             {info.planPreview}
                           </div>
                         ) : null}
+                        {info?.hasHoliday && info.holidayName ? (
+                          <div
+                            className="calendar-desktop-preview"
+                            style={{
+                              marginTop: 6,
+                              fontSize: 11,
+                              lineHeight: "14px",
+                              color: "rgba(255, 196, 0, 0.95)",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              whiteSpace: "normal",
+                              wordBreak: "break-word",
+                              overflowWrap: "anywhere",
+                              minHeight: 0,
+                            }}
+                            title={info.holidayName}
+                          >
+                            🎉 {info.holidayName}
+                          </div>
+                        ) : null}
                       </button>
                     );
                   })
@@ -1554,9 +1614,18 @@ export default function KalenderPage() {
               }}
             >
               {isAdmin ? (
-                <div>
-                  <span className="badge-dot dot-work" /> Termine
-                </div>
+                <>
+                  <div>
+                    <span className="badge-dot dot-work" /> Termine
+                  </div>
+                  <div>
+                    <span
+                      className="badge-dot"
+                      style={{ background: holidayDotColor(), boxShadow: "0 0 0 3px rgba(255, 196, 0, 0.16)" }}
+                    />{" "}
+                    Feiertag
+                  </div>
+                </>
               ) : (
                 <>
                   <div>
@@ -1564,6 +1633,13 @@ export default function KalenderPage() {
                   </div>
                   <div>
                     <span className="badge-dot dot-vac" /> Urlaub
+                  </div>
+                  <div>
+                    <span
+                      className="badge-dot"
+                      style={{ background: holidayDotColor(), boxShadow: "0 0 0 3px rgba(255, 196, 0, 0.16)" }}
+                    />{" "}
+                    Feiertag
                   </div>
                   <div>
                     <span className="badge-dot dot-sick" /> Krank
@@ -1893,10 +1969,17 @@ export default function KalenderPage() {
                 <div style={{ color: "var(--muted)", fontSize: 13 }}>
                   {dayMap.get(selectedDate)?.planPreview
                     ? `Plan: ${dayMap.get(selectedDate)?.planPreview}`
+                    : dayMap.get(selectedDate)?.holidayName
+                    ? `Feiertag: ${dayMap.get(selectedDate)?.holidayName}`
                     : "Kein Plan/Preview vorhanden."}
                 </div>
                 <div style={{ marginTop: 8, display: "flex", gap: 10, flexWrap: "wrap", color: "var(--muted)" }}>
                   {dayMap.get(selectedDate)?.hasPlan ? <span style={pillStyle()}>Termine/Plan</span> : null}
+                  {dayMap.get(selectedDate)?.hasHoliday ? (
+                    <span style={pillStyle()} title={dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}>
+                      Feiertag
+                    </span>
+                  ) : null}
                   {dayMap.get(selectedDate)?.hasVacation ? <span style={pillStyle()}>Urlaub</span> : null}
                   {dayMap.get(selectedDate)?.hasSick ? <span style={pillStyle()}>Krank</span> : null}
                 </div>
@@ -1955,6 +2038,20 @@ export default function KalenderPage() {
                   ))}
                 </div>
               )}
+
+              {selectedDate && dayMap.get(selectedDate)?.hasHoliday ? (
+                <div style={{ marginTop: 14 }}>
+                  <div className="label">Gesetzlicher Feiertag</div>
+                  <div className="card" style={{ padding: 12 }}>
+                    <div style={{ fontWeight: 900 }}>
+                      🎉 {dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}
+                    </div>
+                    <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                      Dieser Tag ist als gesetzlicher Feiertag im Kalender markiert.
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
               <div style={{ marginTop: 14 }}>
                 <div className="label">Bestätigte Abwesenheit</div>
