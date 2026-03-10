@@ -100,7 +100,7 @@ export default function KalenderDokumentePage() {
   const [previewTitle, setPreviewTitle] = useState<string>("");
   const [pdfPageCount, setPdfPageCount] = useState<number>(0);
   const [pdfWidth, setPdfWidth] = useState<number>(900);
-  const [previewPdfData, setPreviewPdfData] = useState<Uint8Array | null>(null);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
   const [previewDocxHtml, setPreviewDocxHtml] = useState<string>("");
 
   function backToCalendar(): void {
@@ -115,7 +115,13 @@ export default function KalenderDokumentePage() {
     if (previewUrl && previewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(previewUrl);
     }
+
+    if (previewPdfUrl && previewPdfUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewPdfUrl);
+    }
+
     setPreviewUrl(null);
+    setPreviewPdfUrl(null);
   }
 
   function closePreview(): void {
@@ -124,7 +130,7 @@ export default function KalenderDokumentePage() {
     setPreviewMimeType("");
     setPreviewTitle("");
     setPdfPageCount(0);
-    setPreviewPdfData(null);
+    setPreviewPdfUrl(null);
     setPreviewDocxHtml("");
   }
 
@@ -198,15 +204,17 @@ export default function KalenderDokumentePage() {
       setErr(null);
 
       revokePreviewUrl();
-      setPreviewPdfData(null);
+      setPreviewPdfUrl(null);
       setPreviewDocxHtml("");
       setPdfPageCount(0);
 
       if (doc.mimeType === "application/pdf") {
         updatePdfWidth();
 
-        const buffer = await fetchDocumentArrayBuffer(doc.id, "inline");
-        setPreviewPdfData(new Uint8Array(buffer));
+        const blob = await fetchDocumentBlob(doc.id, "inline");
+        const blobUrl = URL.createObjectURL(blob);
+
+        setPreviewPdfUrl(blobUrl);
         setPreviewMimeType(doc.mimeType);
         setPreviewTitle(doc.title || doc.fileName);
         setPreviewOpen(true);
@@ -347,8 +355,12 @@ export default function KalenderDokumentePage() {
       if (previewUrl && previewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(previewUrl);
       }
+
+      if (previewPdfUrl && previewPdfUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewPdfUrl);
+      }
     };
-  }, [previewUrl]);
+  }, [previewUrl, previewPdfUrl]);
 
   return (
     <AppShell activeLabel="#wirkönnendas">
@@ -483,7 +495,7 @@ export default function KalenderDokumentePage() {
               WebkitOverflowScrolling: "touch",
             }}
           >
-            {previewMimeType === "application/pdf" && previewPdfData ? (
+            {previewMimeType === "application/pdf" && previewPdfUrl ? (
               <div
                 style={{
                   minHeight: "100%",
@@ -493,8 +505,8 @@ export default function KalenderDokumentePage() {
                 }}
               >
                 <Document
-                  file={{ data: previewPdfData }}
-                  key={previewTitle}
+                    file={previewPdfUrl}
+                    key={previewPdfUrl}
                   onLoadSuccess={({ numPages }: { numPages: number }) => {
                     setPdfPageCount(numPages);
                     setErr(null);
