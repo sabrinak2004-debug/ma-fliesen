@@ -435,7 +435,7 @@ export default function KalenderDokumentePage() {
         )}
       </div>
 
-      {previewOpen && previewUrl ? (
+      {previewOpen ? (
         <div
           style={{
             position: "fixed",
@@ -554,7 +554,7 @@ export default function KalenderDokumentePage() {
                   dangerouslySetInnerHTML={{ __html: previewDocxHtml }}
                 />
               </div>
-            ) : (
+            ) : previewUrl ? (
               <div
                 style={{
                   minHeight: "100%",
@@ -573,6 +573,19 @@ export default function KalenderDokumentePage() {
                     borderRadius: 12,
                   }}
                 />
+              </div>
+            ) : (
+              <div
+                style={{
+                  minHeight: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 16,
+                  color: "white",
+                }}
+              >
+                Vorschau wird geladen...
               </div>
             )}
           </div>
