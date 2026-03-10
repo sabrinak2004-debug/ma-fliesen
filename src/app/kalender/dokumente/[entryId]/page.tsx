@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
 import { useParams, useRouter } from "next/navigation";
+import { Document, Page, pdfjs } from "react-pdf";
+import mammoth from "mammoth";
 import AppShell from "@/components/AppShell";
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -75,7 +81,11 @@ function fmtBytes(n: number): string {
 }
 
 function canPreviewMime(mimeType: string): boolean {
-  return mimeType === "application/pdf" || mimeType.startsWith("image/");
+  return (
+    mimeType === "application/pdf" ||
+    mimeType.startsWith("image/") ||
+    mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  );
 }
 
 
@@ -92,9 +102,10 @@ export default function KalenderDokumentePage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewMimeType, setPreviewMimeType] = useState<string>("");
   const [previewTitle, setPreviewTitle] = useState<string>("");
-
   const [pdfPageCount, setPdfPageCount] = useState<number>(0);
   const [pdfWidth, setPdfWidth] = useState<number>(900);
+  const [previewPdfData, setPreviewPdfData] = useState<ArrayBuffer | null>(null);
+  const [previewDocxHtml, setPreviewDocxHtml] = useState<string>("");
 
   function backToCalendar(): void {
     router.push("/kalender");
@@ -117,14 +128,15 @@ export default function KalenderDokumentePage() {
     setPreviewMimeType("");
     setPreviewTitle("");
     setPdfPageCount(0);
+    setPreviewPdfData(null);
+    setPreviewDocxHtml("");
   }
 
-      function updatePdfWidth(): void {
-      if (typeof window === "undefined") return;
-
-      const nextWidth = Math.max(280, Math.min(window.innerWidth - 32, 920));
-      setPdfWidth(nextWidth);
-    }
+  function updatePdfWidth(): void {
+    if (typeof window === "undefined") return;
+    const nextWidth = Math.max(280, Math.min(window.innerWidth - 32, 920));
+    setPdfWidth(nextWidth);
+  }
 
   async function fetchDocumentBlob(docId: string, disposition: "inline" | "attachment"): Promise<Blob> {
     const response = await fetch(buildFileUrl(docId, disposition), {
@@ -138,6 +150,23 @@ export default function KalenderDokumentePage() {
     }
 
     return await response.blob();
+  }
+
+  async function fetchDocumentArrayBuffer(
+    docId: string,
+    disposition: "inline" | "attachment"
+  ): Promise<ArrayBuffer> {
+    const response = await fetch(buildFileUrl(docId, disposition), {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error("Datei konnte nicht geladen werden.");
+    }
+
+    return await response.arrayBuffer();
   }
 
   async function downloadDocument(doc: DocItem): Promise<void> {
@@ -164,37 +193,56 @@ export default function KalenderDokumentePage() {
   }
 
   async function previewDocument(doc: DocItem): Promise<void> {
-      if (!canPreviewMime(doc.mimeType)) {
-        setErr("Dieser Dateityp kann in der App nicht angezeigt werden.");
-        return;
-      }
+    if (!canPreviewMime(doc.mimeType)) {
+      setErr("Dieser Dateityp kann in der App nicht angezeigt werden.");
+      return;
+    }
 
-      try {
-        setErr(null);
+    try {
+      setErr(null);
 
-        revokePreviewUrl();
+      revokePreviewUrl();
+      setPreviewPdfData(null);
+      setPreviewDocxHtml("");
+      setPdfPageCount(0);
 
-        if (doc.mimeType === "application/pdf") {
-          updatePdfWidth();
-          setPreviewUrl(buildFileUrl(doc.id, "inline"));
-          setPreviewMimeType(doc.mimeType);
-          setPreviewTitle(doc.title || doc.fileName);
-          setPdfPageCount(0);
-          setPreviewOpen(true);
-          return;
-        }
+      if (doc.mimeType === "application/pdf") {
+        updatePdfWidth();
 
-        const blob = await fetchDocumentBlob(doc.id, "inline");
-        const blobUrl = URL.createObjectURL(blob);
-
-        setPreviewUrl(blobUrl);
+        const buffer = await fetchDocumentArrayBuffer(doc.id, "inline");
+        setPreviewPdfData(buffer);
         setPreviewMimeType(doc.mimeType);
         setPreviewTitle(doc.title || doc.fileName);
         setPreviewOpen(true);
-      } catch {
-        setErr("Dokument konnte nicht in der App geöffnet werden.");
+        return;
       }
+
+      if (
+        doc.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
+        const buffer = await fetchDocumentArrayBuffer(doc.id, "inline");
+        const result = await mammoth.convertToHtml({
+          arrayBuffer: buffer,
+        });
+
+        setPreviewDocxHtml(result.value);
+        setPreviewMimeType(doc.mimeType);
+        setPreviewTitle(doc.title || doc.fileName);
+        setPreviewOpen(true);
+        return;
+      }
+
+      const blob = await fetchDocumentBlob(doc.id, "inline");
+      const blobUrl = URL.createObjectURL(blob);
+
+      setPreviewUrl(blobUrl);
+      setPreviewMimeType(doc.mimeType);
+      setPreviewTitle(doc.title || doc.fileName);
+      setPreviewOpen(true);
+    } catch {
+      setErr("Dokument konnte nicht in der App geöffnet werden.");
     }
+  }
 
     async function shareDocument(doc: DocItem): Promise<void> {
       try {
@@ -267,6 +315,21 @@ export default function KalenderDokumentePage() {
     void loadDocs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entryId]);
+
+  useEffect(() => {
+    if (!previewOpen || previewMimeType !== "application/pdf") return;
+
+    updatePdfWidth();
+
+    const onResize = (): void => {
+      updatePdfWidth();
+    };
+
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+    };
+  }, [previewOpen, previewMimeType]);
 
   useEffect(() => {
       if (!previewOpen || previewMimeType !== "application/pdf") return;
@@ -344,6 +407,13 @@ export default function KalenderDokumentePage() {
                     onClick={() => {
                       void previewDocument(d);
                     }}
+                    disabled={!canPreviewMime(d.mimeType)}
+                    style={!canPreviewMime(d.mimeType) ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
+                    title={
+                      canPreviewMime(d.mimeType)
+                        ? "Dokument in der App ansehen"
+                        : "Dieser Dateityp kann nur heruntergeladen oder geteilt werden"
+                    }
                   >
                     In App ansehen
                   </button>
@@ -417,7 +487,7 @@ export default function KalenderDokumentePage() {
               WebkitOverflowScrolling: "touch",
             }}
           >
-            {previewMimeType === "application/pdf" ? (
+            {previewMimeType === "application/pdf" && previewPdfData ? (
               <div
                 style={{
                   minHeight: "100%",
@@ -427,13 +497,13 @@ export default function KalenderDokumentePage() {
                 }}
               >
                 <Document
-                  file={previewUrl}
+                  file={previewPdfData}
                   onLoadSuccess={({ numPages }: { numPages: number }) => {
                     setPdfPageCount(numPages);
                     setErr(null);
                   }}
                   onLoadError={() => {
-                    setErr("PDF konnte nicht angezeigt werden.");
+                    setErr("PDF konnte nicht geladen werden.");
                   }}
                   loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
                   error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
@@ -450,6 +520,43 @@ export default function KalenderDokumentePage() {
                     ))}
                   </div>
                 </Document>
+              </div>
+            ) : previewMimeType === "application/pdf" ? (
+              <div
+                style={{
+                  minHeight: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 16,
+                  color: "white",
+                }}
+              >
+                PDF wird geladen...
+              </div>
+            ) : previewMimeType ===
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ? (
+              <div
+                style={{
+                  minHeight: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  padding: 16,
+                }}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    maxWidth: 920,
+                    background: "white",
+                    color: "#111",
+                    borderRadius: 12,
+                    padding: 24,
+                    lineHeight: 1.6,
+                    overflowWrap: "anywhere",
+                  }}
+                  dangerouslySetInnerHTML={{ __html: previewDocxHtml }}
+                />
               </div>
             ) : (
               <div
