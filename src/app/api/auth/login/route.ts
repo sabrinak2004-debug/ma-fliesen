@@ -20,7 +20,9 @@ function getString(v: unknown): string {
 export async function POST(req: Request) {
   const raw = (await req.json().catch(() => null)) as unknown;
 
-  const fullName = isRecord(raw) ? getString((raw as Body).fullName).trim() : "";
+  const fullName = isRecord(raw)
+  ? getString((raw as Body).fullName).trim().toLowerCase()
+  : "";
   const password = isRecord(raw) ? getString((raw as { password?: unknown }).password) : "";
   const newPassword = isRecord(raw) ? getString((raw as { newPassword?: unknown }).newPassword) : "";
 
@@ -28,7 +30,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Name fehlt" }, { status: 400 });
   }
 
-  const user = await prisma.appUser.findUnique({ where: { fullName } });
+  const user = await prisma.appUser.findFirst({
+    where: {
+      fullName: {
+        equals: fullName,
+        mode: "insensitive",
+      },
+    },
+  });
 
   // Name ist die Whitelist -> nur wer im Seed/Backend existiert, darf rein
   if (!user) {
