@@ -45,6 +45,21 @@ function addUtcDays(d: Date, days: number): Date {
   return copy;
 }
 
+function countHolidayWeekdays(holidaySet: Set<string>): number {
+  let count = 0;
+
+  for (const iso of holidaySet) {
+    const [year, month, day] = iso.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    if (isWeekdayUtcDate(date)) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
 function countWorkingDaysWithoutHolidays(
   year: number,
   monthOneBased: number,
@@ -73,6 +88,7 @@ function getHolidaySetForMonth(year: number, month: string): Set<string> {
 
   return new Set(
     holidays
+      .filter((holiday) => holiday.type === "public")
       .map((holiday) => holiday.date.slice(0, 10))
       .filter((iso) => iso.startsWith(`${month}-`))
   );
@@ -225,7 +241,7 @@ export async function GET(req: Request) {
 
     const remainingVacationDays = Math.max(0, ANNUAL_VACATION_DAYS - usedVacationDaysYtd);
 
-    const paidHolidayMinutes = holidaySet.size * DAILY_TARGET_MINUTES;
+    const paidHolidayMinutes = countHolidayWeekdays(holidaySet) * DAILY_TARGET_MINUTES;
 
     const targetMinutes = baseTargetMinutes;
     const netTargetMinutes = baseTargetMinutes + vacationMinutes + sickMinutes + paidHolidayMinutes;
@@ -259,7 +275,7 @@ export async function GET(req: Request) {
       baseTargetMinutes,
       targetMinutes,
       netTargetMinutes,
-      holidayCountInMonth: holidaySet.size,
+      holidayCountInMonth: countHolidayWeekdays(holidaySet),
       holidayMinutes: paidHolidayMinutes,
       workingDaysInMonth,
     };
@@ -270,7 +286,7 @@ export async function GET(req: Request) {
     annualVacationDays: ANNUAL_VACATION_DAYS,
     dailyTargetMinutes: DAILY_TARGET_MINUTES,
     workingDaysInMonth,
-    holidayCountInMonth: holidaySet.size,
+    holidayCountInMonth: countHolidayWeekdays(holidaySet),
     isAdmin,
     byUser,
     totals: {

@@ -19,6 +19,7 @@ function toHHMMUTC(d: Date) {
 
 type HolidayInfo = {
   name: string;
+  type: string;
 };
 
 function getHolidayMapForMonth(year: number, monthOneBased: number): Map<string, HolidayInfo> {
@@ -31,9 +32,11 @@ function getHolidayMapForMonth(year: number, monthOneBased: number): Map<string,
   for (const holiday of holidays) {
     const iso = holiday.date.slice(0, 10);
     if (!iso.startsWith(`${monthPrefix}-`)) continue;
+    if (holiday.type !== "public") continue;
 
     map.set(iso, {
       name: holiday.name,
+      type: holiday.type,
     });
   }
 

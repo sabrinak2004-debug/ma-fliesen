@@ -4,6 +4,17 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
+import {
+  CalendarDays,
+  Sparkles,
+  Crown,
+  Trees,
+  Briefcase,
+  Users,
+  Flower2,
+  Sun,
+  PartyPopper,
+} from "lucide-react";
 
 type CalendarDay = {
   date: string;
@@ -594,6 +605,58 @@ function pillStyle(): React.CSSProperties {
     gap: 8,
     lineHeight: "16px",
   };
+}
+
+function getHolidayIcon(name: string | null): React.ReactNode {
+  if (!name) return <CalendarDays size={14} />;
+
+  const n = name.toLowerCase();
+
+  if (n.includes("neujahr")) {
+    return <Sparkles size={14} />;
+  }
+
+  if (n.includes("heilige drei könige")) {
+    return <Crown size={14} />;
+  }
+
+  if (n.includes("karfreitag")) {
+    return <Sun size={14} />;
+  }
+
+  if (n.includes("ostermontag") || n.includes("ostern")) {
+    return <Flower2 size={14} />;
+  }
+
+  if (n.includes("christi himmelfahrt")) {
+    return <Sun size={14} />;
+  }
+
+  if (n.includes("pfingstmontag")) {
+    return <Flower2 size={14} />;
+  }
+
+  if (n.includes("fronleichnam")) {
+    return <Trees size={14} />;
+  }
+
+  if (n.includes("tag der arbeit")) {
+    return <Briefcase size={14} />;
+  }
+
+  if (n.includes("tag der deutschen einheit")) {
+    return <Users size={14} />;
+  }
+
+  if (n.includes("allerheiligen")) {
+    return <Trees size={14} />;
+  }
+
+  if (n.includes("weihnacht")) {
+    return <Trees size={14} />;
+  }
+
+  return <PartyPopper size={14} />;
 }
 
 function holidayDotColor(): string {
@@ -1459,7 +1522,10 @@ export default function KalenderPage() {
                         title={info.holidayName}
                         style={{ color: "rgba(255, 196, 0, 0.95)" }}
                       >
-                        🎉 {info.holidayName}
+                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          {getHolidayIcon(info.holidayName)}
+                          {info.holidayName}
+                        </span>
                       </div>
                     ) : null}
                   </button>
@@ -1593,7 +1659,10 @@ export default function KalenderPage() {
                             }}
                             title={info.holidayName}
                           >
-                            🎉 {info.holidayName}
+                            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              {getHolidayIcon(info.holidayName)}
+                              {info.holidayName}
+                            </span>
                           </div>
                         ) : null}
                       </button>
@@ -1681,6 +1750,20 @@ export default function KalenderPage() {
                 <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{apptError}</span>
               </div>
             )}
+
+            {selectedDate && dayMap.get(selectedDate)?.hasHoliday ? (
+              <div className="card" style={{ padding: 12, marginBottom: 12 }}>
+                <div style={{ fontWeight: 900 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {getHolidayIcon(dayMap.get(selectedDate)?.holidayName ?? null)}
+                    {dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}
+                  </span>
+                </div>
+                <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                  Dieser Tag ist als gesetzlicher Feiertag im Kalender markiert.
+                </div>
+              </div>
+            ) : null}
 
             <div className="calendar-modal-agenda-head">
               <div>
@@ -1966,12 +2049,18 @@ export default function KalenderPage() {
             {selectedDate ? (
               <div className="card" style={{ padding: 12, marginTop: 10 }}>
                 <div style={{ fontWeight: 900, marginBottom: 6 }}>Tagesinfo</div>
-                <div style={{ color: "var(--muted)", fontSize: 13 }}>
-                  {dayMap.get(selectedDate)?.planPreview
-                    ? `Plan: ${dayMap.get(selectedDate)?.planPreview}`
-                    : dayMap.get(selectedDate)?.holidayName
-                    ? `Feiertag: ${dayMap.get(selectedDate)?.holidayName}`
-                    : "Kein Plan/Preview vorhanden."}
+                <div style={{ color: "var(--muted)", fontSize: 13, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {dayMap.get(selectedDate)?.planPreview ? (
+                    <span>Plan: {dayMap.get(selectedDate)?.planPreview}</span>
+                  ) : null}
+
+                  {dayMap.get(selectedDate)?.holidayName ? (
+                    <span>Feiertag: {dayMap.get(selectedDate)?.holidayName}</span>
+                  ) : null}
+
+                  {!dayMap.get(selectedDate)?.planPreview && !dayMap.get(selectedDate)?.holidayName ? (
+                    <span>Kein Plan/Preview vorhanden.</span>
+                  ) : null}
                 </div>
                 <div style={{ marginTop: 8, display: "flex", gap: 10, flexWrap: "wrap", color: "var(--muted)" }}>
                   {dayMap.get(selectedDate)?.hasPlan ? <span style={pillStyle()}>Termine/Plan</span> : null}
@@ -2044,7 +2133,10 @@ export default function KalenderPage() {
                   <div className="label">Gesetzlicher Feiertag</div>
                   <div className="card" style={{ padding: 12 }}>
                     <div style={{ fontWeight: 900 }}>
-                      🎉 {dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}
+                      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {getHolidayIcon(dayMap.get(selectedDate)?.holidayName ?? null)}
+                        {dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}
+                      </span>
                     </div>
                     <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
                       Dieser Tag ist als gesetzlicher Feiertag im Kalender markiert.
