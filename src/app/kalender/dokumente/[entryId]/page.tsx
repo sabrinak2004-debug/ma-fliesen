@@ -1,14 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
 import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
 
 type DocItem = {
   id: string;
@@ -93,8 +88,6 @@ export default function KalenderDokumentePage() {
   const [previewMimeType, setPreviewMimeType] = useState<string>("");
   const [previewTitle, setPreviewTitle] = useState<string>("");
 
-  const [pdfPageCount, setPdfPageCount] = useState<number>(0);
-  const [pdfWidth, setPdfWidth] = useState<number>(900);
 
   function backToCalendar(): void {
     router.push("/kalender");
@@ -116,15 +109,7 @@ export default function KalenderDokumentePage() {
     setPreviewOpen(false);
     setPreviewMimeType("");
     setPreviewTitle("");
-    setPdfPageCount(0);
   }
-
-      function updatePdfWidth(): void {
-      if (typeof window === "undefined") return;
-
-      const nextWidth = Math.max(280, Math.min(window.innerWidth - 32, 920));
-      setPdfWidth(nextWidth);
-    }
 
   async function fetchDocumentBlob(docId: string, disposition: "inline" | "attachment"): Promise<Blob> {
     const response = await fetch(buildFileUrl(docId, disposition), {
@@ -175,11 +160,9 @@ export default function KalenderDokumentePage() {
         revokePreviewUrl();
 
         if (doc.mimeType === "application/pdf") {
-          updatePdfWidth();
           setPreviewUrl(buildFileUrl(doc.id, "inline"));
           setPreviewMimeType(doc.mimeType);
           setPreviewTitle(doc.title || doc.fileName);
-          setPdfPageCount(0);
           setPreviewOpen(true);
           return;
         }
@@ -267,21 +250,6 @@ export default function KalenderDokumentePage() {
     void loadDocs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entryId]);
-
-  useEffect(() => {
-      if (!previewOpen || previewMimeType !== "application/pdf") return;
-
-      updatePdfWidth();
-
-      const onResize = (): void => {
-        updatePdfWidth();
-      };
-
-      window.addEventListener("resize", onResize);
-      return () => {
-        window.removeEventListener("resize", onResize);
-      };
-    }, [previewOpen, previewMimeType]);
 
   useEffect(() => {
     return () => {
@@ -412,8 +380,9 @@ export default function KalenderDokumentePage() {
           <div
             style={{
               flex: 1,
+              minHeight: 0,
               background: "rgba(255,255,255,0.02)",
-              overflow: "auto",
+              overflow: "hidden",
               WebkitOverflowScrolling: "touch",
             }}
           >
@@ -421,35 +390,24 @@ export default function KalenderDokumentePage() {
               <div
                 style={{
                   minHeight: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                  padding: 16,
+                  height: "100%",
+                  padding: 0,
+                  background: "#2b2b2b",
                 }}
               >
-                <Document
-                  file={previewUrl}
-                  onLoadSuccess={({ numPages }: { numPages: number }) => {
-                    setPdfPageCount(numPages);
+                <iframe
+                  src={previewUrl}
+                  title={previewTitle}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    border: "none",
+                    display: "block",
+                  }}
+                  onLoad={() => {
                     setErr(null);
                   }}
-                  onLoadError={() => {
-                    setErr("PDF konnte nicht angezeigt werden.");
-                  }}
-                  loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
-                  error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
-                >
-                  <div style={{ display: "grid", gap: 16, justifyItems: "center" }}>
-                    {Array.from({ length: pdfPageCount }, (_, index) => (
-                      <Page
-                        key={`pdf-page-${index + 1}`}
-                        pageNumber={index + 1}
-                        width={pdfWidth}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                      />
-                    ))}
-                  </div>
-                </Document>
+                />
               </div>
             ) : (
               <div
