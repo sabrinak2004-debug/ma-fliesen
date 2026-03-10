@@ -18,6 +18,20 @@ type ShareNavigator = Navigator & {
   canShare?: (data: ShareData) => boolean;
 };
 
+function isMobileDevice(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const ua = navigator.userAgent.toLowerCase();
+
+  return (
+    ua.includes("android") ||
+    ua.includes("iphone") ||
+    ua.includes("ipad") ||
+    ua.includes("ipod") ||
+    ua.includes("mobile")
+  );
+}
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
@@ -108,6 +122,29 @@ export default function KalenderDokumentePage() {
     return await response.blob();
   }
 
+  async function downloadDocument(doc: DocItem): Promise<void> {
+    try {
+      setErr(null);
+
+      const blob = await fetchDocumentBlob(doc.id, "attachment");
+      const objectUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = doc.fileName || "dokument";
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+      }, 1000);
+    } catch {
+      setErr("Dokument konnte nicht heruntergeladen werden.");
+    }
+  }
+
   async function previewDocument(doc: DocItem): Promise<void> {
     if (!canPreviewMime(doc.mimeType)) {
       setErr("Dieser Dateityp kann in der App nicht angezeigt werden.");
@@ -152,7 +189,7 @@ export default function KalenderDokumentePage() {
         return;
       }
 
-      setErr("Auf diesem Gerät ist 'Teilen / In Dateien sichern' hier nicht verfügbar.");
+      setErr("Auf diesem Gerät ist 'Teilen / Sichern' hier nicht verfügbar.");
     } catch {
       setErr("Dokument konnte nicht geteilt bzw. gespeichert werden.");
     }
@@ -261,10 +298,15 @@ export default function KalenderDokumentePage() {
                     type="button"
                     className="btn"
                     onClick={() => {
-                      void shareDocument(d);
+                      if (isMobileDevice()) {
+                        void shareDocument(d);
+                        return;
+                      }
+
+                      void downloadDocument(d);
                     }}
                   >
-                    Teilen / Sichern
+                    {isMobileDevice() ? "Teilen / Sichern" : "Download"}
                   </button>
                 </div>
               </div>

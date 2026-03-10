@@ -507,6 +507,20 @@ type NavigatorWithShare = Navigator & {
   canShare?: (data?: ShareData) => boolean;
 };
 
+function isMobileDevice(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const ua = navigator.userAgent.toLowerCase();
+
+  return (
+    ua.includes("android") ||
+    ua.includes("iphone") ||
+    ua.includes("ipad") ||
+    ua.includes("ipod") ||
+    ua.includes("mobile")
+  );
+}
+
 /* =========================
    Page
    ========================= */
@@ -866,7 +880,7 @@ export default function AdminDashboardPage() {
 
       <button
         type="button"
-        onClick={() => void doExport("SHARE")}
+        onClick={() => void doExport(isMobileDevice() ? "SHARE" : "OPEN")}
         disabled={Boolean(rangeError) || Boolean(exportTargetError) || exportBusy}
         style={{
           padding: "10px 14px",
@@ -878,9 +892,9 @@ export default function AdminDashboardPage() {
           color: "var(--accent)",
           opacity: rangeError || exportTargetError || exportBusy ? 0.7 : 1,
         }}
-        title="Export teilen oder sichern"
+        title={isMobileDevice() ? "Export teilen oder sichern" : "Export herunterladen"}
       >
-        Teilen/Sichern
+        {isMobileDevice() ? "Teilen / Sichern" : "Download"}
       </button>
     </>
   );
