@@ -15,11 +15,14 @@ type WorkEntry = {
 
 type AbsenceDayPortion = "FULL_DAY" | "HALF_DAY";
 
+type AbsenceCompensation = "PAID" | "UNPAID";
+
 type Absence = {
   id: string;
   absenceDate: string; // YYYY-MM-DD
   type: "VACATION" | "SICK";
   dayPortion: AbsenceDayPortion;
+  compensation: AbsenceCompensation;
   user: { id: string; fullName: string };
 };
 
@@ -32,6 +35,7 @@ type AbsenceUserSummary = {
   user: { id: string; fullName: string };
   sickDays: number;
   vacationDays: number;
+  unpaidVacationDays: number;
   totalDays: number;
 };
 
@@ -50,11 +54,17 @@ type OverviewUserSummary = {
   travelMinutes: number;
   vacationDays: number;
   sickDays: number;
+  vacationMinutes: number;
+  sickMinutes: number;
+  unpaidAbsenceDays: number;
+  unpaidAbsenceMinutes: number;
   usedVacationDaysYtd: number;
   remainingVacationDays: number;
   baseTargetMinutes: number;
   targetMinutes: number;
+  netTargetMinutes: number;
   holidayCountInMonth: number;
+  holidayMinutes: number;
 };
 
 type OverviewTotals = {
@@ -63,10 +73,16 @@ type OverviewTotals = {
   travelMinutes: number;
   vacationDays: number;
   sickDays: number;
+  vacationMinutes: number;
+  sickMinutes: number;
+  unpaidAbsenceDays: number;
+  unpaidAbsenceMinutes: number;
   usedVacationDaysYtd: number;
   remainingVacationDays: number;
   baseTargetMinutes: number;
   targetMinutes: number;
+  netTargetMinutes: number;
+  holidayMinutes: number;
 };
 
 type OverviewResponse = {
@@ -138,8 +154,9 @@ function formatDateDE(yyyyMmDd: string) {
   return `${d}.${m}.${y}`;
 }
 
-function typeLabel(t: "VACATION" | "SICK") {
-  return t === "SICK" ? "Krank" : "Urlaub";
+function typeLabel(t: "VACATION" | "SICK", compensation?: AbsenceCompensation) {
+  if (t === "SICK") return "Krank";
+  return compensation === "UNPAID" ? "Urlaub (unbezahlt)" : "Urlaub";
 }
 
 function typeColor(t: "VACATION" | "SICK") {
@@ -219,6 +236,7 @@ function toUTCDateFromISO(ymd: string) {
 type AbsenceBlock = {
   user: { id: string; fullName: string };
   type: "VACATION" | "SICK";
+  compensation: AbsenceCompensation;
   from: string; // YYYY-MM-DD
   to: string; // YYYY-MM-DD
   days: number;
@@ -242,6 +260,10 @@ function formatDayCountDE(days: number): string {
   return `${String(days).replace(".", ",")} Tage`;
 }
 
+function formatHoursInfo(minutes: number): string {
+  return `${String((minutes / 60).toFixed(1)).replace(".", ",")} Stunden`;
+}
+
 function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
   const res: AbsenceBlock[] = [];
   if (sortedAbsences.length === 0) return res;
@@ -249,6 +271,7 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
   const user = sortedAbsences[0].user;
 
   let curType: Absence["type"] = sortedAbsences[0].type;
+  let curCompensation: AbsenceCompensation = sortedAbsences[0].compensation;
   let curDayPortion: AbsenceDayPortion = sortedAbsences[0].dayPortion;
   let curFrom = sortedAbsences[0].absenceDate;
   let curTo = sortedAbsences[0].absenceDate;
@@ -272,6 +295,7 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
       res.push({
         user,
         type: curType,
+        compensation: curCompensation,
         from: curFrom,
         to: curTo,
         days: curDays,
@@ -279,6 +303,7 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
       });
 
       curType = a.type;
+      curCompensation = a.compensation;
       curDayPortion = a.dayPortion;
       curFrom = a.absenceDate;
       curTo = a.absenceDate;
@@ -290,6 +315,7 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
       curDayPortion === "FULL_DAY" &&
       a.dayPortion === "FULL_DAY" &&
       a.type === curType &&
+      a.compensation === curCompensation &&
       isNextDay(curTo, a.absenceDate);
 
     if (mayMergeFullDays) {
@@ -301,6 +327,7 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
     res.push({
       user,
       type: curType,
+      compensation: curCompensation,
       from: curFrom,
       to: curTo,
       days: curDays,
@@ -308,6 +335,7 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
     });
 
     curType = a.type;
+    curCompensation = a.compensation;
     curDayPortion = a.dayPortion;
     curFrom = a.absenceDate;
     curTo = a.absenceDate;
@@ -317,6 +345,7 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
   res.push({
     user,
     type: curType,
+    compensation: curCompensation,
     from: curFrom,
     to: curTo,
     days: curDays,
@@ -338,8 +367,14 @@ export default function UebersichtPage() {
   const [annualVacationDays, setAnnualVacationDays] = useState<number>(30);
   const [usedVacationDaysYtd, setUsedVacationDaysYtd] = useState<number>(0);
   const [targetMinutes, setTargetMinutes] = useState<number>(0);
+  const [netTargetMinutes, setNetTargetMinutes] = useState<number>(0);
   const [baseTargetMinutes, setBaseTargetMinutes] = useState<number>(0);
   const [holidayCountInMonth, setHolidayCountInMonth] = useState<number>(0);
+  const [holidayMinutes, setHolidayMinutes] = useState<number>(0);
+  const [vacationMinutesInfo, setVacationMinutesInfo] = useState<number>(0);
+  const [sickMinutesInfo, setSickMinutesInfo] = useState<number>(0);
+  const [unpaidAbsenceDays, setUnpaidAbsenceDays] = useState<number>(0);
+  const [unpaidAbsenceMinutes, setUnpaidAbsenceMinutes] = useState<number>(0);
 
   const initialYm = useMemo(() => monthKey(new Date()), []);
   const [selectedYear, setSelectedYear] = useState<string>(currentYear());
@@ -439,9 +474,45 @@ export default function UebersichtPage() {
                 : 0
             );
 
+            setNetTargetMinutes(
+              typeof firstUser.netTargetMinutes === "number" && Number.isFinite(firstUser.netTargetMinutes)
+                ? firstUser.netTargetMinutes
+                : 0
+            );
+
             setHolidayCountInMonth(
               typeof firstUser.holidayCountInMonth === "number" && Number.isFinite(firstUser.holidayCountInMonth)
                 ? firstUser.holidayCountInMonth
+                : 0
+            );
+
+            setHolidayMinutes(
+              typeof firstUser.holidayMinutes === "number" && Number.isFinite(firstUser.holidayMinutes)
+                ? firstUser.holidayMinutes
+                : 0
+            );
+
+            setVacationMinutesInfo(
+              typeof firstUser.vacationMinutes === "number" && Number.isFinite(firstUser.vacationMinutes)
+                ? firstUser.vacationMinutes
+                : 0
+            );
+
+            setSickMinutesInfo(
+              typeof firstUser.sickMinutes === "number" && Number.isFinite(firstUser.sickMinutes)
+                ? firstUser.sickMinutes
+                : 0
+            );
+
+            setUnpaidAbsenceDays(
+              typeof firstUser.unpaidAbsenceDays === "number" && Number.isFinite(firstUser.unpaidAbsenceDays)
+                ? firstUser.unpaidAbsenceDays
+                : 0
+            );
+
+            setUnpaidAbsenceMinutes(
+              typeof firstUser.unpaidAbsenceMinutes === "number" && Number.isFinite(firstUser.unpaidAbsenceMinutes)
+                ? firstUser.unpaidAbsenceMinutes
                 : 0
             );
           } else {
@@ -449,7 +520,13 @@ export default function UebersichtPage() {
             setRemainingVacationDays(nextAnnualVacationDays);
             setBaseTargetMinutes(0);
             setTargetMinutes(0);
+            setNetTargetMinutes(0);
             setHolidayCountInMonth(0);
+            setHolidayMinutes(0);
+            setVacationMinutesInfo(0);
+            setSickMinutesInfo(0);
+            setUnpaidAbsenceDays(0);
+            setUnpaidAbsenceMinutes(0);
           }
         } else {
           setIsAdmin(false);
@@ -458,7 +535,13 @@ export default function UebersichtPage() {
           setRemainingVacationDays(30);
           setBaseTargetMinutes(0);
           setTargetMinutes(0);
+          setNetTargetMinutes(0);
           setHolidayCountInMonth(0);
+          setHolidayMinutes(0);
+          setVacationMinutesInfo(0);
+          setSickMinutesInfo(0);
+          setUnpaidAbsenceDays(0);
+          setUnpaidAbsenceMinutes(0);
         }
       } finally {
         setLoading(false);
@@ -494,7 +577,25 @@ export default function UebersichtPage() {
     return monthAbsences.filter((a) => a.type === "SICK").length;
   }, [absenceSummaryByUser, monthAbsences]);
 
+  const unpaidVacationDaysValue = useMemo(() => {
+    if (absenceSummaryByUser.length > 0) {
+      return absenceSummaryByUser.reduce(
+        (sum, u) => sum + (Number.isFinite(u.unpaidVacationDays) ? u.unpaidVacationDays : 0),
+        0
+      );
+    }
+
+    return monthAbsences.reduce((sum, a) => {
+      if (a.type === "VACATION" && a.compensation === "UNPAID") {
+        return sum + absenceDayValue(a.dayPortion);
+      }
+      return sum;
+    }, 0);
+  }, [absenceSummaryByUser, monthAbsences]);
+
   const progress = Math.min(1, targetMinutes <= 0 ? 0 : totalMinutes / targetMinutes);
+  const overtimeGrossMinutes = totalMinutes - targetMinutes;
+  const overtimeNetMinutes = totalMinutes - targetMinutes + vacationMinutesInfo + sickMinutesInfo + holidayMinutes;
 
   const byEmployee = useMemo(() => {
     type Acc = {
@@ -505,6 +606,7 @@ export default function UebersichtPage() {
       entries: number;
       vac: number;
       sick: number;
+      unpaidVac: number;
     };
 
     const map = new Map<string, Acc>();
@@ -513,7 +615,16 @@ export default function UebersichtPage() {
       const key = e.user?.id ?? "me";
       const name = e.user?.fullName ?? "Ich";
       const cur =
-        map.get(key) ?? { userId: key, name, minutes: 0, km: 0, entries: 0, vac: 0, sick: 0 };
+        map.get(key) ?? {
+          userId: key,
+          name,
+          minutes: 0,
+          km: 0,
+          entries: 0,
+          vac: 0,
+          sick: 0,
+          unpaidVac: 0,
+        };
 
       cur.minutes += Number.isFinite(e.workMinutes) ? e.workMinutes : 0;
       cur.entries += 1;
@@ -526,10 +637,11 @@ export default function UebersichtPage() {
         const key = s.user.id;
         const name = s.user.fullName;
         const cur =
-          map.get(key) ?? { userId: key, name, minutes: 0, km: 0, entries: 0, vac: 0, sick: 0 };
+        map.get(key) ?? { userId: key, name, minutes: 0, km: 0, entries: 0, vac: 0, sick: 0, unpaidVac: 0 };
 
         cur.vac += Number.isFinite(s.vacationDays) ? s.vacationDays : 0;
         cur.sick += Number.isFinite(s.sickDays) ? s.sickDays : 0;
+        cur.unpaidVac += Number.isFinite(s.unpaidVacationDays) ? s.unpaidVacationDays : 0;
 
         map.set(key, cur);
       }
@@ -538,11 +650,12 @@ export default function UebersichtPage() {
         const key = a.user?.id ?? "me";
         const name = a.user?.fullName ?? "Ich";
         const cur =
-          map.get(key) ?? { userId: key, name, minutes: 0, km: 0, entries: 0, vac: 0, sick: 0 };
+        map.get(key) ?? { userId: key, name, minutes: 0, km: 0, entries: 0, vac: 0, sick: 0, unpaidVac: 0 };
 
         const value = absenceDayValue(a.dayPortion);
 
-        if (a.type === "VACATION") cur.vac += value;
+        if (a.type === "VACATION" && a.compensation === "UNPAID") cur.unpaidVac += value;
+        if (a.type === "VACATION" && a.compensation === "PAID") cur.vac += value;
         if (a.type === "SICK") cur.sick += value;
 
         map.set(key, cur);
@@ -668,15 +781,17 @@ const filteredBlocks = useMemo((): AbsenceBlock[] => {
   const filteredAbsenceCounts = useMemo(() => {
     let sick = 0;
     let vac = 0;
+    let unpaidVac = 0;
     let total = 0;
 
     for (const b of filteredBlocks) {
       total += b.days;
       if (b.type === "SICK") sick += b.days;
-      if (b.type === "VACATION") vac += b.days;
+      if (b.type === "VACATION" && b.compensation === "PAID") vac += b.days;
+      if (b.type === "VACATION" && b.compensation === "UNPAID") unpaidVac += b.days;
     }
 
-    return { total, sick, vac };
+    return { total, sick, vac, unpaidVac };
   }, [filteredBlocks]);
 
 const resetAbsFilters = () => {
@@ -910,7 +1025,16 @@ const resetAbsFilters = () => {
             </div>
             <div className="big">{toHours(totalMinutes).toFixed(1)}h</div>
             <div className="small">
-              Soll: {toHours(targetMinutes).toFixed(1)}h
+              Soll (Brutto): {toHours(targetMinutes).toFixed(1)}h
+            </div>
+            <div className="small">
+              Soll (Netto): {toHours(netTargetMinutes).toFixed(1)}h
+            </div>
+            <div className="small">
+              Überstunden (Brutto): {toHours(overtimeGrossMinutes).toFixed(1)}h
+            </div>
+            <div className="small">
+              Überstunden (Netto): {toHours(overtimeNetMinutes).toFixed(1)}h
             </div>
             <div
               className="small"
@@ -921,7 +1045,7 @@ const resetAbsFilters = () => {
                 color: "var(--muted-2)",
               }}
             >
-              Automatisch berechnet aus Werktagen (Mo–Fr) abzüglich Feiertage, Urlaub und Krankheit
+              Brutto ohne Urlaub, Krankheit und Feiertage. Netto berücksichtigt bezahlte Urlaubstage, Krankheitstage und Feiertage zusätzlich.
             </div>
           </div>
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>⏱</div>
@@ -934,6 +1058,14 @@ const resetAbsFilters = () => {
               Urlaubstage · {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
             </div>
             <div className="big">{String(vacDays).replace(".", ",")}</div>
+            <div className="small">
+              {formatHoursInfo(vacationMinutesInfo)} davon Urlaub
+            </div>
+            {unpaidVacationDaysValue > 0 ? (
+              <div className="small">
+                {String(unpaidVacationDaysValue).replace(".", ",")} Tage unbezahlt ({formatHoursInfo(unpaidAbsenceMinutes)})
+              </div>
+            ) : null}
           </div>
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌴</div>
         </div>
@@ -953,6 +1085,9 @@ const resetAbsFilters = () => {
           <div>
             <div className="small">Krankheitstage</div>
             <div className="big">{sickDays}</div>
+            <div className="small">
+              {formatHoursInfo(sickMinutesInfo)} davon krank
+            </div>
           </div>
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌡</div>
         </div>
@@ -963,7 +1098,7 @@ const resetAbsFilters = () => {
         Monatsfortschritt – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ color: "var(--muted)" }}>
-            Noch {Math.max(0, (targetMinutes - totalMinutes) / 60).toFixed(1)}h bis zum Monatssoll
+            Noch {Math.max(0, (targetMinutes - totalMinutes) / 60).toFixed(1)}h bis zum Monatssoll (Brutto)
             {baseTargetMinutes > 0 ? (
               <span>
                 {" "}· Feiertage berücksichtigt
@@ -973,6 +1108,9 @@ const resetAbsFilters = () => {
           </div>
           <div style={{ fontWeight: 900 }}>
             {toHours(totalMinutes).toFixed(1)}h / {toHours(targetMinutes).toFixed(1)}h
+            <span style={{ marginLeft: 8, color: "var(--muted)" }}>
+              · Netto: {toHours(overtimeNetMinutes).toFixed(1)}h Überstunden
+            </span>
           </div>
         </div>
 
@@ -1005,6 +1143,9 @@ const resetAbsFilters = () => {
             </span>
             <span style={chipStyle("rgba(90, 167, 255, 0.10)", "rgba(90, 167, 255, 0.35)")}>
               🌴 {filteredAbsenceCounts.vac}
+            </span>
+            <span style={chipStyle("rgba(255, 184, 77, 0.10)", "rgba(255, 184, 77, 0.35)")}>
+              💸 {filteredAbsenceCounts.unpaidVac}
             </span>
           </div>
         </div>
@@ -1085,10 +1226,15 @@ const resetAbsFilters = () => {
                       }}
                     />
                     <span style={{ fontWeight: 900 }}>{title}</span>
-                    <span style={badgeStyle(b.type)}>{typeLabel(b.type)}</span>
+                    <span style={badgeStyle(b.type)}>{typeLabel(b.type, b.compensation)}</span>
                     <span style={{ color: "var(--muted)" }}>
                       {formatDayCountDE(b.days)}
                     </span>
+                    {b.type === "VACATION" && b.compensation === "UNPAID" ? (
+                      <span style={{ color: "rgba(255, 184, 77, 0.95)", fontWeight: 900 }}>
+                        unbezahlt
+                      </span>
+                    ) : null}
                   </div>
 
                   <div style={{ fontWeight: 900, color: "rgba(255,255,255,0.92)" }}>{b.user.fullName}</div>
@@ -1142,9 +1288,9 @@ const resetAbsFilters = () => {
                             🌡 {String(p.sick).replace(".", ",")} Krank
                           </span>
                         ) : null}
-                        {p.vac > 0 ? (
-                          <span style={{ color: "rgba(90, 167, 255, 0.95)" }}>
-                            🌴 {String(p.vac).replace(".", ",")} Urlaub
+                        {p.unpaidVac > 0 ? (
+                          <span style={{ color: "rgba(255, 184, 77, 0.95)" }}>
+                            💸 {String(p.unpaidVac).replace(".", ",")} Urlaub unbezahlt
                           </span>
                         ) : null}
                       </div>

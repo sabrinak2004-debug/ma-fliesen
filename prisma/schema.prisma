@@ -244,9 +244,10 @@ model Absence {
   userId String
   user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  absenceDate DateTime           @db.Date
+  absenceDate DateTime          @db.Date
   type        AbsenceType
-  dayPortion  AbsenceDayPortion  @default(FULL_DAY)
+  dayPortion  AbsenceDayPortion @default(FULL_DAY)
+  compensation AbsenceCompensation @default(PAID)
 
   createdAt DateTime @default(now())
 
@@ -259,13 +260,15 @@ model AbsenceRequest {
   userId    String
   user      AppUser              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  startDate  DateTime             @db.Date
-  endDate    DateTime             @db.Date
-  type       AbsenceType
-  dayPortion AbsenceDayPortion    @default(FULL_DAY)
-  status     AbsenceRequestStatus @default(PENDING)
+  startDate    DateTime               @db.Date
+  endDate      DateTime               @db.Date
+  type         AbsenceType
+  dayPortion   AbsenceDayPortion      @default(FULL_DAY)
+  status       AbsenceRequestStatus   @default(PENDING)
+  compensation AbsenceCompensation    @default(PAID)
 
   noteEmployee String?
+
 
   decidedAt   DateTime?
   decidedById String?
@@ -373,4 +376,9 @@ enum TimeEntryCorrectionRequestStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum AbsenceCompensation {
+  PAID
+  UNPAID
 }

@@ -143,3 +143,24 @@ export function toGoogleDateTime(date: Date): string {
 export function googleDateTimeToUTC(dateTime: string): Date {
   return new Date(dateTime);
 }
+
+export function formatGermanDateTime(date: Date): string {
+  return new Intl.DateTimeFormat("de-DE", {
+    timeZone: APP_TIMEZONE,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(date);
+}
+
+export function formatGermanDate(date: Date): string {
+  return new Intl.DateTimeFormat("de-DE", {
+    timeZone: APP_TIMEZONE,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}

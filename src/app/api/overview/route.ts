@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { AbsenceDayPortion, AbsenceType, Role } from "@prisma/client";
+import { AbsenceCompensation, AbsenceDayPortion, AbsenceType, Role } from "@prisma/client";
 import Holidays from "date-holidays";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
@@ -20,6 +20,10 @@ const DAILY_TARGET_MINUTES = 8 * 60;
 
 function absencePortionValue(dayPortion: AbsenceDayPortion): number {
   return dayPortion === AbsenceDayPortion.HALF_DAY ? 0.5 : 1;
+}
+
+function absencePortionMinutes(dayPortion: AbsenceDayPortion): number {
+  return absencePortionValue(dayPortion) * DAILY_TARGET_MINUTES;
 }
 
 function isWeekdayUtcDate(d: Date): boolean {
@@ -173,35 +177,58 @@ export async function GET(req: Request) {
       netMinutesSum += result.netDayMinutes;
     }
 
-    const vacationDays = userAbsences
-      .filter((row) => row.type === AbsenceType.VACATION)
-      .reduce((sum, row) => sum + absencePortionValue(row.dayPortion), 0);
+    const paidVacationAbsences = userAbsences.filter(
+      (row) => row.type === AbsenceType.VACATION && row.compensation === AbsenceCompensation.PAID
+    );
 
-    const sickDays = userAbsences
-      .filter((row) => row.type === AbsenceType.SICK)
-      .reduce((sum, row) => sum + absencePortionValue(row.dayPortion), 0);
+    const unpaidVacationAbsences = userAbsences.filter(
+      (row) => row.type === AbsenceType.VACATION && row.compensation === AbsenceCompensation.UNPAID
+    );
 
-    const usedVacationDaysYtd = userYearVacationAbsences.reduce(
+    const paidSickAbsences = userAbsences.filter(
+      (row) => row.type === AbsenceType.SICK && row.compensation === AbsenceCompensation.PAID
+    );
+
+    const vacationDays = paidVacationAbsences.reduce(
       (sum, row) => sum + absencePortionValue(row.dayPortion),
       0
     );
 
-    const remainingVacationDays = Math.max(
-      0,
-      ANNUAL_VACATION_DAYS - usedVacationDaysYtd
+    const sickDays = paidSickAbsences.reduce(
+      (sum, row) => sum + absencePortionValue(row.dayPortion),
+      0
     );
 
-    const absenceReductionMinutes = userAbsences.reduce((sum, row) => {
-      const iso = isoDayUTC(row.absenceDate);
-      const date = new Date(`${iso}T00:00:00.000Z`);
+    const vacationMinutes = paidVacationAbsences.reduce(
+      (sum, row) => sum + absencePortionMinutes(row.dayPortion),
+      0
+    );
 
-      if (!isWeekdayUtcDate(date)) return sum;
-      if (holidaySet.has(iso)) return sum;
+    const sickMinutes = paidSickAbsences.reduce(
+      (sum, row) => sum + absencePortionMinutes(row.dayPortion),
+      0
+    );
 
-      return sum + absencePortionValue(row.dayPortion) * DAILY_TARGET_MINUTES;
-    }, 0);
+    const unpaidAbsenceDays = unpaidVacationAbsences.reduce(
+      (sum, row) => sum + absencePortionValue(row.dayPortion),
+      0
+    );
 
-    const targetMinutes = Math.max(0, baseTargetMinutes - absenceReductionMinutes);
+    const unpaidAbsenceMinutes = unpaidVacationAbsences.reduce(
+      (sum, row) => sum + absencePortionMinutes(row.dayPortion),
+      0
+    );
+
+    const usedVacationDaysYtd = userYearVacationAbsences
+      .filter((row) => row.compensation === AbsenceCompensation.PAID)
+      .reduce((sum, row) => sum + absencePortionValue(row.dayPortion), 0);
+
+    const remainingVacationDays = Math.max(0, ANNUAL_VACATION_DAYS - usedVacationDaysYtd);
+
+    const paidHolidayMinutes = holidaySet.size * DAILY_TARGET_MINUTES;
+
+    const targetMinutes = baseTargetMinutes;
+    const netTargetMinutes = baseTargetMinutes + vacationMinutes + sickMinutes + paidHolidayMinutes;
     const missingRequiredWorkDates = await getMissingRequiredWorkDates(
       user.id,
       berlinTodayYMD()
@@ -223,11 +250,17 @@ export async function GET(req: Request) {
       ),
       vacationDays,
       sickDays,
+      vacationMinutes,
+      sickMinutes,
+      unpaidAbsenceDays,
+      unpaidAbsenceMinutes,
       usedVacationDaysYtd,
       remainingVacationDays,
       baseTargetMinutes,
       targetMinutes,
+      netTargetMinutes,
       holidayCountInMonth: holidaySet.size,
+      holidayMinutes: paidHolidayMinutes,
       workingDaysInMonth,
     };
   }));
@@ -246,6 +279,10 @@ export async function GET(req: Request) {
       travelMinutes: byUser.reduce((sum, user) => sum + user.travelMinutes, 0),
       vacationDays: byUser.reduce((sum, user) => sum + user.vacationDays, 0),
       sickDays: byUser.reduce((sum, user) => sum + user.sickDays, 0),
+      vacationMinutes: byUser.reduce((sum, user) => sum + user.vacationMinutes, 0),
+      sickMinutes: byUser.reduce((sum, user) => sum + user.sickMinutes, 0),
+      unpaidAbsenceDays: byUser.reduce((sum, user) => sum + user.unpaidAbsenceDays, 0),
+      unpaidAbsenceMinutes: byUser.reduce((sum, user) => sum + user.unpaidAbsenceMinutes, 0),
       usedVacationDaysYtd: byUser.reduce(
         (sum, user) => sum + user.usedVacationDaysYtd,
         0
@@ -259,6 +296,8 @@ export async function GET(req: Request) {
         0
       ),
       targetMinutes: byUser.reduce((sum, user) => sum + user.targetMinutes, 0),
+      netTargetMinutes: byUser.reduce((sum, user) => sum + user.netTargetMinutes, 0),
+      holidayMinutes: byUser.reduce((sum, user) => sum + user.holidayMinutes, 0),
     },
   });
 }

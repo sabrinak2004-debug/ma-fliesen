@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import {
+  AbsenceCompensation,
   AbsenceDayPortion,
   AbsenceType,
   Role,
@@ -12,6 +13,7 @@ type AbsenceBody = {
   endDate?: unknown;
   type?: unknown;
   dayPortion?: unknown;
+  compensation?: unknown;
   userId?: unknown;
 };
 
@@ -20,11 +22,13 @@ type AbsencePatchBody = {
   to?: unknown;
   type?: unknown;
   dayPortion?: unknown;
+  compensation?: unknown;
 
   newStartDate?: unknown;
   newEndDate?: unknown;
   newType?: unknown;
   newDayPortion?: unknown;
+  newCompensation?: unknown;
 
   userId?: unknown;
 };
@@ -43,6 +47,10 @@ function isAbsenceType(v: string): v is AbsenceType {
 
 function isAbsenceDayPortion(v: string): v is AbsenceDayPortion {
   return v === "FULL_DAY" || v === "HALF_DAY";
+}
+
+function isAbsenceCompensation(v: string): v is AbsenceCompensation {
+  return v === "PAID" || v === "UNPAID";
 }
 
 function isYYYYMM(v: string): boolean {
@@ -79,6 +87,7 @@ type AbsenceDTO = {
   absenceDate: string;
   type: "VACATION" | "SICK";
   dayPortion: "FULL_DAY" | "HALF_DAY";
+  compensation: "PAID" | "UNPAID";
   user: { id: string; fullName: string };
 };
 
@@ -91,6 +100,7 @@ type AbsenceUserSummary = {
   user: { id: string; fullName: string };
   sickDays: number;
   vacationDays: number;
+  unpaidVacationDays: number;
   totalDays: number;
 };
 
@@ -98,9 +108,6 @@ function okJson(data: unknown, init?: ResponseInit) {
   return NextResponse.json(data, init);
 }
 
-function numericDayValue(dayPortion: AbsenceDayPortion): number {
-  return dayPortion === AbsenceDayPortion.HALF_DAY ? 0.5 : 1;
-}
 
 export async function GET(req: Request) {
   const session = await getSession();
@@ -169,6 +176,7 @@ export async function GET(req: Request) {
     absenceDate: toIsoDateUTC(a.absenceDate),
     type: a.type === "SICK" ? "SICK" : "VACATION",
     dayPortion: a.dayPortion,
+    compensation: a.compensation,
     user: {
       id: a.user.id,
       fullName: a.user.fullName,
@@ -197,6 +205,7 @@ export async function GET(req: Request) {
       user: { id: string; fullName: string };
       sickDays: number;
       vacationDays: number;
+      unpaidVacationDays: number;
     }
   >();
 
@@ -205,12 +214,18 @@ export async function GET(req: Request) {
       user: { id: a.user.id, fullName: a.user.fullName },
       sickDays: 0,
       vacationDays: 0,
+      unpaidVacationDays: 0,
     };
 
     const value = a.dayPortion === "HALF_DAY" ? 0.5 : 1;
 
-    if (a.type === "SICK") cur.sickDays += value;
-    else cur.vacationDays += value;
+    if (a.type === "SICK") {
+      cur.sickDays += value;
+    } else if (a.compensation === "UNPAID") {
+      cur.unpaidVacationDays += value;
+    } else {
+      cur.vacationDays += value;
+    }
 
     byUser.set(a.user.id, cur);
   }
@@ -220,7 +235,8 @@ export async function GET(req: Request) {
       user: u.user,
       sickDays: u.sickDays,
       vacationDays: u.vacationDays,
-      totalDays: u.sickDays + u.vacationDays,
+      unpaidVacationDays: u.unpaidVacationDays,
+      totalDays: u.sickDays + u.vacationDays + u.unpaidVacationDays,
     }))
     .sort((a, b) => a.user.fullName.localeCompare(b.user.fullName));
 
@@ -243,6 +259,7 @@ export async function POST(req: Request) {
   const endDate = getString(body.endDate);
   const typeStr = getString(body.type);
   const dayPortionStr = getString(body.dayPortion);
+  const compensationStr = getString(body.compensation);
   const userIdFromBody = getString(body.userId);
 
   if (
@@ -259,10 +276,20 @@ export async function POST(req: Request) {
   const dayPortion: AbsenceDayPortion = isAbsenceDayPortion(dayPortionStr)
     ? dayPortionStr
     : AbsenceDayPortion.FULL_DAY;
+  const compensation: AbsenceCompensation = isAbsenceCompensation(compensationStr)
+    ? compensationStr
+    : AbsenceCompensation.PAID;
 
   if (typeStr === "SICK" && dayPortion !== AbsenceDayPortion.FULL_DAY) {
     return okJson(
       { error: "Krankheit kann nur ganztägig erfasst werden." },
+      { status: 400 }
+    );
+  }
+
+  if (typeStr === "SICK" && compensation !== AbsenceCompensation.PAID) {
+    return okJson(
+      { error: "Krankheit darf nicht als unbezahlt erfasst werden." },
       { status: 400 }
     );
   }
@@ -317,6 +344,7 @@ export async function POST(req: Request) {
       absenceDate: d,
       type: typeStr,
       dayPortion,
+      compensation,
     })),
     skipDuplicates: true,
   });
@@ -328,6 +356,7 @@ export async function POST(req: Request) {
     skipped: days.length - result.count,
     userId: targetUserId,
     dayPortion,
+    compensation,
   });
 }
 
@@ -342,11 +371,13 @@ export async function PATCH(req: Request) {
   const toStr = getString(body.to);
   const typeStr = getString(body.type);
   const dayPortionStr = getString(body.dayPortion);
+  const compensationStr = getString(body.compensation);
 
   const newStartStr = getString(body.newStartDate) || fromStr;
   const newEndStr = getString(body.newEndDate) || toStr;
   const newTypeStr = getString(body.newType) || typeStr;
   const newDayPortionStr = getString(body.newDayPortion) || dayPortionStr;
+  const newCompensationStr = getString(body.newCompensation) || compensationStr;
 
   const userIdFromBody = getString(body.userId);
 
@@ -371,6 +402,21 @@ export async function PATCH(req: Request) {
   const newDayPortion: AbsenceDayPortion = isAbsenceDayPortion(newDayPortionStr)
     ? newDayPortionStr
     : AbsenceDayPortion.FULL_DAY;
+
+  const oldCompensation: AbsenceCompensation = isAbsenceCompensation(compensationStr)
+    ? compensationStr
+    : AbsenceCompensation.PAID;
+
+  const newCompensation: AbsenceCompensation = isAbsenceCompensation(newCompensationStr)
+    ? newCompensationStr
+    : AbsenceCompensation.PAID;
+
+  if (newTypeStr === "SICK" && newDayPortion !== AbsenceDayPortion.FULL_DAY) {
+    return okJson(
+      { error: "Krankheit kann nur ganztägig sein." },
+      { status: 400 }
+    );
+  }
 
   if (newTypeStr === "SICK" && newDayPortion !== AbsenceDayPortion.FULL_DAY) {
     return okJson(
@@ -435,6 +481,7 @@ export async function PATCH(req: Request) {
         userId: targetUserId,
         type: typeStr,
         dayPortion: oldDayPortion,
+        compensation: oldCompensation,
         absenceDate: { gte: deleteFrom, lt: deleteToExclusive },
       },
     });
@@ -445,6 +492,7 @@ export async function PATCH(req: Request) {
         absenceDate: d,
         type: newTypeStr,
         dayPortion: newDayPortion,
+        compensation: newCompensation,
       })),
       skipDuplicates: true,
     });
@@ -464,12 +512,14 @@ export async function PATCH(req: Request) {
       to: toStr,
       type: typeStr,
       dayPortion: oldDayPortion,
+      compensation: oldCompensation,
     },
     next: {
       from: newStartStr,
       to: newEndStr,
       type: newTypeStr,
       dayPortion: newDayPortion,
+      compensation: newCompensation,
     },
     deleted: tx.deleted,
     created: tx.created,
@@ -505,6 +555,7 @@ export async function DELETE(req: Request) {
   const toStr = (url.searchParams.get("to") ?? "").trim();
   const typeStr = (url.searchParams.get("type") ?? "").trim();
   const dayPortionStr = (url.searchParams.get("dayPortion") ?? "").trim();
+  const compensationStr = (url.searchParams.get("compensation") ?? "").trim();
 
   if (
     !fromStr ||
@@ -523,6 +574,10 @@ export async function DELETE(req: Request) {
   const dayPortion: AbsenceDayPortion = isAbsenceDayPortion(dayPortionStr)
     ? dayPortionStr
     : AbsenceDayPortion.FULL_DAY;
+
+  const compensation: AbsenceCompensation = isAbsenceCompensation(compensationStr)
+    ? compensationStr
+    : AbsenceCompensation.PAID;
 
   const from = dateOnlyUTC(fromStr);
   const to = dateOnlyUTC(toStr);
@@ -549,6 +604,7 @@ export async function DELETE(req: Request) {
       userId: targetUserId,
       type: typeStr,
       dayPortion,
+      compensation,
       absenceDate: { gte: from, lt: toExclusive },
     },
   });
@@ -561,6 +617,7 @@ export async function DELETE(req: Request) {
       to: toStr,
       type: typeStr,
       dayPortion,
+      compensation,
     },
   });
 }

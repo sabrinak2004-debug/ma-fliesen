@@ -1,12 +1,14 @@
 // src/app/api/admin/export/route.ts
 import { NextResponse } from "next/server";
 import JSZip from "jszip";
+import { AbsenceCompensation, AbsenceType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import Holidays from "date-holidays";
+import { formatGermanDateTime } from "@/lib/time";
 
 /** === Payroll Settings (anpassen falls nötig) === */
-const STANDARD_DAY_HOURS = 8; // Tagessoll für bezahlte Tage (Urlaub/Krank/Feiertag)
+const STANDARD_DAY_HOURS = 8; // Referenzwert für Urlaub/Krankheit/Feiertag in Stunden
 const ROUND_TO_MINUTES = 15; // z.B. 15 = Viertelstunde (0,25h), 5 = 5-Minuten, 1 = Minuten-genau
 
 type SessionLike = {
@@ -109,6 +111,24 @@ function legalBreakMinutes(grossMinutes: number): number {
 }
 
 type DayAgg = { gross: number; manualBreak: number };
+
+type AbsenceDayValue = {
+  days: number;
+  minutes: number;
+};
+
+function getAbsenceDayFraction(dayPortion: string): number {
+  return dayPortion === "HALF_DAY" ? 0.5 : 1;
+}
+
+function getAbsenceMinutes(dayPortion: string): number {
+  return getAbsenceDayFraction(dayPortion) * STANDARD_DAY_HOURS * 60;
+}
+
+function formatDayHourLabel(days: number, minutes: number, dayLabel: string): string {
+  const wholeLabel = days === 1 ? dayLabel : `${dayLabel}e`;
+  return `${String(days).replace(".", ",")} ${wholeLabel} (${formatHoursDE(minutes / 60)} Stunden)`;
+}
 
 function isoDayUTC(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -295,7 +315,7 @@ function buildPayrollCsv(
   lines.push(["Zeitraum", labelPeriod]);
   lines.push(["Standard Tagessoll (h)", STANDARD_DAY_HOURS]);
   lines.push(["Rundung (Minuten)", ROUND_TO_MINUTES]);
-  lines.push(["Export erstellt am (UTC)", new Date().toISOString()]);
+  lines.push(["Export erstellt am", formatGermanDateTime(new Date())]);
   lines.push([]);
 
   for (const b of blocks) {
@@ -315,12 +335,17 @@ function buildPayrollCsv(
 
     const workedDates = new Set(b.entries.map((e) => dateOnly(e.workDate)));
 
-    const sickDates = new Set(
-      b.absences.filter((a) => a.type === "SICK").map((a) => dateOnly(a.absenceDate))
-    );
+    const vacationAbsences = b.absences.filter((a) => a.type === AbsenceType.VACATION);
+    const sickAbsences = b.absences.filter((a) => a.type === AbsenceType.SICK);
 
-    const vacationDates = new Set(
-      b.absences.filter((a) => a.type === "VACATION").map((a) => dateOnly(a.absenceDate))
+    const paidVacationAbsences = vacationAbsences.filter(
+      (a) => a.compensation === AbsenceCompensation.PAID
+    );
+    const unpaidVacationAbsences = vacationAbsences.filter(
+      (a) => a.compensation === AbsenceCompensation.UNPAID
+    );
+    const paidSickAbsences = sickAbsences.filter(
+      (a) => a.compensation === AbsenceCompensation.PAID
     );
 
     const holidayDates = new Set<string>();
@@ -342,22 +367,68 @@ function buildPayrollCsv(
       }
     }
 
-    const expectedMinutes = expectedWorkdays * STANDARD_DAY_HOURS * 60;
+    const expectedMinutesBrutto = expectedWorkdays * STANDARD_DAY_HOURS * 60;
 
-    const paidAbsenceDays = sickDates.size + vacationDates.size;
-    const paidAbsenceMinutes = paidAbsenceDays * STANDARD_DAY_HOURS * 60;
+    const vacationDays = paidVacationAbsences.reduce(
+      (sum, row) => sum + getAbsenceDayFraction(row.dayPortion),
+      0
+    );
+    const vacationMinutes = paidVacationAbsences.reduce(
+      (sum, row) => sum + getAbsenceMinutes(row.dayPortion),
+      0
+    );
 
-    const paidHolidayDaysNotWorked = Array.from(holidayDates).filter((d) => !workedDates.has(d)).length;
-    const paidHolidayMinutes = paidHolidayDaysNotWorked * STANDARD_DAY_HOURS * 60;
+    const sickDays = paidSickAbsences.reduce(
+      (sum, row) => sum + getAbsenceDayFraction(row.dayPortion),
+      0
+    );
+    const sickMinutes = paidSickAbsences.reduce(
+      (sum, row) => sum + getAbsenceMinutes(row.dayPortion),
+      0
+    );
+
+    const paidAbsenceDays = vacationDays + sickDays;
+    const paidAbsenceMinutes = vacationMinutes + sickMinutes;
+
+    const holidayPaidDateSet = new Set(
+      Array.from(holidayDates).filter((dateKey) => !workedDates.has(dateKey))
+    );
+
+    const holidayDays = holidayPaidDateSet.size;
+    const holidayMinutes = holidayDays * STANDARD_DAY_HOURS * 60;
+
+    const unpaidAbsenceDays = unpaidVacationAbsences.reduce(
+      (sum, row) => sum + getAbsenceDayFraction(row.dayPortion),
+      0
+    );
+    const unpaidAbsenceMinutes = unpaidVacationAbsences.reduce(
+      (sum, row) => sum + getAbsenceMinutes(row.dayPortion),
+      0
+    );
+
+    const absenceCoveredDates = new Set(
+      b.absences.map((a) => dateOnly(a.absenceDate))
+    );
+
+    let missingWorkEntryDays = 0;
+    if (rangeISO) {
+      for (const d of allDaysInRange) {
+        if (isWeekendUTC(d)) continue;
+        if (holidayDates.has(d)) continue;
+        if (workedDates.has(d)) continue;
+        if (absenceCoveredDates.has(d)) continue;
+        missingWorkEntryDays += 1;
+      }
+    }
+
+    const missingWorkEntryMinutes = missingWorkEntryDays * STANDARD_DAY_HOURS * 60;
 
     const workedHours = totalNetMinutes / 60;
-    const expectedHours = expectedMinutes / 60;
+    const expectedHoursBrutto = expectedMinutesBrutto / 60;
 
-    const payableMinutesRaw = totalNetMinutes + paidAbsenceMinutes + paidHolidayMinutes;
-    const payableMinutesRounded = roundMinutes(payableMinutesRaw, ROUND_TO_MINUTES);
-    const payableHoursRaw = payableMinutesRaw / 60;
-    const payableHoursRounded = payableMinutesRounded / 60;
-    const overtimeHours = (payableMinutesRaw - expectedMinutes) / 60;
+    const payableMinutesTotal = totalNetMinutes + paidAbsenceMinutes + holidayMinutes;
+    const overtimeBruttoHours = (totalNetMinutes - expectedMinutesBrutto) / 60;
+    const overtimeNettoHours = (payableMinutesTotal - expectedMinutesBrutto) / 60;
 
     lines.push(["Mitarbeiter", b.name]);
 
@@ -366,33 +437,33 @@ function buildPayrollCsv(
       "Soll-Arbeitstage",
       "Sollstunden",
       "Arbeitsstunden (Ist)",
-      "Überstunden (Ist-Soll)",
+      "Überstunden (Brutto)",
+      "Überstunden (Netto)",
       "Fahrtminuten",
       "Urlaubstage",
       "Krankheitstage",
-      "Feiertage (Werktag)",
-      "Bezahlte Abw.-Tage (U+K)",
-      "Bezahlte Abw.-Stunden",
-      "Bezahlte Feiertage (nicht gearbeitet)",
-      "Bezahlte Stunden (roh)",
-      "Bezahlte Stunden (gerundet)",
+      "Feiertage",
+      "Bezahlte Abwesenheitstage (U+K)",
+      "Unbezahlte Abwesenheitszeiten",
+      "Fehlende Arbeitseinträge",
+      "Bezahlte Stunden (gesamt)",
     ]);
 
     lines.push([
       "",
       rangeISO ? expectedWorkdays : "",
-      rangeISO ? formatHoursDE(expectedHours) : "",
+      rangeISO ? formatHoursDE(expectedHoursBrutto) : "",
       formatHoursDE(workedHours),
-      rangeISO ? formatHoursDE(overtimeHours) : "",
+      rangeISO ? formatHoursDE(overtimeBruttoHours) : "",
+      rangeISO ? formatHoursDE(overtimeNettoHours) : "",
       totalTravelMinutes,
-      vacationDates.size,
-      sickDates.size,
-      rangeISO ? holidayDates.size : "",
-      paidAbsenceDays,
-      formatHoursDE(paidAbsenceMinutes / 60),
-      rangeISO ? paidHolidayDaysNotWorked : "",
-      formatHoursDE(payableHoursRaw),
-      formatHoursDE(payableHoursRounded),
+      formatDayHourLabel(vacationDays, vacationMinutes, "Tag"),
+      formatDayHourLabel(sickDays, sickMinutes, "Tag"),
+      rangeISO ? formatDayHourLabel(holidayDays, holidayMinutes, "Tag") : "",
+      formatDayHourLabel(paidAbsenceDays, paidAbsenceMinutes, "Tag"),
+      formatDayHourLabel(unpaidAbsenceDays, unpaidAbsenceMinutes, "Tag"),
+      rangeISO ? formatDayHourLabel(missingWorkEntryDays, missingWorkEntryMinutes, "Tag") : "",
+      formatHoursDE(payableMinutesTotal / 60),
     ]);
 
     lines.push([]);
@@ -410,8 +481,7 @@ function buildPayrollCsv(
       "NettoArbeitsminuten",
       "Fahrtminuten",
       "Tätigkeit",
-      "Ort",
-      "ErstelltAm",
+      "Erstellt am",
     ]);
 
     type DetailRow = { sortKey: string; cols: Array<unknown> };
@@ -447,35 +517,38 @@ function buildPayrollCsv(
           e.travelMinutes ?? 0,
           e.activity,
           e.location,
-          e.createdAt.toISOString(),
+          formatGermanDateTime(e.createdAt),
         ],
       });
     }
 
-    for (const a of b.absences) {
-      const d = dateOnly(a.absenceDate);
-      const h = holidayMap.get(d);
+for (const a of b.absences) {
+  const d = dateOnly(a.absenceDate);
+  const h = holidayMap.get(d);
 
-      details.push({
-        sortKey: `${d}T99:90`,
-        cols: [
-          d,
-          weekdayShortDE(d),
-          a.type === "SICK" ? "KRANK" : "URLAUB",
-          h?.name ?? "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          a.createdAt.toISOString(),
-        ],
-      });
-    }
+  const createdAt =
+    a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+
+  details.push({
+    sortKey: `${d}T99:90`,
+    cols: [
+      d,
+      weekdayShortDE(d),
+      a.type === "SICK" ? "KRANK" : "URLAUB",
+      h?.name ?? "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      formatGermanDateTime(createdAt),
+    ],
+  });
+}
 
     if (rangeISO) {
       for (const d of allDaysInRange) {

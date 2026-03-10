@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  AbsenceCompensation,
   AbsenceDayPortion,
   AbsenceRequestStatus,
   AbsenceType,
@@ -115,6 +116,7 @@ function mapRequest(r: {
   type: AbsenceType;
   dayPortion: AbsenceDayPortion;
   status: AbsenceRequestStatus;
+  compensation: AbsenceCompensation;
   noteEmployee: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -135,6 +137,7 @@ function mapRequest(r: {
     type: r.type,
     dayPortion: r.dayPortion,
     status: r.status,
+    compensation: r.compensation,
     noteEmployee: r.noteEmployee ?? "",
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
@@ -346,6 +349,7 @@ export async function POST(req: Request) {
       type: typeRaw,
       dayPortion,
       status: AbsenceRequestStatus.PENDING,
+      compensation: AbsenceCompensation.PAID,
       noteEmployee: noteEmployee || null,
     },
     include: {

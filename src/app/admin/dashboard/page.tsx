@@ -28,6 +28,7 @@ type AdminTimelineAbsence = {
   type: "VACATION" | "SICK";
   date: string; // YYYY-MM-DD
   dayPortion: "FULL_DAY" | "HALF_DAY";
+  compensation?: "PAID" | "UNPAID";
 };
 
 type AdminTimelineItem = AdminTimelineWork | AdminTimelineAbsence;
@@ -112,11 +113,18 @@ type OverviewByUserRow = {
   travelMinutes: number;
   vacationDays: number;
   sickDays: number;
+  vacationMinutes: number;
+  sickMinutes: number;
+  unpaidAbsenceDays: number;
+  unpaidAbsenceMinutes: number;
+  baseTargetMinutes: number;
+  targetMinutes: number;
+  netTargetMinutes: number;
+  holidayMinutes: number;
 };
 
 type OverviewApiResponse = {
   month: string;
-  targetMinutes: number;
   byUser: OverviewByUserRow[];
   totals: {
     entriesCount: number;
@@ -124,6 +132,14 @@ type OverviewApiResponse = {
     travelMinutes: number;
     vacationDays: number;
     sickDays: number;
+    vacationMinutes: number;
+    sickMinutes: number;
+    unpaidAbsenceDays: number;
+    unpaidAbsenceMinutes: number;
+    baseTargetMinutes: number;
+    targetMinutes: number;
+    netTargetMinutes: number;
+    holidayMinutes: number;
   };
   isAdmin: boolean;
 };
@@ -218,7 +234,15 @@ function isOverviewRow(v: unknown): v is OverviewByUserRow {
     isNumber(v["workMinutes"]) &&
     isNumber(v["travelMinutes"]) &&
     isNumber(v["vacationDays"]) &&
-    isNumber(v["sickDays"])
+    isNumber(v["sickDays"]) &&
+    isNumber(v["vacationMinutes"]) &&
+    isNumber(v["sickMinutes"]) &&
+    isNumber(v["unpaidAbsenceDays"]) &&
+    isNumber(v["unpaidAbsenceMinutes"]) &&
+    isNumber(v["baseTargetMinutes"]) &&
+    isNumber(v["targetMinutes"]) &&
+    isNumber(v["netTargetMinutes"]) &&
+    isNumber(v["holidayMinutes"])
   );
 }
 
@@ -230,14 +254,21 @@ function isOverviewApiResponse(v: unknown): v is OverviewApiResponse {
 
   return (
     isString(v["month"]) &&
-    isNumber(v["targetMinutes"]) &&
     typeof v["isAdmin"] === "boolean" &&
     byUser.every(isOverviewRow) &&
     isNumber(totals["entriesCount"]) &&
     isNumber(totals["workMinutes"]) &&
     isNumber(totals["travelMinutes"]) &&
     isNumber(totals["vacationDays"]) &&
-    isNumber(totals["sickDays"])
+    isNumber(totals["sickDays"]) &&
+    isNumber(totals["vacationMinutes"]) &&
+    isNumber(totals["sickMinutes"]) &&
+    isNumber(totals["unpaidAbsenceDays"]) &&
+    isNumber(totals["unpaidAbsenceMinutes"]) &&
+    isNumber(totals["baseTargetMinutes"]) &&
+    isNumber(totals["targetMinutes"]) &&
+    isNumber(totals["netTargetMinutes"]) &&
+    isNumber(totals["holidayMinutes"])
   );
 }
 
@@ -274,6 +305,10 @@ function formatHM(minutes: number): string {
 function formatHours1(minutes: number): string {
   const h = minutes / 60;
   return `${h.toFixed(1)}h`;
+}
+
+function formatHoursInfoFromMinutes(minutes: number): string {
+  return `${String((minutes / 60).toFixed(1)).replace(".", ",")}h`;
 }
 
 function formatDateDE(iso: string): string {
@@ -329,6 +364,7 @@ function groupWorkItemsByDay(items: AdminTimelineWork[]): Record<string, AdminTi
 
 type AbsenceRange = {
   type: "VACATION" | "SICK";
+  compensation: "PAID" | "UNPAID";
   from: string;
   to: string;
   dayPortion: "FULL_DAY" | "HALF_DAY";
@@ -369,6 +405,7 @@ function groupAbsenceRanges(items: AdminTimelineItem[]): AbsenceRange[] {
     if (!last) {
       res.push({
         type: it.type,
+        compensation: it.compensation ?? "PAID",
         from: it.date,
         to: it.date,
         dayPortion: it.dayPortion,
@@ -381,6 +418,7 @@ function groupAbsenceRanges(items: AdminTimelineItem[]): AbsenceRange[] {
 
     const mayMergeFullDays =
       last.type === it.type &&
+      last.compensation === (it.compensation ?? "PAID") &&
       last.dayPortion === "FULL_DAY" &&
       it.dayPortion === "FULL_DAY" &&
       it.date === expectedNext;
@@ -393,6 +431,7 @@ function groupAbsenceRanges(items: AdminTimelineItem[]): AbsenceRange[] {
 
     res.push({
       type: it.type,
+      compensation: it.compensation ?? "PAID",
       from: it.date,
       to: it.date,
       dayPortion: it.dayPortion,
@@ -1795,12 +1834,59 @@ export default function AdminDashboardPage() {
 
           <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
             <span>Urlaub:</span>
-            <b>{overview ? overview.totals.vacationDays : "—"}</b>
+            <b>
+              {overview
+                ? `${String(overview.totals.vacationDays).replace(".", ",")} (${formatHoursInfoFromMinutes(
+                    overview.totals.vacationMinutes
+                  )})`
+                : "—"}
+            </b>
           </div>
 
           <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
             <span>Krank:</span>
-            <b>{overview ? overview.totals.sickDays : "—"}</b>
+            <b>
+              {overview
+                ? `${String(overview.totals.sickDays).replace(".", ",")} (${formatHoursInfoFromMinutes(
+                    overview.totals.sickMinutes
+                  )})`
+                : "—"}
+            </b>
+          </div>
+
+          <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
+            <span>Urlaub unbezahlt:</span>
+            <b>
+              {overview
+                ? `${String(overview.totals.unpaidAbsenceDays).replace(".", ",")} (${formatHoursInfoFromMinutes(
+                    overview.totals.unpaidAbsenceMinutes
+                  )})`
+                : "—"}
+            </b>
+          </div>
+
+          <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
+            <span>Überstunden (Brutto):</span>
+            <b>
+              {overview
+                ? formatHoursInfoFromMinutes(overview.totals.workMinutes - overview.totals.targetMinutes)
+                : "—"}
+            </b>
+          </div>
+
+          <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
+            <span>Überstunden (Netto):</span>
+            <b>
+              {overview
+                ? formatHoursInfoFromMinutes(
+                    overview.totals.workMinutes -
+                      overview.totals.targetMinutes +
+                      overview.totals.vacationMinutes +
+                      overview.totals.sickMinutes +
+                      overview.totals.holidayMinutes
+                  )
+                : "—"}
+            </b>
           </div>
 
           <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
@@ -2163,7 +2249,7 @@ export default function AdminDashboardPage() {
                                             border: "1px solid rgba(90,167,255,0.14)",
                                           }}
                                         >
-                                          🌴 Urlaub · {text}
+                                          {r.compensation === "UNPAID" ? "💸 Urlaub unbezahlt" : "🌴 Urlaub"} · {text}
                                         </div>
                                       );
                                     })}

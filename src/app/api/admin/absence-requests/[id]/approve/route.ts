@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  AbsenceCompensation,
   AbsenceDayPortion,
   AbsenceRequestStatus,
   AbsenceType,
@@ -14,11 +15,27 @@ type RouteContext = {
   }>;
 };
 
+type ApproveAbsenceRequestBody = {
+  compensation?: unknown;
+};
+
 function toIsoDateUTC(d: Date): string {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function getString(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
+
+function isAbsenceCompensation(v: string): v is AbsenceCompensation {
+  return v === "PAID" || v === "UNPAID";
 }
 
 function eachDayInclusive(from: Date, to: Date): Date[] {
@@ -106,7 +123,7 @@ async function sendPushToUser(
   );
 }
 
-export async function POST(_req: Request, context: RouteContext) {
+export async function POST(req: Request, context: RouteContext) {
   const admin = await requireAdmin();
   if (!admin) {
     return NextResponse.json(
@@ -117,6 +134,14 @@ export async function POST(_req: Request, context: RouteContext) {
 
   const params = await context.params;
   const requestId = params.id.trim();
+
+  const raw = (await req.json().catch(() => null)) as unknown;
+  const body: ApproveAbsenceRequestBody = isRecord(raw) ? raw : {};
+
+  const compensationRaw = getString(body.compensation).trim();
+  const compensation: AbsenceCompensation = isAbsenceCompensation(compensationRaw)
+    ? compensationRaw
+    : AbsenceCompensation.PAID;
 
   if (!requestId) {
     return NextResponse.json(
@@ -212,6 +237,7 @@ export async function POST(_req: Request, context: RouteContext) {
       where: { id: existing.id },
       data: {
         status: AbsenceRequestStatus.APPROVED,
+        compensation,
         decidedAt: new Date(),
         decidedById: admin.id,
       },
@@ -223,6 +249,7 @@ export async function POST(_req: Request, context: RouteContext) {
         absenceDate: day,
         type: existing.type,
         dayPortion: existing.dayPortion,
+        compensation,
       })),
       skipDuplicates: true,
     });
@@ -236,6 +263,9 @@ export async function POST(_req: Request, context: RouteContext) {
   const typeLabel =
     existing.type === "VACATION" ? "Urlaubsantrag" : "Krankheitsantrag";
 
+  const compensationLabel =
+    compensation === AbsenceCompensation.UNPAID ? "unbezahlt" : "bezahlt";
+
   const startDate = toIsoDateUTC(existing.startDate);
   const endDate = toIsoDateUTC(existing.endDate);
   const dateLabel = portionLabel(
@@ -248,7 +278,7 @@ export async function POST(_req: Request, context: RouteContext) {
   await sendPushToUser(
     existing.userId,
     "Antrag genehmigt",
-    `Dein ${typeLabel.toLowerCase()} wurde genehmigt (${dateLabel}).`,
+    `Dein ${typeLabel.toLowerCase()} wurde genehmigt (${dateLabel}, ${compensationLabel}).`,
     "/kalender"
   );
 
@@ -268,6 +298,7 @@ export async function POST(_req: Request, context: RouteContext) {
       },
       type: existing.type,
       dayPortion: existing.dayPortion,
+      compensation,
       startDate,
       endDate,
     },
