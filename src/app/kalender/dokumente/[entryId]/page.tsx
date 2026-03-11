@@ -75,7 +75,6 @@ export default function KalenderDokumentePage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewPdfData, setPreviewPdfData] = useState<ArrayBuffer | null>(null);
   const [previewPdfPages, setPreviewPdfPages] = useState<number>(0);
   const [previewMimeType, setPreviewMimeType] = useState<string>("");
   const [previewTitle, setPreviewTitle] = useState<string>("");
@@ -99,7 +98,6 @@ export default function KalenderDokumentePage() {
   function closePreview(): void {
     revokePreviewUrl();
     setPreviewLoading(false);
-    setPreviewPdfData(null);
     setPreviewPdfPages(0);
     setPreviewOpen(false);
     setPreviewMimeType("");
@@ -130,23 +128,20 @@ export default function KalenderDokumentePage() {
       setErr(null);
 
       revokePreviewUrl();
-      setPreviewPdfData(null);
       setPreviewPdfPages(0);
       setPreviewMimeType(doc.mimeType);
       setPreviewTitle(doc.title || doc.fileName);
       setPreviewLoading(true);
       setPreviewOpen(true);
 
-      const blob = await fetchDocumentBlob(doc.id, "inline");
-
       if (doc.mimeType === "application/pdf") {
-        const arrayBuffer = await blob.arrayBuffer();
-        setPreviewPdfData(arrayBuffer);
-        setPreviewUrl(null);
-      } else {
-        const blobUrl = URL.createObjectURL(blob);
-        setPreviewUrl(blobUrl);
+        setPreviewUrl(buildFileUrl(doc.id, "inline"));
+        return;
       }
+
+      const blob = await fetchDocumentBlob(doc.id, "inline");
+      const blobUrl = URL.createObjectURL(blob);
+      setPreviewUrl(blobUrl);
     } catch (error) {
       closePreview();
       const message = error instanceof Error ? error.message : "Unbekannter Fehler";
@@ -394,7 +389,7 @@ export default function KalenderDokumentePage() {
               >
                 Dokument wird geladen...
               </div>
-            ) : previewMimeType === "application/pdf" && previewPdfData ? (
+            ) : previewMimeType === "application/pdf" && previewUrl ? (
               <div
                 style={{
                   minHeight: "100%",
@@ -409,7 +404,7 @@ export default function KalenderDokumentePage() {
                   <div style={{ color: "white" }}>PDF-Viewer wird geladen...</div>
                 ) : (
                   <PdfDocument
-                    file={previewPdfData}
+                    file={previewUrl}
                     loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
                     error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
                     onLoadSuccess={({ numPages }: { numPages: number }) => {
