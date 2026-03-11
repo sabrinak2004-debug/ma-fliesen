@@ -81,6 +81,7 @@ export default function KalenderDokumentePage() {
   const [previewTitle, setPreviewTitle] = useState<string>("");
   const [reactPdfModule, setReactPdfModule] = useState<ReactPdfModule | null>(null);
   const [pdfRenderWidth, setPdfRenderWidth] = useState<number>(360);
+  const [pdfDevicePixelRatio, setPdfDevicePixelRatio] = useState<number>(2);
 
   const pdfTouchStartX = useRef<number | null>(null);
   const pdfTouchEndX = useRef<number | null>(null);
@@ -232,8 +233,11 @@ export default function KalenderDokumentePage() {
         ? Math.max(380, Math.min(viewportWidth - 16, 760))
         : Math.min(1400, viewportWidth - 64);
 
-        setPdfRenderWidth(nextWidth);
-      }
+    const nextDevicePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+    setPdfRenderWidth(nextWidth);
+    setPdfDevicePixelRatio(nextDevicePixelRatio);
+  }
 
   updatePdfRenderWidth();
   window.addEventListener("resize", updatePdfRenderWidth);
@@ -500,7 +504,7 @@ export default function KalenderDokumentePage() {
                       <PdfPage
                         pageNumber={previewPdfPage}
                         width={pdfRenderWidth}
-                        devicePixelRatio={Math.min(window.devicePixelRatio || 1, 2.5)}
+                        devicePixelRatio={pdfDevicePixelRatio}
                         renderMode="canvas"
                         renderTextLayer={false}
                         renderAnnotationLayer={false}
