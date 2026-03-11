@@ -147,9 +147,10 @@ export default function KalenderDokumentePage() {
         const blobUrl = URL.createObjectURL(blob);
         setPreviewUrl(blobUrl);
       }
-    } catch {
+    } catch (error) {
       closePreview();
-      setErr("Dokument konnte nicht in der App geöffnet werden.");
+      const message = error instanceof Error ? error.message : "Unbekannter Fehler";
+      setErr(`Dokument konnte nicht in der App geöffnet werden: ${message}`);
     } finally {
       setPreviewLoading(false);
     }
@@ -232,9 +233,10 @@ export default function KalenderDokumentePage() {
           if (active) {
             setReactPdfModule(mod);
           }
-        } catch {
+            } catch (error) {
           if (active) {
-            setErr("PDF-Viewer konnte nicht geladen werden.");
+            const message = error instanceof Error ? error.message : "Unbekannter Fehler";
+            setErr(`PDF-Viewer konnte nicht geladen werden: ${message}`);
           }
         }
       }
@@ -413,8 +415,8 @@ export default function KalenderDokumentePage() {
                     onLoadSuccess={({ numPages }: { numPages: number }) => {
                       setPreviewPdfPages(numPages);
                     }}
-                    onLoadError={() => {
-                      setErr("PDF konnte nicht geladen werden.");
+                    onLoadError={(error: Error) => {
+                      setErr(`PDF konnte nicht geladen werden: ${error.message}`);
                       closePreview();
                     }}
                   >
