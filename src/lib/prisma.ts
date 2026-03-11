@@ -1,9 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
+
 type PrismaPgPool = ConstructorParameters<typeof PrismaPg>[0];
 
-const globalForPrisma = globalThis as {
+const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
   pool?: Pool;
 };
