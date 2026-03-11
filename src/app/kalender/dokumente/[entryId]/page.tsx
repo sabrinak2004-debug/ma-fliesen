@@ -89,6 +89,11 @@ export default function KalenderDokumentePage() {
     return `/api/plan-entry-documents/file?id=${encodeURIComponent(docId)}&disposition=${disposition}`;
   }
 
+  function openPdfNative(docId: string): void {
+    const url = buildFileUrl(docId, "inline");
+    window.location.href = url;
+  }
+
   function revokePreviewUrl(): void {
     if (previewUrl && previewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(previewUrl);
@@ -136,7 +141,7 @@ export default function KalenderDokumentePage() {
       setPreviewOpen(true);
 
       if (doc.mimeType === "application/pdf") {
-        setPreviewUrl(buildFileUrl(doc.id, "inline"));
+        openPdfNative(doc.id);
         return;
       }
 
