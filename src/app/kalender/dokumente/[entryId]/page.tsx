@@ -79,6 +79,7 @@ export default function KalenderDokumentePage() {
   const [previewMimeType, setPreviewMimeType] = useState<string>("");
   const [previewTitle, setPreviewTitle] = useState<string>("");
   const [reactPdfModule, setReactPdfModule] = useState<ReactPdfModule | null>(null);
+  const [pdfRenderWidth, setPdfRenderWidth] = useState<number>(360);
 
   function backToCalendar(): void {
     router.push("/kalender");
@@ -89,7 +90,7 @@ export default function KalenderDokumentePage() {
   }
 
   function revokePreviewUrl(): void {
-    if (previewUrl) {
+    if (previewUrl && previewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(previewUrl);
     }
     setPreviewUrl(null);
@@ -213,6 +214,25 @@ export default function KalenderDokumentePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entryId]);
 
+  useEffect(() => {
+  function updatePdfRenderWidth(): void {
+    const viewportWidth = window.innerWidth;
+    const nextWidth =
+      viewportWidth < 768
+        ? Math.max(260, Math.min(viewportWidth - 32, 380))
+        : Math.min(900, viewportWidth - 120);
+
+    setPdfRenderWidth(nextWidth);
+  }
+
+  updatePdfRenderWidth();
+  window.addEventListener("resize", updatePdfRenderWidth);
+
+  return () => {
+    window.removeEventListener("resize", updatePdfRenderWidth);
+  };
+}, []);
+
     useEffect(() => {
       let active = true;
 
@@ -221,7 +241,7 @@ export default function KalenderDokumentePage() {
           const mod = await import("react-pdf");
 
           mod.pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-            "react-pdf/node_modules/pdfjs-dist/build/pdf.worker.min.mjs",
+            "pdfjs-dist/build/pdf.worker.min.mjs",
             import.meta.url
           ).toString();
 
@@ -405,6 +425,10 @@ export default function KalenderDokumentePage() {
                 ) : (
                   <PdfDocument
                     file={previewUrl}
+                    options={{
+                      disableAutoFetch: true,
+                      disableStream: true,
+                    }}
                     loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
                     error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
                     onLoadSuccess={({ numPages }: { numPages: number }) => {
@@ -426,7 +450,8 @@ export default function KalenderDokumentePage() {
                       >
                         <PdfPage
                           pageNumber={index + 1}
-                          width={900}
+                          width={pdfRenderWidth}
+                          devicePixelRatio={1}
                           renderTextLayer={false}
                           renderAnnotationLayer={false}
                         />
