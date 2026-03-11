@@ -1249,3 +1249,14 @@ li {
     -webkit-appearance: none;
   }
 }
+
+.react-pdf__Page {
+  max-width: 100%;
+}
+
+.react-pdf__Page canvas {
+  display: block;
+  max-width: 100%;
+  height: auto !important;
+  border-radius: 12px;
+}

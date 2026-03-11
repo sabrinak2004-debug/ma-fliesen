@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { Document, Page, pdfjs } from "react-pdf";
 import AppShell from "@/components/AppShell";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 type DocItem = {
   id: string;
@@ -69,6 +77,8 @@ export default function KalenderDokumentePage() {
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewPdfData, setPreviewPdfData] = useState<Uint8Array | null>(null);
+  const [previewPdfPages, setPreviewPdfPages] = useState<number>(0);
   const [previewMimeType, setPreviewMimeType] = useState<string>("");
   const [previewTitle, setPreviewTitle] = useState<string>("");
 
@@ -89,6 +99,8 @@ export default function KalenderDokumentePage() {
 
   function closePreview(): void {
     revokePreviewUrl();
+    setPreviewPdfData(null);
+    setPreviewPdfPages(0);
     setPreviewOpen(false);
     setPreviewMimeType("");
     setPreviewTitle("");
@@ -109,26 +121,36 @@ export default function KalenderDokumentePage() {
   }
 
   async function previewDocument(doc: DocItem): Promise<void> {
-    if (!canPreviewMime(doc.mimeType)) {
-      setErr("Dieser Dateityp kann in der App nicht angezeigt werden.");
-      return;
-    }
-
-    try {
-      setErr(null);
-
-      const blob = await fetchDocumentBlob(doc.id, "inline");
-      const blobUrl = URL.createObjectURL(blob);
-
-      revokePreviewUrl();
-      setPreviewUrl(blobUrl);
-      setPreviewMimeType(doc.mimeType);
-      setPreviewTitle(doc.title || doc.fileName);
-      setPreviewOpen(true);
-    } catch {
-      setErr("Dokument konnte nicht in der App geöffnet werden.");
-    }
+  if (!canPreviewMime(doc.mimeType)) {
+    setErr("Dieser Dateityp kann in der App nicht angezeigt werden.");
+    return;
   }
+
+  try {
+    setErr(null);
+
+    const blob = await fetchDocumentBlob(doc.id, "inline");
+
+    revokePreviewUrl();
+    setPreviewPdfData(null);
+    setPreviewPdfPages(0);
+
+    if (doc.mimeType === "application/pdf") {
+      const arrayBuffer = await blob.arrayBuffer();
+      setPreviewPdfData(new Uint8Array(arrayBuffer));
+      setPreviewUrl(null);
+    } else {
+      const blobUrl = URL.createObjectURL(blob);
+      setPreviewUrl(blobUrl);
+    }
+
+    setPreviewMimeType(doc.mimeType);
+    setPreviewTitle(doc.title || doc.fileName);
+    setPreviewOpen(true);
+  } catch {
+    setErr("Dokument konnte nicht in der App geöffnet werden.");
+  }
+}
 
   async function shareDocument(doc: DocItem): Promise<void> {
     try {
@@ -321,18 +343,45 @@ export default function KalenderDokumentePage() {
               WebkitOverflowScrolling: "touch",
             }}
           >
-            {previewMimeType === "application/pdf" ? (
-              <iframe
-                src={previewUrl}
-                title={previewTitle}
+            {previewMimeType === "application/pdf" && previewPdfData ? (
+              <div
                 style={{
-                  width: "100%",
-                  height: "100%",
-                  border: "none",
-                  background: "white",
+                  minHeight: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  padding: 12,
+                  gap: 12,
                 }}
-              />
-            ) : (
+              >
+                <Document
+                  file={{ data: previewPdfData }}
+                  loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
+                  error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
+                  onLoadSuccess={({ numPages }: { numPages: number }) => {
+                    setPreviewPdfPages(numPages);
+                  }}
+                >
+                  {Array.from({ length: previewPdfPages }, (_, index) => (
+                    <div
+                      key={`pdf-page-${index + 1}`}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Page
+                        pageNumber={index + 1}
+                        width={Math.min(window.innerWidth - 32, 900)}
+                        renderTextLayer={false}
+                        renderAnnotationLayer={false}
+                      />
+                    </div>
+                  ))}
+                </Document>
+              </div>
+            ) : previewUrl ? (
               <div
                 style={{
                   minHeight: "100%",
@@ -352,7 +401,7 @@ export default function KalenderDokumentePage() {
                   }}
                 />
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       ) : null}
