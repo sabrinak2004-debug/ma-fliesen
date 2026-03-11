@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import "@/lib/pdfPolyfills";
 import { Document, Page, pdfjs } from "react-pdf";
 import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
 
 type DocItem = {
   id: string;
