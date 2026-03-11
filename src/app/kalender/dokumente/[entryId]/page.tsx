@@ -300,7 +300,7 @@ export default function KalenderDokumentePage() {
         )}
       </div>
 
-      {previewOpen && previewUrl ? (
+      {previewOpen ? (
         <div
           style={{
             position: "fixed",
