@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Document, Page, pdfjs } from "react-pdf";
 import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 type DocItem = {
   id: string;
@@ -83,10 +85,14 @@ export default function KalenderDokumentePage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewMimeType, setPreviewMimeType] = useState<string>("");
-  const [previewTitle, setPreviewTitle] = useState<string>("");
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewMimeType, setPreviewMimeType] = useState<string>("");
+    const [previewTitle, setPreviewTitle] = useState<string>("");
+
+    const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+    const [pdfPageCount, setPdfPageCount] = useState<number>(0);
+    const [pdfWidth, setPdfWidth] = useState<number>(900);
 
 
   function backToCalendar(): void {
@@ -109,6 +115,15 @@ export default function KalenderDokumentePage() {
     setPreviewOpen(false);
     setPreviewMimeType("");
     setPreviewTitle("");
+    setPdfData(null);
+    setPdfPageCount(0);
+  }
+
+  function updatePdfWidth(): void {
+    if (typeof window === "undefined") return;
+
+    const nextWidth = Math.max(280, Math.min(window.innerWidth - 32, 920));
+    setPdfWidth(nextWidth);
   }
 
   async function fetchDocumentBlob(docId: string, disposition: "inline" | "attachment"): Promise<Blob> {
@@ -160,9 +175,16 @@ export default function KalenderDokumentePage() {
         revokePreviewUrl();
 
         if (doc.mimeType === "application/pdf") {
-          setPreviewUrl(buildFileUrl(doc.id, "inline"));
+          updatePdfWidth();
+
+          const blob = await fetchDocumentBlob(doc.id, "inline");
+          const arrayBuffer = await blob.arrayBuffer();
+
+          setPdfData(arrayBuffer);
+          setPreviewUrl(null);
           setPreviewMimeType(doc.mimeType);
           setPreviewTitle(doc.title || doc.fileName);
+          setPdfPageCount(0);
           setPreviewOpen(true);
           return;
         }
@@ -251,6 +273,21 @@ export default function KalenderDokumentePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entryId]);
 
+    useEffect(() => {
+      if (!previewOpen || previewMimeType !== "application/pdf") return;
+
+      updatePdfWidth();
+
+      const onResize = (): void => {
+        updatePdfWidth();
+      };
+
+      window.addEventListener("resize", onResize);
+      return () => {
+        window.removeEventListener("resize", onResize);
+      };
+    }, [previewOpen, previewMimeType]);
+
   useEffect(() => {
     return () => {
       if (previewUrl && previewUrl.startsWith("blob:")) {
@@ -337,7 +374,7 @@ export default function KalenderDokumentePage() {
         )}
       </div>
 
-      {previewOpen && previewUrl ? (
+      {previewOpen && (previewUrl || pdfData) ? (
         <div
           style={{
             position: "fixed",
@@ -380,36 +417,50 @@ export default function KalenderDokumentePage() {
           <div
             style={{
               flex: 1,
-              minHeight: 0,
               background: "rgba(255,255,255,0.02)",
-              overflow: "hidden",
+              overflow: "auto",
               WebkitOverflowScrolling: "touch",
             }}
           >
             {previewMimeType === "application/pdf" ? (
-              <div
-                style={{
-                  minHeight: "100%",
-                  height: "100%",
-                  padding: 0,
-                  background: "#2b2b2b",
-                }}
-              >
-                <iframe
-                  src={previewUrl}
-                  title={previewTitle}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    border: "none",
-                    display: "block",
-                  }}
-                  onLoad={() => {
-                    setErr(null);
-                  }}
-                />
-              </div>
-            ) : (
+  <div
+    style={{
+      minHeight: "100%",
+      display: "flex",
+      justifyContent: "center",
+      padding: 16,
+    }}
+  >
+      {pdfData ? (
+        <Document
+          file={{ data: pdfData }}
+          onLoadSuccess={({ numPages }: { numPages: number }) => {
+            setPdfPageCount(numPages);
+            setErr(null);
+          }}
+          onLoadError={() => {
+            setErr("PDF konnte nicht geladen werden.");
+          }}
+          loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
+          error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
+        >
+          <div style={{ display: "grid", gap: 16, justifyItems: "center" }}>
+            {Array.from({ length: pdfPageCount }, (_, index) => (
+              <Page
+                key={`pdf-page-${index + 1}`}
+                pageNumber={index + 1}
+                width={pdfWidth}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+              />
+            ))}
+          </div>
+        </Document>
+      ) : (
+        <div style={{ color: "white" }}>PDF wird geladen...</div>
+      )}
+    </div>
+  ) : (
               <div
                 style={{
                   minHeight: "100%",
@@ -419,15 +470,22 @@ export default function KalenderDokumentePage() {
                   padding: 16,
                 }}
               >
-                <img
-                  src={previewUrl}
-                  alt={previewTitle}
-                  style={{
-                    maxWidth: "100%",
-                    height: "auto",
-                    borderRadius: 12,
-                  }}
-                />
+                {previewUrl ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={previewUrl}
+                      alt={previewTitle}
+                      style={{
+                        maxWidth: "100%",
+                        height: "auto",
+                        borderRadius: 12,
+                      }}
+                    />
+                  </>
+                ) : (
+                  <div style={{ color: "white" }}>Vorschau wird geladen...</div>
+                )}
               </div>
             )}
           </div>
