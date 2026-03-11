@@ -50,8 +50,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const isPdf = doc.mimeType === "application/pdf";
-
   const isAdmin = session.role === "ADMIN";
   if (!isAdmin && doc.planEntry.userId !== session.userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -69,11 +67,8 @@ export async function GET(req: Request) {
       "Content-Type": doc.mimeType,
       "Content-Length": String(doc.sizeBytes),
       "Content-Disposition": contentDisposition,
-      "Cache-Control": isPdf
-        ? "private, max-age=0, must-revalidate"
-        : "private, max-age=0, no-store",
+      "Cache-Control": "private, max-age=0, no-store",
       "X-Content-Type-Options": "nosniff",
-      ...(isPdf ? { "Accept-Ranges": "bytes" } : {}),
     },
   });
 }
