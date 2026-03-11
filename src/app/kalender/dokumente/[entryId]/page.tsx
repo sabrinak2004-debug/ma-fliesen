@@ -75,7 +75,7 @@ export default function KalenderDokumentePage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewPdfData, setPreviewPdfData] = useState<Uint8Array | null>(null);
+  const [previewPdfData, setPreviewPdfData] = useState<ArrayBuffer | null>(null);
   const [previewPdfPages, setPreviewPdfPages] = useState<number>(0);
   const [previewMimeType, setPreviewMimeType] = useState<string>("");
   const [previewTitle, setPreviewTitle] = useState<string>("");
@@ -141,7 +141,7 @@ export default function KalenderDokumentePage() {
 
       if (doc.mimeType === "application/pdf") {
         const arrayBuffer = await blob.arrayBuffer();
-        setPreviewPdfData(new Uint8Array(arrayBuffer));
+        setPreviewPdfData(arrayBuffer);
         setPreviewUrl(null);
       } else {
         const blobUrl = URL.createObjectURL(blob);
@@ -409,7 +409,7 @@ export default function KalenderDokumentePage() {
                   <div style={{ color: "white" }}>PDF-Viewer wird geladen...</div>
                 ) : (
                   <PdfDocument
-                    file={{ data: previewPdfData }}
+                    file={previewPdfData}
                     loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
                     error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
                     onLoadSuccess={({ numPages }: { numPages: number }) => {
