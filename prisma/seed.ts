@@ -4,11 +4,15 @@ import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 
+type PrismaPgPool = ConstructorParameters<typeof PrismaPg>[0];
+
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL fehlt in .env");
 
 const pool = new Pool({ connectionString: url });
-const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
+const prisma = new PrismaClient({
+  adapter: new PrismaPg(pool as unknown as PrismaPgPool),
+});
 
 // ✅ hier trägst du alle Mitarbeiter ein, die Zugriff haben sollen
 const EMPLOYEES: string[] = [
