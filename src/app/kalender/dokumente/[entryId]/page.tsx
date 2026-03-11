@@ -219,7 +219,7 @@ export default function KalenderDokumentePage() {
     const viewportWidth = window.innerWidth;
     const nextWidth =
       viewportWidth < 768
-        ? Math.max(320, Math.min(viewportWidth - 24, 520))
+        ? Math.max(360, Math.min(viewportWidth - 16, 640))
         : Math.min(1100, viewportWidth - 96);
 
     setPdfRenderWidth(nextWidth);
@@ -451,9 +451,10 @@ export default function KalenderDokumentePage() {
                         <PdfPage
                           pageNumber={index + 1}
                           width={pdfRenderWidth}
-                          devicePixelRatio={1.5}
+                          devicePixelRatio={Math.min(window.devicePixelRatio || 1, 2)}
                           renderTextLayer={false}
                           renderAnnotationLayer={false}
+                          renderMode="canvas"
                         />
                       </div>
                     ))}
