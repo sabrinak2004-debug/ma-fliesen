@@ -2,15 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Document, Page, pdfjs } from "react-pdf";
 import AppShell from "@/components/AppShell";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
 
 type DocItem = {
   id: string;
@@ -25,6 +20,8 @@ type DocItem = {
 type ShareNavigator = Navigator & {
   canShare?: (data: ShareData) => boolean;
 };
+
+type ReactPdfModule = typeof import("react-pdf");
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -82,6 +79,7 @@ export default function KalenderDokumentePage() {
   const [previewPdfPages, setPreviewPdfPages] = useState<number>(0);
   const [previewMimeType, setPreviewMimeType] = useState<string>("");
   const [previewTitle, setPreviewTitle] = useState<string>("");
+  const [reactPdfModule, setReactPdfModule] = useState<ReactPdfModule | null>(null);
 
   function backToCalendar(): void {
     router.push("/kalender");
@@ -219,6 +217,35 @@ export default function KalenderDokumentePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entryId]);
 
+    useEffect(() => {
+      let active = true;
+
+      async function loadReactPdf(): Promise<void> {
+        try {
+          const mod = await import("react-pdf");
+
+          mod.pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+            "pdfjs-dist/build/pdf.worker.min.mjs",
+            import.meta.url
+          ).toString();
+
+          if (active) {
+            setReactPdfModule(mod);
+          }
+        } catch {
+          if (active) {
+            setErr("PDF-Viewer konnte nicht geladen werden.");
+          }
+        }
+      }
+
+      void loadReactPdf();
+
+      return () => {
+        active = false;
+      };
+    }, []);
+
   useEffect(() => {
     return () => {
       if (previewUrl) {
@@ -226,6 +253,9 @@ export default function KalenderDokumentePage() {
       }
     };
   }, [previewUrl]);
+
+  const PdfDocument = reactPdfModule?.Document;
+  const PdfPage = reactPdfModule?.Page;
 
   return (
     <AppShell activeLabel="#wirkönnendas">
@@ -373,36 +403,40 @@ export default function KalenderDokumentePage() {
                   gap: 12,
                 }}
               >
-                <Document
-                  file={{ data: previewPdfData }}
-                  loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
-                  error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
-                  onLoadSuccess={({ numPages }: { numPages: number }) => {
-                    setPreviewPdfPages(numPages);
-                  }}
-                  onLoadError={() => {
-                    setErr("PDF konnte nicht geladen werden.");
-                    closePreview();
-                  }}
-                >
-                  {Array.from({ length: previewPdfPages }, (_, index) => (
-                    <div
-                      key={`pdf-page-${index + 1}`}
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Page
-                        pageNumber={index + 1}
-                        width={900}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                      />
-                    </div>
-                  ))}
-                </Document>
+                {!PdfDocument || !PdfPage ? (
+                  <div style={{ color: "white" }}>PDF-Viewer wird geladen...</div>
+                ) : (
+                  <PdfDocument
+                    file={{ data: previewPdfData }}
+                    loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
+                    error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
+                    onLoadSuccess={({ numPages }: { numPages: number }) => {
+                      setPreviewPdfPages(numPages);
+                    }}
+                    onLoadError={() => {
+                      setErr("PDF konnte nicht geladen werden.");
+                      closePreview();
+                    }}
+                  >
+                    {Array.from({ length: previewPdfPages }, (_, index) => (
+                      <div
+                        key={`pdf-page-${index + 1}`}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <PdfPage
+                          pageNumber={index + 1}
+                          width={900}
+                          renderTextLayer={false}
+                          renderAnnotationLayer={false}
+                        />
+                      </div>
+                    ))}
+                  </PdfDocument>
+                )}
               </div>
             ) : previewUrl ? (
               <div
