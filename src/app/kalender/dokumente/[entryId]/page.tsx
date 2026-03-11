@@ -76,6 +76,7 @@ export default function KalenderDokumentePage() {
   const [err, setErr] = useState<string | null>(null);
 
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewPdfData, setPreviewPdfData] = useState<Uint8Array | null>(null);
   const [previewPdfPages, setPreviewPdfPages] = useState<number>(0);
@@ -99,6 +100,7 @@ export default function KalenderDokumentePage() {
 
   function closePreview(): void {
     revokePreviewUrl();
+    setPreviewLoading(false);
     setPreviewPdfData(null);
     setPreviewPdfPages(0);
     setPreviewOpen(false);
@@ -121,36 +123,39 @@ export default function KalenderDokumentePage() {
   }
 
   async function previewDocument(doc: DocItem): Promise<void> {
-  if (!canPreviewMime(doc.mimeType)) {
-    setErr("Dieser Dateityp kann in der App nicht angezeigt werden.");
-    return;
-  }
-
-  try {
-    setErr(null);
-
-    const blob = await fetchDocumentBlob(doc.id, "inline");
-
-    revokePreviewUrl();
-    setPreviewPdfData(null);
-    setPreviewPdfPages(0);
-
-    if (doc.mimeType === "application/pdf") {
-      const arrayBuffer = await blob.arrayBuffer();
-      setPreviewPdfData(new Uint8Array(arrayBuffer));
-      setPreviewUrl(null);
-    } else {
-      const blobUrl = URL.createObjectURL(blob);
-      setPreviewUrl(blobUrl);
+    if (!canPreviewMime(doc.mimeType)) {
+      setErr("Dieser Dateityp kann in der App nicht angezeigt werden.");
+      return;
     }
 
-    setPreviewMimeType(doc.mimeType);
-    setPreviewTitle(doc.title || doc.fileName);
-    setPreviewOpen(true);
-  } catch {
-    setErr("Dokument konnte nicht in der App geöffnet werden.");
+    try {
+      setErr(null);
+
+      revokePreviewUrl();
+      setPreviewPdfData(null);
+      setPreviewPdfPages(0);
+      setPreviewMimeType(doc.mimeType);
+      setPreviewTitle(doc.title || doc.fileName);
+      setPreviewLoading(true);
+      setPreviewOpen(true);
+
+      const blob = await fetchDocumentBlob(doc.id, "inline");
+
+      if (doc.mimeType === "application/pdf") {
+        const arrayBuffer = await blob.arrayBuffer();
+        setPreviewPdfData(new Uint8Array(arrayBuffer));
+        setPreviewUrl(null);
+      } else {
+        const blobUrl = URL.createObjectURL(blob);
+        setPreviewUrl(blobUrl);
+      }
+    } catch {
+      closePreview();
+      setErr("Dokument konnte nicht in der App geöffnet werden.");
+    } finally {
+      setPreviewLoading(false);
+    }
   }
-}
 
   async function shareDocument(doc: DocItem): Promise<void> {
     try {
@@ -343,7 +348,21 @@ export default function KalenderDokumentePage() {
               WebkitOverflowScrolling: "touch",
             }}
           >
-            {previewMimeType === "application/pdf" && previewPdfData ? (
+            {previewLoading ? (
+              <div
+                style={{
+                  minHeight: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 24,
+                  color: "white",
+                  fontWeight: 700,
+                }}
+              >
+                Dokument wird geladen...
+              </div>
+            ) : previewMimeType === "application/pdf" && previewPdfData ? (
               <div
                 style={{
                   minHeight: "100%",
@@ -361,6 +380,10 @@ export default function KalenderDokumentePage() {
                   onLoadSuccess={({ numPages }: { numPages: number }) => {
                     setPreviewPdfPages(numPages);
                   }}
+                  onLoadError={() => {
+                    setErr("PDF konnte nicht geladen werden.");
+                    closePreview();
+                  }}
                 >
                   {Array.from({ length: previewPdfPages }, (_, index) => (
                     <div
@@ -373,7 +396,7 @@ export default function KalenderDokumentePage() {
                     >
                       <Page
                         pageNumber={index + 1}
-                        width={Math.min(window.innerWidth - 32, 900)}
+                        width={900}
                         renderTextLayer={false}
                         renderAnnotationLayer={false}
                       />
