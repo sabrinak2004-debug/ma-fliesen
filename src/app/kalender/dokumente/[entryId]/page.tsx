@@ -228,7 +228,7 @@ export default function KalenderDokumentePage() {
 
     const nextDevicePixelRatio = Math.min(
       Math.max(window.devicePixelRatio || 1, 2),
-      10
+      1000
     );
 
     setPdfRenderWidth(nextWidth);
