@@ -254,10 +254,8 @@ export default function KalenderDokumentePage() {
         try {
           const mod = await import("react-pdf");
 
-          mod.pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-            "pdfjs-dist/build/pdf.worker.min.mjs",
-            import.meta.url
-          ).toString();
+          mod.pdfjs.GlobalWorkerOptions.workerSrc =
+            "https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
 
           if (active) {
             setReactPdfModule(mod);
