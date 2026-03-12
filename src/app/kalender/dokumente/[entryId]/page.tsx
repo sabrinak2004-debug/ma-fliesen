@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+/* eslint-disable @next/next/no-img-element */
 
 
 type DocItem = {
@@ -79,8 +80,8 @@ export default function KalenderDokumentePage() {
   const [previewMimeType, setPreviewMimeType] = useState<string>("");
   const [previewTitle, setPreviewTitle] = useState<string>("");
   const [reactPdfModule, setReactPdfModule] = useState<ReactPdfModule | null>(null);
-  const [pdfRenderWidth, setPdfRenderWidth] = useState<number>(900);
-  const [pdfDevicePixelRatio, setPdfDevicePixelRatio] = useState<number>(3);
+  const [pdfRenderWidth, setPdfRenderWidth] = useState<number>(360);
+    const [pdfDevicePixelRatio, setPdfDevicePixelRatio] = useState<number>(2.5);
 
   const pdfOptions = useMemo(
     () => ({
@@ -219,16 +220,17 @@ export default function KalenderDokumentePage() {
   }, [entryId]);
 
   useEffect(() => {
-  
-    function updatePdfRenderWidth(): void {
+  function updatePdfRenderWidth(): void {
     const viewportWidth = window.innerWidth;
-
     const nextWidth =
       viewportWidth < 768
-        ? Math.max(320, Math.min(viewportWidth - 24, 900))
-        : Math.max(700, Math.min(viewportWidth - 160, 1100));
+        ? Math.max(360, Math.min(viewportWidth - 24, 760))
+        : Math.min(1400, viewportWidth - 120);
 
-    const nextDevicePixelRatio = Math.min(window.devicePixelRatio || 1, 4);
+    const nextDevicePixelRatio = Math.min(
+      Math.max(window.devicePixelRatio || 1, 2),
+      5
+    );
 
     setPdfRenderWidth(nextWidth);
     setPdfDevicePixelRatio(nextDevicePixelRatio);
@@ -426,7 +428,7 @@ export default function KalenderDokumentePage() {
                   flexDirection: "column",
                   alignItems: "center",
                   padding: 12,
-                  gap: 16,
+                  gap: 12,
                 }}
               >
                 {!PdfDocument || !PdfPage ? (
@@ -453,10 +455,10 @@ export default function KalenderDokumentePage() {
                           display: "flex",
                           justifyContent: "center",
                           overflowX: "auto",
-                          paddingBottom: 8,
                         }}
                       >
                         <PdfPage
+                          pageNumber={index + 1}
                           width={pdfRenderWidth}
                           devicePixelRatio={pdfDevicePixelRatio}
                           renderTextLayer={false}
