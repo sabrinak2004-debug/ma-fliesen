@@ -81,6 +81,14 @@ export default function KalenderDokumentePage() {
   const [reactPdfModule, setReactPdfModule] = useState<ReactPdfModule | null>(null);
   const [pdfRenderWidth, setPdfRenderWidth] = useState<number>(360);
 
+  const pdfOptions = useMemo(
+    () => ({
+      disableAutoFetch: true,
+      disableStream: true,
+    }),
+    []
+  );
+
   function backToCalendar(): void {
     router.push("/kalender");
   }
@@ -134,11 +142,6 @@ export default function KalenderDokumentePage() {
       setPreviewTitle(doc.title || doc.fileName);
       setPreviewLoading(true);
       setPreviewOpen(true);
-
-      if (doc.mimeType === "application/pdf") {
-        setPreviewUrl(buildFileUrl(doc.id, "inline"));
-        return;
-      }
 
       const blob = await fetchDocumentBlob(doc.id, "inline");
       const blobUrl = URL.createObjectURL(blob);
@@ -425,18 +428,15 @@ export default function KalenderDokumentePage() {
                 ) : (
                   <PdfDocument
                     file={previewUrl}
-                    options={{
-                      disableAutoFetch: true,
-                      disableStream: true,
-                    }}
+                    options={pdfOptions}
                     loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
                     error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
                     onLoadSuccess={({ numPages }: { numPages: number }) => {
                       setPreviewPdfPages(numPages);
                     }}
                     onLoadError={(error: Error) => {
+                      setPreviewLoading(false);
                       setErr(`PDF konnte nicht geladen werden: ${error.message}`);
-                      closePreview();
                     }}
                   >
                     {Array.from({ length: previewPdfPages }, (_, index) => (
