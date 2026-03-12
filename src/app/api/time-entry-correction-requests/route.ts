@@ -9,6 +9,7 @@ import { webpush } from "@/lib/webpush";
 import {
   berlinTodayYMD,
   getMissingRequiredWorkDates,
+  requiresTimeEntryUnlock,
 } from "@/lib/timesheetLock";
 
 type CreateTimeEntryCorrectionRequestBody = {
@@ -216,21 +217,35 @@ export async function POST(req: Request) {
     );
   }
 
-  const targetDateExclusive = addUtcDays(dateOnlyUTC(targetDate), 1);
   const missingDates = await getMissingRequiredWorkDates(
     session.userId,
-    toIsoDateUTC(targetDateExclusive)
+    today
   );
 
-  if (missingDates.length === 0) {
+  const lockedMissingDates = missingDates.filter((dateYMD) =>
+    requiresTimeEntryUnlock(dateYMD, today)
+  );
+
+  if (lockedMissingDates.length === 0) {
     return NextResponse.json(
-      { ok: false, error: "Bis zu diesem Datum fehlen keine nachtragspflichtigen Arbeitseinträge." },
+      { ok: false, error: "Aktuell gibt es keine gesperrten fehlenden Arbeitseinträge." },
       { status: 409 }
     );
   }
 
-  const startDateYMD = missingDates[0];
-  const endDateYMD = missingDates[missingDates.length - 1];
+  if (!lockedMissingDates.includes(targetDate)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "Für dieses Datum ist aktuell noch kein Nachtragsantrag erforderlich oder das Datum gehört nicht zu den gesperrten fehlenden Arbeitstagen.",
+      },
+      { status: 409 }
+    );
+  }
+
+  const startDateYMD = lockedMissingDates[0];
+  const endDateYMD = lockedMissingDates[lockedMissingDates.length - 1];
 
   const startDate = dateOnlyUTC(startDateYMD);
   const endDate = dateOnlyUTC(endDateYMD);

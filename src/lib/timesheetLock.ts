@@ -39,6 +39,58 @@ function getHolidaySetForYears(startYear: number, endYear: number): Set<string> 
   return result;
 }
 
+function countBusinessDaysBetweenExclusiveStartAndInclusiveEnd(
+  startYMD: string,
+  endYMD: string
+): number {
+  if (startYMD >= endYMD) {
+    return 0;
+  }
+
+  const startDate = parseIsoDateToUtc(startYMD);
+  const endDate = parseIsoDateToUtc(endYMD);
+
+  const holidaySet = getHolidaySetForYears(
+    startDate.getUTCFullYear(),
+    endDate.getUTCFullYear()
+  );
+
+  let count = 0;
+
+  for (
+    let current = addUtcDays(startDate, 1);
+    current <= endDate;
+    current = addUtcDays(current, 1)
+  ) {
+    const currentYMD = isoDayUTC(current);
+
+    if (!isWeekdayUtcDate(current)) continue;
+    if (holidaySet.has(currentYMD)) continue;
+
+    count += 1;
+  }
+
+  return count;
+}
+
+  export function requiresTimeEntryUnlock(
+    workDateYMD: string,
+    todayYMD: string,
+    graceBusinessDays: number = 5
+  ): boolean {
+    if (workDateYMD >= todayYMD) {
+      return false;
+    }
+
+    const elapsedBusinessDays =
+      countBusinessDaysBetweenExclusiveStartAndInclusiveEnd(
+        workDateYMD,
+        todayYMD
+      );
+
+    return elapsedBusinessDays > graceBusinessDays;
+  }
+
 export function berlinTodayYMD(now: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Berlin",
@@ -240,6 +292,10 @@ export async function assertEmployeeMayEditDate(args: {
   }
 
   if (args.workDateYMD === today) {
+    return;
+  }
+
+  if (!requiresTimeEntryUnlock(args.workDateYMD, today)) {
     return;
   }
 

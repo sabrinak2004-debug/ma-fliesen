@@ -3,6 +3,7 @@ import { TimeEntryCorrectionRequestStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { webpush } from "@/lib/webpush";
+import { getMissingRequiredWorkDates } from "@/lib/timesheetLock";
 
 type RouteContext = {
   params: Promise<{
@@ -17,16 +18,14 @@ function toIsoDateUTC(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function eachDayInclusive(from: Date, to: Date): Date[] {
-  const out: Date[] = [];
-  const cur = new Date(from);
+function dateOnlyUTC(yyyyMmDd: string): Date {
+  return new Date(`${yyyyMmDd}T00:00:00.000Z`);
+}
 
-  while (cur <= to) {
-    out.push(new Date(cur));
-    cur.setUTCDate(cur.getUTCDate() + 1);
-  }
-
-  return out;
+function addUtcDays(d: Date, days: number): Date {
+  const copy = new Date(d.getTime());
+  copy.setUTCDate(copy.getUTCDate() + days);
+  return copy;
 }
 
 async function sendPushToUser(
@@ -142,7 +141,19 @@ export async function POST(_req: Request, context: RouteContext) {
     );
   }
 
-  const unlockDates = eachDayInclusive(existing.startDate, existing.endDate);
+  const requestStartDateYMD = toIsoDateUTC(existing.startDate);
+  const requestEndDateYMD = toIsoDateUTC(existing.endDate);
+
+  const missingDatesInRange = await getMissingRequiredWorkDates(
+    existing.userId,
+    toIsoDateUTC(addUtcDays(existing.endDate, 1))
+  );
+
+  const unlockDates = missingDatesInRange
+    .filter(
+      (ymd) => ymd >= requestStartDateYMD && ymd <= requestEndDateYMD
+    )
+    .map((ymd) => dateOnlyUTC(ymd));
 
   const txResult = await prisma.$transaction(async (tx) => {
     const updatedRequest = await tx.timeEntryCorrectionRequest.update({
@@ -187,8 +198,8 @@ export async function POST(_req: Request, context: RouteContext) {
     };
   });
 
-  const startDate = toIsoDateUTC(existing.startDate);
-  const endDate = toIsoDateUTC(existing.endDate);
+  const startDate = requestStartDateYMD;
+  const endDate = requestEndDateYMD;
   const dateLabel = startDate === endDate ? startDate : `${startDate} bis ${endDate}`;
 
   await sendPushToUser(
