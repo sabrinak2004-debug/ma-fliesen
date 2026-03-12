@@ -102,17 +102,20 @@ export async function GET(req: Request) {
     requiresTimeEntryUnlock(dateYMD, todayYMD, GRACE_WORKDAYS_LIMIT)
   );
 
+  const missingRequiredWorkdaysCount = missingRequiredWorkDates.length;
+
   const requiresCorrectionRequest =
     workDate < todayYMD &&
     lockedMissingWorkDates.includes(workDate);
-
   const lockedMissingWorkdaysCount = lockedMissingWorkDates.length;
+  const currentMissingWorkdaysCount = missingRequiredWorkdaysCount;
 
   return NextResponse.json({
     ok: true,
     workDate,
     hasActiveUnlock: activeUnlock,
     requiresCorrectionRequest,
+    currentMissingWorkdaysCount,
     lockedMissingWorkdaysCount,
     graceWorkdaysLimit: GRACE_WORKDAYS_LIMIT,
     pendingRequest: pendingRequest

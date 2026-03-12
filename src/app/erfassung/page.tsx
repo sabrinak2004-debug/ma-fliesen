@@ -55,6 +55,7 @@ type TimeEntryCorrectionRequestStatusResponse = {
   workDate: string;
   hasActiveUnlock: boolean;
   requiresCorrectionRequest: boolean;
+  currentMissingWorkdaysCount: number;
   lockedMissingWorkdaysCount: number;
   graceWorkdaysLimit: number;
   pendingRequest: {
@@ -79,6 +80,7 @@ function isTimeEntryCorrectionRequestStatusResponse(
   if (!isString(v["workDate"])) return false;
   if (typeof v["hasActiveUnlock"] !== "boolean") return false;
   if (typeof v["requiresCorrectionRequest"] !== "boolean") return false;
+  if (typeof v["currentMissingWorkdaysCount"] !== "number") return false;
   if (typeof v["lockedMissingWorkdaysCount"] !== "number") return false;
   if (typeof v["graceWorkdaysLimit"] !== "number") return false;
 
@@ -1032,6 +1034,9 @@ useEffect(() => {
   const requiresCorrectionRequestForSelectedDate =
     selectedCorrectionStatus?.requiresCorrectionRequest ?? false;
 
+  const currentMissingWorkdaysCount =
+    selectedCorrectionStatus?.currentMissingWorkdaysCount ?? 0;
+
   const lockedMissingWorkdaysCount =
     selectedCorrectionStatus?.lockedMissingWorkdaysCount ?? 0;
 
@@ -1053,22 +1058,22 @@ useEffect(() => {
     hasActiveUnlockForSelectedDate,
     pendingCorrectionRequestForSelectedDate,
   ]);
-    const correctionProgressText = useMemo(() => {
+  const correctionProgressText = useMemo(() => {
     if (!canCreateCorrectionRequest) return null;
     if (hasActiveUnlockForSelectedDate) return null;
     if (pendingCorrectionRequestForSelectedDate) return null;
 
     if (requiresCorrectionRequestForSelectedDate) {
-      return `Aktuell: ${lockedMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage. Ein Nachtragsantrag ist erforderlich.`;
+      return `Aktuell: ${currentMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage. Ein Nachtragsantrag ist erforderlich.`;
     }
 
-    return `Ab dem ${graceWorkdaysLimit}. fehlenden Arbeitstag muss ein Nachtragsantrag gestellt werden. Aktuell: ${lockedMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage bis zur Sperrung.`;
+    return `Ab dem ${graceWorkdaysLimit + 1}. fehlenden Arbeitstag muss ein Nachtragsantrag gestellt werden. Aktuell: ${currentMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage bis zur Sperrung.`;
   }, [
     canCreateCorrectionRequest,
     hasActiveUnlockForSelectedDate,
     pendingCorrectionRequestForSelectedDate,
     requiresCorrectionRequestForSelectedDate,
-    lockedMissingWorkdaysCount,
+    currentMissingWorkdaysCount,
     graceWorkdaysLimit,
   ]);
 
@@ -2037,8 +2042,8 @@ useEffect(() => {
                   pendingCorrectionRequestForSelectedDate.endDate
                 )} existiert bereits ein offener Antrag.`
               : requiresCorrectionRequestForSelectedDate
-              ? `Aktuell: ${lockedMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage. Ein Nachtragsantrag ist erforderlich.`
-              : `Aktuell: ${lockedMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage bis zur Sperrung.`}
+              ? `Aktuell: ${currentMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage. Ein Nachtragsantrag ist erforderlich.`
+              : `Aktuell: ${currentMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage bis zur Sperrung.`}
           </div>
         </div>
       </Modal>
