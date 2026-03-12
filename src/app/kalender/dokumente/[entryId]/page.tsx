@@ -80,6 +80,7 @@ export default function KalenderDokumentePage() {
   const [previewTitle, setPreviewTitle] = useState<string>("");
   const [reactPdfModule, setReactPdfModule] = useState<ReactPdfModule | null>(null);
   const [pdfRenderWidth, setPdfRenderWidth] = useState<number>(360);
+    const [pdfDevicePixelRatio, setPdfDevicePixelRatio] = useState<number>(2.5);
 
   const pdfOptions = useMemo(
     () => ({
@@ -222,10 +223,16 @@ export default function KalenderDokumentePage() {
     const viewportWidth = window.innerWidth;
     const nextWidth =
       viewportWidth < 768
-        ? Math.max(360, Math.min(viewportWidth - 16, 640))
-        : Math.min(1100, viewportWidth - 96);
+        ? Math.max(360, Math.min(viewportWidth - 24, 760))
+        : Math.min(1400, viewportWidth - 120);
+
+    const nextDevicePixelRatio = Math.min(
+      Math.max(window.devicePixelRatio || 1, 2),
+      3.5
+    );
 
     setPdfRenderWidth(nextWidth);
+    setPdfDevicePixelRatio(nextDevicePixelRatio);
   }
 
   updatePdfRenderWidth();
@@ -446,15 +453,17 @@ export default function KalenderDokumentePage() {
                           width: "100%",
                           display: "flex",
                           justifyContent: "center",
+                          overflowX: "auto",
                         }}
                       >
                         <PdfPage
                           pageNumber={index + 1}
                           width={pdfRenderWidth}
-                          devicePixelRatio={Math.min(window.devicePixelRatio || 1, 2)}
+                          devicePixelRatio={pdfDevicePixelRatio}
                           renderTextLayer={false}
                           renderAnnotationLayer={false}
                           renderMode="canvas"
+                          loading={<div style={{ color: "white" }}>Seite wird geladen...</div>}
                         />
                       </div>
                     ))}
