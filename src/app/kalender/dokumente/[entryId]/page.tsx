@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
 
 
 type DocItem = {
@@ -20,8 +18,6 @@ type DocItem = {
 type ShareNavigator = Navigator & {
   canShare?: (data: ShareData) => boolean;
 };
-
-type ReactPdfModule = typeof import("react-pdf");
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -63,6 +59,11 @@ function canPreviewMime(mimeType: string): boolean {
   return mimeType === "application/pdf" || mimeType.startsWith("image/");
 }
 
+function shouldOpenPdfNativelyOnMobile(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.innerWidth < 768;
+}
+
 export default function KalenderDokumentePage() {
   const router = useRouter();
   const params = useParams<{ entryId: string }>();
@@ -75,16 +76,8 @@ export default function KalenderDokumentePage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewPdfPages, setPreviewPdfPages] = useState<number>(0);
-  const [previewPdfPage, setPreviewPdfPage] = useState<number>(1);
   const [previewMimeType, setPreviewMimeType] = useState<string>("");
   const [previewTitle, setPreviewTitle] = useState<string>("");
-  const [reactPdfModule, setReactPdfModule] = useState<ReactPdfModule | null>(null);
-  const [pdfRenderWidth, setPdfRenderWidth] = useState<number>(360);
-  const [pdfDevicePixelRatio, setPdfDevicePixelRatio] = useState<number>(2);
-
-  const pdfTouchStartX = useRef<number | null>(null);
-  const pdfTouchEndX = useRef<number | null>(null);
 
   function backToCalendar(): void {
     router.push("/kalender");
@@ -104,13 +97,9 @@ export default function KalenderDokumentePage() {
   function closePreview(): void {
     revokePreviewUrl();
     setPreviewLoading(false);
-    setPreviewPdfPages(0);
-    setPreviewPdfPage(1);
     setPreviewOpen(false);
     setPreviewMimeType("");
     setPreviewTitle("");
-    pdfTouchStartX.current = null;
-    pdfTouchEndX.current = null;
   }
 
   async function fetchDocumentBlob(docId: string, disposition: "inline" | "attachment"): Promise<Blob> {
@@ -135,21 +124,27 @@ export default function KalenderDokumentePage() {
 
     try {
       setErr(null);
-
       revokePreviewUrl();
-      setPreviewPdfPages(0);
-      setPreviewPdfPage(1);
+
+      const fileUrl = buildFileUrl(doc.id, "inline");
+
+      if (doc.mimeType === "application/pdf") {
+        if (shouldOpenPdfNativelyOnMobile()) {
+          window.location.assign(fileUrl);
+          return;
+        }
+
+        setPreviewMimeType(doc.mimeType);
+        setPreviewTitle(doc.title || doc.fileName);
+        setPreviewUrl(fileUrl);
+        setPreviewOpen(true);
+        return;
+      }
+
       setPreviewMimeType(doc.mimeType);
       setPreviewTitle(doc.title || doc.fileName);
       setPreviewLoading(true);
       setPreviewOpen(true);
-      pdfTouchStartX.current = null;
-      pdfTouchEndX.current = null;
-
-      if (doc.mimeType === "application/pdf") {
-        setPreviewUrl(buildFileUrl(doc.id, "inline"));
-        return;
-      }
 
       const blob = await fetchDocumentBlob(doc.id, "inline");
       const blobUrl = URL.createObjectURL(blob);
@@ -226,92 +221,12 @@ export default function KalenderDokumentePage() {
   }, [entryId]);
 
   useEffect(() => {
-  function updatePdfRenderWidth(): void {
-    const viewportWidth = window.innerWidth;
-    const nextWidth =
-      viewportWidth < 768
-        ? Math.max(380, Math.min(viewportWidth - 16, 760))
-        : Math.min(1400, viewportWidth - 64);
-
-    const nextDevicePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-
-    setPdfRenderWidth(nextWidth);
-    setPdfDevicePixelRatio(nextDevicePixelRatio);
-  }
-
-  updatePdfRenderWidth();
-  window.addEventListener("resize", updatePdfRenderWidth);
-
-  return () => {
-    window.removeEventListener("resize", updatePdfRenderWidth);
-  };
-}, []);
-
-    useEffect(() => {
-      let active = true;
-
-      async function loadReactPdf(): Promise<void> {
-        try {
-          const mod = await import("react-pdf");
-
-          mod.pdfjs.GlobalWorkerOptions.workerSrc =
-            `https://unpkg.com/pdfjs-dist@${mod.pdfjs.version}/build/pdf.worker.min.mjs`;
-
-          if (active) {
-            setReactPdfModule(mod);
-          }
-            } catch (error) {
-          if (active) {
-            const message = error instanceof Error ? error.message : "Unbekannter Fehler";
-            setErr(`PDF-Viewer konnte nicht geladen werden: ${message}`);
-          }
-        }
-      }
-
-      void loadReactPdf();
-
-      return () => {
-        active = false;
-      };
-    }, []);
-
-  useEffect(() => {
     return () => {
       if (previewUrl && previewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(previewUrl);
       }
     };
   }, [previewUrl]);
-
-  function goToPreviousPdfPage(): void {
-    setPreviewPdfPage((current) => Math.max(1, current - 1));
-  }
-
-  function goToNextPdfPage(): void {
-    setPreviewPdfPage((current) => Math.min(previewPdfPages, current + 1));
-  }
-
-  function handlePdfTouchEnd(): void {
-    const startX = pdfTouchStartX.current;
-    const endX = pdfTouchEndX.current;
-
-    if (startX === null || endX === null) return;
-
-    const deltaX = endX - startX;
-    const threshold = 50;
-
-    if (deltaX <= -threshold && previewPdfPage < previewPdfPages) {
-      goToNextPdfPage();
-    } else if (deltaX >= threshold && previewPdfPage > 1) {
-      goToPreviousPdfPage();
-    }
-
-    pdfTouchStartX.current = null;
-    pdfTouchEndX.current = null;
-  }
-
-  const PdfDocument = reactPdfModule?.Document;
-  const PdfPage = reactPdfModule?.Page;
 
   return (
     <AppShell activeLabel="#wirkönnendas">
@@ -449,111 +364,16 @@ export default function KalenderDokumentePage() {
                 Dokument wird geladen...
               </div>
             ) : previewMimeType === "application/pdf" && previewUrl ? (
-            <div
+            <iframe
+              src={previewUrl}
+              title={previewTitle}
               style={{
-                minHeight: "100%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                padding: 12,
-                gap: 12,
+                width: "100%",
+                height: "100%",
+                border: "none",
+                background: "white",
               }}
-            >
-              {!PdfDocument || !PdfPage ? (
-                <div style={{ color: "white" }}>PDF-Viewer wird geladen...</div>
-              ) : (
-                <>
-                  <div
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      justifyContent: "center",
-                    }}
-                    onTouchStart={(event) => {
-                      pdfTouchStartX.current = event.changedTouches[0]?.clientX ?? null;
-                      pdfTouchEndX.current = null;
-                    }}
-                    onTouchMove={(event) => {
-                      pdfTouchEndX.current = event.changedTouches[0]?.clientX ?? null;
-                    }}
-                    onTouchEnd={handlePdfTouchEnd}
-                  >
-                    <PdfDocument
-                      file={previewUrl}
-                      options={{
-                        disableAutoFetch: true,
-                        disableStream: true,
-                      }}
-                      loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
-                      error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
-                      onLoadSuccess={({ numPages }: { numPages: number }) => {
-                        setPreviewPdfPages(numPages);
-                        setPreviewPdfPage((current) => {
-                          if (current < 1) return 1;
-                          if (current > numPages) return numPages;
-                          return current;
-                        });
-                      }}
-                      onLoadError={(error: Error) => {
-                        setErr(`PDF konnte nicht geladen werden: ${error.message}`);
-                        closePreview();
-                      }}
-                    >
-                      <PdfPage
-                        pageNumber={previewPdfPage}
-                        width={pdfRenderWidth}
-                        devicePixelRatio={pdfDevicePixelRatio}
-                        renderMode="canvas"
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                      />
-                    </PdfDocument>
-                  </div>
-
-                  {previewPdfPages > 0 ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 10,
-                        flexWrap: "wrap",
-                        width: "100%",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className="btn"
-                        disabled={previewPdfPage <= 1}
-                        onClick={goToPreviousPdfPage}
-                      >
-                        ← Vorherige
-                      </button>
-
-                      <div
-                        style={{
-                          color: "white",
-                          fontWeight: 800,
-                          minWidth: 110,
-                          textAlign: "center",
-                        }}
-                      >
-                        Seite {previewPdfPage} / {previewPdfPages}
-                      </div>
-
-                      <button
-                        type="button"
-                        className="btn"
-                        disabled={previewPdfPage >= previewPdfPages}
-                        onClick={goToNextPdfPage}
-                      >
-                        Nächste →
-                      </button>
-                    </div>
-                  ) : null}
-                </>
-              )}
-            </div>
+            />
             ) : previewUrl ? (
               <div
                 style={{
