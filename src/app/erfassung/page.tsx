@@ -54,6 +54,9 @@ type TimeEntryCorrectionRequestStatusResponse = {
   ok: true;
   workDate: string;
   hasActiveUnlock: boolean;
+  requiresCorrectionRequest: boolean;
+  lockedMissingWorkdaysCount: number;
+  graceWorkdaysLimit: number;
   pendingRequest: {
     id: string;
     startDate: string;
@@ -75,6 +78,9 @@ function isTimeEntryCorrectionRequestStatusResponse(
   if (v["ok"] !== true) return false;
   if (!isString(v["workDate"])) return false;
   if (typeof v["hasActiveUnlock"] !== "boolean") return false;
+  if (typeof v["requiresCorrectionRequest"] !== "boolean") return false;
+  if (typeof v["lockedMissingWorkdaysCount"] !== "number") return false;
+  if (typeof v["graceWorkdaysLimit"] !== "number") return false;
 
   const pendingRequest = v["pendingRequest"];
   const latestDecisionRequest = v["latestDecisionRequest"];
@@ -1019,20 +1025,51 @@ useEffect(() => {
       return request.startDate <= workDate && request.endDate >= workDate;
     }) ?? null;
   }, [correctionRequests, workDate]);
-  const hasActiveUnlockForSelectedDate = selectedCorrectionStatus?.hasActiveUnlock ?? false;
+
+  const hasActiveUnlockForSelectedDate =
+    selectedCorrectionStatus?.hasActiveUnlock ?? false;
+
+  const requiresCorrectionRequestForSelectedDate =
+    selectedCorrectionStatus?.requiresCorrectionRequest ?? false;
+
+  const lockedMissingWorkdaysCount =
+    selectedCorrectionStatus?.lockedMissingWorkdaysCount ?? 0;
+
+  const graceWorkdaysLimit =
+    selectedCorrectionStatus?.graceWorkdaysLimit ?? 5;
 
   const latestDecisionRequestForSelectedDate =
     selectedCorrectionStatus?.latestDecisionRequest ?? null;
 
   const shouldShowCorrectionRequestButton = useMemo(() => {
     if (!canCreateCorrectionRequest) return false;
+    if (!requiresCorrectionRequestForSelectedDate) return false;
     if (hasActiveUnlockForSelectedDate) return false;
     if (pendingCorrectionRequestForSelectedDate) return false;
     return true;
   }, [
     canCreateCorrectionRequest,
+    requiresCorrectionRequestForSelectedDate,
     hasActiveUnlockForSelectedDate,
     pendingCorrectionRequestForSelectedDate,
+  ]);
+    const correctionProgressText = useMemo(() => {
+    if (!canCreateCorrectionRequest) return null;
+    if (hasActiveUnlockForSelectedDate) return null;
+    if (pendingCorrectionRequestForSelectedDate) return null;
+
+    if (requiresCorrectionRequestForSelectedDate) {
+      return `Aktuell: ${lockedMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage. Ein Nachtragsantrag ist erforderlich.`;
+    }
+
+    return `Ab dem ${graceWorkdaysLimit}. fehlenden Arbeitstag muss ein Nachtragsantrag gestellt werden. Aktuell: ${lockedMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage bis zur Sperrung.`;
+  }, [
+    canCreateCorrectionRequest,
+    hasActiveUnlockForSelectedDate,
+    pendingCorrectionRequestForSelectedDate,
+    requiresCorrectionRequestForSelectedDate,
+    lockedMissingWorkdaysCount,
+    graceWorkdaysLimit,
   ]);
 
   return (
@@ -1198,8 +1235,16 @@ useEffect(() => {
               ) : (
                 <>
                   <div style={{ fontSize: 13, color: "var(--text)" }}>
-                    Vergangene Tage sind für Mitarbeiter gesperrt. Falls dir bis zu diesem Datum noch Arbeitseinträge fehlen, kannst du hier einen Nachtragsantrag an den Admin senden.
+                    {requiresCorrectionRequestForSelectedDate
+                      ? "Für den ausgewählten Tag ist jetzt ein Nachtragsantrag erforderlich."
+                      : "Für den ausgewählten Tag ist aktuell noch kein Nachtragsantrag erforderlich."}
                   </div>
+
+                  {correctionProgressText ? (
+                    <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                      {correctionProgressText}
+                    </div>
+                  ) : null}
 
                   {shouldShowCorrectionRequestButton ? (
                     <div>
@@ -1991,7 +2036,9 @@ useEffect(() => {
                   pendingCorrectionRequestForSelectedDate.startDate,
                   pendingCorrectionRequestForSelectedDate.endDate
                 )} existiert bereits ein offener Antrag.`
-              : "Für den ausgewählten Tag existiert aktuell kein offener Nachtragsantrag."}
+              : requiresCorrectionRequestForSelectedDate
+              ? `Aktuell: ${lockedMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage. Ein Nachtragsantrag ist erforderlich.`
+              : `Aktuell: ${lockedMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage bis zur Sperrung.`}
           </div>
         </div>
       </Modal>

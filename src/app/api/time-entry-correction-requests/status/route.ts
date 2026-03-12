@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { TimeEntryCorrectionRequestStatus } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { hasActiveTimeEntryUnlock } from "@/lib/timesheetLock";
+import {
+  berlinTodayYMD,
+  getMissingRequiredWorkDates,
+  hasActiveTimeEntryUnlock,
+  requiresTimeEntryUnlock,
+} from "@/lib/timesheetLock";
 
 function getString(value: string | null): string {
   return typeof value === "string" ? value : "";
@@ -22,6 +27,8 @@ function toIsoDateUTC(d: Date): string {
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
+
+  const GRACE_WORKDAYS_LIMIT = 5;
 
 export async function GET(req: Request) {
   const session = await getSession();
@@ -44,8 +51,14 @@ export async function GET(req: Request) {
   }
 
   const workDateValue = dateOnlyUTC(workDate);
+  const todayYMD = berlinTodayYMD();
 
-  const [activeUnlock, pendingRequest, latestDecisionRequest] = await Promise.all([
+  const [
+    activeUnlock,
+    pendingRequest,
+    latestDecisionRequest,
+    missingRequiredWorkDates,
+  ] = await Promise.all([
     hasActiveTimeEntryUnlock(session.userId, workDate),
     prisma.timeEntryCorrectionRequest.findFirst({
       where: {
@@ -82,12 +95,26 @@ export async function GET(req: Request) {
         status: true,
       },
     }),
+    getMissingRequiredWorkDates(session.userId, todayYMD),
   ]);
+
+  const lockedMissingWorkDates = missingRequiredWorkDates.filter((dateYMD) =>
+    requiresTimeEntryUnlock(dateYMD, todayYMD, GRACE_WORKDAYS_LIMIT)
+  );
+
+  const requiresCorrectionRequest =
+    workDate < todayYMD &&
+    lockedMissingWorkDates.includes(workDate);
+
+  const lockedMissingWorkdaysCount = lockedMissingWorkDates.length;
 
   return NextResponse.json({
     ok: true,
     workDate,
     hasActiveUnlock: activeUnlock,
+    requiresCorrectionRequest,
+    lockedMissingWorkdaysCount,
+    graceWorkdaysLimit: GRACE_WORKDAYS_LIMIT,
     pendingRequest: pendingRequest
       ? {
           id: pendingRequest.id,
