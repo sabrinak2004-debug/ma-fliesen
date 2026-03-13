@@ -682,7 +682,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                 style={{
                   marginTop: 14,
                   height: 4,
-                  width: 56,
+                  width: 60,
                   borderRadius: 999,
                   background: "var(--accent)",
                 }}
