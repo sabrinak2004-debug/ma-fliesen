@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 function isActive(pathname: string, href: string) {
@@ -54,6 +54,34 @@ type NavItem = {
   icon: string;
 };
 
+type OpenTasksApiTask = {
+  id: string;
+  status: "OPEN" | "COMPLETED";
+};
+
+type OpenTasksApiResponse = {
+  tasks: OpenTasksApiTask[];
+};
+
+function isOpenTasksApiTask(v: unknown): v is OpenTasksApiTask {
+  if (!isRecord(v)) return false;
+  const id = v["id"];
+  const status = v["status"];
+
+  return (
+    typeof id === "string" &&
+    (status === "OPEN" || status === "COMPLETED")
+  );
+}
+
+function isOpenTasksApiResponse(v: unknown): v is OpenTasksApiResponse {
+  return (
+    isRecord(v) &&
+    Array.isArray(v["tasks"]) &&
+    v["tasks"].every(isOpenTasksApiTask)
+  );
+}
+
 export default function AppShell({
   children,
   activeLabel,
@@ -64,6 +92,7 @@ export default function AppShell({
   const pathname = usePathname();
   const [session, setSession] = useState<SessionData | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [openTaskCount, setOpenTaskCount] = useState(0);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -148,6 +177,36 @@ export default function AppShell({
     };
   }, []);
 
+const loadOpenTaskCount = useCallback(async (): Promise<void> => {
+  if (!session || session.role !== "EMPLOYEE") {
+    setOpenTaskCount(0);
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/tasks?status=OPEN", {
+      method: "GET",
+      cache: "no-store",
+      credentials: "include",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    });
+
+    const json: unknown = await res.json().catch(() => ({}));
+
+    if (!res.ok || !isOpenTasksApiResponse(json)) {
+      setOpenTaskCount(0);
+      return;
+    }
+
+    setOpenTaskCount(json.tasks.length);
+  } catch {
+    setOpenTaskCount(0);
+  }
+}, [session]);
+
   const isAdmin = session?.role === "ADMIN";
 
   const employeeNavItems: NavItem[] = [
@@ -169,6 +228,22 @@ export default function AppShell({
   ];
 
   const navItems = isAdmin ? adminNavItems : employeeNavItems;
+
+  useEffect(() => {
+    void loadOpenTaskCount();
+  }, [loadOpenTaskCount, pathname]);
+
+  useEffect(() => {
+    function onTasksChanged() {
+      void loadOpenTaskCount();
+    }
+
+    window.addEventListener("tasks-changed", onTasksChanged);
+
+    return () => {
+      window.removeEventListener("tasks-changed", onTasksChanged);
+    };
+  }, [loadOpenTaskCount]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -417,6 +492,8 @@ export default function AppShell({
               <nav className="appshell-mobile-nav">
                 {navItems.map((item) => {
                   const active = isActive(pathname, item.href);
+                  const showTaskBadge =
+                    !isAdmin && item.href === "/aufgaben" && openTaskCount > 0;
 
                   return (
                     <Link
@@ -427,7 +504,42 @@ export default function AppShell({
                       <span className="appshell-nav-icon" aria-hidden="true">
                         {item.icon}
                       </span>
-                      <span className="appshell-nav-label">{item.label}</span>
+
+                      <span
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          width: "100%",
+                          minWidth: 0,
+                        }}
+                      >
+                        <span className="appshell-nav-label">{item.label}</span>
+
+                        {showTaskBadge ? (
+                          <span
+                            aria-label={`${openTaskCount} offene Aufgaben`}
+                            style={{
+                              minWidth: 22,
+                              height: 22,
+                              padding: "0 7px",
+                              borderRadius: 999,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background: "var(--accent)",
+                              color: "#111",
+                              fontSize: 12,
+                              fontWeight: 1000,
+                              lineHeight: 1,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {openTaskCount}
+                          </span>
+                        ) : null}
+                      </span>
                     </Link>
                   );
                 })}
@@ -495,6 +607,8 @@ export default function AppShell({
             <nav className="appshell-sidebar-nav">
               {navItems.map((item) => {
                 const active = isActive(pathname, item.href);
+                const showTaskBadge =
+                  !isAdmin && item.href === "/aufgaben" && openTaskCount > 0;
 
                 return (
                   <Link
@@ -505,7 +619,42 @@ export default function AppShell({
                     <span className="appshell-nav-icon" aria-hidden="true">
                       {item.icon}
                     </span>
-                    <span className="appshell-nav-label">{item.label}</span>
+
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        width: "100%",
+                        minWidth: 0,
+                      }}
+                    >
+                      <span className="appshell-nav-label">{item.label}</span>
+
+                      {showTaskBadge ? (
+                        <span
+                          aria-label={`${openTaskCount} offene Aufgaben`}
+                          style={{
+                            minWidth: 22,
+                            height: 22,
+                            padding: "0 7px",
+                            borderRadius: 999,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "var(--accent)",
+                            color: "#111",
+                            fontSize: 12,
+                            fontWeight: 1000,
+                            lineHeight: 1,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {openTaskCount}
+                        </span>
+                      ) : null}
+                    </span>
                   </Link>
                 );
               })}

@@ -237,6 +237,7 @@ export default function AufgabenPage() {
         setError(message);
         setTasks([]);
         setMissingWorkEntryAlert(null);
+        window.dispatchEvent(new Event("tasks-changed"));
         return;
       }
 
@@ -244,15 +245,18 @@ export default function AufgabenPage() {
         setError("Unerwartete Antwort vom Server.");
         setTasks([]);
         setMissingWorkEntryAlert(null);
+        window.dispatchEvent(new Event("tasks-changed"));
         return;
       }
 
       setTasks(data.tasks);
       setMissingWorkEntryAlert(data.missingWorkEntryAlert ?? null);
+      window.dispatchEvent(new Event("tasks-changed"));
     } catch {
       setError("Netzwerkfehler beim Laden der Aufgaben.");
       setTasks([]);
       setMissingWorkEntryAlert(null);
+      window.dispatchEvent(new Event("tasks-changed"));
     } finally {
       setLoading(false);
     }
