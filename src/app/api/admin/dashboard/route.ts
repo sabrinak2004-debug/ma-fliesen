@@ -3,7 +3,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { Role, AbsenceType } from "@prisma/client";
-import { berlinTodayYMD, getMissingRequiredWorkDates } from "@/lib/timesheetLock";
+import {
+  berlinTodayYMD,
+  getMissingRequiredWorkDates,
+  isWorkEntryRequiredOnDateForUserMeta,
+} from "@/lib/timesheetLock";
 
 function dateOnlyLocalIso(d: Date) {
   const yyyy = d.getFullYear();
@@ -99,7 +103,7 @@ export async function GET(req: Request) {
 
   const employees = await prisma.appUser.findMany({
     where: { isActive: true, role: Role.EMPLOYEE },
-    select: { id: true, fullName: true },
+    select: { id: true, fullName: true, createdAt: true },
     orderBy: { fullName: "asc" },
   });
 
@@ -107,6 +111,14 @@ export async function GET(req: Request) {
     userId: employee.id,
     fullName: employee.fullName,
   }));
+
+  const employeesRequiredToday = employees.filter((employee) =>
+    isWorkEntryRequiredOnDateForUserMeta({
+      currentYMD: todayIso,
+      createdDateYMD: berlinTodayYMD(employee.createdAt),
+      fullName: employee.fullName,
+    })
+  );
 
   const plannedToday = await prisma.planEntry.count({
     where: { workDate: new Date(`${todayIso}T00:00:00.000Z`) },
@@ -146,7 +158,7 @@ export async function GET(req: Request) {
 
   const workedTodaySet = new Set(workedToday.map((x) => x.userId));
 
-  const missingTodayEmployees: DashboardPersonRow[] = employees
+  const missingTodayEmployees: DashboardPersonRow[] = employeesRequiredToday
     .filter((employee) => !workedTodaySet.has(employee.id) && !absentTodaySet.has(employee.id))
     .map((employee) => ({
       userId: employee.id,
@@ -203,19 +215,43 @@ export async function GET(req: Request) {
     select: { userId: true, workDate: true },
   });
 
-  const weekPairs = new Set(workWeek.map((w) => `${w.userId}:${dateOnlyLocalIso(new Date(w.workDate))}`));
-  const totalExpected = employees.length * weekDays.length;
+  const absencesWeek = await prisma.absence.findMany({
+    where: {
+      absenceDate: {
+        gte: new Date(`${weekDays[0]}T00:00:00.000Z`),
+        lte: new Date(`${weekDays[6]}T00:00:00.000Z`),
+      },
+    },
+    select: { userId: true, absenceDate: true },
+  });
 
-  let presentCount = 0;
+  const weekPairs = new Set(
+    workWeek.map((w) => `${w.userId}:${dateOnlyLocalIso(new Date(w.workDate))}`)
+  );
+
+  const absenceWeekPairs = new Set(
+    absencesWeek.map((a) => `${a.userId}:${dateOnlyLocalIso(new Date(a.absenceDate))}`)
+  );
+
+  let missingWeek = 0;
+
   for (const employee of employees) {
+    const createdDateYMD = berlinTodayYMD(employee.createdAt);
+
     for (const day of weekDays) {
-      if (weekPairs.has(`${employee.id}:${day}`)) {
-        presentCount += 1;
-      }
+      const isRequired = isWorkEntryRequiredOnDateForUserMeta({
+        currentYMD: day,
+        createdDateYMD: createdDateYMD,
+        fullName: employee.fullName,
+      });
+
+      if (!isRequired) continue;
+      if (absenceWeekPairs.has(`${employee.id}:${day}`)) continue;
+      if (weekPairs.has(`${employee.id}:${day}`)) continue;
+
+      missingWeek += 1;
     }
   }
-
-  const missingWeek = Math.max(0, totalExpected - presentCount);
 
   const workEntriesMonth = await prisma.workEntry.findMany({
     where: {

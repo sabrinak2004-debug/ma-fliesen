@@ -27,9 +27,13 @@ function isWeekdayUtcDate(d: Date): boolean {
 
 const DEFAULT_MISSING_ENTRIES_START_YMD = "2026-04-01";
 
-const MISSING_ENTRIES_START_OVERRIDES_BY_FULL_NAME: Readonly<Record<string, string>> = {
-  "Max Mustermann": "2026-03-01",
+const MISSING_ENTRIES_START_OVERRIDES_BY_NORMALIZED_FULL_NAME: Readonly<Record<string, string>> = {
+  "max mustermann": "2026-03-01",
 };
+
+function normalizeFullName(fullName: string): string {
+  return fullName.trim().replace(/\s+/g, " ").toLocaleLowerCase("de-DE");
+}
 
 function maxYmd(a: string, b: string): string {
   return a >= b ? a : b;
@@ -37,7 +41,7 @@ function maxYmd(a: string, b: string): string {
 
 function getMissingEntriesActivationStartYMD(fullName: string): string {
   return (
-    MISSING_ENTRIES_START_OVERRIDES_BY_FULL_NAME[fullName] ??
+    MISSING_ENTRIES_START_OVERRIDES_BY_NORMALIZED_FULL_NAME[normalizeFullName(fullName)] ??
     DEFAULT_MISSING_ENTRIES_START_YMD
   );
 }
@@ -83,6 +87,37 @@ function getEffectiveMissingEntriesStartForDay(
     maxYmd(createdDateYMD, activationStartYMD),
     firstBusinessDayOfMonthYMD
   );
+}
+
+export function isWorkEntryRequiredOnDateForUserMeta(args: {
+  currentYMD: string;
+  createdDateYMD: string;
+  fullName: string;
+}): boolean {
+  const currentDate = parseIsoDateToUtc(args.currentYMD);
+
+  if (!isWeekdayUtcDate(currentDate)) {
+    return false;
+  }
+
+  const holidaySet = getHolidaySetForYears(
+    currentDate.getUTCFullYear(),
+    currentDate.getUTCFullYear()
+  );
+
+  if (holidaySet.has(args.currentYMD)) {
+    return false;
+  }
+
+  const activationStartYMD = getMissingEntriesActivationStartYMD(args.fullName);
+  const effectiveStartYMD = getEffectiveMissingEntriesStartForDay(
+    args.currentYMD,
+    args.createdDateYMD,
+    activationStartYMD,
+    holidaySet
+  );
+
+  return args.currentYMD >= effectiveStartYMD;
 }
 
 function getHolidaySetForYears(startYear: number, endYear: number): Set<string> {
@@ -257,16 +292,17 @@ export async function getMissingRequiredWorkDates(
     current = addUtcDays(current, 1)
   ) {
     const currentYMD = isoDayUTC(current);
-    const effectiveMonthStartYMD = getEffectiveMissingEntriesStartForDay(
-      currentYMD,
-      createdDateYMD,
-      activationStartYMD,
-      holidaySet
-    );
 
-    if (currentYMD < effectiveMonthStartYMD) continue;
-    if (!isWeekdayUtcDate(current)) continue;
-    if (holidaySet.has(currentYMD)) continue;
+    if (
+      !isWorkEntryRequiredOnDateForUserMeta({
+        currentYMD,
+        createdDateYMD,
+        fullName: user.fullName,
+      })
+    ) {
+      continue;
+    }
+
     if (absenceDateSet.has(currentYMD)) continue;
     if (entryDateSet.has(currentYMD)) continue;
 

@@ -9,6 +9,33 @@ type MissingWorkEntryAlert = {
   newestMissingDate: string;
 } | null;
 
+function shouldKeepTask(args: {
+  task: {
+    status: string;
+    category: string;
+    requiredAction: string;
+    referenceDate: Date | null;
+  };
+  missingDateSet: ReadonlySet<string>;
+}): boolean {
+  const { task, missingDateSet } = args;
+
+  if (task.status !== "OPEN") {
+    return true;
+  }
+
+  if (
+    task.category === "WORK_TIME" &&
+    task.requiredAction === "WORK_ENTRY_FOR_DATE" &&
+    task.referenceDate
+  ) {
+    const referenceDateYMD = task.referenceDate.toISOString().slice(0, 10);
+    return missingDateSet.has(referenceDateYMD);
+  }
+
+  return true;
+}
+
 export async function GET(req: Request): Promise<NextResponse> {
   const session = await getSession();
   if (!session) {
@@ -55,6 +82,20 @@ export async function GET(req: Request): Promise<NextResponse> {
     }),
   ]);
 
+  const missingDateSet = new Set<string>(missingDates);
+
+  const visibleTasks = tasks.filter((task) =>
+    shouldKeepTask({
+      task: {
+        status: task.status,
+        category: task.category,
+        requiredAction: task.requiredAction,
+        referenceDate: task.referenceDate,
+      },
+      missingDateSet,
+    })
+  );
+
   const missingWorkEntryAlert: MissingWorkEntryAlert =
     missingDates.length > 0
       ? {
@@ -64,5 +105,5 @@ export async function GET(req: Request): Promise<NextResponse> {
         }
       : null;
 
-  return NextResponse.json({ tasks, missingWorkEntryAlert });
+  return NextResponse.json({ tasks: visibleTasks, missingWorkEntryAlert });
 }
