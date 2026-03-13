@@ -25,6 +25,66 @@ function isWeekdayUtcDate(d: Date): boolean {
   return weekday >= 1 && weekday <= 5;
 }
 
+const DEFAULT_MISSING_ENTRIES_START_YMD = "2026-04-01";
+
+const MISSING_ENTRIES_START_OVERRIDES_BY_FULL_NAME: Readonly<Record<string, string>> = {
+  "Max Mustermann": "2026-03-01",
+};
+
+function maxYmd(a: string, b: string): string {
+  return a >= b ? a : b;
+}
+
+function getMissingEntriesActivationStartYMD(fullName: string): string {
+  return (
+    MISSING_ENTRIES_START_OVERRIDES_BY_FULL_NAME[fullName] ??
+    DEFAULT_MISSING_ENTRIES_START_YMD
+  );
+}
+
+function getFirstBusinessDayOfMonthYMD(
+  year: number,
+  monthOneBased: number,
+  holidaySet: Set<string>
+): string {
+  const monthStart = new Date(Date.UTC(year, monthOneBased - 1, 1));
+  const nextMonthStart = new Date(Date.UTC(year, monthOneBased, 1));
+
+  for (
+    let current = new Date(monthStart.getTime());
+    current < nextMonthStart;
+    current = addUtcDays(current, 1)
+  ) {
+    const currentYMD = isoDayUTC(current);
+
+    if (!isWeekdayUtcDate(current)) continue;
+    if (holidaySet.has(currentYMD)) continue;
+
+    return currentYMD;
+  }
+
+  return isoDayUTC(monthStart);
+}
+
+function getEffectiveMissingEntriesStartForDay(
+  currentYMD: string,
+  createdDateYMD: string,
+  activationStartYMD: string,
+  holidaySet: Set<string>
+): string {
+  const [year, month] = currentYMD.split("-").map(Number);
+  const firstBusinessDayOfMonthYMD = getFirstBusinessDayOfMonthYMD(
+    year,
+    month,
+    holidaySet
+  );
+
+  return maxYmd(
+    maxYmd(createdDateYMD, activationStartYMD),
+    firstBusinessDayOfMonthYMD
+  );
+}
+
 function getHolidaySetForYears(startYear: number, endYear: number): Set<string> {
   const hd = new Holidays("DE", "BW");
   const result = new Set<string>();
@@ -32,7 +92,9 @@ function getHolidaySetForYears(startYear: number, endYear: number): Set<string> 
   for (let year = startYear; year <= endYear; year += 1) {
     const holidays = hd.getHolidays(year);
     for (const holiday of holidays) {
-      result.add(holiday.date.slice(0, 10));
+      if (holiday.type === "public") {
+        result.add(holiday.date.slice(0, 10));
+      }
     }
   }
 
@@ -127,7 +189,7 @@ export async function getMissingRequiredWorkDates(
 
   const user = await prisma.appUser.findUnique({
     where: { id: userId },
-    select: { createdAt: true, isActive: true },
+    select: { createdAt: true, isActive: true, fullName: true },
   });
 
   if (!user || !user.isActive) {
@@ -136,8 +198,11 @@ export async function getMissingRequiredWorkDates(
 
   const createdDateYMD = isoDayUTC(user.createdAt);
   const createdDate = parseIsoDateToUtc(createdDateYMD);
+  const activationStartYMD = getMissingEntriesActivationStartYMD(user.fullName);
+  const effectiveRangeStartYMD = maxYmd(createdDateYMD, activationStartYMD);
+  const effectiveRangeStartDate = parseIsoDateToUtc(effectiveRangeStartYMD);
 
-  if (createdDate >= untilDate) {
+  if (effectiveRangeStartDate >= untilDate) {
     return [];
   }
 
@@ -149,7 +214,7 @@ export async function getMissingRequiredWorkDates(
       where: {
         userId,
         workDate: {
-          gte: createdDate,
+          gte: effectiveRangeStartDate,
           lt: rangeEndExclusive,
         },
       },
@@ -161,7 +226,7 @@ export async function getMissingRequiredWorkDates(
       where: {
         userId,
         absenceDate: {
-          gte: createdDate,
+          gte: effectiveRangeStartDate,
           lt: rangeEndExclusive,
         },
       },
@@ -180,19 +245,26 @@ export async function getMissingRequiredWorkDates(
   );
 
   const holidaySet = getHolidaySetForYears(
-    createdDate.getUTCFullYear(),
+    effectiveRangeStartDate.getUTCFullYear(),
     untilDate.getUTCFullYear()
   );
 
   const missingDates: string[] = [];
 
   for (
-    let current = new Date(createdDate.getTime());
+    let current = new Date(effectiveRangeStartDate.getTime());
     current < rangeEndExclusive;
     current = addUtcDays(current, 1)
   ) {
     const currentYMD = isoDayUTC(current);
+    const effectiveMonthStartYMD = getEffectiveMissingEntriesStartForDay(
+      currentYMD,
+      createdDateYMD,
+      activationStartYMD,
+      holidaySet
+    );
 
+    if (currentYMD < effectiveMonthStartYMD) continue;
     if (!isWeekdayUtcDate(current)) continue;
     if (holidaySet.has(currentYMD)) continue;
     if (absenceDateSet.has(currentYMD)) continue;
