@@ -742,8 +742,8 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                             justifyContent: "center",
                             background: "var(--accent)",
                             color: "#111",
-                            fontSize: 10,
-                            fontWeight: 1000,
+                            fontSize: 8,
+                            fontWeight: 500,
                             lineHeight: 1,
                             flexShrink: 0,
                           }}
