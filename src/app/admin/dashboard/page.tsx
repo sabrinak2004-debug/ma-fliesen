@@ -1004,7 +1004,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <AppShell activeLabel="Admin-Übersicht">
+    <AppShell activeLabel="Dashboard">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
         <div style={{ display: "grid", gap: 6 }}>
           <div style={{ fontSize: 12, color: "var(--muted)" }}>Monat (für Übersicht + Export)</div>
