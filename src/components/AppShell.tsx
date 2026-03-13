@@ -63,6 +63,29 @@ type OpenTasksApiResponse = {
   tasks: OpenTasksApiTask[];
 };
 
+type AdminRequestsApiResponse = {
+  ok: true;
+  requests: {
+    status: "PENDING" | "APPROVED" | "REJECTED";
+  }[];
+};
+
+function isAdminRequestsApiResponse(v: unknown): v is AdminRequestsApiResponse {
+  if (!isRecord(v)) return false;
+  if (v["ok"] !== true) return false;
+
+  const requests = v["requests"];
+  if (!Array.isArray(requests)) return false;
+
+  return requests.every(
+    (r) =>
+      isRecord(r) &&
+      (r["status"] === "PENDING" ||
+        r["status"] === "APPROVED" ||
+        r["status"] === "REJECTED")
+  );
+}
+
 function isOpenTasksApiTask(v: unknown): v is OpenTasksApiTask {
   if (!isRecord(v)) return false;
   const id = v["id"];
@@ -93,6 +116,9 @@ export default function AppShell({
   const [session, setSession] = useState<SessionData | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [openTaskCount, setOpenTaskCount] = useState(0);
+  const [openVacationRequests, setOpenVacationRequests] = useState(0);
+  const [openSickRequests, setOpenSickRequests] = useState(0);
+  const [openCorrectionRequests, setOpenCorrectionRequests] = useState(0);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -207,6 +233,43 @@ const loadOpenTaskCount = useCallback(async (): Promise<void> => {
   }
 }, [session]);
 
+const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
+  if (!session || session.role !== "ADMIN") {
+    setOpenVacationRequests(0);
+    setOpenSickRequests(0);
+    setOpenCorrectionRequests(0);
+    return;
+  }
+
+  try {
+    const [vacRes, sickRes, corrRes] = await Promise.all([
+      fetch("/api/admin/absence-requests?type=VACATION&status=PENDING", { cache: "no-store" }),
+      fetch("/api/admin/absence-requests?type=SICK&status=PENDING", { cache: "no-store" }),
+      fetch("/api/admin/time-entry-correction-requests?status=PENDING", { cache: "no-store" }),
+    ]);
+
+    const vacJson: unknown = await vacRes.json().catch(() => ({}));
+    const sickJson: unknown = await sickRes.json().catch(() => ({}));
+    const corrJson: unknown = await corrRes.json().catch(() => ({}));
+
+    if (vacRes.ok && isAdminRequestsApiResponse(vacJson)) {
+      setOpenVacationRequests(vacJson.requests.length);
+    }
+
+    if (sickRes.ok && isAdminRequestsApiResponse(sickJson)) {
+      setOpenSickRequests(sickJson.requests.length);
+    }
+
+    if (corrRes.ok && isAdminRequestsApiResponse(corrJson)) {
+      setOpenCorrectionRequests(corrJson.requests.length);
+    }
+  } catch {
+    setOpenVacationRequests(0);
+    setOpenSickRequests(0);
+    setOpenCorrectionRequests(0);
+  }
+}, [session]);
+
   const isAdmin = session?.role === "ADMIN";
 
   const employeeNavItems: NavItem[] = [
@@ -231,19 +294,26 @@ const loadOpenTaskCount = useCallback(async (): Promise<void> => {
 
   useEffect(() => {
     void loadOpenTaskCount();
-  }, [loadOpenTaskCount, pathname]);
+    void loadAdminRequestCounts();
+  }, [loadOpenTaskCount, loadAdminRequestCounts, pathname]);
 
   useEffect(() => {
-    function onTasksChanged() {
-      void loadOpenTaskCount();
-    }
+  function onTasksChanged() {
+    void loadOpenTaskCount();
+  }
 
-    window.addEventListener("tasks-changed", onTasksChanged);
+  function onAdminRequestsChanged() {
+    void loadAdminRequestCounts();
+  }
 
-    return () => {
-      window.removeEventListener("tasks-changed", onTasksChanged);
-    };
-  }, [loadOpenTaskCount]);
+  window.addEventListener("tasks-changed", onTasksChanged);
+  window.addEventListener("admin-requests-changed", onAdminRequestsChanged);
+
+  return () => {
+    window.removeEventListener("tasks-changed", onTasksChanged);
+    window.removeEventListener("admin-requests-changed", onAdminRequestsChanged);
+  };
+}, [loadOpenTaskCount, loadAdminRequestCounts]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -495,6 +565,15 @@ const loadOpenTaskCount = useCallback(async (): Promise<void> => {
                   const showTaskBadge =
                     !isAdmin && item.href === "/aufgaben" && openTaskCount > 0;
 
+                  const showVacationBadge =
+                    isAdmin && item.href === "/admin/urlaubsantraege" && openVacationRequests > 0;
+
+                  const showSickBadge =
+                    isAdmin && item.href === "/admin/krankheitsantraege" && openSickRequests > 0;
+
+                  const showCorrectionBadge =
+                    isAdmin && item.href === "/admin/nachtragsanfragen" && openCorrectionRequests > 0;
+
                   return (
                     <Link
                       key={item.href}
@@ -517,7 +596,7 @@ const loadOpenTaskCount = useCallback(async (): Promise<void> => {
                       >
                         <span className="appshell-nav-label">{item.label}</span>
 
-                        {showTaskBadge ? (
+                        {showTaskBadge || showVacationBadge || showSickBadge || showCorrectionBadge ? (
                           <span
                             aria-label={`${openTaskCount} offene Aufgaben`}
                             style={{
@@ -536,7 +615,13 @@ const loadOpenTaskCount = useCallback(async (): Promise<void> => {
                               flexShrink: 0,
                             }}
                           >
-                            {openTaskCount}
+                            {showTaskBadge
+                              ? openTaskCount
+                              : showVacationBadge
+                                ? openVacationRequests
+                                : showSickBadge
+                                  ? openSickRequests
+                                  : openCorrectionRequests}
                           </span>
                         ) : null}
                       </span>
@@ -610,6 +695,15 @@ const loadOpenTaskCount = useCallback(async (): Promise<void> => {
                 const showTaskBadge =
                   !isAdmin && item.href === "/aufgaben" && openTaskCount > 0;
 
+                const showVacationBadge =
+                  isAdmin && item.href === "/admin/urlaubsantraege" && openVacationRequests > 0;
+
+                const showSickBadge =
+                  isAdmin && item.href === "/admin/krankheitsantraege" && openSickRequests > 0;
+
+                const showCorrectionBadge =
+                  isAdmin && item.href === "/admin/nachtragsanfragen" && openCorrectionRequests > 0;
+
                 return (
                   <Link
                     key={item.href}
@@ -632,7 +726,10 @@ const loadOpenTaskCount = useCallback(async (): Promise<void> => {
                     >
                       <span className="appshell-nav-label">{item.label}</span>
 
-                      {showTaskBadge ? (
+                      {showTaskBadge ||
+                      showVacationBadge ||
+                      showSickBadge ||
+                      showCorrectionBadge ? (
                         <span
                           aria-label={`${openTaskCount} offene Aufgaben`}
                           style={{
@@ -651,7 +748,13 @@ const loadOpenTaskCount = useCallback(async (): Promise<void> => {
                             flexShrink: 0,
                           }}
                         >
-                          {openTaskCount}
+                          {showTaskBadge
+                            ? openTaskCount
+                            : showVacationBadge
+                              ? openVacationRequests
+                              : showSickBadge
+                                ? openSickRequests
+                                : openCorrectionRequests}
                         </span>
                       ) : null}
                     </span>

@@ -295,13 +295,16 @@ export default function UrlaubsantraegePage() {
       if (!response.ok || !parsed.ok) {
         setItems([]);
         setError(parsed.ok ? "Urlaubsanträge konnten nicht geladen werden." : parsed.error);
+        window.dispatchEvent(new Event("admin-requests-changed"));
         return;
       }
 
       setItems(parsed.requests);
+      window.dispatchEvent(new Event("admin-requests-changed"));
     } catch {
       setItems([]);
       setError("Netzwerkfehler beim Laden der Urlaubsanträge.");
+      window.dispatchEvent(new Event("admin-requests-changed"));
     } finally {
       setLoading(false);
     }

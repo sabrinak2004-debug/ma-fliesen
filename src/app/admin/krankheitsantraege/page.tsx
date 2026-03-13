@@ -276,6 +276,7 @@ export default function KrankheitsantraegePage() {
       if (!response.ok || !parsed.ok) {
         setItems([]);
         setError(parsed.ok ? "Krankheitsanträge konnten nicht geladen werden." : parsed.error);
+        window.dispatchEvent(new Event("admin-requests-changed"));
         return;
       }
 
@@ -283,6 +284,7 @@ export default function KrankheitsantraegePage() {
     } catch {
       setItems([]);
       setError("Netzwerkfehler beim Laden der Krankheitsanträge.");
+      window.dispatchEvent(new Event("admin-requests-changed"));
     } finally {
       setLoading(false);
     }
