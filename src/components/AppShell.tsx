@@ -744,21 +744,20 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                         <span
                           aria-label={`${openTaskCount} offene Aufgaben`}
                           style={{
-                              minWidth: 20,
-                              height: 20,
-                              padding: "0 6px",
-                              borderRadius: 999,
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              background: "var(--accent)",
-                              color: "#111",
-                              fontSize: 11,
-                              fontWeight: 1000,
-                              lineHeight: 1,
-                              flexShrink: 0,
-                              marginTop: 1,
-                            }}
+                            minWidth: 22,
+                            height: 22,
+                            padding: "0 7px",
+                            borderRadius: 999,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "var(--accent)",
+                            color: "#111",
+                            fontSize: 10,
+                            fontWeight: 1000,
+                            lineHeight: 1,
+                            flexShrink: 0,
+                          }}
                         >
                           {showTaskBadge
                             ? openTaskCount
