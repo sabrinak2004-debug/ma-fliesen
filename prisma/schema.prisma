@@ -16,6 +16,7 @@ model AppUser {
   createdAt         DateTime  @default(now())
   passwordHash      String?
   passwordUpdatedAt DateTime?
+  missingEntriesStartAt DateTime?
 
   entries                            WorkEntry[]
   dayBreaks                          DayBreak[]

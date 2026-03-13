@@ -115,7 +115,6 @@ export async function GET(req: Request) {
   const employeesRequiredToday = employees.filter((employee) =>
     isWorkEntryRequiredOnDateForUserMeta({
       currentYMD: todayIso,
-      createdDateYMD: berlinTodayYMD(employee.createdAt),
       fullName: employee.fullName,
     })
   );
@@ -236,12 +235,9 @@ export async function GET(req: Request) {
   let missingWeek = 0;
 
   for (const employee of employees) {
-    const createdDateYMD = berlinTodayYMD(employee.createdAt);
-
     for (const day of weekDays) {
       const isRequired = isWorkEntryRequiredOnDateForUserMeta({
         currentYMD: day,
-        createdDateYMD: createdDateYMD,
         fullName: employee.fullName,
       });
 

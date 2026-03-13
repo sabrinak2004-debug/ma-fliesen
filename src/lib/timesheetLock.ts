@@ -72,7 +72,6 @@ function getFirstBusinessDayOfMonthYMD(
 
 function getEffectiveMissingEntriesStartForDay(
   currentYMD: string,
-  createdDateYMD: string,
   activationStartYMD: string,
   holidaySet: Set<string>
 ): string {
@@ -83,15 +82,11 @@ function getEffectiveMissingEntriesStartForDay(
     holidaySet
   );
 
-  return maxYmd(
-    maxYmd(createdDateYMD, activationStartYMD),
-    firstBusinessDayOfMonthYMD
-  );
+  return maxYmd(activationStartYMD, firstBusinessDayOfMonthYMD);
 }
 
 export function isWorkEntryRequiredOnDateForUserMeta(args: {
   currentYMD: string;
-  createdDateYMD: string;
   fullName: string;
 }): boolean {
   const currentDate = parseIsoDateToUtc(args.currentYMD);
@@ -112,7 +107,6 @@ export function isWorkEntryRequiredOnDateForUserMeta(args: {
   const activationStartYMD = getMissingEntriesActivationStartYMD(args.fullName);
   const effectiveStartYMD = getEffectiveMissingEntriesStartForDay(
     args.currentYMD,
-    args.createdDateYMD,
     activationStartYMD,
     holidaySet
   );
@@ -224,18 +218,15 @@ export async function getMissingRequiredWorkDates(
 
   const user = await prisma.appUser.findUnique({
     where: { id: userId },
-    select: { createdAt: true, isActive: true, fullName: true },
+    select: { isActive: true, fullName: true },
   });
 
   if (!user || !user.isActive) {
     return [];
   }
 
-  const createdDateYMD = isoDayUTC(user.createdAt);
-  const createdDate = parseIsoDateToUtc(createdDateYMD);
   const activationStartYMD = getMissingEntriesActivationStartYMD(user.fullName);
-  const effectiveRangeStartYMD = maxYmd(createdDateYMD, activationStartYMD);
-  const effectiveRangeStartDate = parseIsoDateToUtc(effectiveRangeStartYMD);
+  const effectiveRangeStartDate = parseIsoDateToUtc(activationStartYMD);
 
   if (effectiveRangeStartDate >= untilDate) {
     return [];
@@ -296,7 +287,6 @@ export async function getMissingRequiredWorkDates(
     if (
       !isWorkEntryRequiredOnDateForUserMeta({
         currentYMD,
-        createdDateYMD,
         fullName: user.fullName,
       })
     ) {
