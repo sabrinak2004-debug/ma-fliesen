@@ -31,12 +31,14 @@ type CalendarResponse = { ok: true; days: CalendarDay[] } | { ok: false; error: 
 
 type AbsenceType = "VACATION" | "SICK";
 type AbsenceDayPortion = "FULL_DAY" | "HALF_DAY";
+type AbsenceCompensation = "PAID" | "UNPAID";
 
 type AbsenceDTO = {
   id: string;
   absenceDate: string;
   type: AbsenceType;
   dayPortion: AbsenceDayPortion;
+  compensation: AbsenceCompensation;
   user: { id: string; fullName: string };
 };
 
@@ -69,6 +71,7 @@ type AbsenceRequestDTO = {
   type: AbsenceType;
   dayPortion: AbsenceDayPortion;
   status: AbsenceRequestStatus;
+  compensation: AbsenceCompensation;
   noteEmployee: string;
   createdAt: string;
   updatedAt: string;
@@ -88,6 +91,7 @@ type AbsenceRequestBlock = {
   type: AbsenceType;
   dayPortion: AbsenceDayPortion;
   status: AbsenceRequestStatus;
+  compensation: AbsenceCompensation;
   start: string;
   end: string;
   noteEmployee: string;
@@ -142,6 +146,10 @@ function isAbsenceDayPortion(v: unknown): v is AbsenceDayPortion {
   return v === "FULL_DAY" || v === "HALF_DAY";
 }
 
+function isAbsenceCompensation(v: unknown): v is AbsenceCompensation {
+  return v === "PAID" || v === "UNPAID";
+}
+
 function isCalendarDay(v: unknown): v is CalendarDay {
   if (!isRecord(v)) return false;
   const date = getStringField(v, "date");
@@ -190,9 +198,10 @@ function isAbsenceDTO(v: unknown): v is AbsenceDTO {
   const absenceDate = getStringField(v, "absenceDate");
   const type = v["type"];
   const dayPortion = v["dayPortion"];
+  const compensation = v["compensation"];
   const user = v["user"];
 
-  if (!id || !absenceDate || !isAbsenceType(type) || !isAbsenceDayPortion(dayPortion)) {
+  if (!id || !absenceDate || !isAbsenceType(type) || !isAbsenceDayPortion(dayPortion)|| !isAbsenceCompensation(compensation)) {
     return false;
   }
   if (!isRecord(user)) return false;
@@ -220,6 +229,7 @@ function isAbsenceRequestDTO(v: unknown): v is AbsenceRequestDTO {
   const endDate = getStringField(v, "endDate");
   const type = v["type"];
   const dayPortion = v["dayPortion"];
+  const compensation = v["compensation"];
   const status = v["status"];
   const noteEmployee = getStringField(v, "noteEmployee");
   const createdAt = getStringField(v, "createdAt");
@@ -234,6 +244,7 @@ function isAbsenceRequestDTO(v: unknown): v is AbsenceRequestDTO {
     !endDate ||
     !isAbsenceType(type) ||
     !isAbsenceDayPortion(dayPortion) ||
+    !isAbsenceCompensation(compensation) ||
     !isAbsenceRequestStatus(status) ||
     noteEmployee === null ||
     !createdAt ||
@@ -507,6 +518,7 @@ function buildRequestBlocks(requests: AbsenceRequestDTO[]): AbsenceRequestBlock[
       type: r.type,
       dayPortion: r.dayPortion,
       status: r.status,
+      compensation: r.compensation,
       start: r.startDate,
       end: r.endDate,
       noteEmployee: r.noteEmployee,
@@ -706,6 +718,7 @@ export default function KalenderPage() {
   const [absenceEnd, setAbsenceEnd] = useState<string>("");
   const [absenceType, setAbsenceType] = useState<AbsenceType>("VACATION");
   const [absenceDayPortion, setAbsenceDayPortion] = useState<AbsenceDayPortion>("FULL_DAY");
+  const [absenceCompensation, setAbsenceCompensation] = useState<AbsenceCompensation>("PAID");
   const [selectedRequestBlock, setSelectedRequestBlock] = useState<AbsenceRequestBlock | null>(null);
 
   const [dayAppointments, setDayAppointments] = useState<CalendarEventDTO[]>([]);
@@ -997,6 +1010,7 @@ export default function KalenderPage() {
     setAbsenceEnd(date);
     setAbsenceType("VACATION");
     setAbsenceDayPortion("FULL_DAY");
+    setAbsenceCompensation("PAID");
     setRequestNote("");
 
     setDayPlans([]);
@@ -1029,6 +1043,7 @@ export default function KalenderPage() {
     }
     setAbsenceType("VACATION");
     setAbsenceDayPortion("FULL_DAY");
+    setAbsenceCompensation("PAID");
     setRequestNote("");
   }
 
@@ -1038,6 +1053,7 @@ export default function KalenderPage() {
     setAbsenceEnd(block.end);
     setAbsenceType(block.type);
     setAbsenceDayPortion(block.dayPortion);
+    setAbsenceCompensation("PAID");
     setRequestNote(block.noteEmployee);
     setError(null);
   }
@@ -1050,6 +1066,7 @@ export default function KalenderPage() {
     }
     setAbsenceType("VACATION");
     setAbsenceDayPortion("FULL_DAY");
+    setAbsenceCompensation("PAID");
     setRequestNote("");
   }
 
@@ -1080,6 +1097,11 @@ export default function KalenderPage() {
       return;
     }
 
+    if (absenceType === "SICK" && absenceCompensation !== "PAID") {
+      setError("Krankheit darf nicht als unbezahlt beantragt werden.");
+      return;
+    }
+
     setSaving(true);
     try {
       const r = await fetch("/api/absence-requests", {
@@ -1090,6 +1112,7 @@ export default function KalenderPage() {
           endDate: absenceEnd,
           type: absenceType,
           dayPortion: absenceDayPortion,
+          compensation: absenceCompensation,
           noteEmployee: requestNote.trim(),
         }),
       });
@@ -2189,6 +2212,12 @@ export default function KalenderPage() {
                           </div>
                         ) : null}
 
+                        {b.type === "VACATION" ? (
+                          <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                            Vergütung: {b.compensation === "UNPAID" ? "Unbezahlt" : "Bezahlt"}
+                          </div>
+                        ) : null}
+
                         {b.noteEmployee.trim() ? (
                           <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
                             📝 {b.noteEmployee}
@@ -2269,6 +2298,7 @@ export default function KalenderPage() {
                 onClick={() => {
                   setAbsenceType("SICK");
                   setAbsenceDayPortion("FULL_DAY");
+                  setAbsenceCompensation("PAID");
                 }}
                 disabled={!!selectedRequestBlock}
               >
@@ -2298,6 +2328,30 @@ export default function KalenderPage() {
                     disabled={!!selectedRequestBlock || absenceDayPortion === "HALF_DAY"}
                   >
                     Halber Urlaubstag
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {absenceType === "VACATION" ? (
+              <div style={{ marginBottom: 12 }}>
+                <div className="label">Vergütung</div>
+                <div className="calendar-form-grid-2">
+                  <button
+                    className={`btn ${absenceCompensation === "PAID" ? "btn-accent" : ""}`}
+                    type="button"
+                    onClick={() => setAbsenceCompensation("PAID")}
+                    disabled={!!selectedRequestBlock}
+                  >
+                    Bezahlt
+                  </button>
+                  <button
+                    className={`btn ${absenceCompensation === "UNPAID" ? "btn-accent" : ""}`}
+                    type="button"
+                    onClick={() => setAbsenceCompensation("UNPAID")}
+                    disabled={!!selectedRequestBlock}
+                  >
+                    Unbezahlt
                   </button>
                 </div>
               </div>

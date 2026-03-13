@@ -418,9 +418,9 @@ export async function PATCH(req: Request) {
     );
   }
 
-  if (newTypeStr === "SICK" && newDayPortion !== AbsenceDayPortion.FULL_DAY) {
+  if (newTypeStr === "SICK" && newCompensation !== AbsenceCompensation.PAID) {
     return okJson(
-      { error: "Krankheit kann nur ganztägig sein." },
+      { error: "Krankheit darf nicht unbezahlt sein." },
       { status: 400 }
     );
   }

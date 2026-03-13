@@ -16,6 +16,7 @@ type CreateAbsenceRequestBody = {
   type?: unknown;
   dayPortion?: unknown;
   noteEmployee?: unknown;
+  compensation?: unknown;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -40,6 +41,10 @@ function isAbsenceType(v: string): v is AbsenceType {
 
 function isAbsenceDayPortion(v: string): v is AbsenceDayPortion {
   return v === "FULL_DAY" || v === "HALF_DAY";
+}
+
+function isAbsenceCompensation(v: string): v is AbsenceCompensation {
+  return v === "PAID" || v === "UNPAID";
 }
 
 function dateOnlyUTC(yyyyMmDd: string): Date {
@@ -237,6 +242,7 @@ export async function POST(req: Request) {
   const typeRaw = getString(body.type).trim();
   const dayPortionRaw = getString(body.dayPortion).trim();
   const noteEmployee = getString(body.noteEmployee).trim();
+  const compensationRaw = getString(body.compensation).trim();
 
   if (!isYYYYMMDD(startDate) || !isYYYYMMDD(endDate)) {
     return NextResponse.json(
@@ -255,6 +261,9 @@ export async function POST(req: Request) {
   const dayPortion: AbsenceDayPortion =
     isAbsenceDayPortion(dayPortionRaw) ? dayPortionRaw : AbsenceDayPortion.FULL_DAY;
 
+  const compensation: AbsenceCompensation =
+    isAbsenceCompensation(compensationRaw) ? compensationRaw : AbsenceCompensation.PAID;
+
   const start = dateOnlyUTC(startDate);
   const end = dateOnlyUTC(endDate);
 
@@ -268,6 +277,13 @@ export async function POST(req: Request) {
   if (typeRaw === "SICK" && dayPortion !== AbsenceDayPortion.FULL_DAY) {
     return NextResponse.json(
       { ok: false, error: "Krankheit kann nur ganztägig beantragt werden." },
+      { status: 400 }
+    );
+  }
+
+  if (typeRaw === "SICK" && compensation !== AbsenceCompensation.PAID) {
+    return NextResponse.json(
+      { ok: false, error: "Krankheit darf nicht als unbezahlt beantragt werden." },
       { status: 400 }
     );
   }
@@ -349,7 +365,7 @@ export async function POST(req: Request) {
       type: typeRaw,
       dayPortion,
       status: AbsenceRequestStatus.PENDING,
-      compensation: AbsenceCompensation.PAID,
+      compensation,
       noteEmployee: noteEmployee || null,
     },
     include: {
@@ -369,16 +385,23 @@ export async function POST(req: Request) {
   });
 
   const typeLabel = typeRaw === "VACATION" ? "Urlaub" : "Krankheit";
+  const compensationLabel =
+    typeRaw === "VACATION"
+      ? compensation === AbsenceCompensation.UNPAID
+        ? "unbezahlt"
+        : "bezahlt"
+      : "";
+
   const dateLabel =
     dayPortion === AbsenceDayPortion.HALF_DAY
       ? `halber Urlaubstag am ${startDate}`
       : startDate === endDate
-      ? startDate
-      : `${startDate} bis ${endDate}`;
+        ? startDate
+        : `${startDate} bis ${endDate}`;
 
   await sendPushToAdmins(
     "Neuer Abwesenheitsantrag",
-    `${session.fullName} hat ${typeLabel.toLowerCase()} beantragt (${dateLabel}).`,
+    `${session.fullName} hat ${typeLabel.toLowerCase()} beantragt (${dateLabel}${typeRaw === "VACATION" ? `, ${compensationLabel}` : ""}).`,
     "/admin/urlaubsantraege"
   );
 

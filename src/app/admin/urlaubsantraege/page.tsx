@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AbsenceType = "VACATION" | "SICK";
 type AbsenceDayPortion = "FULL_DAY" | "HALF_DAY";
+type AbsenceCompensation = "PAID" | "UNPAID";
 
 type AbsenceRequestItem = {
   id: string;
@@ -14,6 +15,7 @@ type AbsenceRequestItem = {
   type: AbsenceType;
   dayPortion: AbsenceDayPortion;
   status: RequestStatus;
+  compensation: AbsenceCompensation;
   noteEmployee: string;
   createdAt: string;
   updatedAt: string;
@@ -67,6 +69,10 @@ function isAbsenceDayPortion(v: unknown): v is AbsenceDayPortion {
   return v === "FULL_DAY" || v === "HALF_DAY";
 }
 
+function isAbsenceCompensation(v: unknown): v is AbsenceCompensation {
+  return v === "PAID" || v === "UNPAID";
+}
+
 function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
   if (!isRecord(v)) return false;
 
@@ -76,6 +82,7 @@ function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
   const type = v["type"];
   const dayPortion = v["dayPortion"];
   const status = v["status"];
+  const compensation = v["compensation"];
   const noteEmployee = getStringField(v, "noteEmployee");
   const createdAt = getStringField(v, "createdAt");
   const updatedAt = getStringField(v, "updatedAt");
@@ -89,6 +96,7 @@ if (
   !endDate ||
   !isAbsenceType(type) ||
   !isAbsenceDayPortion(dayPortion) ||
+  !isAbsenceCompensation(compensation) ||
   !isRequestStatus(status) ||
   noteEmployee === null ||
   !createdAt ||
@@ -199,6 +207,10 @@ function requestDurationLabel(item: AbsenceRequestItem): string {
   return `${rangeLabel(item.startDate, item.endDate)} · ${days} ${days === 1 ? "Tag" : "Tage"}`;
 }
 
+function compensationLabel(compensation: AbsenceCompensation): string {
+  return compensation === "UNPAID" ? "Unbezahlt" : "Bezahlt";
+}
+
 function countDaysInclusive(startDate: string, endDate: string): number {
   const [sy, sm, sd] = startDate.split("-").map(Number);
   const [ey, em, ed] = endDate.split("-").map(Number);
@@ -267,6 +279,12 @@ export default function UrlaubsantraegePage() {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthValue());
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editStartDate, setEditStartDate] = useState<string>("");
+  const [editEndDate, setEditEndDate] = useState<string>("");
+  const [editType, setEditType] = useState<AbsenceType>("VACATION");
+  const [editDayPortion, setEditDayPortion] = useState<AbsenceDayPortion>("FULL_DAY");
+  const [editCompensation, setEditCompensation] = useState<AbsenceCompensation>("PAID");
 
   async function loadRequests() {
     setLoading(true);
@@ -367,8 +385,30 @@ export default function UrlaubsantraegePage() {
     setError(null);
 
     try {
+      const target = items.find((item) => item.id === id);
+      if (!target) {
+        setError("Antrag nicht gefunden.");
+        return;
+      }
+
+      const startDate = editingItemId === id ? editStartDate : target.startDate;
+      const endDate = editingItemId === id ? editEndDate : target.endDate;
+      const type = editingItemId === id ? editType : target.type;
+      const dayPortion = editingItemId === id ? editDayPortion : target.dayPortion;
+      const compensation = editingItemId === id ? editCompensation : target.compensation;
+
       const response = await fetch(`/api/admin/absence-requests/${encodeURIComponent(id)}/approve`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          startDate,
+          endDate,
+          type,
+          dayPortion,
+          compensation,
+        }),
       });
 
       const json: unknown = await response.json().catch(() => ({}));
@@ -382,6 +422,7 @@ export default function UrlaubsantraegePage() {
         return;
       }
 
+      cancelEditing();
       await loadRequests();
     } catch {
       setError("Netzwerkfehler bei der Genehmigung.");
@@ -418,6 +459,101 @@ export default function UrlaubsantraegePage() {
     }
   }
 
+  function startEditing(item: AbsenceRequestItem) {
+    setEditingItemId(item.id);
+    setEditStartDate(item.startDate);
+    setEditEndDate(item.endDate);
+    setEditType(item.type);
+    setEditDayPortion(item.dayPortion);
+    setEditCompensation(item.compensation);
+    setError(null);
+  }
+
+  function cancelEditing() {
+    setEditingItemId(null);
+    setEditStartDate("");
+    setEditEndDate("");
+    setEditType("VACATION");
+    setEditDayPortion("FULL_DAY");
+    setEditCompensation("PAID");
+  }
+
+  async function saveApprovedChange(id: string) {
+    setBusyId(id);
+    setError(null);
+
+    try {
+      const target = items.find((item) => item.id === id);
+      if (!target) {
+        setError("Antrag nicht gefunden.");
+        return;
+      }
+
+      const patchResponse = await fetch("/api/absences", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: target.startDate,
+          to: target.endDate,
+          type: target.type,
+          dayPortion: target.dayPortion,
+          compensation: target.compensation,
+          newStartDate: editStartDate,
+          newEndDate: editEndDate,
+          newType: editType,
+          newDayPortion: editDayPortion,
+          newCompensation: editCompensation,
+          userId: target.user.id,
+        }),
+      });
+
+      const patchJson: unknown = await patchResponse.json().catch(() => ({}));
+
+      if (!patchResponse.ok) {
+        const message =
+          isRecord(patchJson) && typeof patchJson["error"] === "string"
+            ? patchJson["error"]
+            : "Änderung fehlgeschlagen.";
+        setError(message);
+        return;
+      }
+
+      const requestUpdateResponse = await fetch(`/api/admin/absence-requests/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          startDate: editStartDate,
+          endDate: editEndDate,
+          type: editType,
+          dayPortion: editDayPortion,
+          compensation: editCompensation,
+        }),
+      });
+
+      const requestUpdateJson: unknown = await requestUpdateResponse.json().catch(() => ({}));
+
+      if (!requestUpdateResponse.ok) {
+        const message =
+          isRecord(requestUpdateJson) && typeof requestUpdateJson["error"] === "string"
+            ? requestUpdateJson["error"]
+            : "Antragsdaten konnten nicht aktualisiert werden.";
+        setError(message);
+        return;
+      }
+
+      cancelEditing();
+      await loadRequests();
+    } catch {
+      setError("Netzwerkfehler bei der Änderung.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   const pendingItems = useMemo(
     () => items.filter((item) => item.status === "PENDING"),
     [items]
@@ -440,11 +576,12 @@ export default function UrlaubsantraegePage() {
 
   function renderRequestCard(item: AbsenceRequestItem) {
     const isBusy = busyId === item.id;
+    const isEditing = editingItemId === item.id;
     const days = countDaysInclusive(item.startDate, item.endDate);
     const durationText =
       item.dayPortion === "HALF_DAY"
-        ? `🌴 Urlaub · ${formatDateDE(item.startDate)} · 0,5 Tag`
-        : `🌴 Urlaub · ${rangeLabel(item.startDate, item.endDate)} · ${days} ${days === 1 ? "Tag" : "Tage"}`;
+        ? `🌴 Urlaub · ${formatDateDE(item.startDate)} · 0,5 Tag · ${compensationLabel(item.compensation)}`
+        : `🌴 Urlaub · ${rangeLabel(item.startDate, item.endDate)} · ${days} ${days === 1 ? "Tag" : "Tage"} · ${compensationLabel(item.compensation)}`;
 
     return (
       <div
@@ -523,11 +660,116 @@ export default function UrlaubsantraegePage() {
         <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
           <div>
             <div className="label">Zeitraum</div>
-            <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
-              {item.dayPortion === "HALF_DAY"
-              ? `${formatDateDE(item.startDate)} (halber Urlaubstag)`
-              : rangeLabel(item.startDate, item.endDate)}
+
+            {isEditing ? (
+              <div className="mobile-2col">
+                <div>
+                  <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>Start</div>
+                  <input
+                    className="input"
+                    type="date"
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>Ende</div>
+                  <input
+                    className="input"
+                    type="date"
+                    value={editEndDate}
+                    onChange={(e) => setEditEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                {item.dayPortion === "HALF_DAY"
+                  ? `${formatDateDE(item.startDate)} (halber Urlaubstag)`
+                  : rangeLabel(item.startDate, item.endDate)}
+              </div>
+            )}
+          </div>
+
+          <div className="mobile-2col">
+            <div>
+              <div className="label">Typ</div>
+              {isEditing ? (
+                <select
+                  className="input"
+                  value={editType}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "VACATION" || value === "SICK") {
+                      setEditType(value);
+                      if (value === "SICK") {
+                        setEditDayPortion("FULL_DAY");
+                        setEditCompensation("PAID");
+                      }
+                    }
+                  }}
+                >
+                  <option value="VACATION">Urlaub</option>
+                  <option value="SICK">Krankheit</option>
+                </select>
+              ) : (
+                <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                  {item.type === "VACATION" ? "Urlaub" : "Krankheit"}
+                </div>
+              )}
             </div>
+
+            <div>
+              <div className="label">Umfang</div>
+              {isEditing ? (
+                <select
+                  className="input"
+                  value={editDayPortion}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "FULL_DAY" || value === "HALF_DAY") {
+                      setEditDayPortion(value);
+                      if (value === "HALF_DAY") {
+                        setEditEndDate(editStartDate);
+                      }
+                    }
+                  }}
+                  disabled={editType === "SICK"}
+                >
+                  <option value="FULL_DAY">Ganzer Tag</option>
+                  <option value="HALF_DAY">Halber Tag</option>
+                </select>
+              ) : (
+                <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                  {item.dayPortion === "HALF_DAY" ? "Halber Tag" : "Ganzer Tag"}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div className="label">Vergütung</div>
+            {isEditing ? (
+              <select
+                className="input"
+                value={editCompensation}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "PAID" || value === "UNPAID") {
+                    setEditCompensation(value);
+                  }
+                }}
+                disabled={editType === "SICK"}
+              >
+                <option value="PAID">Bezahlt</option>
+                <option value="UNPAID">Unbezahlt</option>
+              </select>
+            ) : (
+              <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                {compensationLabel(item.compensation)}
+              </div>
+            )}
           </div>
 
           <div>
@@ -555,39 +797,104 @@ export default function UrlaubsantraegePage() {
           </div>
         </div>
 
-        {item.status === "PENDING" ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "flex",
-              gap: 10,
-              justifyContent: "flex-end",
-              flexWrap: "wrap",
-            }}
-          >
-            <button
-              className="btn btn-danger"
-              type="button"
-              disabled={isBusy}
-              onClick={() => {
-                void rejectRequest(item.id);
-              }}
-            >
-              {isBusy ? "Verarbeitet..." : "Ablehnen"}
-            </button>
+        <div
+          style={{
+            marginTop: 14,
+            display: "flex",
+            gap: 10,
+            justifyContent: "flex-end",
+            flexWrap: "wrap",
+          }}
+        >
+          {isEditing ? (
+            <>
+              <button
+                className="btn"
+                type="button"
+                disabled={isBusy}
+                onClick={cancelEditing}
+              >
+                Abbrechen
+              </button>
 
-            <button
-              className="btn btn-accent"
-              type="button"
-              disabled={isBusy}
-              onClick={() => {
-                void approveRequest(item.id);
-              }}
-            >
-              {isBusy ? "Verarbeitet..." : "Genehmigen"}
-            </button>
-          </div>
-        ) : null}
+              {item.status === "PENDING" ? (
+                <>
+                  <button
+                    className="btn btn-danger"
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      void rejectRequest(item.id);
+                    }}
+                  >
+                    {isBusy ? "Verarbeitet..." : "Ablehnen"}
+                  </button>
+
+                  <button
+                    className="btn btn-accent"
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      void approveRequest(item.id);
+                    }}
+                  >
+                    {isBusy ? "Verarbeitet..." : "Korrigieren & genehmigen"}
+                  </button>
+                </>
+              ) : item.status === "APPROVED" ? (
+                <button
+                  className="btn btn-accent"
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => {
+                    void saveApprovedChange(item.id);
+                  }}
+                >
+                  {isBusy ? "Speichert..." : "Änderungen speichern"}
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <>
+              {item.status !== "REJECTED" ? (
+                <button
+                  className="btn"
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => startEditing(item)}
+                >
+                  Bearbeiten
+                </button>
+              ) : null}
+
+              {item.status === "PENDING" ? (
+                <>
+                  <button
+                    className="btn btn-danger"
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      void rejectRequest(item.id);
+                    }}
+                  >
+                    {isBusy ? "Verarbeitet..." : "Ablehnen"}
+                  </button>
+
+                  <button
+                    className="btn btn-accent"
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      void approveRequest(item.id);
+                    }}
+                  >
+                    {isBusy ? "Verarbeitet..." : "Genehmigen"}
+                  </button>
+                </>
+              ) : null}
+            </>
+          )}
+        </div>
       </div>
     );
   }
