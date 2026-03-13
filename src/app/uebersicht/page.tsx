@@ -3,6 +3,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Info } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
@@ -811,6 +812,28 @@ const resetAbsFilters = () => {
 
   return (
     <AppShell activeLabel="#wirkönndas">
+      {!isAdmin ? (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <Link
+            href="/aufgaben"
+            className="card"
+            style={{
+              padding: "10px 14px",
+              cursor: "pointer",
+              fontWeight: 900,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.92)",
+              textDecoration: "none",
+            }}
+            title="Meine Aufgaben"
+          >
+            📋 Aufgaben
+          </Link>
+        </div>
+      ) : null}
+
       {/* ✅ Admin Export Button */}
       {isAdmin ? (
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>

@@ -9,44 +9,46 @@ datasource db {
 }
 
 model AppUser {
-  id           String   @id @default(uuid())
-  fullName     String   @unique
-  role         Role     @default(EMPLOYEE)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  passwordHash String?
+  id                String    @id @default(uuid())
+  fullName          String    @unique
+  role              Role      @default(EMPLOYEE)
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  passwordHash      String?
   passwordUpdatedAt DateTime?
 
-
-  entries        WorkEntry[]
-  dayBreaks      DayBreak[]
-  absences       Absence[]
-  absenceRequests AbsenceRequest[]
-  decidedAbsenceRequests AbsenceRequest[] @relation("AbsenceRequestDecidedBy")
-  monthlyTargets MonthlyTarget[]
-  planEntries    PlanEntry[]
-  calendarEvents CalendarEvent[]
-  dayNotes       DayNote[]
-  adminNotes     AdminNote[]
-  PasswordResetTokens PasswordResetToken[]
-  PasswordResetRequests PasswordResetRequest[]
-  googleCalendarConnections GoogleCalendarConnection[]
-  pushSubscriptions PushSubscription[]
-  timeEntryCorrectionRequests TimeEntryCorrectionRequest[]
+  entries                            WorkEntry[]
+  dayBreaks                          DayBreak[]
+  absences                           Absence[]
+  absenceRequests                    AbsenceRequest[]
+  decidedAbsenceRequests             AbsenceRequest[]             @relation("AbsenceRequestDecidedBy")
+  monthlyTargets                     MonthlyTarget[]
+  planEntries                        PlanEntry[]
+  calendarEvents                     CalendarEvent[]
+  dayNotes                           DayNote[]
+  adminNotes                         AdminNote[]
+  PasswordResetTokens                PasswordResetToken[]
+  PasswordResetRequests              PasswordResetRequest[]
+  googleCalendarConnections          GoogleCalendarConnection[]
+  pushSubscriptions                  PushSubscription[]
+  timeEntryCorrectionRequests        TimeEntryCorrectionRequest[]
   decidedTimeEntryCorrectionRequests TimeEntryCorrectionRequest[] @relation("TimeEntryCorrectionRequestDecidedBy")
-  timeEntryUnlocks TimeEntryUnlock[]
+  timeEntryUnlocks                   TimeEntryUnlock[]
+  tasks                              Task[]                       @relation("TaskAssignedTo")
+  createdTasks                       Task[]                       @relation("TaskCreatedBy")
+  completedTasks                     Task[]                       @relation("TaskCompletedBy")
 
   // ✅ NEU: Upload-Relation
   uploadedPlanEntryDocuments PlanEntryDocument[] @relation("UploadedBy")
 }
 
 model PasswordResetRequest {
-  id        String   @id @default(uuid())
-  userId    String
-  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  userId String
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  status    String   @default("OPEN") // "OPEN" | "DONE"
-  createdAt DateTime @default(now())
+  status    String    @default("OPEN") // "OPEN" | "DONE"
+  createdAt DateTime  @default(now())
   doneAt    DateTime?
 
   @@index([userId])
@@ -54,25 +56,25 @@ model PasswordResetRequest {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(uuid())
-  userId    String
-  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  userId String
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Wir speichern nur den HASH des Tokens (Sicherheitsbest practice)
-  tokenHash String   @unique
+  tokenHash String @unique
 
   expiresAt DateTime?
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
   @@index([expiresAt])
 }
 
 model DayNote {
-  id       String   @id @default(uuid())
-  userId   String
-  user     AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  userId String
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   noteDate DateTime @db.Date
   note     String
@@ -85,22 +87,22 @@ model DayNote {
 }
 
 model CalendarEvent {
-  id        String   @id @default(uuid())
-  userId    String
-  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  userId String
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  title     String
-  startAt   DateTime
-  endAt     DateTime
-  location  String?
-  notes     String?
+  title    String
+  startAt  DateTime
+  endAt    DateTime
+  location String?
+  notes    String?
 
-    // ===== Google Sync Felder =====
-  googleEventId   String?  @unique
+  // ===== Google Sync Felder =====
+  googleEventId   String?   @unique
   googleICalUID   String?
   googleUpdatedAt DateTime?
   googleEtag      String?
-  syncSource      String?   // "APP" | "GOOGLE"
+  syncSource      String? // "APP" | "GOOGLE"
   lastSyncedAt    DateTime?
 
   createdAt DateTime @default(now())
@@ -110,16 +112,16 @@ model CalendarEvent {
 }
 
 model GoogleCalendarConnection {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  userId String  @unique
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Tokens (refreshToken MUSS bleiben, accessToken kannst du on-demand holen)
   refreshToken String
-  calendarId   String   @default("primary")
+  calendarId   String @default("primary")
 
   // incremental sync
-  syncToken    String?
+  syncToken String?
 
   // push channel (watch)
   channelId         String?
@@ -143,10 +145,10 @@ model WorkEntry {
   location      String
   distanceKm    Decimal @default(0)
   travelMinutes Int     @default(0)
-  grossMinutes  Int     @default(0)  // Brutto ohne Pause (Start-Ende)
-  breakMinutes  Int     @default(0)  // Pause in Minuten (manuell oder auto)
+  grossMinutes  Int     @default(0) // Brutto ohne Pause (Start-Ende)
+  breakMinutes  Int     @default(0) // Pause in Minuten (manuell oder auto)
   breakAuto     Boolean @default(false) // true = automatisch abgezogen
-  workMinutes   Int     // Netto (Brutto - Pause)
+  workMinutes   Int // Netto (Brutto - Pause)
   noteEmployee  String? // ✅ Notiz vom Mitarbeiter (für Admin sichtbar)
 
   createdAt DateTime @default(now())
@@ -156,31 +158,31 @@ model WorkEntry {
 }
 
 model DayBreak {
-  id                    String   @id @default(uuid())
-  userId                String
-  user                  AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  userId String
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  workDate              DateTime @db.Date
+  workDate DateTime @db.Date
 
-  breakStartHHMM        String?
-  breakEndHHMM          String?
+  breakStartHHMM String?
+  breakEndHHMM   String?
 
-  manualMinutes         Int      @default(0)
-  legalMinutes          Int      @default(0)
-  autoSupplementMinutes Int      @default(0)
-  effectiveMinutes      Int      @default(0)
+  manualMinutes         Int @default(0)
+  legalMinutes          Int @default(0)
+  autoSupplementMinutes Int @default(0)
+  effectiveMinutes      Int @default(0)
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, workDate])
   @@index([userId, workDate])
 }
 
 model PlanEntry {
-  id            String   @id @default(uuid())
-  userId        String
-  user          AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  userId String
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   workDate      DateTime @db.Date
   startHHMM     String
@@ -189,49 +191,49 @@ model PlanEntry {
   location      String
   travelMinutes Int      @default(0)
 
-  noteEmployee  String?
-  noteAdmin     String?
+  noteEmployee String?
+  noteAdmin    String?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@index([userId, workDate])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // ✅ NEU:
   documents PlanEntryDocument[]
+
+  @@index([userId, workDate])
 }
 
 model PlanEntryDocument {
-  id          String   @id @default(uuid())
+  id String @id @default(uuid())
 
   planEntryId String
   planEntry   PlanEntry @relation(fields: [planEntryId], references: [id], onDelete: Cascade)
 
   // Wer hat hochgeladen? (Admin)
   uploadedById String
-  uploadedBy   AppUser  @relation("UploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+  uploadedBy   AppUser @relation("UploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
 
-  title        String
-  fileName     String
-  mimeType     String
-  sizeBytes    Int
+  title     String
+  fileName  String
+  mimeType  String
+  sizeBytes Int
 
   // ✅ Datei direkt in DB
-  data         Bytes
+  data Bytes
 
-  createdAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([planEntryId])
   @@index([uploadedById])
 }
 
 model AdminNote {
-  id        String   @id @default(uuid())
-  userId    String
-  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  userId String
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  workDate  DateTime @db.Date
-  note      String   @default("")
+  workDate DateTime @db.Date
+  note     String   @default("")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -244,9 +246,9 @@ model Absence {
   userId String
   user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  absenceDate DateTime          @db.Date
-  type        AbsenceType
-  dayPortion  AbsenceDayPortion @default(FULL_DAY)
+  absenceDate  DateTime            @db.Date
+  type         AbsenceType
+  dayPortion   AbsenceDayPortion   @default(FULL_DAY)
   compensation AbsenceCompensation @default(PAID)
 
   createdAt DateTime @default(now())
@@ -256,26 +258,25 @@ model Absence {
 }
 
 model AbsenceRequest {
-  id        String               @id @default(uuid())
-  userId    String
-  user      AppUser              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  userId String
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  startDate    DateTime               @db.Date
-  endDate      DateTime               @db.Date
+  startDate    DateTime             @db.Date
+  endDate      DateTime             @db.Date
   type         AbsenceType
-  dayPortion   AbsenceDayPortion      @default(FULL_DAY)
-  status       AbsenceRequestStatus   @default(PENDING)
-  compensation AbsenceCompensation    @default(PAID)
+  dayPortion   AbsenceDayPortion    @default(FULL_DAY)
+  status       AbsenceRequestStatus @default(PENDING)
+  compensation AbsenceCompensation  @default(PAID)
 
   noteEmployee String?
 
-
   decidedAt   DateTime?
   decidedById String?
-  decidedBy   AppUser?           @relation("AbsenceRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedBy   AppUser?  @relation("AbsenceRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
 
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId, status, type])
   @@index([startDate, endDate])
@@ -306,9 +307,9 @@ model PushSubscription {
 }
 
 model TimeEntryCorrectionRequest {
-  id        String   @id @default(uuid())
-  userId    String
-  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  userId String
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   startDate DateTime @db.Date
   endDate   DateTime @db.Date
@@ -319,11 +320,11 @@ model TimeEntryCorrectionRequest {
 
   decidedAt   DateTime?
   decidedById String?
-  decidedBy   AppUser? @relation("TimeEntryCorrectionRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedBy   AppUser?  @relation("TimeEntryCorrectionRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
 
   unlocks   TimeEntryUnlock[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 
   @@index([userId, status])
   @@index([startDate, endDate])
@@ -331,11 +332,11 @@ model TimeEntryCorrectionRequest {
 }
 
 model TimeEntryUnlock {
-  id        String   @id @default(uuid())
-  userId    String
-  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  userId String
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  workDate  DateTime @db.Date
+  workDate DateTime @db.Date
 
   requestId String?
   request   TimeEntryCorrectionRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
@@ -349,6 +350,38 @@ model TimeEntryUnlock {
   @@unique([userId, workDate])
   @@index([userId, workDate])
   @@index([requestId])
+}
+
+model Task {
+  id String @id @default(uuid())
+
+  assignedToUserId String
+  assignedToUser   AppUser @relation("TaskAssignedTo", fields: [assignedToUserId], references: [id], onDelete: Cascade)
+
+  createdByUserId String
+  createdByUser   AppUser @relation("TaskCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  completedByUserId String?
+  completedByUser   AppUser? @relation("TaskCompletedBy", fields: [completedByUserId], references: [id], onDelete: SetNull)
+
+  title       String
+  description String?
+
+  category       TaskCategory
+  status         TaskStatus         @default(OPEN)
+  requiredAction TaskRequiredAction @default(NONE)
+
+  referenceDate DateTime? @db.Date
+  completedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([assignedToUserId, status])
+  @@index([assignedToUserId, category, status])
+  @@index([createdByUserId])
+  @@index([completedByUserId])
+  @@index([referenceDate])
 }
 
 enum Role {
@@ -381,4 +414,23 @@ enum TimeEntryCorrectionRequestStatus {
 enum AbsenceCompensation {
   PAID
   UNPAID
+}
+
+enum TaskCategory {
+  WORK_TIME
+  VACATION
+  SICKNESS
+  GENERAL
+}
+
+enum TaskStatus {
+  OPEN
+  COMPLETED
+}
+
+enum TaskRequiredAction {
+  NONE
+  WORK_ENTRY_FOR_DATE
+  VACATION_ENTRY_FOR_DATE
+  SICK_ENTRY_FOR_DATE
 }

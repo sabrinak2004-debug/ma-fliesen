@@ -154,6 +154,7 @@ export default function AppShell({
     { href: "/erfassung", label: "Erfassung", icon: "⊞" },
     { href: "/kalender", label: "Kalender", icon: "🗓" },
     { href: "/uebersicht", label: "Übersicht", icon: "▦" },
+    { href: "/aufgaben", label: "Aufgaben", icon: "📋" },
   ];
 
   const adminNavItems: NavItem[] = [
@@ -163,6 +164,7 @@ export default function AppShell({
     { href: "/admin/urlaubsantraege", label: "Urlaubsanträge", icon: "🌴" },
     { href: "/admin/krankheitsantraege", label: "Krankheitsanträge", icon: "🤒" },
     { href: "/admin/nachtragsanfragen", label: "Nachtragsanfragen", icon: "🕘" },
+    { href: "/admin/tasks", label: "Aufgaben", icon: "📋" },
     { href: "/admin/password-reset", label: "Passwort-Reset", icon: "🔐" },
   ];
 

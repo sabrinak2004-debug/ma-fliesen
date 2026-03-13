@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { Info } from "lucide-react";
@@ -1022,7 +1023,25 @@ export default function AdminDashboardPage() {
           />
         </div>
 
-        <div style={{ display: "flex", alignItems: "end" }}>
+        <div style={{ display: "flex", alignItems: "end", gap: 10, flexWrap: "wrap" }}>
+          <Link
+            href="/admin/tasks"
+            className="card"
+            style={{
+              padding: "10px 14px",
+              cursor: "pointer",
+              fontWeight: 900,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.92)",
+              textDecoration: "none",
+            }}
+            title="Aufgaben verwalten"
+          >
+            📋 Aufgaben
+          </Link>
+
           <button
             onClick={openExportModal}
             className="card"

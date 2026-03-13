@@ -1,9 +1,13 @@
 // src/app/api/admin/dashboard/remind-admin-missing/route.ts
 import { NextResponse } from "next/server";
-import { Role } from "@prisma/client";
+import { Role, TaskCategory, TaskRequiredAction, TaskStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/webpush";
 import { berlinHour, berlinTodayYMD, getMissingRequiredWorkDates } from "@/lib/timesheetLock";
+
+function dateOnlyUTC(yyyyMmDd: string): Date {
+  return new Date(`${yyyyMmDd}T00:00:00.000Z`);
+}
 
 export async function GET(req: Request) {
   const cronSecret = process.env.CRON_SECRET;
@@ -70,10 +74,68 @@ export async function GET(req: Request) {
           ? oldestMissingDate
           : `${oldestMissingDate} bis ${newestMissingDate}`;
 
+      const referenceDate = oldestMissingDate;
+
+      const existingTask = await prisma.task.findFirst({
+        where: {
+          assignedToUserId: employee.id,
+          category: TaskCategory.WORK_TIME,
+          status: TaskStatus.OPEN,
+          requiredAction: TaskRequiredAction.WORK_ENTRY_FOR_DATE,
+          referenceDate: dateOnlyUTC(referenceDate),
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      let createdTaskId: string | null = null;
+
+      if (!existingTask) {
+        const systemAdmin = await prisma.appUser.findFirst({
+          where: {
+            role: Role.ADMIN,
+            isActive: true,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (systemAdmin) {
+          const createdTask = await prisma.task.create({
+            data: {
+              assignedToUserId: employee.id,
+              createdByUserId: systemAdmin.id,
+              title:
+                missingDates.length === 1
+                  ? `Arbeitszeit für ${referenceDate} nachtragen`
+                  : `Arbeitszeiten ab ${referenceDate} nachtragen`,
+              description:
+                missingDates.length === 1
+                  ? `Bitte trage deine fehlende Arbeitszeit für ${referenceDate} in der App nach.`
+                  : `Dir fehlen Arbeitszeiteinträge für mehrere Tage (${rangeLabel}). Bitte beginne mit dem ältesten offenen Tag ${referenceDate}.`,
+              category: TaskCategory.WORK_TIME,
+              status: TaskStatus.OPEN,
+              requiredAction: TaskRequiredAction.WORK_ENTRY_FOR_DATE,
+              referenceDate: dateOnlyUTC(referenceDate),
+            },
+            select: {
+              id: true,
+            },
+          });
+
+          createdTaskId = createdTask.id;
+        }
+      }
+
       const sentCount = await sendPushToUser(employee.id, {
         title: "Fehlende Arbeitseinträge",
-        body: `Dir fehlen noch Arbeitseinträge für ${rangeLabel}. Bitte stelle jetzt einen Nachtragsantrag, falls du die Tage nicht mehr selbst eintragen kannst.`,
-        url: "/erfassung",
+        body: `Dir fehlen noch Arbeitseinträge für ${rangeLabel}. Bitte öffne deine Aufgaben und beginne mit dem ältesten fehlenden Tag.`,
+        url: "/aufgaben",
       });
 
       return {
@@ -82,6 +144,8 @@ export async function GET(req: Request) {
         missingDatesCount: missingDates.length,
         oldestMissingDate,
         sentCount,
+        referenceDate,
+        taskCreated: Boolean(createdTaskId),
       };
     })
   );
@@ -98,6 +162,8 @@ export async function GET(req: Request) {
       fullName: item.fullName,
       missingDatesCount: item.missingDatesCount,
       oldestMissingDate: item.oldestMissingDate,
+      referenceDate: item.referenceDate,
+      taskCreated: item.taskCreated,
     })),
   });
 }
