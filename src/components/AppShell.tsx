@@ -285,7 +285,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
     { href: "/admin/wochenplan", label: "Wochenplan", icon: "🧑‍💼" },
     { href: "/admin/urlaubsantraege", label: "Urlaubsanträge", icon: "🌴" },
     { href: "/admin/krankheitsantraege", label: "Krankheitsanträge", icon: "🤒" },
-    { href: "/admin/nachtragsanfragen", label: "Nachtragsanfragen", icon: "🕘" },
+    { href: "/admin/nachtragsanfragen", label: "Nachtragsanträge", icon: "🕘" },
     { href: "/admin/tasks", label: "Aufgaben", icon: "📋" },
     { href: "/admin/password-reset", label: "Passwort-Reset", icon: "🔐" },
   ];
@@ -717,14 +717,25 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     <span
                       style={{
                         display: "flex",
-                        alignItems: "center",
+                        alignItems: "flex-start",
                         justifyContent: "space-between",
                         gap: 10,
                         width: "100%",
                         minWidth: 0,
                       }}
                     >
-                      <span className="appshell-nav-label">{item.label}</span>
+                      <span
+                        className="appshell-nav-label"
+                        style={{
+                          minWidth: 0,
+                          flex: 1,
+                          whiteSpace: "normal",
+                          wordBreak: "break-word",
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {item.label}
+                      </span>
 
                       {showTaskBadge ||
                       showVacationBadge ||
@@ -733,20 +744,21 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                         <span
                           aria-label={`${openTaskCount} offene Aufgaben`}
                           style={{
-                            minWidth: 22,
-                            height: 22,
-                            padding: "0 7px",
-                            borderRadius: 999,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: "var(--accent)",
-                            color: "#111",
-                            fontSize: 12,
-                            fontWeight: 1000,
-                            lineHeight: 1,
-                            flexShrink: 0,
-                          }}
+                              minWidth: 20,
+                              height: 20,
+                              padding: "0 6px",
+                              borderRadius: 999,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background: "var(--accent)",
+                              color: "#111",
+                              fontSize: 11,
+                              fontWeight: 1000,
+                              lineHeight: 1,
+                              flexShrink: 0,
+                              marginTop: 1,
+                            }}
                         >
                           {showTaskBadge
                             ? openTaskCount
