@@ -32,8 +32,15 @@ type TaskRow = {
   } | null;
 };
 
+type MissingWorkEntryAlert = {
+  count: number;
+  oldestMissingDate: string;
+  newestMissingDate: string;
+};
+
 type TasksApiResponse = {
   tasks: TaskRow[];
+  missingWorkEntryAlert?: MissingWorkEntryAlert | null;
 };
 
 type CategoryGroupKey = "WORK_TIME" | "VACATION" | "SICKNESS" | "GENERAL";
@@ -94,8 +101,24 @@ function isTaskRow(v: unknown): v is TaskRow {
   );
 }
 
+function isMissingWorkEntryAlert(v: unknown): v is MissingWorkEntryAlert {
+  return (
+    isRecord(v) &&
+    typeof v["count"] === "number" &&
+    isString(v["oldestMissingDate"]) &&
+    isString(v["newestMissingDate"])
+  );
+}
+
 function isTasksApiResponse(v: unknown): v is TasksApiResponse {
-  return isRecord(v) && Array.isArray(v["tasks"]) && v["tasks"].every(isTaskRow);
+  return (
+    isRecord(v) &&
+    Array.isArray(v["tasks"]) &&
+    v["tasks"].every(isTaskRow) &&
+    (v["missingWorkEntryAlert"] === undefined ||
+      v["missingWorkEntryAlert"] === null ||
+      isMissingWorkEntryAlert(v["missingWorkEntryAlert"]))
+  );
 }
 
 function formatDateDE(value: string | null): string {
@@ -103,6 +126,16 @@ function formatDateDE(value: string | null): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("de-DE").format(date);
+}
+
+function formatDateLongDE(value: string): string {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "long",
+  }).format(date);
 }
 
 function categoryLabel(category: TaskCategory): string {
@@ -179,6 +212,9 @@ export default function AufgabenPage() {
   const [actionTaskId, setActionTaskId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [missingWorkEntryAlert, setMissingWorkEntryAlert] =
+    useState<MissingWorkEntryAlert | null>(null);
+  const [showMissingWorkEntryModal, setShowMissingWorkEntryModal] = useState(false);
 
   async function loadTasks(): Promise<void> {
     setLoading(true);
@@ -200,19 +236,23 @@ export default function AufgabenPage() {
             : "Aufgaben konnten nicht geladen werden.";
         setError(message);
         setTasks([]);
+        setMissingWorkEntryAlert(null);
         return;
       }
 
       if (!isTasksApiResponse(data)) {
         setError("Unerwartete Antwort vom Server.");
         setTasks([]);
+        setMissingWorkEntryAlert(null);
         return;
       }
 
       setTasks(data.tasks);
+      setMissingWorkEntryAlert(data.missingWorkEntryAlert ?? null);
     } catch {
       setError("Netzwerkfehler beim Laden der Aufgaben.");
       setTasks([]);
+      setMissingWorkEntryAlert(null);
     } finally {
       setLoading(false);
     }
@@ -246,6 +286,15 @@ export default function AufgabenPage() {
 
     return groups;
   }, [openTasks]);
+
+  const missingWorkEntryRangeText = useMemo(() => {
+    if (!missingWorkEntryAlert) return "";
+
+    const fromText = formatDateLongDE(missingWorkEntryAlert.oldestMissingDate);
+    const toText = formatDateLongDE(missingWorkEntryAlert.newestMissingDate);
+
+    return fromText === toText ? fromText : `${fromText} bis ${toText}`;
+  }, [missingWorkEntryAlert]);
 
   async function completeTask(taskId: string): Promise<void> {
     setActionTaskId(taskId);
@@ -401,6 +450,32 @@ export default function AufgabenPage() {
   return (
     <AppShell activeLabel="Meine Aufgaben">
       <div style={{ display: "grid", gap: 16 }}>
+        {missingWorkEntryAlert ? (
+          <button
+            type="button"
+            onClick={() => setShowMissingWorkEntryModal(true)}
+            style={{
+              width: "100%",
+              textAlign: "left",
+              padding: "14px 16px",
+              borderRadius: 14,
+              border: "1px solid rgba(224, 75, 69, 0.45)",
+              background: "rgba(224, 75, 69, 0.14)",
+              color: "rgba(255,255,255,0.96)",
+              cursor: "pointer",
+              display: "grid",
+              gap: 6,
+            }}
+          >
+            <div style={{ fontWeight: 1000, color: "rgba(255, 120, 120, 0.98)" }}>
+              Es fehlen Einträge für {missingWorkEntryAlert.count} Tag
+              {missingWorkEntryAlert.count === 1 ? "" : "e"}
+            </div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.82)" }}>
+              Fehlende Einträge bis heute – tippe hier für Details.
+            </div>
+          </button>
+        ) : null}
         {error ? (
           <div
             className="card"
@@ -503,6 +578,97 @@ export default function AufgabenPage() {
               {completedTasks.map((task) => renderTaskCard(task, false))}
             </div>
           )}
+        {showMissingWorkEntryModal && missingWorkEntryAlert ? (
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setShowMissingWorkEntryModal(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.55)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 16,
+              zIndex: 1000,
+            }}
+          >
+            <div
+              onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
+              style={{
+                width: "100%",
+                maxWidth: 460,
+                borderRadius: 18,
+                border: "1px solid rgba(224, 75, 69, 0.35)",
+                background: "rgb(24,24,24)",
+                boxShadow: "0 18px 50px rgba(0,0,0,0.35)",
+                padding: 18,
+                display: "grid",
+                gap: 14,
+              }}
+            >
+              <div style={{ display: "grid", gap: 6 }}>
+                <div
+                  style={{
+                    fontWeight: 1000,
+                    fontSize: 18,
+                    color: "rgba(255, 120, 120, 0.98)",
+                  }}
+                >
+                  Fehlende Einträge
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.82)", lineHeight: 1.5 }}>
+                  Fehlende Einträge: {missingWorkEntryRangeText}
+                </div>
+                <div style={{ color: "var(--muted-2)", fontSize: 13, lineHeight: 1.5 }}>
+                  Es werden nur vergangene bzw. aktuell bereits fehlende Tage angezeigt.
+                  Zukünftige Tage werden hier nicht berücksichtigt.
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                }}
+              >
+                <Link
+                  href="/erfassung"
+                  onClick={() => setShowMissingWorkEntryModal(false)}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(184,207,58,0.35)",
+                    background: "rgba(184,207,58,0.12)",
+                    color: "var(--accent)",
+                    textDecoration: "none",
+                    fontWeight: 900,
+                  }}
+                >
+                  Zur Erfassung
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => setShowMissingWorkEntryModal(false)}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    background: "rgba(255,255,255,0.06)",
+                    color: "rgba(255,255,255,0.92)",
+                    cursor: "pointer",
+                    fontWeight: 900,
+                  }}
+                >
+                  Schließen
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
         </div>
       </div>
     </AppShell>

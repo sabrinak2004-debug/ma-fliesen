@@ -118,7 +118,10 @@ export function berlinHour(now: Date = new Date()): number {
 
 export async function getMissingRequiredWorkDates(
   userId: string,
-  untilDateYMD: string
+  untilDateYMD: string,
+  options?: {
+    includeUntilDate?: boolean;
+  }
 ): Promise<string[]> {
   const untilDate = parseIsoDateToUtc(untilDateYMD);
 
@@ -138,7 +141,8 @@ export async function getMissingRequiredWorkDates(
     return [];
   }
 
-  const rangeEndExclusive = untilDate;
+  const rangeEndExclusive =
+    options?.includeUntilDate === true ? addUtcDays(untilDate, 1) : untilDate;
 
   const [entries, absences] = await prisma.$transaction([
     prisma.workEntry.findMany({
@@ -280,10 +284,16 @@ export async function assertEmployeeMayEditDate(args: {
     throw new Error("Du kannst keine Einträge für zukünftige Tage bearbeiten.");
   }
 
-  const missingBeforeTarget = await getMissingRequiredWorkDates(
-    args.userId,
-    args.workDateYMD
+  const previousDateYMD = isoDayUTC(
+    addUtcDays(parseIsoDateToUtc(args.workDateYMD), -1)
   );
+
+  const missingBeforeTarget =
+    previousDateYMD < args.workDateYMD
+      ? await getMissingRequiredWorkDates(args.userId, previousDateYMD, {
+          includeUntilDate: true,
+        })
+      : [];
 
   if (missingBeforeTarget.length > 0) {
     throw new Error(
