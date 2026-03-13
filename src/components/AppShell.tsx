@@ -719,12 +719,23 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        gap: 10,
+                        gap: 8,
                         width: "100%",
                         minWidth: 0,
                       }}
                     >
-                      <span className="appshell-nav-label">{item.label}</span>
+                      <span
+                        className="appshell-nav-label"
+                        style={{
+                          maxWidth: 150,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          flexShrink: 1,
+                        }}
+                      >
+                        {item.label}
+                      </span>
 
                       {showTaskBadge ||
                       showVacationBadge ||
