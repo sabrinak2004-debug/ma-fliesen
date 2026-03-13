@@ -719,7 +719,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        gap: 8,
+                        gap: 6,
                         width: "100%",
                         minWidth: 0,
                       }}
@@ -727,11 +727,8 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       <span
                         className="appshell-nav-label"
                         style={{
-                          maxWidth: 150,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          flexShrink: 1,
+                          minWidth: 0,
+                          flex: 1,
                         }}
                       >
                         {item.label}
@@ -744,17 +741,17 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                         <span
                           aria-label={`${openTaskCount} offene Aufgaben`}
                           style={{
-                            minWidth: 22,
-                            height: 22,
-                            padding: "0 7px",
+                            minWidth: 18,
+                            height: 18,
+                            padding: "0 5px",
                             borderRadius: 999,
                             display: "inline-flex",
                             alignItems: "center",
                             justifyContent: "center",
                             background: "var(--accent)",
                             color: "#111",
-                            fontSize: 4,
-                            fontWeight: 500,
+                            fontSize: 10,
+                            fontWeight: 1000,
                             lineHeight: 1,
                             flexShrink: 0,
                           }}
