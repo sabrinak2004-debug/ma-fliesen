@@ -459,6 +459,44 @@ export default function UrlaubsantraegePage() {
     }
   }
 
+    async function deleteRequest(id: string) {
+    const confirmed = window.confirm(
+      "Möchtest du diesen Urlaubsantrag wirklich dauerhaft löschen?"
+    );
+
+    if (!confirmed) return;
+
+    setBusyId(id);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/admin/absence-requests/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+
+      const json: unknown = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const message =
+          isRecord(json) && typeof json["error"] === "string"
+            ? json["error"]
+            : "Löschen fehlgeschlagen.";
+        setError(message);
+        return;
+      }
+
+      if (editingItemId === id) {
+        cancelEditing();
+      }
+
+      await loadRequests();
+    } catch {
+      setError("Netzwerkfehler beim Löschen.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   function startEditing(item: AbsenceRequestItem) {
     setEditingItemId(item.id);
     setEditStartDate(item.startDate);
@@ -817,6 +855,17 @@ export default function UrlaubsantraegePage() {
                 Abbrechen
               </button>
 
+              <button
+                className="btn btn-danger"
+                type="button"
+                disabled={isBusy}
+                onClick={() => {
+                  void deleteRequest(item.id);
+                }}
+              >
+                {isBusy ? "Löscht..." : "Löschen"}
+              </button>
+
               {item.status === "PENDING" ? (
                 <>
                   <button
@@ -866,6 +915,17 @@ export default function UrlaubsantraegePage() {
                   Bearbeiten
                 </button>
               ) : null}
+
+              <button
+                className="btn btn-danger"
+                type="button"
+                disabled={isBusy}
+                onClick={() => {
+                  void deleteRequest(item.id);
+                }}
+              >
+                {isBusy ? "Löscht..." : "Löschen"}
+              </button>
 
               {item.status === "PENDING" ? (
                 <>

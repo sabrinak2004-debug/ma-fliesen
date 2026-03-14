@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  Absence,
   AbsenceCompensation,
   AbsenceDayPortion,
   AbsenceRequestStatus,
@@ -36,6 +37,25 @@ function isYYYYMMDD(v: string): boolean {
 
 function dateOnlyUTC(yyyyMmDd: string): Date {
   return new Date(`${yyyyMmDd}T00:00:00.000Z`);
+}
+
+function toIsoDateUTC(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function eachDateInclusive(startDate: Date, endDate: Date): Date[] {
+  const result: Date[] = [];
+  const cursor = new Date(startDate.getTime());
+
+  while (cursor.getTime() <= endDate.getTime()) {
+    result.push(new Date(cursor.getTime()));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return result;
 }
 
 function isAbsenceType(v: string): v is AbsenceType {
@@ -171,6 +191,94 @@ export async function PATCH(req: Request, context: RouteContext) {
     request: {
       id: updated.id,
       status: updated.status,
+    },
+  });
+}
+
+export async function DELETE(_req: Request, context: RouteContext) {
+  const admin = await requireAdmin();
+  if (!admin) {
+    return NextResponse.json(
+      { ok: false, error: "Keine Berechtigung." },
+      { status: 403 }
+    );
+  }
+
+  const params = await context.params;
+  const requestId = params.id.trim();
+
+  if (!requestId) {
+    return NextResponse.json(
+      { ok: false, error: "Fehlende Request-ID." },
+      { status: 400 }
+    );
+  }
+
+  const existing = await prisma.absenceRequest.findUnique({
+    where: { id: requestId },
+    select: {
+      id: true,
+      userId: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      type: true,
+      dayPortion: true,
+      compensation: true,
+    },
+  });
+
+  if (!existing) {
+    return NextResponse.json(
+      { ok: false, error: "Antrag nicht gefunden." },
+      { status: 404 }
+    );
+  }
+
+  await prisma.$transaction(async (tx) => {
+    if (existing.status === AbsenceRequestStatus.APPROVED) {
+      const dates = eachDateInclusive(existing.startDate, existing.endDate);
+
+      if (existing.dayPortion === "HALF_DAY") {
+        await tx.absence.deleteMany({
+          where: {
+            userId: existing.userId,
+            absenceDate: existing.startDate,
+            type: existing.type,
+            dayPortion: existing.dayPortion,
+            compensation: existing.compensation,
+          },
+        });
+      } else {
+        const absenceFilters: Absence[] | [] = [];
+        void absenceFilters;
+
+        await tx.absence.deleteMany({
+          where: {
+            userId: existing.userId,
+            type: existing.type,
+            dayPortion: existing.dayPortion,
+            compensation: existing.compensation,
+            absenceDate: {
+              in: dates,
+            },
+          },
+        });
+      }
+    }
+
+    await tx.absenceRequest.delete({
+      where: { id: requestId },
+    });
+  });
+
+  return NextResponse.json({
+    ok: true,
+    deletedId: existing.id,
+    removedApprovedAbsences: existing.status === AbsenceRequestStatus.APPROVED,
+    range: {
+      startDate: toIsoDateUTC(existing.startDate),
+      endDate: toIsoDateUTC(existing.endDate),
     },
   });
 }

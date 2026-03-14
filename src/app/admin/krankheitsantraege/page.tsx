@@ -397,6 +397,40 @@ export default function KrankheitsantraegePage() {
     }
   }
 
+  async function deleteRequest(id: string) {
+    const confirmed = window.confirm(
+      "Möchtest du diesen Krankheitsantrag wirklich dauerhaft löschen?"
+    );
+
+    if (!confirmed) return;
+
+    setBusyId(id);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/admin/absence-requests/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+
+      const json: unknown = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const message =
+          isRecord(json) && typeof json["error"] === "string"
+            ? json["error"]
+            : "Löschen fehlgeschlagen.";
+        setError(message);
+        return;
+      }
+
+      await loadRequests();
+    } catch {
+      setError("Netzwerkfehler beim Löschen.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   const pendingItems = useMemo(
     () => items.filter((item) => item.status === "PENDING"),
     [items]
@@ -535,39 +569,53 @@ export default function KrankheitsantraegePage() {
           </div>
         </div>
 
-        {item.status === "PENDING" ? (
-          <div
-            className="mobile-actions"
-            style={{
-              marginTop: 14,
-              justifyContent: "flex-end",
+        <div
+          className="mobile-actions"
+          style={{
+            marginTop: 14,
+            justifyContent: "flex-end",
+          }}
+        >
+          <button
+            className="btn btn-danger"
+            type="button"
+            disabled={isBusy}
+            onClick={() => {
+              void deleteRequest(item.id);
             }}
+            style={{ flex: "1 1 220px" }}
           >
-            <button
-              className="btn btn-danger"
-              type="button"
-              disabled={isBusy}
-              onClick={() => {
-                void rejectRequest(item.id);
-              }}
-              style={{ flex: "1 1 220px" }}
-            >
-              {isBusy ? "Verarbeitet..." : "Ablehnen"}
-            </button>
+            {isBusy ? "Löscht..." : "Löschen"}
+          </button>
 
-            <button
-              className="btn btn-accent"
-              type="button"
-              disabled={isBusy}
-              onClick={() => {
-                void approveRequest(item.id);
-              }}
-              style={{ flex: "1 1 220px" }}
-            >
-              {isBusy ? "Verarbeitet..." : "Genehmigen"}
-            </button>
-          </div>
-        ) : null}
+          {item.status === "PENDING" ? (
+            <>
+              <button
+                className="btn btn-danger"
+                type="button"
+                disabled={isBusy}
+                onClick={() => {
+                  void rejectRequest(item.id);
+                }}
+                style={{ flex: "1 1 220px" }}
+              >
+                {isBusy ? "Verarbeitet..." : "Ablehnen"}
+              </button>
+
+              <button
+                className="btn btn-accent"
+                type="button"
+                disabled={isBusy}
+                onClick={() => {
+                  void approveRequest(item.id);
+                }}
+                style={{ flex: "1 1 220px" }}
+              >
+                {isBusy ? "Verarbeitet..." : "Genehmigen"}
+              </button>
+            </>
+          ) : null}
+        </div>
       </div>
     );
   }

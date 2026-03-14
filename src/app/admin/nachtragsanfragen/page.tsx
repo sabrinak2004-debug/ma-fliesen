@@ -393,6 +393,43 @@ export default function NachtragsanfragenPage() {
     }
   }
 
+  async function deleteRequest(id: string) {
+    const confirmed = window.confirm(
+      "Möchtest du diese Nachtragsanfrage wirklich dauerhaft löschen?"
+    );
+
+    if (!confirmed) return;
+
+    setBusyId(id);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `/api/admin/time-entry-correction-requests/${encodeURIComponent(id)}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const json: unknown = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const message =
+          isRecord(json) && typeof json["error"] === "string"
+            ? json["error"]
+            : "Löschen fehlgeschlagen.";
+        setError(message);
+        return;
+      }
+
+      await loadRequests();
+    } catch {
+      setError("Netzwerkfehler beim Löschen.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   const pendingItems = useMemo(
     () => items.filter((item) => item.status === "PENDING"),
     [items]
@@ -541,39 +578,52 @@ export default function NachtragsanfragenPage() {
           </div>
         </div>
 
-        {item.status === "PENDING" ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "flex",
-              gap: 10,
-              justifyContent: "flex-end",
-              flexWrap: "wrap",
+        <div
+          style={{
+            marginTop: 14,
+            display: "flex",
+            gap: 10,
+            justifyContent: "flex-end",
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            className="btn btn-danger"
+            type="button"
+            disabled={isBusy}
+            onClick={() => {
+              void deleteRequest(item.id);
             }}
           >
-            <button
-              className="btn btn-danger"
-              type="button"
-              disabled={isBusy}
-              onClick={() => {
-                void rejectRequest(item.id);
-              }}
-            >
-              {isBusy ? "Verarbeitet..." : "Ablehnen"}
-            </button>
+            {isBusy ? "Löscht..." : "Löschen"}
+          </button>
 
-            <button
-              className="btn btn-accent"
-              type="button"
-              disabled={isBusy}
-              onClick={() => {
-                void approveRequest(item.id);
-              }}
-            >
-              {isBusy ? "Verarbeitet..." : "Genehmigen"}
-            </button>
-          </div>
-        ) : null}
+          {item.status === "PENDING" ? (
+            <>
+              <button
+                className="btn btn-danger"
+                type="button"
+                disabled={isBusy}
+                onClick={() => {
+                  void rejectRequest(item.id);
+                }}
+              >
+                {isBusy ? "Verarbeitet..." : "Ablehnen"}
+              </button>
+
+              <button
+                className="btn btn-accent"
+                type="button"
+                disabled={isBusy}
+                onClick={() => {
+                  void approveRequest(item.id);
+                }}
+              >
+                {isBusy ? "Verarbeitet..." : "Genehmigen"}
+              </button>
+            </>
+          ) : null}
+        </div>
       </div>
     );
   }
