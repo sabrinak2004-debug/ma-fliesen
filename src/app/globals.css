@@ -28,22 +28,71 @@ body {
   min-height: 100dvh;
   margin: 0;
   background-color: var(--bg);
-  background-image:
+  color: var(--text);
+  position: relative;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-repeat: no-repeat;
+}
+
+body::before {
+  top: 0;
+  height: 42vh;
+  background:
     radial-gradient(
-      1200px 600px at 10% 10%,
-      rgba(184, 207, 58, 0.1),
-      transparent 55%
+      1200px 600px at 10% 0%,
+      rgba(184, 207, 58, 0.12),
+      transparent 60%
     ),
     radial-gradient(
-      900px 600px at 80% 20%,
-      rgba(184, 207, 58, 0.06),
-      transparent 60%
+      900px 520px at 85% 8%,
+      rgba(184, 207, 58, 0.07),
+      transparent 62%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(184, 207, 58, 0.08) 0%,
+      rgba(184, 207, 58, 0.04) 28%,
+      rgba(184, 207, 58, 0.015) 48%,
+      rgba(184, 207, 58, 0) 100%
     );
-  background-repeat: no-repeat, no-repeat;
-  background-size: 1200px 600px, 900px 600px;
-  background-position: 0 0, 100% 0;
-  color: var(--text);
+  background-size: 1200px 600px, 900px 520px, 100% 100%;
+  background-position: left top, right top, center top;
 }
+
+body::after {
+  bottom: 0;
+  height: 42vh;
+  background:
+    radial-gradient(
+      1200px 600px at 12% 100%,
+      rgba(184, 207, 58, 0.1),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 520px at 88% 92%,
+      rgba(184, 207, 58, 0.06),
+      transparent 62%
+    ),
+    linear-gradient(
+      0deg,
+      rgba(184, 207, 58, 0.08) 0%,
+      rgba(184, 207, 58, 0.04) 28%,
+      rgba(184, 207, 58, 0.015) 48%,
+      rgba(184, 207, 58, 0) 100%
+    );
+  background-size: 1200px 600px, 900px 520px, 100% 100%;
+  background-position: left bottom, right bottom, center bottom;
+}
+
 
 
 /* ===== Reusable UI classes ===== */
