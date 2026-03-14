@@ -654,9 +654,57 @@ export default function AdminDashboardPage() {
     return `/api/admin/export?${params.toString()}`;
   }
 
-  function openExportInApp(url: string): void {
-    window.open(url, "_blank", "noopener,noreferrer");
+  async function downloadExport(url: string): Promise<void> {
+  setExportBusy(true);
+  setExportActionError("");
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      let message = "Export konnte nicht heruntergeladen werden.";
+
+      try {
+        const data: unknown = await response.json();
+        if (isRecord(data) && isString(data["error"])) {
+          message = data["error"];
+        }
+      } catch {
+        // ignore
+      }
+
+      setExportActionError(message);
+      return;
+    }
+
+    const blob = await response.blob();
+    const disposition = response.headers.get("Content-Disposition");
+    const fallbackName = guessExportFallbackName(url);
+    const fileName = getFileNameFromDisposition(disposition, fallbackName);
+
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = fileName;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setExportOpen(false);
+
+    window.setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+    }, 1000);
+  } catch {
+    setExportActionError("Export konnte nicht heruntergeladen werden.");
+  } finally {
+    setExportBusy(false);
   }
+}
 
   async function shareOrSaveExport(url: string): Promise<void> {
     setExportBusy(true);
@@ -794,8 +842,7 @@ export default function AdminDashboardPage() {
     if (!url) return;
 
     if (mode === "OPEN") {
-      openExportInApp(url);
-      setExportOpen(false);
+      await downloadExport(url);
       return;
     }
 
