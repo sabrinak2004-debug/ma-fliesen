@@ -302,6 +302,21 @@ export async function getMissingRequiredWorkDates(
   return missingDates;
 }
 
+export async function getLockedMissingRequiredWorkDates(
+  userId: string,
+  untilDateYMD: string,
+  graceBusinessDays: number = 5
+): Promise<string[]> {
+  const missingDates = await getMissingRequiredWorkDates(userId, untilDateYMD);
+
+  if (missingDates.length > graceBusinessDays) {
+    return missingDates;
+  }
+
+  return [];
+}
+
+
 export async function hasActiveTimeEntryUnlock(
   userId: string,
   workDateYMD: string,
@@ -378,7 +393,12 @@ export async function assertEmployeeMayEditDate(args: {
     return;
   }
 
-  if (!requiresTimeEntryUnlock(args.workDateYMD, today)) {
+  const lockedMissingDates = await getLockedMissingRequiredWorkDates(
+    args.userId,
+    today
+  );
+
+  if (!lockedMissingDates.includes(args.workDateYMD)) {
     return;
   }
 

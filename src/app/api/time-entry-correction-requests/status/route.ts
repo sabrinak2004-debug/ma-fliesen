@@ -4,9 +4,9 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   berlinTodayYMD,
+  getLockedMissingRequiredWorkDates,
   getMissingRequiredWorkDates,
   hasActiveTimeEntryUnlock,
-  requiresTimeEntryUnlock,
 } from "@/lib/timesheetLock";
 
 function getString(value: string | null): string {
@@ -58,6 +58,7 @@ export async function GET(req: Request) {
     pendingRequest,
     latestDecisionRequest,
     missingRequiredWorkDates,
+    lockedMissingWorkDates,
   ] = await Promise.all([
     hasActiveTimeEntryUnlock(session.userId, workDate),
     prisma.timeEntryCorrectionRequest.findFirst({
@@ -96,11 +97,12 @@ export async function GET(req: Request) {
       },
     }),
     getMissingRequiredWorkDates(session.userId, todayYMD),
+    getLockedMissingRequiredWorkDates(
+      session.userId,
+      todayYMD,
+      GRACE_WORKDAYS_LIMIT
+    ),
   ]);
-
-  const lockedMissingWorkDates = missingRequiredWorkDates.filter((dateYMD) =>
-    requiresTimeEntryUnlock(dateYMD, todayYMD, GRACE_WORKDAYS_LIMIT)
-  );
 
   const missingRequiredWorkdaysCount = missingRequiredWorkDates.length;
 

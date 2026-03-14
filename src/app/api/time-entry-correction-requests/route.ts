@@ -8,9 +8,10 @@ import { prisma } from "@/lib/prisma";
 import { webpush } from "@/lib/webpush";
 import {
   berlinTodayYMD,
+  getLockedMissingRequiredWorkDates,
   getMissingRequiredWorkDates,
-  requiresTimeEntryUnlock,
 } from "@/lib/timesheetLock";
+
 
 type CreateTimeEntryCorrectionRequestBody = {
   targetDate?: unknown;
@@ -222,9 +223,11 @@ export async function POST(req: Request) {
     today
   );
 
-  const lockedMissingDates = missingDates.filter((dateYMD) =>
-    requiresTimeEntryUnlock(dateYMD, today)
+  const lockedMissingDates = await getLockedMissingRequiredWorkDates(
+    session.userId,
+    today
   );
+
 
   if (lockedMissingDates.length === 0) {
     return NextResponse.json(
