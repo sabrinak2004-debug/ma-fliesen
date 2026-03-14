@@ -8,11 +8,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de" suppressHydrationWarning>
+    <html lang="de">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f6ef" />
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0f0c" />
+        <meta name="theme-color" content="#3f3f3f" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="MA Fliesen" />
         <link rel="apple-touch-icon" href="/icon_2.jpeg" />
@@ -26,5 +25,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-
-

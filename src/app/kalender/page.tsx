@@ -613,7 +613,7 @@ function categoryDotStyle(c: EventCategory): React.CSSProperties {
     borderRadius: 999,
     flex: "0 0 auto",
     marginTop: 4,
-    boxShadow: "0 0 0 3px rgba(184, 207, 58, 0.08)",
+    boxShadow: "0 0 0 3px rgba(255,255,255,0.03)",
   };
 
   if (c === "KUNDE") return { ...base, background: "rgba(184, 207, 58, 0.95)" };
@@ -622,14 +622,13 @@ function categoryDotStyle(c: EventCategory): React.CSSProperties {
   return { ...base, background: "rgba(224, 75, 69, 0.95)" };
 }
 
-
 function pillStyle(): React.CSSProperties {
   return {
     fontSize: 12,
     padding: "4px 10px",
     borderRadius: 999,
-    border: "1px solid var(--border)",
-    background: "var(--surface-soft)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.04)",
     color: "var(--muted)",
     display: "inline-flex",
     alignItems: "center",
@@ -637,7 +636,6 @@ function pillStyle(): React.CSSProperties {
     lineHeight: "16px",
   };
 }
-
 
 function getHolidayIcon(name: string | null): React.ReactNode {
   if (!name) return <CalendarDays size={14} />;
@@ -701,11 +699,10 @@ function smallDot(color: string): React.CSSProperties {
     height: 8,
     borderRadius: 999,
     background: color,
-    boxShadow: "0 0 0 3px rgba(184, 207, 58, 0.08)",
+    boxShadow: "0 0 0 3px rgba(255,255,255,0.03)",
     flex: "0 0 auto",
   };
 }
-
 
 export default function KalenderPage() {
   const router = useRouter();
@@ -1364,12 +1361,12 @@ export default function KalenderPage() {
     width: 56,
     height: 56,
     borderRadius: 18,
-    border: "1px solid rgba(184, 207, 58, 0.35)",
+    border: "1px solid rgba(255,255,255,0.12)",
     background: "rgba(184, 207, 58, 0.95)",
-    color: "#111613",
+    color: "rgba(0,0,0,0.9)",
     fontWeight: 900,
     fontSize: 26,
-    boxShadow: "var(--shadow-strong)",
+    boxShadow: "0 14px 40px rgba(0,0,0,0.35)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1377,20 +1374,18 @@ export default function KalenderPage() {
     zIndex: 60,
   };
 
-
   const segmentedWrap: React.CSSProperties = {
     display: "inline-flex",
     borderRadius: 14,
-    border: "1px solid var(--border)",
-    background: "var(--surface-soft)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.04)",
     padding: 4,
     gap: 4,
   };
 
-
   const segBtn = (active: boolean): React.CSSProperties => ({
-    border: "1px solid var(--border)",
-    background: active ? "rgba(184, 207, 58, 0.14)" : "transparent",
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: active ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.00)",
     color: "var(--text)",
     borderRadius: 12,
     padding: "8px 14px",
@@ -1398,7 +1393,6 @@ export default function KalenderPage() {
     fontWeight: 800,
     fontSize: 13,
   });
-
 
   return (
     <AppShell activeLabel="#wirkönnendas">
@@ -1563,7 +1557,7 @@ export default function KalenderPage() {
                     ? "rgba(255, 196, 0, 0.12)"
                     : info?.hasPlan
                     ? "rgba(184, 207, 58, 0.10)"
-                    : "var(--surface-soft)";
+                    : "rgba(255,255,255,0.02)";
 
                 return (
                   <button
@@ -1699,7 +1693,7 @@ export default function KalenderPage() {
                         ? "rgba(255, 196, 0, 0.12)"
                         : info?.hasPlan
                         ? "rgba(184, 207, 58, 0.10)"
-                        : "var(--surface-soft)";
+                        : "rgba(255,255,255,0.02)";
 
                     const isToday = c.date === todayYMD;
 
@@ -1710,7 +1704,7 @@ export default function KalenderPage() {
                         disabled={!c.inMonth}
                         onClick={() => c.inMonth && c.date && openDay(c.date)}
                         style={{
-                          borderColor: isToday ? "rgba(184, 207, 58, 0.55)" : border,
+                          borderColor: isToday ? "rgba(255,255,255,0.22)" : border,
                           background: bg,
                           opacity: c.inMonth ? 1 : 0.25,
                           cursor: c.inMonth ? "pointer" : "default",
@@ -1731,8 +1725,8 @@ export default function KalenderPage() {
                                 width: 8,
                                 height: 8,
                                 borderRadius: 999,
-                                background: "var(--accent)",
-                                boxShadow: "0 0 0 3px rgba(184, 207, 58, 0.22)",
+                                background: "rgba(226, 255, 62, 0.95)",
+                                boxShadow: "0 0 0 3px rgba(226, 255, 62, 0.36)",
                               }}
                               title="Heute"
                             />
@@ -1876,8 +1870,8 @@ export default function KalenderPage() {
         {isAdminOwnCalendar ? (
           <>
             {apptError && (
-              <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", background: "rgba(224, 75, 69, 0.08)", marginBottom: 12 }}>
-                <span style={{ color: "var(--danger)", fontWeight: 700 }}>{apptError}</span>
+              <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
+                <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{apptError}</span>
               </div>
             )}
 
@@ -1971,8 +1965,8 @@ export default function KalenderPage() {
                               disabled={saving}
                               title="Bearbeiten"
                               style={{
-                                border: "1px solid var(--border)",
-                                background: "var(--surface-soft)",
+                                border: "1px solid rgba(255,255,255,0.12)",
+                                background: "rgba(255,255,255,0.04)",
                                 color: "var(--text)",
                                 borderRadius: 12,
                                 padding: "8px 10px",
@@ -1989,7 +1983,7 @@ export default function KalenderPage() {
                               style={{
                                 border: "1px solid rgba(224, 75, 69, 0.35)",
                                 background: "rgba(224, 75, 69, 0.10)",
-                                color: "var(--danger)",
+                                color: "rgba(224, 75, 69, 0.95)",
                                 borderRadius: 12,
                                 padding: "8px 10px",
                                 cursor: "pointer",
@@ -2070,8 +2064,8 @@ export default function KalenderPage() {
                   style={{
                     padding: "10px 12px",
                     borderRadius: 12,
-                    border: "1px solid var(--border)",
-                    background: "var(--surface-soft)",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    background: "rgba(255,255,255,0.03)",
                     color: "var(--muted)",
                   }}
                 >
@@ -2199,7 +2193,7 @@ export default function KalenderPage() {
                 </div>
               ) : adminEmployeePlansError ? (
                 <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
-                  <span style={{ color: "var(--danger)", fontWeight: 700 }}>
+                  <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>
                     {adminEmployeePlansError}
                   </span>
                 </div>
@@ -2268,7 +2262,7 @@ export default function KalenderPage() {
                 </div>
               ) : plansError ? (
                 <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
-                  <span style={{ color: "var(--danger)", fontWeight: 700 }}>{plansError}</span>
+                  <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{plansError}</span>
                 </div>
               ) : dayPlans.length === 0 ? (
                 <div className="card" style={{ padding: 12, opacity: 0.85 }}>
@@ -2422,8 +2416,8 @@ export default function KalenderPage() {
             </div>
 
             {error && (
-              <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", background: "rgba(224, 75, 69, 0.08)", marginBottom: 12 }}>
-                <span style={{ color: "var(--danger)", fontWeight: 700 }}>{error}</span>
+              <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
+                <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
               </div>
             )}
 

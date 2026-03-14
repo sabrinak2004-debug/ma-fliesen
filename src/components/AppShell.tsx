@@ -361,11 +361,11 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
             padding: 12,
             paddingTop: "calc(12px + env(safe-area-inset-top))",
             marginBottom: 12,
-            background: "var(--surface-glass-strong)",
+            background: "rgba(14,16,14,0.92)",
             backdropFilter: "blur(10px)",
-            border: "1px solid var(--border)",
+            border: "1px solid rgba(255,255,255,0.10)",
             borderRadius: 18,
-            boxShadow: "var(--shadow-soft)",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
           }}
         >
           <div
@@ -384,9 +384,9 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                 width: 44,
                 height: 44,
                 borderRadius: 14,
-                border: "1px solid var(--border)",
-                background: "var(--surface-soft)",
-                color: "var(--text)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.95)",
                 fontSize: 18,
                 fontWeight: 900,
                 cursor: "pointer",
@@ -416,7 +416,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                   <div
                     style={{
                       fontWeight: 900,
-                      color: "var(--text)",
+                      color: "rgba(255,255,255,0.95)",
                       lineHeight: 1.05,
                       marginTop: 6,
                     }}
@@ -427,7 +427,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     style={{
                       fontSize: 12,
                       marginTop: 2,
-                      color: "var(--muted)",
+                      color: "rgba(255,255,255,0.65)",
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -449,9 +449,9 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                border: "1px solid var(--border)",
-                background: "var(--surface-soft)",
-                color: "var(--text)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.95)",
                 fontWeight: 900,
               }}
             >
@@ -487,14 +487,14 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                 height: "100%",
                 width: 320,
                 maxWidth: "86vw",
-                background: "var(--surface-glass-strong)",
-                color: "var(--text)",
-                boxShadow: "var(--shadow-strong)",
+                background: "#161916",
+                color: "rgba(255,255,255,0.92)",
+                boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
                 padding: 16,
                 display: "flex",
                 flexDirection: "column",
                 gap: 10,
-                borderRight: "1px solid var(--border)",
+                borderRight: "1px solid rgba(255,255,255,0.10)",
               }}
             >
               <div
@@ -507,11 +507,11 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
               >
                 <div style={{ minWidth: 0 }}>
                   <div
-                  style={{
-                    fontWeight: 900,
-                    fontSize: 12,
-                    color: "var(--muted)",
-                  }}
+                    style={{
+                      fontWeight: 900,
+                      fontSize: 12,
+                      color: "rgba(255,255,255,0.65)",
+                    }}
                   >
                     {isAdmin ? "Admin" : "Mitarbeiter"}
                   </div>
@@ -533,7 +533,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       height: 4,
                       width: 54,
                       borderRadius: 99,
-                      background: "var(--accent)",
+                      background: "#A9C23F",
                     }}
                   />
                 </div>
@@ -546,9 +546,9 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     width: 44,
                     height: 44,
                     borderRadius: 14,
-                    border: "1px solid var(--border)",
-                    background: "var(--surface-soft)",
-                    color: "var(--text)",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    background: "rgba(255,255,255,0.06)",
+                    color: "rgba(255,255,255,0.95)",
                     cursor: "pointer",
                     fontWeight: 900,
                   }}
@@ -608,7 +608,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                               alignItems: "center",
                               justifyContent: "center",
                               background: "var(--accent)",
-                              color: "#111613",
+                              color: "#111",
                               fontSize: 15,
                               fontWeight: 1000,
                               lineHeight: 1,
@@ -749,7 +749,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                             alignItems: "center",
                             justifyContent: "center",
                             background: "var(--accent)",
-                            color: "#111613",
+                            color: "#111",
                             fontSize: 12,
                             fontWeight: 1000,
                             lineHeight: 1,
@@ -823,8 +823,8 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     gap: 10,
                     padding: "8px 10px",
                     borderRadius: 14,
-                    border: "1px solid var(--border)",
-                    background: "var(--surface-soft)",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    background: "rgba(255,255,255,0.06)",
                   }}
                 >
                   <div
@@ -837,8 +837,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       justifyContent: "center",
                       fontWeight: 900,
                       letterSpacing: 0.5,
-                      background: "rgba(184, 207, 58, 0.16)",
-                      color: "var(--text)",
+                      background: "rgba(255,255,255,0.14)",
                     }}
                     aria-hidden="true"
                   >
@@ -875,10 +874,10 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                           padding: "3px 8px",
                           borderRadius: 999,
                           background: isAdmin
-                            ? "rgba(184, 207, 58, 0.18)"
-                            : "var(--surface-soft)",
-                          border: "1px solid var(--border)",
-                          color: "var(--text)",
+                            ? "rgba(0,200,255,0.14)"
+                            : "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.10)",
+                          color: "rgba(255,255,255,0.92)",
                         }}
                       >
                         {isAdmin ? "ADMIN" : "MA"}
