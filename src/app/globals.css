@@ -1561,3 +1561,13 @@ li {
     background-clip: padding-box;
   }
 }
+.small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 767px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}

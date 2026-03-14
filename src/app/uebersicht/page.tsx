@@ -180,7 +180,7 @@ function badgeStyle(t: "VACATION" | "SICK"): React.CSSProperties {
     borderRadius: 999,
     border: `1px solid ${t === "SICK" ? "rgba(224, 75, 69, 0.35)" : "rgba(90, 167, 255, 0.35)"}`,
     background: t === "SICK" ? "rgba(224, 75, 69, 0.10)" : "rgba(90, 167, 255, 0.10)",
-    color: "rgba(255,255,255,0.92)",
+    color: "var(--text)",
     whiteSpace: "nowrap",
   };
 }
@@ -193,34 +193,37 @@ function chipStyle(bg: string, border: string): React.CSSProperties {
     borderRadius: 999,
     border: `1px solid ${border}`,
     background: bg,
-    color: "rgba(255,255,255,0.92)",
+    color: "var(--text)",
     whiteSpace: "nowrap",
   };
 }
+
 
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
     padding: "10px 12px",
     borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(0,0,0,0.25)",
-    color: "rgba(255,255,255,0.92)",
+    border: "1px solid var(--border)",
+    background: "var(--input-bg)",
+    color: "var(--text)",
     outline: "none",
   };
 }
+
 
 function selectStyle(): React.CSSProperties {
   return {
     width: "100%",
     padding: "10px 12px",
     borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(0,0,0,0.25)",
-    color: "rgba(255,255,255,0.92)",
+    border: "1px solid var(--border)",
+    background: "var(--input-bg)",
+    color: "var(--text)",
     outline: "none",
   };
 }
+
 
 type AbsFilterType = "ALL" | "SICK" | "VACATION";
 type MonthOption =
@@ -726,9 +729,9 @@ export default function UebersichtPage() {
           cursor: "pointer",
           fontWeight: 900,
           borderRadius: 12,
-          border: "1px solid rgba(255,255,255,0.12)",
-          background: "rgba(255,255,255,0.06)",
-          color: "rgba(255,255,255,0.9)",
+          border: "1px solid var(--border)",
+          background: "var(--surface-soft)",
+          color: "var(--text)",
         }}
       >
         Abbrechen
@@ -745,7 +748,7 @@ export default function UebersichtPage() {
           borderRadius: 12,
           border: "1px solid rgba(184,207,58,0.35)",
           background: exportMode === "RANGE" && rangeError ? "rgba(184,207,58,0.06)" : "rgba(184,207,58,0.12)",
-          color: "var(--accent)",
+          color: "var(--text)",
           opacity: exportMode === "RANGE" && rangeError ? 0.7 : 1,
         }}
         title="Download starten"
@@ -811,7 +814,7 @@ const resetAbsFilters = () => {
 };
 
   return (
-    <AppShell activeLabel="#wirkönndas">
+    <AppShell activeLabel="#wirkönnendas">
       {!isAdmin ? (
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
           <Link
@@ -822,9 +825,9 @@ const resetAbsFilters = () => {
               cursor: "pointer",
               fontWeight: 900,
               borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.14)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.92)",
+              border: "1px solid var(--border)",
+              background: "var(--surface-soft)",
+              color: "var(--text)",
               textDecoration: "none",
             }}
             title="Meine Aufgaben"
@@ -847,7 +850,7 @@ const resetAbsFilters = () => {
               borderRadius: 12,
               border: "1px solid rgba(184,207,58,0.35)",
               background: "rgba(184,207,58,0.12)",
-              color: "var(--accent)",
+              color: "var(--text)",
             }}
             title="Export (Admin)"
           >
@@ -872,9 +875,9 @@ const resetAbsFilters = () => {
                 style={{
                   borderRadius: 999,
                   padding: "8px 12px",
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background: exportMode === m.key ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
-                  color: "rgba(255,255,255,0.92)",
+                  border: "1px solid var(--border)",
+                  background: exportMode === m.key ? "rgba(184, 207, 58, 0.14)" : "var(--surface-soft)",
+                  color: "var(--text)",
                   cursor: "pointer",
                   fontSize: 13,
                   fontWeight: 900,
@@ -896,9 +899,9 @@ const resetAbsFilters = () => {
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(0,0,0,0.25)",
-                  color: "rgba(255,255,255,0.92)",
+                  border: "1px solid var(--border)",
+                  background: "var(--input-bg)",
+                  color: "var(--text)",
                 }}
               />
               <div style={{ fontSize: 12, color: "var(--muted)" }}>
@@ -917,9 +920,9 @@ const resetAbsFilters = () => {
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(0,0,0,0.25)",
-                  color: "rgba(255,255,255,0.92)",
+                  border: "1px solid var(--border)",
+                  background: "var(--input-bg)",
+                  color: "var(--text)",
                 }}
               >
                 {years.map((y) => (
@@ -967,16 +970,16 @@ const resetAbsFilters = () => {
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(0,0,0,0.25)",
-                      color: "rgba(255,255,255,0.92)",
+                      border: "1px solid var(--border)",
+                      background: "var(--input-bg)",
+                      color: "var(--text)",
                     }}
                   />
                 </div>
               </div>
 
               {rangeError ? (
-                <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>{rangeError}</div>
+                <div style={{ fontSize: 12, color: "var(--danger)", fontWeight: 900 }}>{rangeError}</div>
               ) : (
                 <div style={{ fontSize: 12, color: "var(--muted)" }}>
                   Download: CSV für <b>{rangeFrom}</b> bis <b>{rangeTo}</b>
@@ -1000,9 +1003,9 @@ const resetAbsFilters = () => {
               cursor: "pointer",
               fontWeight: 900,
               borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.9)",
+              border: "1px solid var(--border)",
+              background: "var(--surface-soft)",
+              color: "var(--text)",
             }}
           >
             Schließen
@@ -1043,9 +1046,9 @@ const resetAbsFilters = () => {
               cursor: "pointer",
               fontWeight: 900,
               borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.9)",
+              border: "1px solid var(--border)",
+              background: "var(--surface-soft)",
+              color: "var(--text)",
             }}
           >
             Schließen
@@ -1082,7 +1085,7 @@ const resetAbsFilters = () => {
               }}
             >
               Daten für{" "}
-              <span style={{ fontWeight: 900, color: "rgba(255,255,255,0.92)" }}>
+              <span style={{ fontWeight: 900, color: "var(--text)" }}>
                 {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
               </span>
             </div>
@@ -1253,7 +1256,7 @@ const resetAbsFilters = () => {
         </div>
 
         <div className="card" style={{ padding: 10 }}>
-          <div style={{ height: 10, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+          <div style={{ height: 10, borderRadius: 999, background: "var(--surface-soft)", overflow: "hidden" }}>
             <div
               style={{
                 width: `${progress * 100}%`,
@@ -1273,7 +1276,7 @@ const resetAbsFilters = () => {
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={chipStyle("rgba(255,255,255,0.06)", "rgba(255,255,255,0.12)")}>
+            <span style={chipStyle("var(--surface-soft)", "var(--border)")}>
               Gefiltert: {filteredAbsenceCounts.total}
             </span>
             <span style={chipStyle("rgba(224, 75, 69, 0.10)", "rgba(224, 75, 69, 0.35)")}>
@@ -1318,9 +1321,9 @@ const resetAbsFilters = () => {
             style={{
               padding: "10px 12px",
               borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.18)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.92)",
+              border: "1px solid var(--border)",
+              background: "var(--surface-soft)",
+              color: "var(--text)",
               cursor: "pointer",
               fontWeight: 900,
               whiteSpace: "nowrap",
@@ -1375,7 +1378,7 @@ const resetAbsFilters = () => {
                     ) : null}
                   </div>
 
-                  <div style={{ fontWeight: 900, color: "rgba(255,255,255,0.92)" }}>{b.user.fullName}</div>
+                  <div style={{ fontWeight: 900, color: "var(--text)" }}>{b.user.fullName}</div>
                 </div>
               );
             })}
@@ -1409,7 +1412,7 @@ const resetAbsFilters = () => {
                             display: "grid",
                             placeItems: "center",
                             fontWeight: 900,
-                            color: "var(--accent)",
+                            color: "var(--text)",
                             textTransform: "uppercase",
                           }}
                         >
@@ -1422,7 +1425,7 @@ const resetAbsFilters = () => {
                         <span>🧾 {p.entries} Einträge</span>
                         <span>🚗 {p.km.toFixed(0)} km</span>
                         {p.sick > 0 ? (
-                          <span style={{ color: "rgba(224, 75, 69, 0.95)" }}>
+                          <span style={{ color: "var(--danger)" }}>
                             🌡 {String(p.sick).replace(".", ",")} Krank
                           </span>
                         ) : null}
@@ -1434,7 +1437,7 @@ const resetAbsFilters = () => {
                       </div>
                     </div>
 
-                    <div style={{ fontWeight: 900, color: "var(--accent)", fontSize: 18 }}>
+                    <div style={{ fontWeight: 900, color: "var(--text)", fontSize: 18 }}>
                       {formatMinutesAsHM(p.minutes)}
                     </div>
                   </div>
