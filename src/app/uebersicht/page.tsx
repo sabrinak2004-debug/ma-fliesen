@@ -604,9 +604,9 @@ export default function UebersichtPage() {
     }, 0);
   }, [absenceSummaryByUser, monthAbsences]);
 
-  const progress = Math.min(1, targetMinutes <= 0 ? 0 : totalMinutes / targetMinutes);
+  const progress = Math.min(1, netTargetMinutes <= 0 ? 0 : totalMinutes / netTargetMinutes);
   const overtimeGrossMinutes = totalMinutes - targetMinutes;
-  const overtimeNetMinutes = totalMinutes - targetMinutes + vacationMinutesInfo + sickMinutesInfo + holidayMinutes;
+  const overtimeNetMinutes = totalMinutes - netTargetMinutes;
 
   const byEmployee = useMemo(() => {
     type Acc = {
@@ -1023,8 +1023,9 @@ const resetAbsFilters = () => {
               color: "var(--muted)",
             }}
           >
-            Brutto ohne Urlaub, Krankheit und Feiertage. Netto berücksichtigt bezahlte Urlaubstage,
-            Krankheitstage und Feiertage zusätzlich.
+            Brutto ist das reguläre Monatssoll ohne Urlaub, Krankheit und Feiertage.
+            Netto ist das reduzierte Monatssoll, bei dem bezahlte Urlaubstage,
+            Krankheitstage und Feiertage vom Brutto-Soll abgezogen werden.
           </div>
         </div>
       </Modal>
@@ -1058,6 +1059,9 @@ const resetAbsFilters = () => {
           <div className="small">Monatssoll (Netto): {formatMinutesAsHM(netTargetMinutes)}</div>
           <div className="small">Überstunden (Brutto): {formatMinutesAsHM(Math.max(0, overtimeGrossMinutes))}</div>
           <div className="small">Überstunden (Netto): {formatMinutesAsHM(Math.max(0, overtimeNetMinutes))}</div>
+          <div className="small">Urlaub angerechnet: {formatMinutesAsHM(vacationMinutesInfo)}</div>
+          <div className="small">Krankheit angerechnet: {formatMinutesAsHM(sickMinutesInfo)}</div>
+          <div className="small">Feiertage angerechnet: {formatMinutesAsHM(holidayMinutes)}</div>
           <div className="small">Feiertage im Monat: {holidayCountInMonth}</div>
         </div>
       </Modal>
@@ -1205,7 +1209,7 @@ const resetAbsFilters = () => {
         Monatsfortschritt – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ color: "var(--muted)" }}>
-            Noch {formatMinutesAsHM(Math.max(0, targetMinutes - totalMinutes))} bis zum Monatssoll
+            Noch {formatMinutesAsHM(Math.max(0, netTargetMinutes - totalMinutes))} bis zum Monatssoll
             {baseTargetMinutes > 0 ? (
               <span>
                 {" "}· Feiertage berücksichtigt
@@ -1214,24 +1218,37 @@ const resetAbsFilters = () => {
             ) : null}
           </div>
           <div style={{ fontWeight: 900, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span>{formatMinutesAsHM(totalMinutes)} / {formatMinutesAsHM(targetMinutes)}</span>
-            <button
-              type="button"
-              onClick={() => setProgressDetailsOpen(true)}
+            <span>{formatMinutesAsHM(totalMinutes)} / {formatMinutesAsHM(netTargetMinutes)}</span>
+
+            <div
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                justifyContent: "center",
-                border: "none",
-                background: "transparent",
+                gap: 6,
                 color: "var(--muted-2)",
-                cursor: "pointer",
-                padding: 0,
+                fontSize: 13,
+                fontWeight: 800,
               }}
-              title="Details zum Monatsfortschritt anzeigen"
             >
-              <Info size={15} />
-            </button>
+              <span>Details</span>
+              <button
+                type="button"
+                onClick={() => setProgressDetailsOpen(true)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--muted-2)",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+                title="Details zum Monatsfortschritt anzeigen"
+              >
+                <Info size={15} />
+              </button>
+            </div>
           </div>
         </div>
 

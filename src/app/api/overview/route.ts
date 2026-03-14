@@ -244,7 +244,11 @@ export async function GET(req: Request) {
     const paidHolidayMinutes = countHolidayWeekdays(holidaySet) * DAILY_TARGET_MINUTES;
 
     const targetMinutes = baseTargetMinutes;
-    const netTargetMinutes = baseTargetMinutes + vacationMinutes + sickMinutes + paidHolidayMinutes;
+    const netTargetMinutes = Math.max(
+      0,
+      baseTargetMinutes - vacationMinutes - sickMinutes - paidHolidayMinutes
+    );
+
     const missingRequiredWorkDates = await getMissingRequiredWorkDates(
       user.id,
       berlinTodayYMD()
