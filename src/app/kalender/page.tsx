@@ -1020,6 +1020,17 @@ export default function KalenderPage() {
     void loadPlansForDay(date);
   }
 
+  function syncPlanEntryToWorkEntry(plan: PlanEntry): void {
+    const params = new URLSearchParams({
+      syncDate: plan.workDate,
+      syncActivity: plan.activity,
+      syncLocation: plan.location,
+    });
+
+    setOpen(false);
+    router.push(`/erfassung?${params.toString()}`);
+  }
+
   function openNewEventGlobal(): void {
     const now = new Date();
     const ymd = toYMDLocal(now);
@@ -2136,6 +2147,14 @@ export default function KalenderPage() {
 
                       <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
                         <button
+                          className="btn"
+                          type="button"
+                          onClick={() => syncPlanEntryToWorkEntry(p)}
+                        >
+                          ↪️ In Eintrag syncen
+                        </button>
+
+                        <button
                           className="btn btn-accent"
                           type="button"
                           onClick={() => {
@@ -2145,6 +2164,16 @@ export default function KalenderPage() {
                         >
                           📎 Dokumente
                         </button>
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontSize: 12,
+                          color: "var(--muted)",
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        Übernimmt Datum, Tätigkeit und Einsatzort. Uhrzeiten bitte in der Erfassung ergänzen.
                       </div>
                     </div>
                   ))}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 
@@ -400,6 +400,7 @@ function formatCorrectionRange(startDate: string, endDate: string): string {
 
 export default function Page() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [me, setMe] = useState<MeResponse | null>(null);
 
   // Create-Form (ohne fullName)
@@ -410,6 +411,7 @@ export default function Page() {
   const [location, setLocation] = useState("");
   const [travelMinutes, setTravelMinutes] = useState<string>("0");
   const [noteEmployee, setNoteEmployee] = useState("");
+  const [prefillApplied, setPrefillApplied] = useState(false);
 
   const [dayBreaks, setDayBreaks] = useState<DayBreak[]>([]);
   const [breakStartHHMM, setBreakStartHHMM] = useState("");
@@ -510,6 +512,40 @@ export default function Page() {
     breakEndHHMM,
     currentBreakFormManualMinutes,
   ]);
+
+  useEffect(() => {
+    if (prefillApplied) return;
+
+    const syncDate = searchParams.get("syncDate");
+    const syncActivity = searchParams.get("syncActivity");
+    const syncLocation = searchParams.get("syncLocation");
+
+    const hasSyncValues =
+      (typeof syncDate === "string" && syncDate.trim() !== "") ||
+      (typeof syncActivity === "string" && syncActivity.trim() !== "") ||
+      (typeof syncLocation === "string" && syncLocation.trim() !== "");
+
+    if (!hasSyncValues) {
+      setPrefillApplied(true);
+      return;
+    }
+
+    if (typeof syncDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(syncDate)) {
+      setWorkDate(syncDate);
+    }
+
+    if (typeof syncActivity === "string" && syncActivity.trim() !== "") {
+      setActivity(syncActivity);
+    }
+
+    if (typeof syncLocation === "string" && syncLocation.trim() !== "") {
+      setLocation(syncLocation);
+    }
+
+    setStartTime("");
+    setEndTime("");
+    setPrefillApplied(true);
+  }, [prefillApplied, searchParams]);
 
 useEffect(() => {
   let alive = true;
@@ -1374,7 +1410,12 @@ useEffect(() => {
             className="btn erfassung-action-btn"
             type="button"
             onClick={() => {
-              setWorkDate(toIsoDateLocal(new Date()));
+              const syncDate = searchParams.get("syncDate");
+              setWorkDate(
+                typeof syncDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(syncDate)
+                  ? syncDate
+                  : toIsoDateLocal(new Date())
+              );
               setStartTime("");
               setEndTime("");
               setActivity("");
