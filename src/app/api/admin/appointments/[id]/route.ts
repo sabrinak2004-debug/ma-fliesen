@@ -6,6 +6,8 @@ import { getAuthedCalendarClient } from "@/lib/googleCalendar";
 import {
   utcFromLocalDateTime,
   toGoogleDateTime,
+  toIsoDateUTC,
+  toHHMMUTC
 } from "@/lib/time";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -27,18 +29,6 @@ type CalendarEventDTO = {
   notes: string | null;
 };
 
-function toIsoDateLocal(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function toHHMMLocal(d: Date): string {
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
-}
 
 async function requireAdmin(sessionUserId: string) {
   const user = await prisma.appUser.findUnique({
@@ -187,9 +177,9 @@ export async function PUT(req: Request, ctx: Ctx) {
     ok: true,
     event: {
       id: updated.id,
-      date: toIsoDateLocal(updated.startAt),
-      startHHMM: toHHMMLocal(updated.startAt),
-      endHHMM: toHHMMLocal(updated.endAt),
+      date: toIsoDateUTC(updated.startAt),
+      startHHMM: toHHMMUTC(updated.startAt),
+      endHHMM: toHHMMUTC(updated.endAt),
       title: updated.title,
       location: updated.location ?? null,
       notes: updated.notes ?? null,

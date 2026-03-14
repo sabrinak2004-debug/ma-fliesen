@@ -3,18 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { Role } from "@prisma/client";
 import Holidays from "date-holidays";
+import { toHHMMUTC } from "@/lib/time";
 
 function toIsoDateUTC(d: Date) {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
-}
-
-function toHHMMLocal(d: Date) {
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
 }
 
 type HolidayInfo = {
@@ -108,7 +103,7 @@ if (me.role === Role.ADMIN && !userIdParam) {
           : list
               .slice(0, 2)
               .map((x) => {
-                const base = `${toHHMMLocal(x.start)}–${toHHMMLocal(x.end)} ${x.title}`.trim();
+                const base = `${toHHMMUTC(x.start)}–${toHHMMUTC(x.end)} ${x.title}`.trim();
                 return x.location ? `${base} · ${x.location}` : base;
               })
               .join(" | ");
