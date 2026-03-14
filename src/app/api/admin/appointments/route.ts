@@ -6,8 +6,6 @@ import { getAuthedCalendarClient } from "@/lib/googleCalendar";
 import {
   utcFromLocalDateTime,
   toGoogleDateTime,
-  toIsoDateUTC,
-  toHHMMUTC,
 } from "@/lib/time";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -28,6 +26,19 @@ type CalendarEventDTO = {
   location: string | null;
   notes: string | null;
 };
+
+function toIsoDateLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function toHHMMLocal(d: Date): string {
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
 
 async function requireAdmin(sessionUserId: string) {
   const user = await prisma.appUser.findUnique({
@@ -84,9 +95,9 @@ export async function GET(req: Request) {
 
   const dto: CalendarEventDTO[] = events.map((e) => ({
     id: e.id,
-    date: toIsoDateUTC(e.startAt),
-    startHHMM: toHHMMUTC(e.startAt),
-    endHHMM: toHHMMUTC(e.endAt),
+    date: toIsoDateLocal(e.startAt),
+    startHHMM: toHHMMLocal(e.startAt),
+    endHHMM: toHHMMLocal(e.endAt),
     title: e.title,
     location: e.location ?? null,
     notes: e.notes ?? null,
@@ -180,9 +191,9 @@ export async function POST(req: Request) {
     ok: true,
     event: {
       id: created.id,
-      date: toIsoDateUTC(created.startAt),
-      startHHMM: toHHMMUTC(created.startAt),
-      endHHMM: toHHMMUTC(created.endAt),
+      date: toIsoDateLocal(created.startAt),
+      startHHMM: toHHMMLocal(created.startAt),
+      endHHMM: toHHMMLocal(created.endAt),
       title: created.title,
       location: created.location ?? null,
       notes: created.notes ?? null,
