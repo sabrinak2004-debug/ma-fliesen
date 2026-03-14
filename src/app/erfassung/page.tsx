@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import Toast from "@/components/Toast";
 import Modal from "@/components/Modal";
 
 type MeResponse =
@@ -420,6 +421,7 @@ function ErfassungPageInner() {
   const [travelMinutes, setTravelMinutes] = useState<string>("0");
   const [noteEmployee, setNoteEmployee] = useState("");
   const [prefillApplied, setPrefillApplied] = useState(false);
+  const [showSyncToast, setShowSyncToast] = useState(false);
 
   const [dayBreaks, setDayBreaks] = useState<DayBreak[]>([]);
   const [breakStartHHMM, setBreakStartHHMM] = useState("");
@@ -537,6 +539,7 @@ function ErfassungPageInner() {
       setPrefillApplied(true);
       return;
     }
+    setShowSyncToast(true);
 
     if (typeof syncDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(syncDate)) {
       setWorkDate(syncDate);
@@ -2231,6 +2234,9 @@ useEffect(() => {
           </div>
         )}
       </Modal>
+      {showSyncToast && (
+        <Toast message="Planeintrag übernommen. Bitte Start- und Endzeit ergänzen." />
+      )}
     </AppShell>
   );
 }
