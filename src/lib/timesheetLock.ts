@@ -317,15 +317,10 @@ export async function hasActiveTimeEntryUnlock(
     select: {
       id: true,
       expiresAt: true,
-      usedAt: true,
     },
   });
 
   if (!unlock) {
-    return false;
-  }
-
-  if (unlock.usedAt) {
     return false;
   }
 
@@ -336,34 +331,14 @@ export async function hasActiveTimeEntryUnlock(
   return true;
 }
 
+
 export async function consumeTimeEntryUnlock(
-  userId: string,
-  workDateYMD: string
+  _userId: string,
+  _workDateYMD: string
 ): Promise<void> {
-  const unlock = await prisma.timeEntryUnlock.findUnique({
-    where: {
-      userId_workDate: {
-        userId,
-        workDate: parseIsoDateToUtc(workDateYMD),
-      },
-    },
-    select: {
-      id: true,
-      usedAt: true,
-    },
-  });
-
-  if (!unlock || unlock.usedAt) {
-    return;
-  }
-
-  await prisma.timeEntryUnlock.update({
-    where: { id: unlock.id },
-    data: {
-      usedAt: new Date(),
-    },
-  });
+  return;
 }
+
 
 export async function assertEmployeeMayEditDate(args: {
   role: "ADMIN" | "EMPLOYEE";
