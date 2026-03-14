@@ -11,9 +11,9 @@ function toIsoDateUTC(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-function toHHMMUTC(d: Date) {
-  const hh = String(d.getUTCHours()).padStart(2, "0");
-  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+function toHHMMLocal(d: Date) {
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
 }
 
@@ -108,7 +108,7 @@ if (me.role === Role.ADMIN && !userIdParam) {
           : list
               .slice(0, 2)
               .map((x) => {
-                const base = `${toHHMMUTC(x.start)}–${toHHMMUTC(x.end)} ${x.title}`.trim();
+                const base = `${toHHMMLocal(x.start)}–${toHHMMLocal(x.end)} ${x.title}`.trim();
                 return x.location ? `${base} · ${x.location}` : base;
               })
               .join(" | ");
