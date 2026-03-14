@@ -16,10 +16,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="MA Fliesen" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-        <body>
+      <body>
+        <div style={{ position: "relative", zIndex: 1 }}>
           <PushBootstrap />
           {children}
-        </body>
+        </div>
+      </body>
     </html>
   );
 }
+
