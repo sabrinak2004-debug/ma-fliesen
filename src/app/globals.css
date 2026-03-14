@@ -1571,3 +1571,18 @@ li {
     grid-template-columns: 1fr;
   }
 }
+details > summary {
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+.surface-soft {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+}
+
+.text-main {
+  color: var(--text);
+}

@@ -1134,8 +1134,16 @@ useEffect(() => {
         </div>
 
         {error && (
-          <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
-            <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
+          <div
+            className="card"
+            style={{
+              padding: 12,
+              borderColor: "rgba(224, 75, 69, 0.35)",
+              background: "rgba(224, 75, 69, 0.08)",
+              marginBottom: 12,
+            }}
+          >
+            <span style={{ color: "var(--danger)", fontWeight: 700 }}>{error}</span>
           </div>
         )}
 
@@ -1213,8 +1221,8 @@ useEffect(() => {
                     : pendingCorrectionRequestForSelectedDate
                     ? "rgba(90, 167, 255, 0.95)"
                     : latestDecisionRequestForSelectedDate?.status === "REJECTED"
-                    ? "rgba(224, 75, 69, 0.95)"
-                    : "rgba(255, 214, 102, 0.95)",
+                    ? "var(--danger)"
+                    : "rgba(176, 120, 0, 0.95)",
                 }}
               >
                 Vergangener Tag ausgewählt
@@ -1340,7 +1348,15 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
+        <div
+          className="card"
+          style={{
+            padding: 12,
+            marginBottom: 12,
+            borderColor: "rgba(184, 207, 58, 0.20)",
+            background: "var(--surface-soft)",
+          }}
+        >
           <div style={{ display: "grid", gap: 6 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
               <div style={{ color: "var(--muted)" }}>Arbeitszeit (Tag berechnet)</div>
@@ -1455,8 +1471,16 @@ useEffect(() => {
         </div>
 
         {breakError ? (
-          <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
-            <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{breakError}</span>
+          <div
+            className="card"
+            style={{
+              padding: 12,
+              borderColor: "rgba(224, 75, 69, 0.35)",
+              background: "rgba(224, 75, 69, 0.08)",
+              marginBottom: 12,
+            }}
+          >
+            <span style={{ color: "var(--danger)", fontWeight: 700 }}>{breakError}</span>
           </div>
         ) : null}
 
@@ -1488,7 +1512,15 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
+        <div
+            className="card"
+            style={{
+              padding: 12,
+              marginBottom: 12,
+              borderColor: "rgba(184, 207, 58, 0.20)",
+              background: "var(--surface-soft)",
+            }}
+          >
           <div style={{ display: "grid", gap: 6 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
               <div style={{ color: "var(--muted)" }}>Pausenberechnung</div>
@@ -1571,7 +1603,8 @@ useEffect(() => {
               className="card"
               style={{
                 padding: 14,
-                borderColor: "rgba(255,255,255,0.08)",
+                borderColor: "var(--border)",
+                background: "var(--surface-soft)",
               }}
             >
               Lade Einträge...
@@ -1583,7 +1616,8 @@ useEffect(() => {
               className="card"
               style={{
                 padding: 14,
-                borderColor: "rgba(255,255,255,0.08)",
+                borderColor: "var(--border)",
+                background: "var(--surface-soft)",
               }}
             >
               Keine Einträge für das ausgewählte Jahr vorhanden.
@@ -1595,8 +1629,8 @@ useEffect(() => {
               open={m.key === currentMonthKey}
               style={{
                 borderRadius: 16,
-                border: "1px solid rgba(255,255,255,0.08)",
-                background: "rgba(0,0,0,0.20)",
+                border: "1px solid var(--border)",
+                background: "var(--surface-soft)",
                 overflow: "hidden",
               }}
             >
@@ -1614,12 +1648,12 @@ useEffect(() => {
               >
                 <div style={{ fontWeight: 800, fontSize: 15 }}>
                   {m.label}
-                  <span style={{ opacity: 0.7, fontWeight: 600, marginLeft: 8 }}>
+                  <span style={{ opacity: 0.7, fontWeight: 600, marginLeft: 8, color: "var(--muted)" }}>
                     ({m.days.reduce((s, d) => s + d.entries.length, 0)})
                   </span>
                 </div>
 
-                <div style={{ opacity: 0.7, fontSize: 12 }}>Ein-/Ausklappen</div>
+                <div style={{ opacity: 0.7, fontSize: 12, color: "var(--muted)" }}>Ein-/Ausklappen</div>
               </summary>
 
               <div style={{ padding: "0 0 12px 0", display: "grid", gap: 10 }}>
@@ -1634,8 +1668,8 @@ useEffect(() => {
                       style={{
                         margin: "0 12px",
                         borderRadius: 14,
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        background: "rgba(0,0,0,0.16)",
+                        border: "1px solid var(--border)",
+                        background: "var(--surface-soft)",
                         overflow: "hidden",
                       }}
                     >
@@ -1683,7 +1717,7 @@ useEffect(() => {
                                 padding: 0,
                                 border: "none",
                                 background: "transparent",
-                                color: "rgba(255,255,255,0.92)",
+                                color: "var(--text)",
                                 cursor: "pointer",
                                 fontWeight: 900,
                               }}
@@ -1713,8 +1747,8 @@ useEffect(() => {
                                 gap: 10,
                                 padding: "10px 12px",
                                 borderRadius: 12,
-                                background: "rgba(255,255,255,0.02)",
-                                border: "1px solid rgba(255,255,255,0.06)",
+                                background: "var(--surface-soft)",
+                                border: "1px solid var(--border)",
                               }}
                             >
                               <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
@@ -1722,7 +1756,7 @@ useEffect(() => {
                                   {formatHM(e.workMinutes ?? 0)}
                                 </div>
 
-                                <div style={{ color: "rgba(255,255,255,0.92)", fontWeight: 800 }}>
+                                <div style={{ color: "var(--text)", fontWeight: 800 }}>
                                   {e.startTime}–{e.endTime} Uhr
                                 </div>
 
@@ -1778,7 +1812,7 @@ useEffect(() => {
                                       borderRadius: 10,
                                       border: "1px solid rgba(90,167,255,0.28)",
                                       background: "rgba(90,167,255,0.10)",
-                                      color: "rgba(90,167,255,0.95)",
+                                      color: "var(--text)",
                                       cursor: "pointer",
                                       fontWeight: 900,
                                     }}
@@ -1794,9 +1828,9 @@ useEffect(() => {
                                   style={{
                                     padding: "6px 10px",
                                     borderRadius: 10,
-                                    border: "1px solid rgba(255,255,255,0.14)",
-                                    background: "rgba(255,255,255,0.06)",
-                                    color: "rgba(255,255,255,0.9)",
+                                    border: "1px solid var(--border)",
+                                    background: "var(--surface-soft)",
+                                    color: "var(--text)",
                                     cursor: "pointer",
                                     fontWeight: 900,
                                   }}
@@ -1813,7 +1847,7 @@ useEffect(() => {
                                     borderRadius: 10,
                                     border: "1px solid rgba(224,75,69,0.35)",
                                     background: "rgba(224,75,69,0.10)",
-                                    color: "rgba(224,75,69,0.95)",
+                                    color: "var(--danger)",
                                     cursor: "pointer",
                                     fontWeight: 1000,
                                   }}
@@ -2047,16 +2081,30 @@ useEffect(() => {
       >
         <div style={{ display: "grid", gap: 12 }}>
           {correctionError ? (
-            <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
-              <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>
+            <div
+              className="card"
+              style={{
+                padding: 12,
+                borderColor: "rgba(224, 75, 69, 0.35)",
+                background: "rgba(224, 75, 69, 0.08)",
+              }}
+            >
+              <span style={{ color: "var(--danger)", fontWeight: 700 }}>
                 {correctionError}
               </span>
             </div>
           ) : null}
 
           {correctionSuccess ? (
-            <div className="card" style={{ padding: 12, borderColor: "rgba(184, 207, 58, 0.28)" }}>
-              <span style={{ color: "var(--accent)", fontWeight: 700 }}>
+            <div
+              className="card"
+              style={{
+                padding: 12,
+                borderColor: "rgba(184, 207, 58, 0.28)",
+                background: "rgba(184, 207, 58, 0.10)",
+              }}
+            >
+              <span style={{ color: "var(--text)", fontWeight: 700 }}>
                 {correctionSuccess}
               </span>
             </div>
@@ -2131,8 +2179,15 @@ useEffect(() => {
         {!edit ? null : (
           <div style={{ display: "grid", gap: 12 }}>
             {editError ? (
-              <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
-                <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{editError}</span>
+              <div
+                className="card"
+                style={{
+                  padding: 12,
+                  borderColor: "rgba(224, 75, 69, 0.35)",
+                  background: "rgba(224, 75, 69, 0.08)",
+                }}
+              >
+                <span style={{ color: "var(--danger)", fontWeight: 700 }}>{editError}</span>
               </div>
             ) : null}
 
@@ -2180,8 +2235,15 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="card" style={{ padding: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
-              <div style={{ display: "grid", gap: 6 }}>
+            <div
+              className="card"
+              style={{
+                padding: 12,
+                borderColor: "rgba(184, 207, 58, 0.20)",
+                background: "var(--surface-soft)",
+              }}
+            >
+                <div style={{ display: "grid", gap: 6 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
                   <div style={{ color: "var(--muted)" }}>Arbeitszeit (Tag berechnet)</div>
                   <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(editPreview.netDay)}</div>
