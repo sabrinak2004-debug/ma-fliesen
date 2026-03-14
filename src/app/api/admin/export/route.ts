@@ -481,6 +481,7 @@ function buildPayrollCsv(
       "NettoArbeitsminuten",
       "Fahrtminuten",
       "Tätigkeit",
+      "Ort",
       "Erstellt am",
     ]);
 
