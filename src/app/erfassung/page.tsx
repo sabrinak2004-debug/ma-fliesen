@@ -399,6 +399,14 @@ function formatCorrectionRange(startDate: string, endDate: string): string {
 }
 
 export default function Page() {
+  return (
+    <React.Suspense fallback={null}>
+      <ErfassungPageInner />
+    </React.Suspense>
+  );
+}
+
+function ErfassungPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [me, setMe] = useState<MeResponse | null>(null);
