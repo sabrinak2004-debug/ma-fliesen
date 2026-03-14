@@ -35,10 +35,15 @@ export async function GET() {
   if (role !== Role.ADMIN) return NextResponse.json({ ok: false }, { status: 403 });
 
   const users = await prisma.appUser.findMany({
-    where: { isActive: true, role: Role.EMPLOYEE },
+    where: {
+      isActive: true,
+      role: Role.EMPLOYEE,
+      companyId: session.companyId,
+    },
     select: { id: true, fullName: true },
     orderBy: { fullName: "asc" },
   });
+
 
   return NextResponse.json({ ok: true, users });
 }

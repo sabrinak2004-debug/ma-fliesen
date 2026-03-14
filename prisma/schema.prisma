@@ -8,6 +8,15 @@ datasource db {
   provider = "postgresql"
 }
 
+model Company {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  users AppUser[]
+}
+
+
 model AppUser {
   id                String    @id @default(uuid())
   fullName          String    @unique
@@ -17,6 +26,12 @@ model AppUser {
   passwordHash      String?
   passwordUpdatedAt DateTime?
   missingEntriesStartAt DateTime?
+   
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+
 
   entries                            WorkEntry[]
   dayBreaks                          DayBreak[]
