@@ -1021,15 +1021,20 @@ export default function KalenderPage() {
   }
 
   function syncPlanEntryToWorkEntry(plan: PlanEntry): void {
-    const params = new URLSearchParams({
-      syncDate: plan.workDate,
-      syncActivity: plan.activity,
-      syncLocation: plan.location,
-    });
+  const syncDate =
+    typeof plan.workDate === "string" && plan.workDate.length >= 10
+      ? plan.workDate.slice(0, 10)
+      : plan.workDate;
 
-    setOpen(false);
-    router.push(`/erfassung?${params.toString()}`);
-  }
+  const params = new URLSearchParams({
+    syncDate,
+    syncActivity: plan.activity,
+    syncLocation: plan.location,
+  });
+
+  setOpen(false);
+  router.push(`/erfassung?${params.toString()}`);
+}
 
   function openNewEventGlobal(): void {
     const now = new Date();
