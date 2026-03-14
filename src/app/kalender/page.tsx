@@ -52,6 +52,10 @@ type PlanEntry = {
   location: string;
   travelMinutes: number;
   noteEmployee?: string | null;
+  user?: {
+    id: string;
+    fullName: string;
+  } | null;
 };
 
 type AbsenceBlock = {
@@ -295,6 +299,19 @@ function isPlanEntry(v: unknown): v is PlanEntry {
   const noteRaw = v["noteEmployee"];
   const noteEmployee = noteRaw === null || typeof noteRaw === "string" ? noteRaw : undefined;
 
+  const userRaw = v["user"];
+  let userIsValid = true;
+
+  if (userRaw !== undefined && userRaw !== null) {
+    if (!isRecord(userRaw)) {
+      userIsValid = false;
+    } else {
+      const userEntryId = getStringField(userRaw, "id");
+      const userFullName = getStringField(userRaw, "fullName");
+      userIsValid = typeof userEntryId === "string" && typeof userFullName === "string";
+    }
+  }
+
   return (
     typeof id === "string" &&
     typeof userId === "string" &&
@@ -304,7 +321,8 @@ function isPlanEntry(v: unknown): v is PlanEntry {
     typeof activity === "string" &&
     typeof location === "string" &&
     typeof travelMinutes === "number" &&
-    (noteEmployee === undefined || noteEmployee === null || typeof noteEmployee === "string")
+    (noteEmployee === undefined || noteEmployee === null || typeof noteEmployee === "string") &&
+    userIsValid
   );
 }
 
@@ -714,6 +732,10 @@ export default function KalenderPage() {
   const [plansLoading, setPlansLoading] = useState(false);
   const [plansError, setPlansError] = useState<string | null>(null);
 
+  const [adminEmployeeDayPlans, setAdminEmployeeDayPlans] = useState<PlanEntry[]>([]);
+  const [adminEmployeePlansLoading, setAdminEmployeePlansLoading] = useState(false);
+  const [adminEmployeePlansError, setAdminEmployeePlansError] = useState<string | null>(null);
+
   const [absenceStart, setAbsenceStart] = useState<string>("");
   const [absenceEnd, setAbsenceEnd] = useState<string>("");
   const [absenceType, setAbsenceType] = useState<AbsenceType>("VACATION");
@@ -878,6 +900,12 @@ export default function KalenderPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ym, session?.role, selectedUserId]);
 
+  useEffect(() => {
+    if (!open || !selectedDate || !isAdminViewingEmployee) return;
+    void loadAdminEmployeePlansForDay(selectedDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, selectedUserId, open, isAdminViewingEmployee]);
+
   const dayMap = useMemo(() => new Map(data.map((d) => [d.date, d])), [data]);
   const blocks = useMemo(() => (isAdmin ? [] : buildBlocks(monthAbsences)), [monthAbsences, isAdmin]);
 
@@ -955,6 +983,43 @@ export default function KalenderPage() {
     }
   }
 
+  async function loadAdminEmployeePlansForDay(date: string): Promise<void> {
+    if (!selectedUserId) {
+      setAdminEmployeeDayPlans([]);
+      setAdminEmployeePlansError(null);
+      setAdminEmployeePlansLoading(false);
+      return;
+    }
+
+    setAdminEmployeePlansLoading(true);
+    setAdminEmployeePlansError(null);
+
+    try {
+      const to = addDaysYMD(date, 1);
+      const qs = new URLSearchParams({
+        from: date,
+        to,
+        userId: selectedUserId,
+      });
+
+      const r = await fetch(`/api/plan-entries?${qs.toString()}`);
+      const j: unknown = await r.json();
+
+      if (!r.ok) {
+        setAdminEmployeeDayPlans([]);
+        setAdminEmployeePlansError(extractErrorMessage(j, "Plan des Mitarbeiters konnte nicht geladen werden."));
+        return;
+      }
+
+      setAdminEmployeeDayPlans(parsePlanEntriesResponse(j));
+    } catch {
+      setAdminEmployeeDayPlans([]);
+      setAdminEmployeePlansError("Netzwerkfehler beim Laden des Mitarbeiter-Plans.");
+    } finally {
+      setAdminEmployeePlansLoading(false);
+    }
+  }
+
   async function loadAppointmentsForDay(date: string): Promise<void> {
     setApptLoading(true);
     setApptError(null);
@@ -996,12 +1061,20 @@ export default function KalenderPage() {
     setOpen(true);
     setError(null);
 
-    if (isAdmin) {
+    if (isAdminOwnCalendar) {
       setAdminMode("create-from-day");
       resetAppointmentForm();
       setApptDate(date);
       setDayAppointments([]);
       void loadAppointmentsForDay(date);
+      return;
+    }
+
+    if (isAdminViewingEmployee) {
+      setAdminEmployeeDayPlans([]);
+      setAdminEmployeePlansError(null);
+      setAdminEmployeePlansLoading(false);
+      void loadAdminEmployeePlansForDay(date);
       return;
     }
 
@@ -1348,7 +1421,19 @@ export default function KalenderPage() {
                 <div style={{ marginTop: 8, width: "100%" }}>
                   <select
                     value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
+                    onChange={(e) => {
+                      const nextUserId = e.target.value;
+                      setSelectedUserId(nextUserId);
+
+                      setAdminEmployeeDayPlans([]);
+                      setAdminEmployeePlansError(null);
+                      setAdminEmployeePlansLoading(false);
+
+                      if (!nextUserId) {
+                        setDayAppointments([]);
+                        setApptError(null);
+                      }
+                    }}
                     className="input calendar-user-select"
                     style={{ maxWidth: 320 }}
                   >
@@ -2082,27 +2167,70 @@ export default function KalenderPage() {
           <>
             <div className="card" style={{ padding: 12, opacity: 0.9 }}>
               Du siehst gerade den Kalender eines Mitarbeiters.
-              Bearbeitung/Termine sind in dieser Ansicht deaktiviert.
+              Bearbeitung und eigene Admin-Termine sind in dieser Ansicht deaktiviert.
+            </div>
+
+            {selectedDate && dayMap.get(selectedDate)?.hasHoliday ? (
+              <div className="card" style={{ padding: 12, marginTop: 10 }}>
+                <div style={{ fontWeight: 900 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {getHolidayIcon(dayMap.get(selectedDate)?.holidayName ?? null)}
+                    {dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}
+                  </span>
+                </div>
+                <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                  Dieser Tag ist als gesetzlicher Feiertag im Kalender markiert.
+                </div>
+              </div>
+            ) : null}
+
+            <div style={{ marginTop: 14 }}>
+              <div className="label">Einsatzplan des Mitarbeiters</div>
+
+              {adminEmployeePlansLoading ? (
+                <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                  Lädt Plan...
+                </div>
+              ) : adminEmployeePlansError ? (
+                <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
+                  <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>
+                    {adminEmployeePlansError}
+                  </span>
+                </div>
+              ) : adminEmployeeDayPlans.length === 0 ? (
+                <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                  Kein Einsatz für diesen Tag geplant.
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {adminEmployeeDayPlans.map((p) => (
+                    <div key={p.id} className="card" style={{ padding: 12 }}>
+                      <div style={{ fontWeight: 900 }}>
+                        {p.startHHMM}–{p.endHHMM} · {p.activity}
+                      </div>
+
+                      <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>
+                        {p.location ? `📍 ${p.location}` : "📍 (kein Ort angegeben)"}
+                        {typeof p.travelMinutes === "number" && p.travelMinutes > 0 ? ` · 🚗 ${p.travelMinutes} Min Fahrzeit` : ""}
+                      </div>
+
+                      {p.noteEmployee ? (
+                        <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                          📝 {p.noteEmployee}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {selectedDate ? (
-              <div className="card" style={{ padding: 12, marginTop: 10 }}>
-                <div style={{ fontWeight: 900, marginBottom: 6 }}>Tagesinfo</div>
-                <div style={{ color: "var(--muted)", fontSize: 13, display: "flex", flexDirection: "column", gap: 6 }}>
-                  {dayMap.get(selectedDate)?.planPreview ? (
-                    <span>Plan: {dayMap.get(selectedDate)?.planPreview}</span>
-                  ) : null}
+              <div className="card" style={{ padding: 12, marginTop: 14 }}>
+                <div style={{ fontWeight: 900, marginBottom: 6 }}>Tagesstatus</div>
 
-                  {dayMap.get(selectedDate)?.holidayName ? (
-                    <span>Feiertag: {dayMap.get(selectedDate)?.holidayName}</span>
-                  ) : null}
-
-                  {!dayMap.get(selectedDate)?.planPreview && !dayMap.get(selectedDate)?.holidayName ? (
-                    <span>Kein Plan/Preview vorhanden.</span>
-                  ) : null}
-                </div>
                 <div style={{ marginTop: 8, display: "flex", gap: 10, flexWrap: "wrap", color: "var(--muted)" }}>
-                  {dayMap.get(selectedDate)?.hasPlan ? <span style={pillStyle()}>Termine/Plan</span> : null}
+                  {dayMap.get(selectedDate)?.hasPlan ? <span style={pillStyle()}>Plan vorhanden</span> : null}
                   {dayMap.get(selectedDate)?.hasHoliday ? (
                     <span style={pillStyle()} title={dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}>
                       Feiertag
@@ -2111,6 +2239,15 @@ export default function KalenderPage() {
                   {dayMap.get(selectedDate)?.hasVacation ? <span style={pillStyle()}>Urlaub</span> : null}
                   {dayMap.get(selectedDate)?.hasSick ? <span style={pillStyle()}>Krank</span> : null}
                 </div>
+
+                {!dayMap.get(selectedDate)?.hasPlan &&
+                !dayMap.get(selectedDate)?.hasHoliday &&
+                !dayMap.get(selectedDate)?.hasVacation &&
+                !dayMap.get(selectedDate)?.hasSick ? (
+                  <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>
+                    Keine Einträge für diesen Tag vorhanden.
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </>

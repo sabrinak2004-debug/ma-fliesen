@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { Role } from "@prisma/client";
 
 function parseYMD(ymd: string) {
   const [y, m, d] = ymd.split("-").map(Number);
@@ -35,15 +36,29 @@ function extractUserId(session: unknown): string | null {
 
 export async function GET(req: Request) {
   const session = await getSession();
-  const userId = extractUserId(session);
+  const sessionUserId = extractUserId(session);
 
-  if (!userId) {
+  if (!sessionUserId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const me = await prisma.appUser.findUnique({
+    where: { id: sessionUserId },
+    select: {
+      id: true,
+      role: true,
+      isActive: true,
+    },
+  });
+
+  if (!me || !me.isActive) {
+    return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
   }
 
   const url = new URL(req.url);
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
+  const userIdParam = url.searchParams.get("userId");
 
   if (!from || !to) {
     return NextResponse.json({ error: "from/to missing" }, { status: 400 });
@@ -52,11 +67,32 @@ export async function GET(req: Request) {
   const start = parseYMD(from);
   const end = parseYMD(to);
 
-  const entries = await prisma.planEntry.findMany({
-    where: { userId, workDate: { gte: start, lt: end } },
-    orderBy: [{ startHHMM: "asc" }],
+  let targetUserId = sessionUserId;
 
-    // ✅ wichtig: nur Felder ausgeben, die Mitarbeiter sehen darf
+  if (me.role === Role.ADMIN && userIdParam) {
+    const targetUser = await prisma.appUser.findUnique({
+      where: { id: userIdParam },
+      select: {
+        id: true,
+        role: true,
+        isActive: true,
+        fullName: true,
+      },
+    });
+
+    if (!targetUser || !targetUser.isActive || targetUser.role !== Role.EMPLOYEE) {
+      return NextResponse.json({ error: "Mitarbeiter nicht gefunden" }, { status: 404 });
+    }
+
+    targetUserId = targetUser.id;
+  }
+
+  const entries = await prisma.planEntry.findMany({
+    where: {
+      userId: targetUserId,
+      workDate: { gte: start, lt: end },
+    },
+    orderBy: [{ startHHMM: "asc" }],
     select: {
       id: true,
       userId: true,
@@ -66,7 +102,13 @@ export async function GET(req: Request) {
       activity: true,
       location: true,
       travelMinutes: true,
-      noteEmployee: true, // ✅
+      noteEmployee: true,
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+        },
+      },
     },
   });
 
