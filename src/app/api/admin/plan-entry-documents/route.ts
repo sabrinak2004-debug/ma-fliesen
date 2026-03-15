@@ -27,7 +27,14 @@ export async function GET(req: Request) {
   if (!planEntryId) return NextResponse.json({ error: "planEntryId missing" }, { status: 400 });
 
   const docs = await prisma.planEntryDocument.findMany({
-    where: { planEntryId },
+    where: {
+      planEntryId,
+      planEntry: {
+        user: {
+          companyId: admin.companyId,
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -70,8 +77,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Datei zu groß (max. 15 MB)." }, { status: 400 });
   }
 
-  const entry = await prisma.planEntry.findUnique({
-    where: { id: planEntryId },
+  const entry = await prisma.planEntry.findFirst({
+    where: {
+      id: planEntryId,
+      user: {
+        companyId: admin.companyId,
+      },
+    },
     select: { id: true },
   });
   if (!entry) return NextResponse.json({ error: "PlanEntry not found" }, { status: 404 });
@@ -114,7 +126,17 @@ export async function DELETE(req: Request) {
   const id = url.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id missing" }, { status: 400 });
 
-  const doc = await prisma.planEntryDocument.findUnique({ where: { id }, select: { id: true } });
+  const doc = await prisma.planEntryDocument.findFirst({
+    where: {
+      id,
+      planEntry: {
+        user: {
+          companyId: admin.companyId,
+        },
+      },
+    },
+    select: { id: true },
+  });
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await prisma.planEntryDocument.delete({ where: { id } });

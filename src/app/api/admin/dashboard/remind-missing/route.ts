@@ -49,6 +49,7 @@ export async function POST(req: Request) {
       id: userId,
       role: Role.EMPLOYEE,
       isActive: true,
+      companyId: session.companyId,
     },
     select: {
       id: true,

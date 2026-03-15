@@ -8,10 +8,14 @@ import { syncGoogleCalendarToApp } from "@/lib/googleCalendar";
 async function requireAdmin(userId: string) {
   const u = await prisma.appUser.findUnique({
     where: { id: userId },
-    select: { role: true, isActive: true },
+    select: { id: true, role: true, isActive: true, companyId: true },
   });
 
-  return !!u && u.isActive && u.role === Role.ADMIN;
+  if (!u || !u.isActive || u.role !== Role.ADMIN || !u.companyId) {
+    return null;
+  }
+
+  return u;
 }
 
 export async function POST() {
@@ -24,7 +28,8 @@ export async function POST() {
     );
   }
 
-  if (!(await requireAdmin(session.userId))) {
+  const admin = await requireAdmin(session.userId);
+  if (!admin) {
     return NextResponse.json(
       { ok: false, error: "Keine Berechtigung" },
       { status: 403 }

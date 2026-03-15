@@ -27,7 +27,12 @@ export async function GET(req: Request) {
   end.setUTCDate(end.getUTCDate() + 7);
 
   const notes = await prisma.adminNote.findMany({
-    where: { workDate: { gte: start, lt: end } },
+    where: {
+      workDate: { gte: start, lt: end },
+      user: {
+        companyId: admin.companyId,
+      },
+    },
     include: { user: { select: { id: true, fullName: true } } },
     orderBy: [{ workDate: "asc" }, { createdAt: "asc" }],
   });
@@ -46,8 +51,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
+  const targetUser = await prisma.appUser.findFirst({
+    where: {
+      id: String(userId),
+      isActive: true,
+      role: "EMPLOYEE",
+      companyId: admin.companyId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!targetUser) {
+    return NextResponse.json({ error: "Mitarbeiter nicht gefunden." }, { status: 404 });
+  }
+
   const data = {
-    userId: String(userId),
+    userId: targetUser.id,
     workDate: parseYMD(String(workDate)),
     note: typeof note === "string" ? note : "",
   };
@@ -83,6 +104,22 @@ export async function DELETE(req: Request) {
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id missing" }, { status: 400 });
+
+  const existingNote = await prisma.adminNote.findFirst({
+    where: {
+      id: String(id),
+      user: {
+        companyId: admin.companyId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!existingNote) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   await prisma.adminNote.delete({ where: { id: String(id) } });
   return NextResponse.json({ ok: true });

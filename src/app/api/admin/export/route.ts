@@ -134,28 +134,33 @@ function isoDayUTC(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-async function loadData(from: Date | null, to: Date | null, userId: string | null) {
-  const entriesWhere =
-    from || to || userId
-      ? {
-          ...(userId ? { userId } : {}),
-          workDate: {
-            gte: from ?? undefined,
-            lte: to ?? undefined,
-          },
-        }
-      : {};
+async function loadData(
+  from: Date | null,
+  to: Date | null,
+  userId: string | null,
+  companyId: string
+) {
+  const entriesWhere = {
+    ...(userId ? { userId } : {}),
+    workDate: {
+      gte: from ?? undefined,
+      lte: to ?? undefined,
+    },
+    user: {
+      companyId,
+    },
+  };
 
-  const absWhere =
-    from || to || userId
-      ? {
-          ...(userId ? { userId } : {}),
-          absenceDate: {
-            gte: from ?? undefined,
-            lte: to ?? undefined,
-          },
-        }
-      : {};
+  const absWhere = {
+    ...(userId ? { userId } : {}),
+    absenceDate: {
+      gte: from ?? undefined,
+      lte: to ?? undefined,
+    },
+    user: {
+      companyId,
+    },
+  };
 
   const [entries, absences] = await Promise.all([
     prisma.workEntry.findMany({
@@ -585,14 +590,16 @@ export async function GET(req: Request) {
 
     const sessionUserId = getSessionUserId(session);
     if (!sessionUserId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
     const me = await prisma.appUser.findUnique({
       where: { id: sessionUserId },
-      select: { role: true, isActive: true },
+      select: { role: true, isActive: true, companyId: true },
     });
 
     if (!me?.isActive) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (me.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!me.companyId) {
+      return NextResponse.json({ error: "Keine Firma zugeordnet." }, { status: 403 });
+    }
 
     const { searchParams } = new URL(req.url);
     const state = (searchParams.get("state") ?? "BW").trim().toUpperCase();
@@ -629,7 +636,11 @@ export async function GET(req: Request) {
 
       const employees = isPerEmployee
         ? await prisma.appUser.findMany({
-            where: { isActive: true, role: "EMPLOYEE" },
+            where: {
+              isActive: true,
+              role: "EMPLOYEE",
+              companyId: me.companyId,
+            },
             select: { id: true, fullName: true },
             orderBy: { fullName: "asc" },
           })
@@ -645,15 +656,18 @@ export async function GET(req: Request) {
         const toISO = dateOnly(endInclusive);
 
         if (isAll) {
-          const data = await loadData(start, endInclusive, null);
+          const data = await loadData(start, endInclusive, null, me.companyId);
           const csv = buildPayrollCsv(data, key, { fromISO, toISO, state });
           zip.file(`${key}_payroll.csv`, csv);
           continue;
         }
 
         if (isSingle) {
-          const emp = await prisma.appUser.findUnique({
-            where: { id: userId },
+          const emp = await prisma.appUser.findFirst({
+            where: {
+              id: userId,
+              companyId: me.companyId,
+            },
             select: { fullName: true, role: true, isActive: true },
           });
 
@@ -661,14 +675,14 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Ungültiger Mitarbeiter" }, { status: 400 });
           }
 
-          const data = await loadData(start, endInclusive, userId);
+          const data = await loadData(start, endInclusive, userId, me.companyId);
           const csv = buildPayrollCsv(data, key, { fromISO, toISO, state });
           zip.file(`${key}_${safeFileName(emp.fullName)}_payroll.csv`, csv);
           continue;
         }
 
         for (const e of employees) {
-          const data = await loadData(start, endInclusive, e.id);
+          const data = await loadData(start, endInclusive, e.id, me.companyId);
           const csv = buildPayrollCsv(data, key, { fromISO, toISO, state });
           zip.file(`${key}_${safeFileName(e.fullName)}_payroll.csv`, csv);
         }
@@ -705,7 +719,7 @@ export async function GET(req: Request) {
       const toISO = dateOnly(endInclusive);
 
       if (isAll) {
-        const data = await loadData(start, endInclusive, null);
+        const data = await loadData(start, endInclusive, null, me.companyId);
         const csv = buildPayrollCsv(data, month, { fromISO, toISO, state });
         const filename = `ma-fliesen_payroll_${month}.csv`;
 
@@ -720,8 +734,11 @@ export async function GET(req: Request) {
       }
 
       if (isSingle) {
-        const emp = await prisma.appUser.findUnique({
-          where: { id: userId },
+        const emp = await prisma.appUser.findFirst({
+          where: {
+            id: userId,
+            companyId: me.companyId,
+          },
           select: { fullName: true, role: true, isActive: true },
         });
 
@@ -729,7 +746,7 @@ export async function GET(req: Request) {
           return NextResponse.json({ error: "Ungültiger Mitarbeiter" }, { status: 400 });
         }
 
-        const data = await loadData(start, endInclusive, userId);
+        const data = await loadData(start, endInclusive, userId, me.companyId);
         const csv = buildPayrollCsv(data, month, { fromISO, toISO, state });
         const filename = `ma-fliesen_payroll_${month}_${safeFileName(emp.fullName)}.csv`;
 
@@ -744,7 +761,11 @@ export async function GET(req: Request) {
       }
 
       const employees = await prisma.appUser.findMany({
-        where: { isActive: true, role: "EMPLOYEE" },
+        where: {
+          isActive: true,
+          role: "EMPLOYEE",
+          companyId: me.companyId,
+        },
         select: { id: true, fullName: true },
         orderBy: { fullName: "asc" },
       });
@@ -752,7 +773,7 @@ export async function GET(req: Request) {
       const zip = new JSZip();
 
       for (const e of employees) {
-        const data = await loadData(start, endInclusive, e.id);
+        const data = await loadData(start, endInclusive, e.id, me.companyId);
         const csv = buildPayrollCsv(data, `${month} · ${e.fullName}`, { fromISO, toISO, state });
         zip.file(`${month}_${safeFileName(e.fullName)}_payroll.csv`, csv);
       }
@@ -786,7 +807,7 @@ export async function GET(req: Request) {
         ? `bis ${toStr}`
         : "ALLE DATEN";
 
-    const data = await loadData(rangeFrom, rangeTo, isSingle ? userId : null);
+    const data = await loadData(rangeFrom, rangeTo, isSingle ? userId : null, me.companyId);
 
     const csv =
       fromStr && toStr

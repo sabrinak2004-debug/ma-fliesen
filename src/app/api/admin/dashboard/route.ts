@@ -102,10 +102,15 @@ export async function GET(req: Request) {
   const weekEnd = endOfWeekSunday(now);
 
   const employees = await prisma.appUser.findMany({
-    where: { isActive: true, role: Role.EMPLOYEE },
+    where: {
+      isActive: true,
+      role: Role.EMPLOYEE,
+      companyId: session.companyId,
+    },
     select: { id: true, fullName: true, createdAt: true },
     orderBy: { fullName: "asc" },
   });
+
 
   const activeEmployeesToday: DashboardPersonRow[] = employees.map((employee) => ({
     userId: employee.id,
@@ -120,11 +125,22 @@ export async function GET(req: Request) {
   );
 
   const plannedToday = await prisma.planEntry.count({
-    where: { workDate: new Date(`${todayIso}T00:00:00.000Z`) },
+    where: {
+      workDate: new Date(`${todayIso}T00:00:00.000Z`),
+      user: {
+        companyId: session.companyId,
+      },
+    },
   });
 
+
   const absencesTodayRows = await prisma.absence.findMany({
-    where: { absenceDate: new Date(`${todayIso}T00:00:00.000Z`) },
+    where: {
+      absenceDate: new Date(`${todayIso}T00:00:00.000Z`),
+      user: {
+        companyId: session.companyId,
+      },
+    },
     select: {
       userId: true,
       type: true,
@@ -150,7 +166,12 @@ export async function GET(req: Request) {
   const absentTodaySet = new Set(absentTodayEmployees.map((row) => row.userId));
 
   const workedToday = await prisma.workEntry.findMany({
-    where: { workDate: new Date(`${todayIso}T00:00:00.000Z`) },
+    where: {
+      workDate: new Date(`${todayIso}T00:00:00.000Z`),
+      user: {
+        companyId: session.companyId,
+      },
+    },
     select: { userId: true },
     distinct: ["userId"],
   });
@@ -210,6 +231,9 @@ export async function GET(req: Request) {
         gte: new Date(`${weekDays[0]}T00:00:00.000Z`),
         lte: new Date(`${weekDays[6]}T00:00:00.000Z`),
       },
+      user: {
+        companyId: session.companyId,
+      },
     },
     select: { userId: true, workDate: true },
   });
@@ -219,6 +243,9 @@ export async function GET(req: Request) {
       absenceDate: {
         gte: new Date(`${weekDays[0]}T00:00:00.000Z`),
         lte: new Date(`${weekDays[6]}T00:00:00.000Z`),
+      },
+      user: {
+        companyId: session.companyId,
       },
     },
     select: { userId: true, absenceDate: true },
@@ -255,6 +282,9 @@ export async function GET(req: Request) {
         gte: new Date(`${monthStartIso}T00:00:00.000Z`),
         lte: new Date(`${monthEndIso}T00:00:00.000Z`),
       },
+      user: {
+        companyId: session.companyId,
+      },
     },
     select: {
       id: true,
@@ -278,6 +308,9 @@ export async function GET(req: Request) {
         gte: new Date(`${monthStartIso}T00:00:00.000Z`),
         lte: new Date(`${monthEndIso}T00:00:00.000Z`),
       },
+      user: {
+        companyId: session.companyId,
+      },
     },
     select: {
       userId: true,
@@ -296,6 +329,9 @@ export async function GET(req: Request) {
       absenceDate: {
         gte: new Date(`${monthStartIso}T00:00:00.000Z`),
         lte: new Date(`${monthEndIso}T00:00:00.000Z`),
+      },
+      user: {
+        companyId: session.companyId,
       },
     },
     select: {
@@ -402,6 +438,9 @@ export async function GET(req: Request) {
       workDate: {
         gte: new Date(`${monthStartIso}T00:00:00.000Z`),
         lte: new Date(`${monthEndIso}T00:00:00.000Z`),
+      },
+      user: {
+        companyId: session.companyId,
       },
     },
     _sum: { workMinutes: true },
