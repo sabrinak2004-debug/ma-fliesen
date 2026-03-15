@@ -12,19 +12,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "code/state fehlt" }, { status: 400 });
   }
 
-  const admin = await prisma.appUser.findUnique({
-    where: { id: state },
-    select: {
-      id: true,
-      role: true,
-      isActive: true,
-    },
-  });
-
-  if (!admin || !admin.isActive || admin.role !== "ADMIN") {
-    return NextResponse.json({ ok: false, error: "Ungültiger Admin-Status." }, { status: 403 });
-  }
-
   const oauth = getOAuthClient();
   const { tokens } = await oauth.getToken(code);
 

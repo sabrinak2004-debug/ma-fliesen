@@ -14,6 +14,7 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg(pool as unknown as PrismaPgPool),
 });
 
+// ✅ hier trägst du alle Mitarbeiter ein, die Zugriff haben sollen
 const EMPLOYEES: string[] = [
   "Max Mustermann",
   "Ilija Nikic",
@@ -26,9 +27,8 @@ const EMPLOYEES: string[] = [
   "Marko",
   "Cedric",
   "Kay",
+  // "Vorname Nachname",
 ];
-
-const DEFAULT_COMPANY_NAME = "MA Fliesen";
 
 async function main() {
   const martinPw = process.env.ADMIN_MARTIN_PASSWORD;
@@ -41,64 +41,38 @@ async function main() {
   const martinHash = await bcrypt.hash(martinPw, 12);
   const sandraHash = await bcrypt.hash(sandraPw, 12);
 
-  const company = await prisma.company.upsert({
-    where: { name: DEFAULT_COMPANY_NAME },
-    update: {},
-    create: { name: DEFAULT_COMPANY_NAME },
-  });
-
+  // ✅ Admins (Passwort immer aus ENV)
   await prisma.appUser.upsert({
     where: { fullName: "Martin Meinhold" },
-    update: {
-      role: Role.ADMIN,
-      isActive: true,
-      passwordHash: martinHash,
-      companyId: company.id,
-    },
-    create: {
-      fullName: "Martin Meinhold",
-      role: Role.ADMIN,
-      isActive: true,
-      passwordHash: martinHash,
-      companyId: company.id,
-    },
+    update: { role: Role.ADMIN, isActive: true, passwordHash: martinHash },
+    create: { fullName: "Martin Meinhold", role: Role.ADMIN, isActive: true, passwordHash: martinHash },
   });
 
   await prisma.appUser.upsert({
     where: { fullName: "Sandra Meinhold" },
-    update: {
-      role: Role.ADMIN,
-      isActive: true,
-      passwordHash: sandraHash,
-      companyId: company.id,
-    },
-    create: {
-      fullName: "Sandra Meinhold",
-      role: Role.ADMIN,
-      isActive: true,
-      passwordHash: sandraHash,
-      companyId: company.id,
-    },
+    update: { role: Role.ADMIN, isActive: true, passwordHash: sandraHash },
+    create: { fullName: "Sandra Meinhold", role: Role.ADMIN, isActive: true, passwordHash: sandraHash },
   });
 
+  // ✅ Mitarbeiter: ohne Passwort anlegen (Passwort wird beim ersten Login gesetzt)
   for (const fullName of EMPLOYEES) {
     await prisma.appUser.upsert({
       where: { fullName },
       update: {
         role: Role.EMPLOYEE,
         isActive: true,
-        companyId: company.id,
+        // ✅ passwordHash NICHT überschreiben!
       },
       create: {
         fullName,
         role: Role.EMPLOYEE,
         isActive: true,
-        companyId: company.id,
+        // passwordHash bleibt null
       },
     });
   }
 
-  console.log("✅ Seed OK: Admins + Mitarbeiter + Firma hinterlegt");
+  console.log("✅ Seed OK: Admins + Mitarbeiter hinterlegt");
 }
 
 main()

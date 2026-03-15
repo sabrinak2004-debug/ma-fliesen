@@ -265,10 +265,7 @@ export async function GET(req: Request) {
   }
 
   const isAdmin = session.role === Role.ADMIN;
-  const userWhere = isAdmin
-    ? { user: { companyId: session.companyId } }
-    : { userId: session.userId, user: { companyId: session.companyId } };
-
+  const userWhere = isAdmin ? {} : { userId: session.userId };
 
   const url = new URL(req.url);
   const month = url.searchParams.get("month");
@@ -416,15 +413,9 @@ export async function POST(req: Request) {
   if (isAdmin) {
     const requestedUserId = getString(body.userId).trim();
     if (requestedUserId) {
-      const user = await prisma.appUser.findFirst({
-        where: {
-          id: requestedUserId,
-          isActive: true,
-          companyId: session.companyId,
-        },
-      });
-      if (!user) {
-        return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder gehört nicht zu deiner Firma." }, { status: 400 });
+      const user = await prisma.appUser.findUnique({ where: { id: requestedUserId } });
+      if (!user || !user.isActive) {
+        return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
       }
       targetUserId = user.id;
     }
@@ -526,15 +517,6 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
   }
 
-  const existingOwner = await prisma.appUser.findUnique({
-    where: { id: existing.userId },
-    select: { companyId: true },
-  });
-
-  if (!existingOwner || existingOwner.companyId !== session.companyId) {
-    return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
-  }
-
   if (!isAdmin && existing.userId !== session.userId) {
     return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
   }
@@ -596,15 +578,9 @@ export async function PATCH(req: Request) {
   if (isAdmin) {
     const requestedUserId = getString(body.userId).trim();
     if (requestedUserId) {
-      const user = await prisma.appUser.findFirst({
-        where: {
-          id: requestedUserId,
-          isActive: true,
-          companyId: session.companyId,
-        },
-      });
-      if (!user) {
-        return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder gehört nicht zu deiner Firma." }, { status: 400 });
+      const user = await prisma.appUser.findUnique({ where: { id: requestedUserId } });
+      if (!user || !user.isActive) {
+        return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
       }
       targetUserId = user.id;
     }
@@ -702,15 +678,6 @@ export async function DELETE(req: Request) {
 
   if (!entry) {
     return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
-  }
-  
-  const entryOwner = await prisma.appUser.findUnique({
-    where: { id: entry.userId },
-    select: { companyId: true },
-  });
-
-  if (!entryOwner || entryOwner.companyId !== session.companyId) {
-    return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
   }
 
   if (!isAdmin && entry.userId !== session.userId) {

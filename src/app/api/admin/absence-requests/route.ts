@@ -4,9 +4,7 @@ import {
   AbsenceDayPortion,
   AbsenceRequestStatus,
   AbsenceType,
-  Prisma,
 } from "@prisma/client";
-
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 
@@ -87,12 +85,13 @@ export async function GET(req: Request) {
   const userIdParam = (searchParams.get("userId") ?? "").trim();
   const monthParam = (searchParams.get("month") ?? "").trim();
 
-  const where: Prisma.AbsenceRequestWhereInput = {
-    user: {
-      companyId: admin.companyId,
-    },
-  };
-
+  const where: {
+    type?: AbsenceType;
+    status?: AbsenceRequestStatus;
+    userId?: string;
+    startDate?: { lt: Date };
+    endDate?: { gte: Date };
+  } = {};
 
   if (typeParam) {
     if (!isAbsenceType(typeParam)) {
@@ -115,26 +114,8 @@ export async function GET(req: Request) {
   }
 
   if (userIdParam) {
-    const targetUser = await prisma.appUser.findFirst({
-      where: {
-        id: userIdParam,
-        companyId: admin.companyId,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!targetUser) {
-      return NextResponse.json(
-        { ok: false, error: "Mitarbeiter gehört nicht zu deiner Firma." },
-        { status: 404 }
-      );
-    }
-
     where.userId = userIdParam;
   }
-
 
   if (monthParam) {
     if (!/^\d{4}-\d{2}$/.test(monthParam)) {

@@ -14,7 +14,6 @@ export type SessionData = {
   userId: string;
   fullName: string;
   role: "EMPLOYEE" | "ADMIN";
-  companyId: string;
 };
 
 type SessionPayload = SessionData & { iat: number };
@@ -28,7 +27,6 @@ function isSessionPayload(v: unknown): v is SessionPayload {
     typeof r.userId === "string" &&
     typeof r.fullName === "string" &&
     (role === "EMPLOYEE" || role === "ADMIN") &&
-    typeof r.companyId === "string" &&
     typeof r.iat === "number"
   );
 }
@@ -97,6 +95,5 @@ export async function getSession(): Promise<SessionData | null> {
     userId: parsed.userId,
     fullName: parsed.fullName,
     role: parsed.role,
-    companyId: parsed.companyId,
   };
 }

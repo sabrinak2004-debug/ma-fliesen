@@ -158,7 +158,6 @@ export async function POST(req: Request, context: RouteContext) {
           id: true,
           fullName: true,
           isActive: true,
-          companyId: true,
         },
       },
     },
@@ -168,13 +167,6 @@ export async function POST(req: Request, context: RouteContext) {
     return NextResponse.json(
       { ok: false, error: "Antrag nicht gefunden." },
       { status: 404 }
-    );
-  }
-
-  if (existing.user.companyId !== admin.companyId) {
-    return NextResponse.json(
-      { ok: false, error: "Antrag gehört nicht zu deiner Firma." },
-      { status: 403 }
     );
   }
 

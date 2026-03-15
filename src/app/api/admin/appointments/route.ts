@@ -32,21 +32,17 @@ type CalendarEventDTO = {
 async function requireAdmin(sessionUserId: string) {
   const user = await prisma.appUser.findUnique({
     where: { id: sessionUserId },
-    select: { id: true, role: true, isActive: true, companyId: true },
+    select: { role: true, isActive: true },
   });
-
-  if (!user || !user.isActive || user.role !== Role.ADMIN || !user.companyId) {
-    return null;
-  }
-
-  return user;
+  return !!user && user.isActive && user.role === Role.ADMIN;
 }
 
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session?.userId) return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
-  const admin = await requireAdmin(session.userId);
-  if (!admin) return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+
+  const isAdmin = await requireAdmin(session.userId);
+  if (!isAdmin) return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
 
   const url = new URL(req.url);
   const date = url.searchParams.get("date") ?? "";

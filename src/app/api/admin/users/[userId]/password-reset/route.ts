@@ -29,11 +29,8 @@ export async function POST(
 
   const { userId } = await ctx.params;
 
-  const user = await prisma.appUser.findFirst({
-    where: {
-      id: userId,
-      companyId: admin.companyId,
-    },
+  const user = await prisma.appUser.findUnique({
+    where: { id: userId },
     select: { id: true, fullName: true, isActive: true, role: true },
   });
 

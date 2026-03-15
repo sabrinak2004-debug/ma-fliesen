@@ -48,7 +48,6 @@ export async function GET(req: Request) {
       id: true,
       role: true,
       isActive: true,
-      companyId: true,
     },
   });
 
@@ -71,13 +70,8 @@ export async function GET(req: Request) {
   let targetUserId = sessionUserId;
 
   if (me.role === Role.ADMIN && userIdParam) {
-    const targetUser = await prisma.appUser.findFirst({
-      where: {
-        id: userIdParam,
-        isActive: true,
-        role: Role.EMPLOYEE,
-        companyId: me.companyId,
-      },
+    const targetUser = await prisma.appUser.findUnique({
+      where: { id: userIdParam },
       select: {
         id: true,
         role: true,
@@ -86,7 +80,7 @@ export async function GET(req: Request) {
       },
     });
 
-    if (!targetUser) {
+    if (!targetUser || !targetUser.isActive || targetUser.role !== Role.EMPLOYEE) {
       return NextResponse.json({ error: "Mitarbeiter nicht gefunden" }, { status: 404 });
     }
 
@@ -97,9 +91,6 @@ export async function GET(req: Request) {
     where: {
       userId: targetUserId,
       workDate: { gte: start, lt: end },
-      user: {
-        companyId: me.companyId,
-      },
     },
     orderBy: [{ startHHMM: "asc" }],
     select: {

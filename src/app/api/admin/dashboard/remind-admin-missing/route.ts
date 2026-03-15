@@ -33,12 +33,10 @@ export async function GET(req: Request) {
     where: {
       role: Role.EMPLOYEE,
       isActive: true,
-      companyId: { not: null },
     },
     select: {
       id: true,
       fullName: true,
-      companyId: true,
     },
     orderBy: {
       fullName: "asc",
@@ -98,7 +96,6 @@ export async function GET(req: Request) {
           where: {
             role: Role.ADMIN,
             isActive: true,
-            companyId: employee.companyId,
           },
           orderBy: {
             createdAt: "asc",

@@ -37,16 +37,7 @@ export async function POST(req: Request) {
         mode: "insensitive",
       },
     },
-    select: {
-      id: true,
-      fullName: true,
-      role: true,
-      isActive: true,
-      passwordHash: true,
-      companyId: true,
-    },
   });
-
 
   // Name ist die Whitelist -> nur wer im Seed/Backend existiert, darf rein
   if (!user) {
@@ -110,20 +101,11 @@ export async function POST(req: Request) {
     }
   }
 
-  if (!user.companyId) {
-    return NextResponse.json(
-      { ok: false, error: "User ist noch keiner Firma zugeordnet." },
-      { status: 500 }
-    );
-  }
-
   const sessionValue = createSessionCookieValue({
     userId: user.id,
     fullName: user.fullName,
     role: user.role,
-    companyId: user.companyId,
   });
-
 
   const res = NextResponse.json({ ok: true, role: user.role }, { status: 200 });
 
