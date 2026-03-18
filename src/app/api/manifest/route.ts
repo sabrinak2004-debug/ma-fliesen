@@ -113,11 +113,6 @@ export async function GET(req: Request): Promise<Response> {
         type: "image/jpeg",
         purpose: "any maskable",
       },
-      {
-        src: getTenantAppleTouchIconHref(company.subdomain),
-        sizes: "180x180",
-        type: "image/png",
-      },
     ],
   };
 
