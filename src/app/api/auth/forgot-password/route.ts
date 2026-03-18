@@ -10,7 +10,7 @@ function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<Response> {
   let body: unknown = {};
   try {
     body = await req.json();
@@ -28,7 +28,10 @@ export async function POST(req: Request) {
 
   const matchingUsers = await prisma.appUser.findMany({
     where: {
-      fullName,
+      fullName: {
+        equals: fullName,
+        mode: "insensitive",
+      },
       ...(companySubdomain
         ? {
             company: {
@@ -52,6 +55,9 @@ export async function POST(req: Request) {
   }
 
   const user = matchingUsers[0];
+  if (!user) {
+    return NextResponse.json({ ok: true });
+  }
 
   if (!user.isActive || user.role !== Role.EMPLOYEE) {
     return NextResponse.json({ ok: true });
@@ -71,6 +77,7 @@ export async function POST(req: Request) {
     });
     createdNewRequest = true;
   }
+  console.log("[forgot-password] companySubdomain:", companySubdomain);
   console.log("[forgot-password] fullName:", fullName);
   console.log("[forgot-password] createdNewRequest:", createdNewRequest);
 

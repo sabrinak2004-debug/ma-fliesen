@@ -10,7 +10,7 @@ function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<Response> {
   const session = await getSession();
 
   if (!session?.userId) {
@@ -46,12 +46,25 @@ export async function POST(req: Request) {
   }
 
   const endpoint = getString(body["endpoint"]).trim();
+  const requestedCompanySubdomain = getString(body["companySubdomain"])
+    .trim()
+    .toLowerCase();
   const keys = isRecord(body["keys"]) ? body["keys"] : {};
   const p256dh = getString(keys["p256dh"]).trim();
   const auth = getString(keys["auth"]).trim();
 
   if (!endpoint || !p256dh || !auth) {
     return NextResponse.json({ ok: false, error: "Subscription unvollständig." }, { status: 400 });
+  }
+
+  if (
+    requestedCompanySubdomain &&
+    requestedCompanySubdomain !== session.companySubdomain.trim().toLowerCase()
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "Falscher Firmenkontext." },
+      { status: 403 }
+    );
   }
 
   await prisma.pushSubscription.upsert({

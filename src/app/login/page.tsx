@@ -15,5 +15,16 @@ export default async function LoginPage() {
     redirect("/erfassung");
   }
 
-  return <LoginClient />;
+  return (
+    <LoginClient
+      initialBrand={{
+        displayName: "Mitarbeiterportal",
+        subtitle: "Digitale Zeiterfassung & Einsatzplanung",
+        badgeText: "Portal",
+        logoUrl: null,
+        primaryColor: "#b8cf3a",
+        companySubdomain: "",
+      }}
+    />
+  );
 }

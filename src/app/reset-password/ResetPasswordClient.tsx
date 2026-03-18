@@ -5,7 +5,15 @@ import { useRouter } from "next/navigation";
 
 type ApiResponse = { ok: true } | { ok: false; error: string };
 
-export default function ResetPasswordClient({ token }: { token: string }) {
+type ResetPasswordClientProps = {
+  token: string;
+  companySubdomain: string;
+};
+
+export default function ResetPasswordClient({
+  token,
+  companySubdomain,
+}: ResetPasswordClientProps) {
   const router = useRouter();
   const redirectTimerRef = useRef<number | null>(null);
 
@@ -34,7 +42,11 @@ export default function ResetPasswordClient({ token }: { token: string }) {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, newPassword: pw1 }),
+        body: JSON.stringify({
+          token,
+          newPassword: pw1,
+          companySubdomain,
+        }),
       });
 
       const data = (await res.json()) as ApiResponse;
@@ -45,6 +57,11 @@ export default function ResetPasswordClient({ token }: { token: string }) {
 
       setMsg("Passwort wurde gesetzt. Du kannst dich jetzt einloggen.");
       redirectTimerRef.current = window.setTimeout(() => {
+        if (companySubdomain) {
+          router.push(`/${companySubdomain}/login`);
+          return;
+        }
+
         router.push("/login");
       }, 800);
     } catch {
@@ -65,6 +82,11 @@ export default function ResetPasswordClient({ token }: { token: string }) {
   return (
       <div style={{ maxWidth: 520, margin: "0 auto", padding: "24px 16px" }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>Neues Passwort setzen</h1>
+        {companySubdomain ? (
+          <div style={{ fontSize: 13, opacity: 0.75, marginBottom: 12 }}>
+            Firmenzugang: {companySubdomain}
+          </div>
+        ) : null}
 
         {!token ? (
           <div style={{ opacity: 0.85 }}>Token fehlt. Bitte den Link vom Admin erneut anfordern.</div>

@@ -15,7 +15,13 @@ function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
-export async function POST(req: Request) {
+type ResetPasswordBody = {
+  token?: unknown;
+  newPassword?: unknown;
+  companySubdomain?: unknown;
+};
+
+export async function POST(req: Request): Promise<Response> {
   let body: unknown = {};
   try {
     body = await req.json();
@@ -23,8 +29,18 @@ export async function POST(req: Request) {
     body = {};
   }
 
-  const token = isRecord(body) ? getString(body.token).trim() : "";
-  const newPassword = isRecord(body) ? getString(body.newPassword) : "";
+  const token = isRecord(body)
+    ? getString((body as ResetPasswordBody).token).trim()
+    : "";
+
+  const newPassword = isRecord(body)
+    ? getString((body as ResetPasswordBody).newPassword)
+    : "";
+
+  const companySubdomain = isRecord(body)
+    ? getString((body as ResetPasswordBody).companySubdomain).trim().toLowerCase()
+    : "";
+
 
   if (!token) {
     return NextResponse.json({ ok: false, error: "Token fehlt" }, { status: 400 });
@@ -51,6 +67,11 @@ export async function POST(req: Request) {
         select: {
           id: true,
           isActive: true,
+          company: {
+            select: {
+              subdomain: true,
+            },
+          },
         },
       },
     },
@@ -77,6 +98,16 @@ export async function POST(req: Request) {
   if (!prt.user.isActive) {
     return NextResponse.json(
       { ok: false, error: "Benutzer ist nicht aktiv" },
+      { status: 400 }
+    );
+  }
+
+  if (
+    companySubdomain &&
+    prt.user.company.subdomain !== companySubdomain
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "Token gehört nicht zu diesem Firmenzugang" },
       { status: 400 }
     );
   }

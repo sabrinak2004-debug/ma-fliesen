@@ -15,6 +15,10 @@ function extractCompanySubdomainFromRequest(req: Request): string {
 
   if (!host) return "";
 
+  if (host.endsWith(".vercel.app")) {
+    return "";
+  }
+
   if (host === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
     return "";
   }
@@ -74,7 +78,7 @@ export async function GET(req: Request) {
       {
         ok: true,
         allowed: false,
-        ambiguous: true,
+        error: "Name ist mehrfach vorhanden. Bitte melde dich über den Firmenzugang an.",
       },
       { status: 200 }
     );

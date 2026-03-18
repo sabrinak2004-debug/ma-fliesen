@@ -1,18 +1,43 @@
 self.addEventListener("push", function (event) {
   let data = {
-    title: "MA-Fliesen App",
+    title: "Mitarbeiterportal",
     body: "Neue Benachrichtigung",
     url: "/",
+    icon: "/image_2.jpeg",
+    badge: "/image_2.jpeg",
   };
 
   try {
     if (event.data) {
       const parsed = event.data.json();
 
+      const companySubdomain =
+        typeof parsed.companySubdomain === "string"
+          ? parsed.companySubdomain.trim().toLowerCase()
+          : "";
+
+      const defaultTenantIcon = companySubdomain
+        ? `/tenant-assets/${companySubdomain}/icon-192.png`
+        : "/image_2.jpeg";
+
       data = {
-        title: typeof parsed.title === "string" ? parsed.title : "MA-Fliesen App",
-        body: typeof parsed.body === "string" ? parsed.body : "Neue Benachrichtigung",
+        title:
+          typeof parsed.title === "string"
+            ? parsed.title
+            : "Mitarbeiterportal",
+        body:
+          typeof parsed.body === "string"
+            ? parsed.body
+            : "Neue Benachrichtigung",
         url: typeof parsed.url === "string" ? parsed.url : "/",
+        icon:
+          typeof parsed.icon === "string"
+            ? parsed.icon
+            : defaultTenantIcon,
+        badge:
+          typeof parsed.badge === "string"
+            ? parsed.badge
+            : defaultTenantIcon,
       };
     }
   } catch (err) {
@@ -22,8 +47,8 @@ self.addEventListener("push", function (event) {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: "/icon_2.jpeg",
-      badge: "/icon_2.jpeg",
+      icon: data.icon,
+      badge: data.badge,
       data: {
         url: data.url || "/",
       },

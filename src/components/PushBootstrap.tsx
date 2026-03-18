@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { getTenantAppleTouchIconHref } from "@/lib/tenantBranding";
 
 type PushPublicKeyResponse =
   | {
@@ -63,7 +64,84 @@ type SubscriptionJson = {
   };
 };
 
-async function sendSubscriptionToBackend(subscriptionJson: SubscriptionJson): Promise<void> {
+type MeSession = {
+  userId: string;
+  companySubdomain: string;
+};
+
+type MeResponse =
+  | {
+      ok: true;
+      session: MeSession | null;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
+function isMeSession(v: unknown): v is MeSession {
+  if (!isRecord(v)) {
+    return false;
+  }
+
+  return (
+    typeof v["userId"] === "string" &&
+    typeof v["companySubdomain"] === "string"
+  );
+}
+
+function parseMeResponse(v: unknown): MeResponse {
+  if (!isRecord(v)) {
+    return { ok: false, error: "Ungültige Antwort." };
+  }
+
+  if (v["ok"] === true) {
+    const sessionValue = v["session"];
+
+    if (sessionValue === null) {
+      return { ok: true, session: null };
+    }
+
+    if (isMeSession(sessionValue)) {
+      return { ok: true, session: sessionValue };
+    }
+  }
+
+  return {
+    ok: false,
+    error: getStringField(v, "error") ?? "Ungültige Antwort.",
+  };
+}
+
+function shouldSkipPushOnPath(pathname: string): boolean {
+  const normalized = pathname.trim().toLowerCase();
+
+  if (!normalized) {
+    return false;
+  }
+
+  if (normalized === "/login") {
+    return true;
+  }
+
+  if (normalized === "/reset-password") {
+    return true;
+  }
+
+  if (normalized.startsWith("/api/")) {
+    return true;
+  }
+
+  const tenantLoginMatch = /^\/[^/]+\/login$/.test(normalized);
+  const tenantResetMatch = /^\/[^/]+\/reset-password$/.test(normalized);
+
+  return tenantLoginMatch || tenantResetMatch;
+}
+
+async function sendSubscriptionToBackend(
+  subscriptionJson: SubscriptionJson,
+  companySubdomain: string
+): Promise<void> {
   if (
     !subscriptionJson.endpoint ||
     !subscriptionJson.keys?.p256dh ||
@@ -81,6 +159,7 @@ async function sendSubscriptionToBackend(subscriptionJson: SubscriptionJson): Pr
     cache: "no-store",
     body: JSON.stringify({
       endpoint: subscriptionJson.endpoint,
+      companySubdomain,
       keys: {
         p256dh: subscriptionJson.keys.p256dh,
         auth: subscriptionJson.keys.auth,
@@ -96,11 +175,34 @@ export default function PushBootstrap() {
     let cancelled = false;
 
     async function setupPush(): Promise<void> {
+      if (shouldSkipPushOnPath(pathname)) return;
       if (!("serviceWorker" in navigator)) return;
       if (!("PushManager" in window)) return;
       if (!("Notification" in window)) return;
 
       try {
+        const meResponse = await fetch("/api/me", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+        });
+
+        const meJson: unknown = await meResponse.json().catch(() => ({}));
+        const parsedMe = parseMeResponse(meJson);
+
+        if (!meResponse.ok || !parsedMe.ok || !parsedMe.session) {
+          return;
+        }
+
+        const companySubdomain = parsedMe.session.companySubdomain.trim().toLowerCase();
+
+        if (!companySubdomain) {
+          return;
+        }
         const publicKeyResponse = await fetch("/api/push/public-key", {
           method: "GET",
           credentials: "include",
@@ -115,20 +217,23 @@ export default function PushBootstrap() {
         }
 
         const registration = await navigator.serviceWorker.register("/sw.js");
+        void getTenantAppleTouchIconHref(companySubdomain);
 
-        const permission =
-          Notification.permission === "granted"
-            ? "granted"
-            : await Notification.requestPermission();
+        if (Notification.permission === "denied") {
+          return;
+        }
 
-        if (permission !== "granted") {
+        if (Notification.permission !== "granted") {
           return;
         }
 
         const existingSubscription = await registration.pushManager.getSubscription();
 
         if (existingSubscription) {
-          await sendSubscriptionToBackend(existingSubscription.toJSON());
+          await sendSubscriptionToBackend(
+            existingSubscription.toJSON(),
+            companySubdomain
+          );
           return;
         }
 
@@ -139,7 +244,10 @@ export default function PushBootstrap() {
           applicationServerKey,
         });
 
-        await sendSubscriptionToBackend(subscription.toJSON());
+        await sendSubscriptionToBackend(
+          subscription.toJSON(),
+          companySubdomain
+        );
       } catch (error: unknown) {
         if (cancelled) return;
         console.error("Push-Setup fehlgeschlagen:", error);

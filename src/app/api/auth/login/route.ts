@@ -5,9 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { createSessionCookieValue, COOKIE_NAME } from "@/lib/auth";
 import { Role } from "@prisma/client";
 
-type Body =
-  | { fullName?: unknown; password?: unknown; companySubdomain?: unknown }
-  | { fullName?: unknown; newPassword?: unknown; companySubdomain?: unknown };
+type LoginBody = {
+  fullName?: unknown;
+  password?: unknown;
+  newPassword?: unknown;
+  companySubdomain?: unknown;
+};
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -46,23 +49,23 @@ function extractCompanySubdomainFromRequest(req: Request): string {
   return parts[0] ?? "";
 }
 
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<Response> {
   const raw = (await req.json().catch(() => null)) as unknown;
 
   const fullName = isRecord(raw)
-    ? getString((raw as Body).fullName).trim()
+    ? getString((raw as LoginBody).fullName).trim()
     : "";
 
   const password = isRecord(raw)
-    ? getString((raw as { password?: unknown }).password)
+    ? getString((raw as LoginBody).password)
     : "";
 
   const newPassword = isRecord(raw)
-    ? getString((raw as { newPassword?: unknown }).newPassword)
+    ? getString((raw as LoginBody).newPassword)
     : "";
 
   const companySubdomainFromBody = isRecord(raw)
-    ? getString((raw as { companySubdomain?: unknown }).companySubdomain).trim().toLowerCase()
+    ? getString((raw as LoginBody).companySubdomain).trim().toLowerCase()
     : "";
 
   const companySubdomain =
@@ -118,6 +121,13 @@ export async function POST(req: Request) {
 
   const user = matchingUsers[0];
 
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, error: "Benutzer konnte nicht geladen werden." },
+      { status: 500 }
+    );
+  }
+
   if (!user.isActive) {
     return NextResponse.json({ ok: false, error: "User inaktiv" }, { status: 403 });
   }
@@ -139,10 +149,12 @@ export async function POST(req: Request) {
 
       const hash = await bcrypt.hash(newPassword, 12);
 
-      // Race-Schutz: setze Passwort nur, wenn noch keines vorhanden ist
       await prisma.appUser.update({
         where: { id: user.id },
-        data: { passwordHash: hash },
+        data: {
+          passwordHash: hash,
+          passwordUpdatedAt: new Date(),
+        },
       });
     } else {
       if (!password) {

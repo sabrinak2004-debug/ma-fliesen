@@ -21,7 +21,7 @@ function getOrigin(req: Request): string {
 export async function POST(
   req: Request,
   ctx: { params: Promise<{ userId: string }> }
-) {
+): Promise<Response> {
   const admin = await requireAdmin();
   if (!admin) {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
@@ -34,7 +34,17 @@ export async function POST(
       id: userId,
       companyId: admin.companyId,
     },
-    select: { id: true, fullName: true, isActive: true, role: true },
+    select: {
+      id: true,
+      fullName: true,
+      isActive: true,
+      role: true,
+      company: {
+        select: {
+          subdomain: true,
+        },
+      },
+    },
   });
 
   if (!user || !user.isActive || user.role !== "EMPLOYEE") {
@@ -59,9 +69,12 @@ export async function POST(
   });
 
   const origin = getOrigin(req);
+  const companyQuery = encodeURIComponent(user.company.subdomain);
+  const tokenQuery = encodeURIComponent(rawToken);
+
   const resetUrl = origin
-    ? `${origin}/reset-password?token=${rawToken}`
-    : `/reset-password?token=${rawToken}`;
+    ? `${origin}/reset-password?token=${tokenQuery}&company=${companyQuery}`
+    : `/reset-password?token=${tokenQuery}&company=${companyQuery}`;
 
   return NextResponse.json({
     ok: true,

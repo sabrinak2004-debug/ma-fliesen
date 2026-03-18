@@ -1,8 +1,15 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  applyAccentColorToDocument,
+  applyTenantHeadBranding,
+  getTenantAppleTouchIconHref,
+  getTenantManifestHref,
+  normalizeThemeColor,
+  resetAccentColorOnDocument,
+} from "@/lib/tenantBranding";
 
-// ⚠️ WICHTIG: bei dir heißt die Rolle "EMPLOYEE", nicht "USER"
 type Role = "ADMIN" | "EMPLOYEE";
 
 type PrecheckResponse =
@@ -15,7 +22,7 @@ type LoginResponse = { ok: true; role?: Role } | { ok: false; error: string };
 type ForgotResponse = { ok: true } | { ok: false; error: string };
 
 function wait(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -27,10 +34,19 @@ type PublicBrand = {
   subtitle: string;
   badgeText: string;
   logoUrl: string | null;
+  primaryColor: string | null;
+  companySubdomain: string;
+};
+
+type LoginClientProps = {
+  companySubdomainOverride?: string;
+  initialBrand?: PublicBrand;
 };
 
 function extractCompanySubdomainFromBrowser(): string {
-  if (typeof window === "undefined") return "";
+  if (typeof window === "undefined") {
+    return "";
+  }
 
   const host = window.location.hostname.trim().toLowerCase();
 
@@ -38,22 +54,23 @@ function extractCompanySubdomainFromBrowser(): string {
     return "";
   }
 
-  const parts = host.split(".");
   if (host.endsWith(".vercel.app")) {
     return "";
   }
 
+  const parts = host.split(".");
   return parts[0] ?? "";
 }
 
-export default function LoginClient() {
-
+export default function LoginClient({
+  companySubdomainOverride,
+  initialBrand,
+}: LoginClientProps) {
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newPassword2, setNewPassword2] = useState("");
 
-  // ✅ Passwort anzeigen (Toggle)
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showNewPassword2, setShowNewPassword2] = useState(false);
@@ -62,80 +79,126 @@ export default function LoginClient() {
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Passwort vergessen
   const [forgotBusy, setForgotBusy] = useState(false);
   const [forgotInfo, setForgotInfo] = useState<string | null>(null);
-  const [companySubdomain, setCompanySubdomain] = useState("");
+  const [companySubdomain, setCompanySubdomain] = useState(
+    companySubdomainOverride ?? ""
+  );
 
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [role, setRole] = useState<Role | null>(null);
   const [needsSetup, setNeedsSetup] = useState(false);
 
   const nameTrim = useMemo(() => fullName.trim(), [fullName]);
-  const [brand] = useState<PublicBrand>({
+
+  const fallbackBrand: PublicBrand = {
     displayName: "Mitarbeiterportal",
     subtitle: "Digitale Zeiterfassung & Einsatzplanung",
     badgeText: "Portal",
     logoUrl: null,
-  });
+    primaryColor: "#b8cf3a",
+    companySubdomain: "",
+  };
 
-  // verhindert, dass alte Precheck-Antworten neuere überschreiben
+  const brand = initialBrand ?? fallbackBrand;
+
   const reqIdRef = useRef(0);
 
   useEffect(() => {
+    if (companySubdomainOverride) {
+      setCompanySubdomain(companySubdomainOverride);
+      return;
+    }
+
     setCompanySubdomain(extractCompanySubdomainFromBrowser());
-  }, []);
+  }, [companySubdomainOverride]);
 
+  useEffect(() => {
+    const effectiveSubdomain = companySubdomainOverride ?? companySubdomain;
+    const effectiveThemeColor = normalizeThemeColor(brand.primaryColor);
 
-  // ✅ Precheck sobald Name „halbwegs“ steht
+    applyAccentColorToDocument(effectiveThemeColor);
+
+    applyTenantHeadBranding({
+      title: `${brand.displayName} Mitarbeiterportal`,
+      themeColor: effectiveThemeColor,
+      appName: brand.displayName,
+      manifestHref: getTenantManifestHref(effectiveSubdomain),
+      appleTouchIconHref: getTenantAppleTouchIconHref(effectiveSubdomain),
+    });
+
+    return () => {
+      resetAccentColorOnDocument();
+    };
+  }, [
+    brand.displayName,
+    brand.primaryColor,
+    companySubdomain,
+    companySubdomainOverride,
+  ]);
+
   useEffect(() => {
     const myId = ++reqIdRef.current;
 
     (async () => {
-      // Reset UI state bei Namensänderung
       setError(null);
       setForgotInfo(null);
       setAllowed(null);
       setRole(null);
       setNeedsSetup(false);
 
-      // Passwortfelder zurücksetzen, wenn Name sich ändert
       setPassword("");
       setNewPassword("");
       setNewPassword2("");
 
-      // Toggle zurücksetzen
       setShowPassword(false);
       setShowNewPassword(false);
       setShowNewPassword2(false);
 
-      if (nameTrim.length < 3) return;
+      if (nameTrim.length < 3) {
+        return;
+      }
 
       setChecking(true);
+
       try {
         await wait(250);
-        const r = await fetch(`/api/auth/precheck?fullName=${encodeURIComponent(nameTrim)}`);
-        const j = (await r.json()) as PrecheckResponse;
 
-        // wenn inzwischen eine neuere Anfrage läuft -> ignorieren
-        if (reqIdRef.current !== myId) return;
+        const params = new URLSearchParams({
+          fullName: nameTrim,
+        });
 
-        if (typeof j === "object" && j !== null && "ok" in j && j.ok === true) {
+        if (companySubdomain) {
+          params.set("companySubdomain", companySubdomain);
+        }
+
+        const response = await fetch(`/api/auth/precheck?${params.toString()}`);
+        const json = (await response.json()) as PrecheckResponse;
+
+        if (reqIdRef.current !== myId) {
+          return;
+        }
+
+        if (typeof json === "object" && json !== null && "ok" in json && json.ok === true) {
           setAllowed(true);
-          setRole(j.role);
-          setNeedsSetup(j.needsPasswordSetup);
+          setRole(json.role);
+          setNeedsSetup(json.needsPasswordSetup);
         } else {
           setAllowed(false);
         }
       } catch {
-        // Netzwerk/Server Fehler -> nicht freigeben
-        if (reqIdRef.current !== myId) return;
+        if (reqIdRef.current !== myId) {
+          return;
+        }
+
         setAllowed(false);
       } finally {
-        if (reqIdRef.current === myId) setChecking(false);
+        if (reqIdRef.current === myId) {
+          setChecking(false);
+        }
       }
     })();
-  }, [nameTrim]);
+  }, [nameTrim, companySubdomain]);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -152,24 +215,22 @@ export default function LoginClient() {
       return;
     }
 
-    // Wenn precheck noch läuft oder noch nicht entschieden:
     if (checking || allowed === null) {
       setError("Bitte kurz warten – Zugriff wird geprüft.");
       return;
     }
 
-    // Mitarbeiter-Erstlogin: Passwort setzen
     if (needsSetup) {
       if (newPassword.length < 6) {
         setError("Passwort muss mind. 6 Zeichen haben.");
         return;
       }
+
       if (newPassword !== newPassword2) {
         setError("Passwörter stimmen nicht überein.");
         return;
       }
     } else {
-      // normaler Login: Passwort erforderlich (Admin immer, Mitarbeiter nach Setup auch)
       if (!password) {
         setError("Bitte Passwort eingeben.");
         return;
@@ -177,6 +238,7 @@ export default function LoginClient() {
     }
 
     setBusy(true);
+
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -200,10 +262,10 @@ export default function LoginClient() {
         setError(!parsed.ok ? parsed.error : "Login fehlgeschlagen.");
         return;
       }
+
       window.location.replace(
         parsed.role === "ADMIN" ? "/admin/dashboard" : "/erfassung"
       );
-      return;
     } catch {
       setError("Netzwerkfehler beim Login.");
     } finally {
@@ -220,24 +282,20 @@ export default function LoginClient() {
       return;
     }
 
-    // Wenn gerade geprüft wird: kurz warten
     if (checking || allowed === null) {
       setForgotInfo("Bitte kurz warten – Zugriff wird geprüft.");
       return;
     }
 
-    // Optional: wenn Name nicht hinterlegt, trotzdem keine Details leaken
     setForgotBusy(true);
+
     try {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fullName: nameTrim,
-          companySubdomain:
-            typeof window !== "undefined"
-              ? window.location.hostname.split(".")[0] || ""
-              : "",
+          companySubdomain,
         }),
       });
 
@@ -253,8 +311,9 @@ export default function LoginClient() {
         return;
       }
 
-      // Wichtig: immer gleiche Erfolgsmeldung (keine Info-Leaks)
-      setForgotInfo("Anfrage wurde erstellt. Bitte wende dich an den Admin – er sendet dir einen Reset-Link.");
+      setForgotInfo(
+        "Anfrage wurde erstellt. Bitte wende dich an den Admin – er sendet dir einen Reset-Link."
+      );
     } catch {
       setForgotInfo("Netzwerkfehler. Bitte später erneut versuchen.");
     } finally {
@@ -263,13 +322,23 @@ export default function LoginClient() {
   }
 
   const statusText = useMemo(() => {
-    if (nameTrim.length < 3) return "";
-    if (checking) return "Prüfe Zugriff...";
-    if (allowed === false) return "Name nicht hinterlegt.";
-    if (allowed === true && role) {
-      const r = role === "ADMIN" ? "Admin" : "Mitarbeiter";
-      return `Zugriff OK. (${r})`;
+    if (nameTrim.length < 3) {
+      return "";
     }
+
+    if (checking) {
+      return "Prüfe Zugriff...";
+    }
+
+    if (allowed === false) {
+      return "Name nicht hinterlegt.";
+    }
+
+    if (allowed === true && role) {
+      const resolvedRole = role === "ADMIN" ? "Admin" : "Mitarbeiter";
+      return `Zugriff OK. (${resolvedRole})`;
+    }
+
     return "";
   }, [nameTrim.length, checking, allowed, role]);
 
@@ -291,7 +360,14 @@ export default function LoginClient() {
   return (
     <div style={{ padding: "40px 0" }}>
       <div className="container-app">
-        <div className="card card-olive" style={{ padding: 20, width: "min(620px, 100%)", margin: "0 auto" }}>
+        <div
+          className="card card-olive"
+          style={{
+            padding: 20,
+            width: "min(620px, 100%)",
+            margin: "0 auto",
+          }}
+        >
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
             <div
               style={{
@@ -306,15 +382,34 @@ export default function LoginClient() {
                 fontWeight: 900,
                 fontSize: 18,
                 color: "rgba(255,255,255,0.95)",
+                overflow: "hidden",
+                padding: 10,
               }}
             >
-              Mitarbeiterportal
+              {brand.logoUrl ? (
+                <img
+                  src={brand.logoUrl}
+                  alt={`${brand.displayName} Logo`}
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    objectFit: "contain",
+                  }}
+                />
+              ) : (
+                <span>{brand.displayName}</span>
+              )}
             </div>
           </div>
 
           <div style={{ textAlign: "center", marginBottom: 10 }}>
             <div style={{ fontWeight: 900, fontSize: 18 }}>{brand.displayName}</div>
             <div style={{ color: "var(--muted)" }}>{brand.subtitle}</div>
+            {companySubdomain ? (
+              <div style={{ color: "var(--muted-2)", fontSize: 12, marginTop: 6 }}>
+                Firmenzugang: {companySubdomain}
+              </div>
+            ) : null}
           </div>
 
           <div className="hr" style={{ margin: "14px 0" }} />
@@ -329,10 +424,11 @@ export default function LoginClient() {
                 onChange={(e) => setFullName(e.target.value)}
                 autoComplete="name"
               />
-              <div style={{ color: "var(--muted-2)", fontSize: 12, marginTop: 6 }}>{statusText}</div>
+              <div style={{ color: "var(--muted-2)", fontSize: 12, marginTop: 6 }}>
+                {statusText}
+              </div>
             </div>
 
-            {/* Erstes Setzen für Mitarbeiter */}
             {allowed && role === "EMPLOYEE" && needsSetup ? (
               <>
                 <div style={{ marginBottom: 12 }}>
@@ -349,7 +445,7 @@ export default function LoginClient() {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowNewPassword((p) => !p)}
+                      onClick={() => setShowNewPassword((prev) => !prev)}
                       aria-label={showNewPassword ? "Passwort verbergen" : "Passwort anzeigen"}
                       style={eyeBtnStyle}
                     >
@@ -372,7 +468,7 @@ export default function LoginClient() {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowNewPassword2((p) => !p)}
+                      onClick={() => setShowNewPassword2((prev) => !prev)}
                       aria-label={showNewPassword2 ? "Passwort verbergen" : "Passwort anzeigen"}
                       style={eyeBtnStyle}
                     >
@@ -383,7 +479,6 @@ export default function LoginClient() {
               </>
             ) : null}
 
-            {/* Normales Passwortfeld (Admins immer, Mitarbeiter nach Setup) */}
             {allowed && !needsSetup ? (
               <div style={{ marginBottom: 12 }}>
                 <div className="label">Passwort</div>
@@ -399,7 +494,7 @@ export default function LoginClient() {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword((p) => !p)}
+                    onClick={() => setShowPassword((prev) => !prev)}
                     aria-label={showPassword ? "Passwort verbergen" : "Passwort anzeigen"}
                     style={eyeBtnStyle}
                   >
@@ -407,7 +502,6 @@ export default function LoginClient() {
                   </button>
                 </div>
 
-                {/* ✅ Passwort vergessen: nur anzeigen, wenn normales Passwortfeld sichtbar ist */}
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
                   <button
                     type="button"
@@ -430,21 +524,37 @@ export default function LoginClient() {
             ) : null}
 
             {(error || forgotInfo) && (
-              <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
+              <div
+                className="card"
+                style={{
+                  padding: 12,
+                  borderColor: "rgba(224, 75, 69, 0.35)",
+                  marginBottom: 12,
+                }}
+              >
                 {error ? (
-                  <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
+                  <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>
+                    {error}
+                  </span>
                 ) : (
-                  <span style={{ color: "var(--muted-2)", fontWeight: 700 }}>{forgotInfo}</span>
+                  <span style={{ color: "var(--muted-2)", fontWeight: 700 }}>
+                    {forgotInfo}
+                  </span>
                 )}
               </div>
             )}
 
-            <button className="btn btn-accent" disabled={busy || checking || allowed !== true} style={{ width: "100%" }}>
+            <button
+              className="btn btn-accent"
+              disabled={busy || checking || allowed !== true}
+              style={{ width: "100%" }}
+            >
               {busy ? "Bitte warten..." : needsSetup ? "Passwort speichern & Login" : "Login"}
             </button>
 
             <div style={{ color: "var(--muted-2)", marginTop: 10, fontSize: 12 }}>
-              Nur hinterlegte Mitarbeiter können sich anmelden. Beim ersten Login wird ein Passwort festgelegt.
+              Nur hinterlegte Mitarbeiter können sich anmelden. Beim ersten Login wird ein
+              Passwort festgelegt.
             </div>
           </form>
         </div>

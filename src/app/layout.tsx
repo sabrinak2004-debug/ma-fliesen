@@ -6,7 +6,11 @@ export const metadata: Metadata = {
   title: "Mitarbeiterportal",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="de">
       <head>

@@ -4,6 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import {
+  applyAccentColorToDocument,
+  applyTenantHeadBranding,
+  getTenantAppleTouchIconHref,
+  getTenantManifestHref,
+  normalizeThemeColor,
+  resetAccentColorOnDocument,
+} from "@/lib/tenantBranding";
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
@@ -60,49 +68,25 @@ type BrandConfig = {
   slogan: string;
   logoUrl: string | null;
   accent: string;
+  companySubdomain: string;
 };
-
-function isHexColor(value: string): boolean {
-  return /^#([0-9a-fA-F]{6})$/.test(value);
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  if (!isHexColor(hex)) return null;
-
-  const normalized = hex.slice(1);
-  const r = Number.parseInt(normalized.slice(0, 2), 16);
-  const g = Number.parseInt(normalized.slice(2, 4), 16);
-  const b = Number.parseInt(normalized.slice(4, 6), 16);
-
-  return { r, g, b };
-}
 
 function buildBrandConfig(session: SessionData | null): BrandConfig {
   const fallback: BrandConfig = {
     appTitle: "Mitarbeiterportal",
     displayName: "Mitarbeiterportal",
-    slogan: "#einsatzplanung",
+    slogan: "#firmenportal",
     logoUrl: null,
     accent: "#b8cf3a",
+    companySubdomain: "",
   };
 
-  if (!session) return fallback;
+  if (!session) {
+    return fallback;
+  }
 
   const companyName = session.companyName.trim();
-  const subdomain = session.companySubdomain.trim().toLowerCase();
-  const accent = session.primaryColor && isHexColor(session.primaryColor)
-    ? session.primaryColor
-    : fallback.accent;
-
-  if (subdomain === "beispielbetrieb") {
-    return {
-      appTitle: "Beispielbetrieb Mitarbeiterportal",
-      displayName: "Beispielbetrieb",
-      slogan: "#so-kann-deine-app-aussehen",
-      logoUrl: session.companyLogoUrl,
-      accent,
-    };
-  }
+  const accent = normalizeThemeColor(session.primaryColor);
 
   return {
     appTitle: `${companyName} Mitarbeiterportal`,
@@ -110,6 +94,7 @@ function buildBrandConfig(session: SessionData | null): BrandConfig {
     slogan: "#einsatzplanung",
     logoUrl: session.companyLogoUrl,
     accent,
+    companySubdomain: session.companySubdomain,
   };
 }
 
@@ -401,25 +386,22 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
 }, [loadOpenTaskCount, loadAdminRequestCounts]);
 
   useEffect(() => {
-    const root = document.documentElement;
-    const accent = brand.accent;
-    const rgb = hexToRgb(accent);
-
-    root.style.setProperty("--accent", accent);
-
-    if (rgb) {
-      root.style.setProperty("--accent-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);
-      root.style.setProperty("--accent-soft", `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.14)`);
-      root.style.setProperty("--accent-border", `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`);
-    }
+    applyAccentColorToDocument(brand.accent);
 
     return () => {
-      root.style.removeProperty("--accent");
-      root.style.removeProperty("--accent-rgb");
-      root.style.removeProperty("--accent-soft");
-      root.style.removeProperty("--accent-border");
+      resetAccentColorOnDocument();
     };
   }, [brand.accent]);
+
+  useEffect(() => {
+    applyTenantHeadBranding({
+      title: brand.appTitle,
+      themeColor: brand.accent,
+      appName: brand.displayName,
+      manifestHref: getTenantManifestHref(brand.companySubdomain),
+      appleTouchIconHref: getTenantAppleTouchIconHref(brand.companySubdomain),
+    });
+  }, [brand]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -442,7 +424,12 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
     } finally {
       setMenuOpen(false);
       setMobileOpen(false);
-      window.location.href = "/login";
+      const targetLogin =
+        session?.companySubdomain
+          ? `/${session.companySubdomain}/login`
+          : "/login";
+
+      window.location.href = targetLogin;
     }
   }
 
