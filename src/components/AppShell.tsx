@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import {
   applyAccentColorToDocument,
   applyTenantHeadBranding,
@@ -60,6 +59,38 @@ function parseMe(j: unknown): SessionData | null {
   const s = j["session"];
   if (s === null) return null;
   return isSessionData(s) ? s : null;
+}
+
+function normalizeLogoSrc(
+  value: string | null,
+  companySubdomain: string
+): string | null {
+  const normalizedSubdomain = companySubdomain.trim().toLowerCase();
+
+  if (normalizedSubdomain) {
+    return `/tenant-assets/${normalizedSubdomain}/icon-512.jpeg`;
+  }
+
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (trimmed === "") {
+    return null;
+  }
+
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("data:")
+  ) {
+    return trimmed;
+  }
+
+  return `/${trimmed}`;
 }
 
 type BrandConfig = {
@@ -341,6 +372,10 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
 
   const isAdmin = session?.role === "ADMIN";
   const brand = buildBrandConfig(session);
+  const brandLogoSrc = normalizeLogoSrc(
+    brand.logoUrl,
+    brand.companySubdomain
+  );
 
   const employeeNavItems: NavItem[] = [
     { href: "/erfassung", label: "Erfassung", icon: "⊞" },
@@ -396,7 +431,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
   useEffect(() => {
     applyTenantHeadBranding({
       title: brand.appTitle,
-      themeColor: brand.accent,
+      themeColor: "#0b0f0c",
       appName: brand.displayName,
       manifestHref: getTenantManifestHref(brand.companySubdomain),
       appleTouchIconHref: getTenantAppleTouchIconHref(brand.companySubdomain),
@@ -498,14 +533,16 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     minWidth: 0,
                   }}
                 >
-                  {brand.logoUrl ? (
-                    <Image
-                      src={brand.logoUrl}
+                  {brandLogoSrc ? (
+                    <img
+                      src={brandLogoSrc}
                       alt={`${brand.displayName} Logo`}
-                      width={110}
-                      height={34}
-                      priority
-                      style={{ objectFit: "contain" }}
+                      style={{
+                        width: 92,
+                        height: 92,
+                        objectFit: "contain",
+                        display: "block",
+                      }}
                     />
                   ) : (
                     <div
@@ -766,15 +803,18 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
         <div className="appshell-desktop hidden md:grid">
           <aside className="appshell-sidebar">
             <div className="appshell-sidebar-top">
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                {brand.logoUrl ? (
-                  <Image
-                    src={brand.logoUrl}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                {brandLogoSrc ? (
+                  <img
+                    src={brandLogoSrc}
                     alt={`${brand.displayName} Logo`}
-                    width={120}
-                    height={40}
-                    priority
-                    style={{ objectFit: "contain" }}
+                    style={{
+                      width: 132,
+                      height: 132,
+                      objectFit: "contain",
+                      display: "block",
+                      flexShrink: 0,
+                    }}
                   />
                 ) : (
                   <div
@@ -796,7 +836,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     {brand.displayName}
                   </div>
                 )}
-                <div style={{ minWidth: 0 }}>
+                <div style={{ minWidth: 0, paddingTop: 6 }}>
                   <div style={{ fontWeight: 900, lineHeight: 1.05 }}>{brand.displayName}</div>
                   <div
                     style={{

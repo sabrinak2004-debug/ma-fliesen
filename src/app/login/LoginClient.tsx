@@ -62,6 +62,38 @@ function extractCompanySubdomainFromBrowser(): string {
   return parts[0] ?? "";
 }
 
+function normalizeLogoSrc(
+  value: string | null,
+  companySubdomain: string
+): string | null {
+  const normalizedSubdomain = companySubdomain.trim().toLowerCase();
+
+  if (normalizedSubdomain) {
+    return `/tenant-assets/${normalizedSubdomain}/icon-512.jpeg`;
+  }
+
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (trimmed === "") {
+    return null;
+  }
+
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("data:")
+  ) {
+    return trimmed;
+  }
+
+  return `/${trimmed}`;
+}
+
 export default function LoginClient({
   companySubdomainOverride,
   initialBrand,
@@ -101,6 +133,10 @@ export default function LoginClient({
   };
 
   const brand = initialBrand ?? fallbackBrand;
+  const logoSrc = normalizeLogoSrc(
+    brand.logoUrl,
+    companySubdomainOverride ?? companySubdomain ?? ""
+  );
 
   const reqIdRef = useRef(0);
 
@@ -121,7 +157,7 @@ export default function LoginClient({
 
     applyTenantHeadBranding({
       title: `${brand.displayName} Mitarbeiterportal`,
-      themeColor: effectiveThemeColor,
+      themeColor: "#0b0f0c",
       appName: brand.displayName,
       manifestHref: getTenantManifestHref(effectiveSubdomain),
       appleTouchIconHref: getTenantAppleTouchIconHref(effectiveSubdomain),
@@ -372,28 +408,22 @@ export default function LoginClient({
             <div
               style={{
                 width: 220,
-                height: 80,
-                borderRadius: 18,
+                height: 140,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                fontWeight: 900,
-                fontSize: 18,
-                color: "rgba(255,255,255,0.95)",
                 overflow: "hidden",
-                padding: 10,
               }}
             >
-              {brand.logoUrl ? (
+              {logoSrc ? (
                 <img
-                  src={brand.logoUrl}
+                  src={logoSrc}
                   alt={`${brand.displayName} Logo`}
                   style={{
                     maxWidth: "100%",
                     maxHeight: "100%",
                     objectFit: "contain",
+                    display: "block",
                   }}
                 />
               ) : (
@@ -403,7 +433,6 @@ export default function LoginClient({
           </div>
 
           <div style={{ textAlign: "center", marginBottom: 10 }}>
-            <div style={{ fontWeight: 900, fontSize: 18 }}>{brand.displayName}</div>
             <div style={{ color: "var(--muted)" }}>{brand.subtitle}</div>
             {companySubdomain ? (
               <div style={{ color: "var(--muted-2)", fontSize: 12, marginTop: 6 }}>
