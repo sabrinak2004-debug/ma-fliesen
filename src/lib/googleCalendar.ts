@@ -90,7 +90,7 @@ export async function registerGoogleCalendarWatch({
     throw new Error("APP_BASE_URL oder GOOGLE_WEBHOOK_SECRET fehlt");
   }
 
-  const webhookAddress = `${appBaseUrl}/api/google/webhook`;
+  const webhookAddress = `${appBaseUrl}/api/admin/google/webhook`;
   const channelId = randomUUID();
 
   const response = await calendar.events.watch({

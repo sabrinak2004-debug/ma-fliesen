@@ -264,6 +264,7 @@ export async function GET(req: Request) {
     .sort((a, b) => a.user.fullName.localeCompare(b.user.fullName));
 
   return okJson({
+    ok: true,
     absences,
     groupsByDay,
     summaryByUser,

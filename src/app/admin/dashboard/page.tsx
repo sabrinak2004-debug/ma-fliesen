@@ -30,7 +30,7 @@ type AdminTimelineAbsence = {
   type: "VACATION" | "SICK";
   date: string; // YYYY-MM-DD
   dayPortion: "FULL_DAY" | "HALF_DAY";
-  compensation?: "PAID" | "UNPAID";
+  compensation: "PAID" | "UNPAID";
 };
 
 type AdminTimelineItem = AdminTimelineWork | AdminTimelineAbsence;

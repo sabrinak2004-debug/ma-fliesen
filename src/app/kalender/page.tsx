@@ -115,7 +115,8 @@ type SessionDTO = {
   companyId: string;
   companyName: string;
   companySubdomain: string;
-  companyIsDemo: boolean;
+  companyLogoUrl?: string | null;
+  primaryColor?: string | null;
 };
 
 type CalendarEventDTO = {
@@ -346,7 +347,19 @@ function isSessionDTO(v: unknown): v is SessionDTO {
   const companyId = getStringField(v, "companyId");
   const companyName = getStringField(v, "companyName");
   const companySubdomain = getStringField(v, "companySubdomain");
-  const companyIsDemo = v["companyIsDemo"];
+
+  const companyLogoUrlRaw = v["companyLogoUrl"];
+  const primaryColorRaw = v["primaryColor"];
+
+  const companyLogoUrl =
+    companyLogoUrlRaw === undefined ||
+    companyLogoUrlRaw === null ||
+    typeof companyLogoUrlRaw === "string";
+
+  const primaryColor =
+    primaryColorRaw === undefined ||
+    primaryColorRaw === null ||
+    typeof primaryColorRaw === "string";
 
   return (
     typeof userId === "string" &&
@@ -355,7 +368,8 @@ function isSessionDTO(v: unknown): v is SessionDTO {
     typeof companyId === "string" &&
     typeof companyName === "string" &&
     typeof companySubdomain === "string" &&
-    typeof companyIsDemo === "boolean"
+    companyLogoUrl &&
+    primaryColor
   );
 }
 
@@ -1513,6 +1527,9 @@ export default function KalenderPage() {
                       Mitarbeiteransicht (read-only): Kalender zeigt Plan/Urlaub/Krank des Mitarbeiters.
                     </div>
                   ) : null}
+                  <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)", textAlign: "center" }}>
+                    Debug: role={session?.role ?? "none"} | selectedUserId={selectedUserId || "(leer)"} | isAdminOwnCalendar={String(isAdminOwnCalendar)}
+                  </div>
                 </div>
               ) : null}
 

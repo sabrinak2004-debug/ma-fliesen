@@ -386,7 +386,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
 
   const adminNavItems: NavItem[] = [
     { href: "/admin/dashboard", label: "Dashboard", icon: "▦" },
-    { href: "/kalender", label: "Termine", icon: "🗓" },
+    { href: "/admin/appointments", label: "Termine", icon: "🗓" },
     { href: "/admin/wochenplan", label: "Wochenplan", icon: "🧑‍💼" },
     { href: "/admin/urlaubsantraege", label: "Urlaubsanträge", icon: "🌴" },
     { href: "/admin/krankheitsantraege", label: "Krankheitsanträge", icon: "🤒" },

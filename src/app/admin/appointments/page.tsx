@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import KalenderPage from "@/app/kalender/page";
 
 export default function AdminAppointmentsPage() {
-  redirect("/kalender");
+  return <KalenderPage />;
 }

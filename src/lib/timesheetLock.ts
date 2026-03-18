@@ -25,24 +25,63 @@ function isWeekdayUtcDate(d: Date): boolean {
   return weekday >= 1 && weekday <= 5;
 }
 
-const DEFAULT_MISSING_ENTRIES_START_YMD = "2026-04-01";
+type MissingEntriesRule = {
+  activationStartYMD: string;
+  useFirstBusinessDayOfMonth: boolean;
+  overridesByNormalizedFullName?: Readonly<Record<string, string>>;
+};
 
-const MISSING_ENTRIES_START_OVERRIDES_BY_NORMALIZED_FULL_NAME: Readonly<Record<string, string>> = {
-  "max mustermann": "2026-03-01",
+const DEFAULT_MISSING_ENTRIES_RULE: MissingEntriesRule = {
+  activationStartYMD: "2026-04-01",
+  useFirstBusinessDayOfMonth: true,
+};
+
+const MISSING_ENTRIES_RULES_BY_COMPANY_SUBDOMAIN: Readonly<
+  Record<string, MissingEntriesRule>
+> = {
+  "ma-fliesen": {
+    activationStartYMD: "2026-04-01",
+    useFirstBusinessDayOfMonth: true,
+    overridesByNormalizedFullName: {
+      "max mustermann": "2026-03-01",
+    },
+  },
+  beispielbetrieb: {
+    activationStartYMD: "2026-03-01",
+    useFirstBusinessDayOfMonth: false,
+  },
 };
 
 function normalizeFullName(fullName: string): string {
   return fullName.trim().replace(/\s+/g, " ").toLocaleLowerCase("de-DE");
 }
 
+function normalizeCompanySubdomain(companySubdomain: string | undefined): string {
+  return (companySubdomain ?? "").trim().toLocaleLowerCase("de-DE");
+}
+
 function maxYmd(a: string, b: string): string {
   return a >= b ? a : b;
 }
 
-function getMissingEntriesActivationStartYMD(fullName: string): string {
+function getMissingEntriesRule(companySubdomain?: string): MissingEntriesRule {
   return (
-    MISSING_ENTRIES_START_OVERRIDES_BY_NORMALIZED_FULL_NAME[normalizeFullName(fullName)] ??
-    DEFAULT_MISSING_ENTRIES_START_YMD
+    MISSING_ENTRIES_RULES_BY_COMPANY_SUBDOMAIN[
+      normalizeCompanySubdomain(companySubdomain)
+    ] ?? DEFAULT_MISSING_ENTRIES_RULE
+  );
+}
+
+function getMissingEntriesActivationStartYMD(
+  fullName: string,
+  companySubdomain?: string
+): string {
+  const rule = getMissingEntriesRule(companySubdomain);
+  const normalizedFullName = normalizeFullName(fullName);
+
+  return (
+    rule.overridesByNormalizedFullName?.[normalizedFullName] ??
+    rule.activationStartYMD
   );
 }
 
@@ -73,8 +112,13 @@ function getFirstBusinessDayOfMonthYMD(
 function getEffectiveMissingEntriesStartForDay(
   currentYMD: string,
   activationStartYMD: string,
-  holidaySet: Set<string>
+  holidaySet: Set<string>,
+  useFirstBusinessDayOfMonth: boolean
 ): string {
+  if (!useFirstBusinessDayOfMonth) {
+    return activationStartYMD;
+  }
+
   const [year, month] = currentYMD.split("-").map(Number);
   const firstBusinessDayOfMonthYMD = getFirstBusinessDayOfMonthYMD(
     year,
@@ -88,6 +132,7 @@ function getEffectiveMissingEntriesStartForDay(
 export function isWorkEntryRequiredOnDateForUserMeta(args: {
   currentYMD: string;
   fullName: string;
+  companySubdomain?: string;
 }): boolean {
   const currentDate = parseIsoDateToUtc(args.currentYMD);
 
@@ -104,11 +149,16 @@ export function isWorkEntryRequiredOnDateForUserMeta(args: {
     return false;
   }
 
-  const activationStartYMD = getMissingEntriesActivationStartYMD(args.fullName);
+  const rule = getMissingEntriesRule(args.companySubdomain);
+  const activationStartYMD = getMissingEntriesActivationStartYMD(
+    args.fullName,
+    args.companySubdomain
+  );
   const effectiveStartYMD = getEffectiveMissingEntriesStartForDay(
     args.currentYMD,
     activationStartYMD,
-    holidaySet
+    holidaySet,
+    rule.useFirstBusinessDayOfMonth
   );
 
   return args.currentYMD >= effectiveStartYMD;
@@ -222,14 +272,27 @@ export async function getMissingRequiredWorkDates(
       id: userId,
       ...(options?.companyId ? { companyId: options.companyId } : {}),
     },
-    select: { isActive: true, fullName: true },
+    select: {
+      isActive: true,
+      fullName: true,
+      company: {
+        select: {
+          subdomain: true,
+        },
+      },
+    },
   });
 
   if (!user || !user.isActive) {
     return [];
   }
 
-  const activationStartYMD = getMissingEntriesActivationStartYMD(user.fullName);
+  const companySubdomain = user.company?.subdomain ?? undefined;
+
+  const activationStartYMD = getMissingEntriesActivationStartYMD(
+    user.fullName,
+    companySubdomain
+  );
   const effectiveRangeStartDate = parseIsoDateToUtc(activationStartYMD);
 
   if (effectiveRangeStartDate >= untilDate) {
@@ -292,6 +355,7 @@ export async function getMissingRequiredWorkDates(
       !isWorkEntryRequiredOnDateForUserMeta({
         currentYMD,
         fullName: user.fullName,
+        companySubdomain,
       })
     ) {
       continue;

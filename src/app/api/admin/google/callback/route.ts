@@ -107,6 +107,5 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error("Watch registration after callback failed:", error);
   }
-
-  return NextResponse.redirect(`${base}/kalender?google=connected`);
+  return NextResponse.redirect(`${base}/admin/appointments?google=connected`);
 }

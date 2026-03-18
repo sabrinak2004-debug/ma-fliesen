@@ -16,6 +16,13 @@ function dateOnlyLocalIso(d: Date) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function utcDayRange(ymd: string): { start: Date; endExclusive: Date } {
+  const start = new Date(`${ymd}T00:00:00.000Z`);
+  const endExclusive = new Date(start);
+  endExclusive.setUTCDate(endExclusive.getUTCDate() + 1);
+  return { start, endExclusive };
+}
+
 function startOfWeekMonday(d: Date) {
   const day = d.getDay();
   const diff = (day === 0 ? -6 : 1) - day;
@@ -100,6 +107,7 @@ export async function GET(req: Request) {
 
   const weekStart = startOfWeekMonday(now);
   const weekEnd = endOfWeekSunday(now);
+  const todayRange = utcDayRange(todayIso);
 
   const employees = await prisma.appUser.findMany({
     where: {
@@ -120,40 +128,51 @@ export async function GET(req: Request) {
     isWorkEntryRequiredOnDateForUserMeta({
       currentYMD: todayIso,
       fullName: employee.fullName,
+      companySubdomain: session.companySubdomain,
     })
   );
 
   const plannedToday = await prisma.planEntry.count({
     where: {
-      workDate: new Date(`${todayIso}T00:00:00.000Z`),
+      workDate: {
+        gte: todayRange.start,
+        lt: todayRange.endExclusive,
+      },
       user: {
         companyId: session.companyId,
+        isActive: true,
       },
     },
   });
 
   const absencesTodayRows = await prisma.absence.findMany({
-    where: {
-      absenceDate: new Date(`${todayIso}T00:00:00.000Z`),
-      user: {
-        companyId: session.companyId,
+  where: {
+    absenceDate: {
+      gte: todayRange.start,
+      lt: todayRange.endExclusive,
+    },
+    user: {
+      companyId: session.companyId,
+      isActive: true,
+    },
+  },
+  select: {
+    userId: true,
+    type: true,
+    user: {
+      select: {
+        fullName: true,
       },
     },
-    select: {
-      userId: true,
-      type: true,
-      user: {
-        select: {
-          fullName: true,
-        },
-      },
-    },
-    orderBy: {
+  },
+  orderBy: [
+    {
       user: {
         fullName: "asc",
       },
     },
-  });
+  ],
+});
 
   const absentTodayEmployees: DashboardAbsenceRow[] = absencesTodayRows.map((row) => ({
     userId: row.userId,
@@ -165,9 +184,13 @@ export async function GET(req: Request) {
 
   const workedToday = await prisma.workEntry.findMany({
     where: {
-      workDate: new Date(`${todayIso}T00:00:00.000Z`),
+      workDate: {
+        gte: todayRange.start,
+        lt: todayRange.endExclusive,
+      },
       user: {
         companyId: session.companyId,
+        isActive: true,
       },
     },
     select: { userId: true },
@@ -266,6 +289,7 @@ export async function GET(req: Request) {
       const isRequired = isWorkEntryRequiredOnDateForUserMeta({
         currentYMD: day,
         fullName: employee.fullName,
+        companySubdomain: session.companySubdomain,
       });
 
       if (!isRequired) continue;
@@ -339,6 +363,7 @@ export async function GET(req: Request) {
       absenceDate: true,
       type: true,
       dayPortion: true,
+      compensation: true,
     },
   });
 
@@ -373,10 +398,11 @@ export async function GET(req: Request) {
           noteEmployee: string | null;
         }
       | {
-          type: "VACATION" | "SICK";
-          date: string;
-          dayPortion: "FULL_DAY" | "HALF_DAY";
-        }
+        type: "VACATION" | "SICK";
+        date: string;
+        dayPortion: "FULL_DAY" | "HALF_DAY";
+        compensation: "PAID" | "UNPAID";
+      }
     > = [];
 
     const dayBreaks: TimelineDayBreak[] = [];
@@ -419,6 +445,7 @@ export async function GET(req: Request) {
         type: absence.type === AbsenceType.VACATION ? "VACATION" : "SICK",
         date,
         dayPortion: absence.dayPortion === "HALF_DAY" ? "HALF_DAY" : "FULL_DAY",
+        compensation: absence.compensation === "UNPAID" ? "UNPAID" : "PAID",
       });
     }
 
