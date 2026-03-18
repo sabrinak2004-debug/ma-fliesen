@@ -42,6 +42,20 @@ type DayBreakDTO = {
   effectiveMinutes: number;
 };
 
+async function findActiveCompanyUser(userId: string, companyId: string) {
+  return prisma.appUser.findFirst({
+    where: {
+      id: userId,
+      companyId,
+      isActive: true,
+    },
+    select: {
+      id: true,
+      fullName: true,
+    },
+  });
+}
+
 type SyncEntryRow = {
   id: string;
   grossMinutes: number;
@@ -154,7 +168,7 @@ export async function GET(req: Request) {
 
   const rows = await prisma.dayBreak.findMany({
     where: {
-      ...(isAdmin ? {} : { userId: session.userId }),
+      ...(isAdmin ? { user: { companyId: session.companyId } } : { userId: session.userId }),
       ...(from && to ? { workDate: { gte: from, lt: to } } : {}),
     },
     orderBy: [{ workDate: "desc" }],
@@ -209,6 +223,7 @@ export async function POST(req: Request) {
       role: session.role,
       userId: session.userId,
       workDateYMD: workDate,
+      companyId: session.companyId,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Nicht erlaubt";
@@ -220,8 +235,8 @@ export async function POST(req: Request) {
   if (isAdmin) {
     const requestedUserId = getString(body.userId).trim();
     if (requestedUserId) {
-      const user = await prisma.appUser.findUnique({ where: { id: requestedUserId } });
-      if (!user || !user.isActive) {
+      const user = await findActiveCompanyUser(requestedUserId, session.companyId);
+      if (!user) {
         return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
       }
       targetUserId = user.id;

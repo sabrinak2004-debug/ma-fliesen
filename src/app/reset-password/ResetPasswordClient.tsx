@@ -1,19 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import AppShell from "@/components/AppShell";
 
 type ApiResponse = { ok: true } | { ok: false; error: string };
 
 export default function ResetPasswordClient({ token }: { token: string }) {
   const router = useRouter();
+  const redirectTimerRef = useRef<number | null>(null);
 
   const [pw1, setPw1] = useState("");
   const [pw2, setPw2] = useState("");
   const [msg, setMsg] = useState<string>("");
   const [busy, setBusy] = useState(false);
-
   async function submit() {
     setMsg("");
 
@@ -45,7 +44,9 @@ export default function ResetPasswordClient({ token }: { token: string }) {
       }
 
       setMsg("Passwort wurde gesetzt. Du kannst dich jetzt einloggen.");
-      setTimeout(() => router.push("/login"), 800);
+      redirectTimerRef.current = window.setTimeout(() => {
+        router.push("/login");
+      }, 800);
     } catch {
       setMsg("Reset fehlgeschlagen.");
     } finally {
@@ -53,8 +54,15 @@ export default function ResetPasswordClient({ token }: { token: string }) {
     }
   }
 
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current !== null) {
+        window.clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
+
   return (
-    <AppShell>
       <div style={{ maxWidth: 520, margin: "0 auto", padding: "24px 16px" }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>Neues Passwort setzen</h1>
 
@@ -114,6 +122,5 @@ export default function ResetPasswordClient({ token }: { token: string }) {
           </div>
         )}
       </div>
-    </AppShell>
   );
 }

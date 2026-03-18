@@ -26,6 +26,26 @@ export async function GET(req: Request) {
   const planEntryId = url.searchParams.get("planEntryId");
   if (!planEntryId) return NextResponse.json({ error: "planEntryId missing" }, { status: 400 });
 
+  const entry = await prisma.planEntry.findUnique({
+    where: { id: planEntryId },
+    select: {
+      id: true,
+      user: {
+        select: {
+          companyId: true,
+        },
+      },
+    },
+  });
+
+  if (!entry) {
+    return NextResponse.json({ error: "PlanEntry not found" }, { status: 404 });
+  }
+
+  if (entry.user.companyId !== admin.companyId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const docs = await prisma.planEntryDocument.findMany({
     where: { planEntryId },
     orderBy: { createdAt: "desc" },
@@ -72,9 +92,23 @@ export async function POST(req: Request) {
 
   const entry = await prisma.planEntry.findUnique({
     where: { id: planEntryId },
-    select: { id: true },
+    select: {
+      id: true,
+      user: {
+        select: {
+          companyId: true,
+        },
+      },
+    },
   });
-  if (!entry) return NextResponse.json({ error: "PlanEntry not found" }, { status: 404 });
+
+  if (!entry) {
+    return NextResponse.json({ error: "PlanEntry not found" }, { status: 404 });
+  }
+
+  if (entry.user.companyId !== admin.companyId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const ab = await fileRaw.arrayBuffer();
   const data = Buffer.from(ab);
@@ -114,8 +148,29 @@ export async function DELETE(req: Request) {
   const id = url.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id missing" }, { status: 400 });
 
-  const doc = await prisma.planEntryDocument.findUnique({ where: { id }, select: { id: true } });
-  if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const doc = await prisma.planEntryDocument.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      planEntry: {
+        select: {
+          user: {
+            select: {
+              companyId: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!doc) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (doc.planEntry.user.companyId !== admin.companyId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   await prisma.planEntryDocument.delete({ where: { id } });
   return NextResponse.json({ ok: true });

@@ -50,8 +50,7 @@ export default function Modal({
 
     document.addEventListener("keydown", handleKeyDown);
 
-    // ✅ Focus only once when opening (NOT on every re-render)
-    setTimeout(() => {
+    const focusTimer = window.setTimeout(() => {
       panelRef.current?.focus();
     }, 0);
 
@@ -60,6 +59,7 @@ export default function Modal({
     document.body.style.overflow = "hidden";
 
     return () => {
+      window.clearTimeout(focusTimer);
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = prev;
     };

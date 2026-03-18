@@ -123,34 +123,36 @@ export async function GET(req: Request) {
   const baseTargetMinutes = workingDaysInMonth * DAILY_TARGET_MINUTES;
 
   const users = await prisma.appUser.findMany({
-    where: isAdmin ? { isActive: true } : { id: session.userId, isActive: true },
+    where: isAdmin
+      ? { companyId: session.companyId, isActive: true }
+      : { id: session.userId, isActive: true },
     orderBy: { fullName: "asc" },
   });
 
   const entries = await prisma.workEntry.findMany({
     where: {
-      ...(isAdmin ? {} : { userId: session.userId }),
+      ...(isAdmin ? { user: { companyId: session.companyId } } : { userId: session.userId }),
       workDate: { gte: from, lt: to },
     },
   });
 
   const dayBreaks = await prisma.dayBreak.findMany({
     where: {
-      ...(isAdmin ? {} : { userId: session.userId }),
+      ...(isAdmin ? { user: { companyId: session.companyId } } : { userId: session.userId }),
       workDate: { gte: from, lt: to },
     },
   });
 
   const absences = await prisma.absence.findMany({
     where: {
-      ...(isAdmin ? {} : { userId: session.userId }),
+      ...(isAdmin ? { user: { companyId: session.companyId } } : { userId: session.userId }),
       absenceDate: { gte: from, lt: to },
     },
   });
 
   const yearVacationAbsences = await prisma.absence.findMany({
     where: {
-      ...(isAdmin ? {} : { userId: session.userId }),
+      ...(isAdmin ? { user: { companyId: session.companyId } } : { userId: session.userId }),
       type: AbsenceType.VACATION,
       absenceDate: { gte: yearFrom, lt: yearTo },
     },
@@ -251,7 +253,10 @@ export async function GET(req: Request) {
 
     const missingRequiredWorkDates = await getMissingRequiredWorkDates(
       user.id,
-      berlinTodayYMD()
+      berlinTodayYMD(),
+      {
+        companyId: session.companyId,
+      }
     );
 
     const oldestMissingRequiredWorkDate =

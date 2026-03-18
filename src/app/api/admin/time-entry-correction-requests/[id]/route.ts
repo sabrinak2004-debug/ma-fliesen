@@ -33,6 +33,11 @@ export async function DELETE(_req: Request, context: RouteContext) {
     select: {
       id: true,
       status: true,
+      user: {
+        select: {
+          companyId: true,
+        },
+      },
     },
   });
 
@@ -40,6 +45,13 @@ export async function DELETE(_req: Request, context: RouteContext) {
     return NextResponse.json(
       { ok: false, error: "Nachtragsanfrage nicht gefunden." },
       { status: 404 }
+    );
+  }
+
+  if (existing.user.companyId !== admin.companyId) {
+    return NextResponse.json(
+      { ok: false, error: "Keine Berechtigung." },
+      { status: 403 }
     );
   }
 

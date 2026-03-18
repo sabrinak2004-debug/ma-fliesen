@@ -41,6 +41,11 @@ export async function GET(req: Request) {
       planEntry: {
         select: {
           userId: true,
+          user: {
+            select: {
+              companyId: true,
+            },
+          },
         },
       },
     },
@@ -48,6 +53,10 @@ export async function GET(req: Request) {
 
   if (!doc) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (doc.planEntry.user.companyId !== session.companyId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const isAdmin = session.role === "ADMIN";

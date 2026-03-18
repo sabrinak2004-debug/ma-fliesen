@@ -31,7 +31,10 @@ export default function AdminPasswordResetPage() {
     try {
       setLoading(true);
       setErr("");
-      const res = await fetch("/api/admin/password-reset-requests", { cache: "no-store" });
+      const res = await fetch("/api/admin/password-reset-requests", {
+        cache: "no-store",
+        credentials: "include",
+      });
       const data = (await res.json()) as RequestsResponse;
       if (!res.ok || "error" in data) {
         setErr("Konnte Anfragen nicht laden.");
@@ -48,7 +51,7 @@ export default function AdminPasswordResetPage() {
   }
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   async function createResetLink(userId: string) {
@@ -57,6 +60,7 @@ export default function AdminPasswordResetPage() {
       const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/password-reset`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
       const data = (await res.json()) as ResetResponse;
       if (!res.ok || !data.ok) {
@@ -65,7 +69,8 @@ export default function AdminPasswordResetPage() {
       }
 
       setResetUrl(data.resetUrl);
-      setResetInfo(`Gültig bis: ${new Date(data.expiresAt).toLocaleString("de-DE")}`);
+      const expiresLabel = new Date(data.expiresAt).toLocaleString("de-DE");
+      setResetInfo(`Gültig bis: ${expiresLabel}`);
       setModalOpen(true);
 
       // danach Liste aktualisieren (damit Requests ggf. verschwinden, wenn du sie bei reset schließen willst)

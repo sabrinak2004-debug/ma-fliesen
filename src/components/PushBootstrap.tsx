@@ -101,23 +101,6 @@ export default function PushBootstrap() {
       if (!("Notification" in window)) return;
 
       try {
-        const registration = await navigator.serviceWorker.register("/sw.js");
-
-        const permission = Notification.permission === "granted"
-          ? "granted"
-          : await Notification.requestPermission();
-
-        if (permission !== "granted") {
-          return;
-        }
-
-        const existingSubscription = await registration.pushManager.getSubscription();
-
-        if (existingSubscription) {
-          await sendSubscriptionToBackend(existingSubscription.toJSON());
-          return;
-        }
-
         const publicKeyResponse = await fetch("/api/push/public-key", {
           method: "GET",
           credentials: "include",
@@ -128,10 +111,24 @@ export default function PushBootstrap() {
         const parsed = parsePushPublicKeyResponse(publicKeyJson);
 
         if (!publicKeyResponse.ok || !parsed.ok) {
-          console.error(
-            "Push Public Key konnte nicht geladen werden:",
-            parsed.ok ? "Unbekannter Fehler" : parsed.error
-          );
+          return;
+        }
+
+        const registration = await navigator.serviceWorker.register("/sw.js");
+
+        const permission =
+          Notification.permission === "granted"
+            ? "granted"
+            : await Notification.requestPermission();
+
+        if (permission !== "granted") {
+          return;
+        }
+
+        const existingSubscription = await registration.pushManager.getSubscription();
+
+        if (existingSubscription) {
+          await sendSubscriptionToBackend(existingSubscription.toJSON());
           return;
         }
 

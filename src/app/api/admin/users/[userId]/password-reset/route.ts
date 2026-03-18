@@ -29,8 +29,11 @@ export async function POST(
 
   const { userId } = await ctx.params;
 
-  const user = await prisma.appUser.findUnique({
-    where: { id: userId },
+  const user = await prisma.appUser.findFirst({
+    where: {
+      id: userId,
+      companyId: admin.companyId,
+    },
     select: { id: true, fullName: true, isActive: true, role: true },
   });
 
@@ -40,6 +43,7 @@ export async function POST(
 
   const rawToken = crypto.randomBytes(32).toString("hex");
   const tokenHash = sha256Hex(rawToken);
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
 
   await prisma.passwordResetToken.updateMany({
     where: { userId, usedAt: null },
@@ -50,7 +54,7 @@ export async function POST(
     data: {
       userId,
       tokenHash,
-      expiresAt: null,
+      expiresAt,
     },
   });
 
@@ -63,5 +67,6 @@ export async function POST(
     ok: true,
     user: { id: user.id, fullName: user.fullName },
     resetUrl,
+    expiresAt: expiresAt.toISOString(),
   });
 }

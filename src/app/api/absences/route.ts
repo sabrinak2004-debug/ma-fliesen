@@ -108,6 +108,20 @@ function okJson(data: unknown, init?: ResponseInit) {
   return NextResponse.json(data, init);
 }
 
+async function findActiveCompanyUser(userId: string, companyId: string) {
+  return prisma.appUser.findFirst({
+    where: {
+      id: userId,
+      companyId,
+      isActive: true,
+    },
+    select: {
+      id: true,
+      fullName: true,
+    },
+  });
+}
+
 
 export async function GET(req: Request) {
   const session = await getSession();
@@ -123,8 +137,17 @@ export async function GET(req: Request) {
 
   const effectiveUserWhere = isAdmin
     ? userIdQ
-      ? { userId: userIdQ }
-      : {}
+      ? {
+          userId: userIdQ,
+          user: {
+            companyId: session.companyId,
+          },
+        }
+      : {
+          user: {
+            companyId: session.companyId,
+          },
+        }
     : { userId: session.userId };
 
   let from: Date | undefined;
@@ -324,7 +347,15 @@ export async function POST(req: Request) {
   }
 
   const isAdmin = session.role === Role.ADMIN;
-  const targetUserId = isAdmin && userIdFromBody ? userIdFromBody : session.userId;
+  let targetUserId = session.userId;
+
+  if (isAdmin && userIdFromBody) {
+    const targetUser = await findActiveCompanyUser(userIdFromBody, session.companyId);
+    if (!targetUser) {
+      return okJson({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
+    }
+    targetUserId = targetUser.id;
+  }
 
   if (!isAdmin) {
     return okJson(
@@ -461,7 +492,16 @@ export async function PATCH(req: Request) {
   }
 
   const isAdmin = session.role === Role.ADMIN;
-  const targetUserId = isAdmin && userIdFromBody ? userIdFromBody : session.userId;
+  let targetUserId = session.userId;
+
+  if (isAdmin && userIdFromBody) {
+    const targetUser = await findActiveCompanyUser(userIdFromBody, session.companyId);
+    if (!targetUser) {
+      return okJson({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
+    }
+    targetUserId = targetUser.id;
+  }
+
   if (!isAdmin) {
     return okJson(
       { error: "Mitarbeiter dürfen finale Abwesenheiten nicht direkt bearbeiten." },
@@ -536,8 +576,21 @@ export async function DELETE(req: Request) {
   const id = (url.searchParams.get("id") ?? "").trim();
 
   if (id) {
-    const a = await prisma.absence.findUnique({ where: { id } });
+    const a = await prisma.absence.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            companyId: true,
+          },
+        },
+      },
+    });
     if (!a) return okJson({ error: "Nicht gefunden" }, { status: 404 });
+
+    if (a.user.companyId !== session.companyId) {
+      return okJson({ error: "Nicht erlaubt" }, { status: 403 });
+    }
 
     const isAdmin = session.role === Role.ADMIN;
     if (!isAdmin) {
@@ -593,8 +646,16 @@ export async function DELETE(req: Request) {
     );
   }
 
-  const targetUserId =
-    (url.searchParams.get("userId") ?? "").trim() || session.userId;
+  const requestedUserId = (url.searchParams.get("userId") ?? "").trim();
+  let targetUserId = session.userId;
+
+  if (requestedUserId) {
+    const targetUser = await findActiveCompanyUser(requestedUserId, session.companyId);
+    if (!targetUser) {
+      return okJson({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
+    }
+    targetUserId = targetUser.id;
+  }
 
   const toExclusive = new Date(to);
   toExclusive.setUTCDate(toExclusive.getUTCDate() + 1);

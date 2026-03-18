@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -30,6 +31,38 @@ type UserOption = {
   id: string;
   fullName: string;
 };
+
+type AdminSessionDTO = {
+  userId: string;
+  fullName: string;
+  role: "ADMIN" | "EMPLOYEE";
+  companyId: string;
+  companyName: string;
+  companySubdomain: string;
+  companyLogoUrl: string | null;
+  primaryColor: string | null;
+};
+
+function isAdminSessionDTO(v: unknown): v is AdminSessionDTO {
+  return (
+    isRecord(v) &&
+    getStringField(v, "userId") !== null &&
+    getStringField(v, "fullName") !== null &&
+    (v["role"] === "ADMIN" || v["role"] === "EMPLOYEE") &&
+    getStringField(v, "companyId") !== null &&
+    getStringField(v, "companyName") !== null &&
+    getStringField(v, "companySubdomain") !== null &&
+    (getStringField(v, "companyLogoUrl") !== null || v["companyLogoUrl"] === null) &&
+    (getStringField(v, "primaryColor") !== null || v["primaryColor"] === null)
+  );
+}
+
+function parseMeSession(v: unknown): AdminSessionDTO | null {
+  if (!isRecord(v)) return null;
+  const session = v["session"];
+  if (session === null) return null;
+  return isAdminSessionDTO(session) ? session : null;
+}
 
 type AdminRequestsResponse =
   | {
@@ -153,26 +186,26 @@ function parseAdminRequestsResponse(v: unknown): AdminRequestsResponse {
 }
 
 function formatDateDE(ymd: string): string {
-  const [y, m, d] = ymd.split("-").map(Number);
-  const date = new Date(y, (m || 1) - 1, d || 1);
-  return date.toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  const normalized = ymd.length >= 10 ? ymd.slice(0, 10) : ymd;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return ymd;
+
+  const [y, m, d] = normalized.split("-");
+  return `${d}.${m}.${y}`;
 }
 
 function formatDateTimeDE(iso: string | null): string {
   if (!iso) return "—";
+
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear());
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${day}.${month}.${year}, ${hours}:${minutes}`;
 }
 
 function rangeLabel(startDate: string, endDate: string): string {
@@ -240,8 +273,11 @@ function currentMonthValue(): string {
 }
 
 export default function KrankheitsantraegePage() {
+  const router = useRouter();
   const [items, setItems] = useState<AbsenceRequestItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<AdminSessionDTO | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -250,6 +286,8 @@ export default function KrankheitsantraegePage() {
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthValue());
 
   async function loadRequests() {
+    if (!session || session.role !== "ADMIN") return;
+
     setLoading(true);
     setError(null);
 
@@ -267,6 +305,7 @@ export default function KrankheitsantraegePage() {
 
       const response = await fetch(`/api/admin/absence-requests?${params.toString()}`, {
         method: "GET",
+        credentials: "include",
         cache: "no-store",
       });
 
@@ -290,8 +329,54 @@ export default function KrankheitsantraegePage() {
     }
   }
   useEffect(() => {
-    void loadRequests();
-  }, [selectedUserId, selectedMonth]);
+  let alive = true;
+
+  (async () => {
+    try {
+      const response = await fetch("/api/me", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data: unknown = await response.json().catch(() => ({}));
+
+      if (!alive) return;
+
+      const parsed = parseMeSession(data);
+
+      if (!parsed) {
+        setSession(null);
+        return;
+      }
+
+      if (parsed.role !== "ADMIN") {
+        router.replace("/login");
+        return;
+      }
+
+      setSession(parsed);
+    } catch {
+      if (!alive) return;
+      router.replace("/login");
+      return;
+    } finally {
+      if (alive) {
+        setSessionChecked(true);
+      }
+    }
+  })();
+
+  return () => {
+    alive = false;
+  };
+}, [router]);
+
+useEffect(() => {
+  if (!sessionChecked) return;
+  if (!session || session.role !== "ADMIN") return;
+  void loadRequests();
+}, [selectedUserId, selectedMonth, sessionChecked, session?.role, session?.companyId]);
 
   useEffect(() => {
     let active = true;
@@ -300,6 +385,7 @@ export default function KrankheitsantraegePage() {
       try {
         const response = await fetch("/api/users", {
           method: "GET",
+          credentials: "include",
           cache: "no-store",
         });
 
@@ -348,6 +434,7 @@ export default function KrankheitsantraegePage() {
     try {
       const response = await fetch(`/api/admin/absence-requests/${encodeURIComponent(id)}/approve`, {
         method: "POST",
+        credentials: "include",
       });
 
       const json: unknown = await response.json().catch(() => ({}));
@@ -376,6 +463,7 @@ export default function KrankheitsantraegePage() {
     try {
       const response = await fetch(`/api/admin/absence-requests/${encodeURIComponent(id)}/reject`, {
         method: "POST",
+        credentials: "include",
       });
 
       const json: unknown = await response.json().catch(() => ({}));
@@ -398,9 +486,10 @@ export default function KrankheitsantraegePage() {
   }
 
   async function deleteRequest(id: string) {
-    const confirmed = window.confirm(
-      "Möchtest du diesen Krankheitsantrag wirklich dauerhaft löschen?"
-    );
+    const confirmed =
+      typeof window !== "undefined"
+        ? window.confirm("Möchtest du diesen Krankheitsantrag wirklich dauerhaft löschen?")
+        : false;
 
     if (!confirmed) return;
 
@@ -409,8 +498,9 @@ export default function KrankheitsantraegePage() {
 
     try {
       const response = await fetch(`/api/admin/absence-requests/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
+          method: "DELETE",
+          credentials: "include",
+        });
 
       const json: unknown = await response.json().catch(() => ({}));
 
@@ -617,6 +707,16 @@ export default function KrankheitsantraegePage() {
           ) : null}
         </div>
       </div>
+    );
+  }
+
+  if (!sessionChecked) {
+    return (
+      <AppShell activeLabel="#wirkönnendas">
+        <div className="card" style={{ padding: 18 }}>
+          <div style={{ color: "var(--muted)" }}>Lädt Krankheitsanträge...</div>
+        </div>
+      </AppShell>
     );
   }
 

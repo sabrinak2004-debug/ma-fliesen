@@ -82,6 +82,21 @@ type DayBreakDTO = {
   effectiveMinutes: number;
 };
 
+async function findActiveCompanyUser(userId: string, companyId: string) {
+  return prisma.appUser.findFirst({
+    where: {
+      id: userId,
+      companyId,
+      isActive: true,
+    },
+    select: {
+      id: true,
+      fullName: true,
+      isActive: true,
+    },
+  });
+}
+
 type WorkEntryRow = {
   id: string;
   userId: string;
@@ -263,9 +278,10 @@ export async function GET(req: Request) {
   if (!session) {
     return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
   }
-
   const isAdmin = session.role === Role.ADMIN;
-  const userWhere = isAdmin ? {} : { userId: session.userId };
+  const userWhere = isAdmin
+    ? { user: { companyId: session.companyId } }
+    : { userId: session.userId };
 
   const url = new URL(req.url);
   const month = url.searchParams.get("month");
@@ -397,6 +413,7 @@ export async function POST(req: Request) {
       role: session.role,
       userId: session.userId,
       workDateYMD: workDate,
+      companyId: session.companyId,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Nicht erlaubt";
@@ -413,8 +430,8 @@ export async function POST(req: Request) {
   if (isAdmin) {
     const requestedUserId = getString(body.userId).trim();
     if (requestedUserId) {
-      const user = await prisma.appUser.findUnique({ where: { id: requestedUserId } });
-      if (!user || !user.isActive) {
+      const user = await findActiveCompanyUser(requestedUserId, session.companyId);
+      if (!user) {
         return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
       }
       targetUserId = user.id;
@@ -508,6 +525,7 @@ export async function PATCH(req: Request) {
           id: true,
           fullName: true,
           isActive: true,
+          companyId: true,
         },
       },
     },
@@ -515,6 +533,10 @@ export async function PATCH(req: Request) {
 
   if (!existing) {
     return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+  }
+
+  if (existing.user.companyId !== session.companyId) {
+    return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
   }
 
   if (!isAdmin && existing.userId !== session.userId) {
@@ -528,6 +550,7 @@ export async function PATCH(req: Request) {
         role: session.role,
         userId: session.userId,
         workDateYMD: existingYMD,
+        companyId: session.companyId,
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Nicht erlaubt";
@@ -561,6 +584,7 @@ export async function PATCH(req: Request) {
         role: session.role,
         userId: session.userId,
         workDateYMD: workDate,
+        companyId: session.companyId,
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Nicht erlaubt";
@@ -578,8 +602,8 @@ export async function PATCH(req: Request) {
   if (isAdmin) {
     const requestedUserId = getString(body.userId).trim();
     if (requestedUserId) {
-      const user = await prisma.appUser.findUnique({ where: { id: requestedUserId } });
-      if (!user || !user.isActive) {
+      const user = await findActiveCompanyUser(requestedUserId, session.companyId);
+      if (!user) {
         return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
       }
       targetUserId = user.id;
@@ -674,10 +698,24 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "id fehlt" }, { status: 400 });
   }
 
-  const entry = await prisma.workEntry.findUnique({ where: { id } });
+  const entry = await prisma.workEntry.findUnique({
+    where: { id },
+    include: {
+      user: {
+        select: {
+          id: true,
+          companyId: true,
+        },
+      },
+    },
+  });
 
   if (!entry) {
     return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+  }
+
+  if (entry.user.companyId !== session.companyId) {
+    return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
   }
 
   if (!isAdmin && entry.userId !== session.userId) {
@@ -691,6 +729,7 @@ export async function DELETE(req: Request) {
         role: session.role,
         userId: session.userId,
         workDateYMD: ymd,
+        companyId: session.companyId,
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Nicht erlaubt";

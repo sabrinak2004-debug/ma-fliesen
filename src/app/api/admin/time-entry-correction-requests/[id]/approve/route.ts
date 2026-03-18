@@ -115,6 +115,7 @@ export async function POST(_req: Request, context: RouteContext) {
           id: true,
           fullName: true,
           isActive: true,
+          companyId: true,
         },
       },
     },
@@ -124,6 +125,13 @@ export async function POST(_req: Request, context: RouteContext) {
     return NextResponse.json(
       { ok: false, error: "Antrag nicht gefunden." },
       { status: 404 }
+    );
+  }
+
+  if (existing.user.companyId !== admin.companyId) {
+    return NextResponse.json(
+      { ok: false, error: "Keine Berechtigung." },
+      { status: 403 }
     );
   }
 
@@ -143,10 +151,12 @@ export async function POST(_req: Request, context: RouteContext) {
 
   const requestStartDateYMD = toIsoDateUTC(existing.startDate);
   const requestEndDateYMD = toIsoDateUTC(existing.endDate);
-
   const missingDatesInRange = await getMissingRequiredWorkDates(
     existing.userId,
-    toIsoDateUTC(addUtcDays(existing.endDate, 1))
+    toIsoDateUTC(addUtcDays(existing.endDate, 1)),
+    {
+      companyId: admin.companyId,
+    }
   );
 
   const unlockDates = missingDatesInRange

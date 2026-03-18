@@ -6,7 +6,9 @@ import Modal from "@/components/Modal";
 
 type UserRow = { id: string; fullName: string };
 
-type UsersResponse = { users: UserRow[] } | { error: string };
+type UsersResponse =
+  | { ok: true; users: UserRow[] }
+  | { ok: false; error: string };
 
 type ResetResponse =
   | {
@@ -34,7 +36,7 @@ export default function AdminUsersPage() {
         const res = await fetch("/api/admin/users", { cache: "no-store" });
         const data = (await res.json()) as UsersResponse;
 
-        if (!res.ok || "error" in data) {
+        if (!res.ok || !data.ok) {
           setErr("Konnte Mitarbeiter nicht laden.");
           setUsers([]);
           return;

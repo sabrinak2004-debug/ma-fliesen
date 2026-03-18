@@ -40,6 +40,20 @@ export async function getAuthedCalendarClient(
 
   if (!conn) return null;
 
+  const user = await prisma.appUser.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      role: true,
+      isActive: true,
+      companyId: true,
+    },
+  });
+
+  if (!user || !user.isActive || user.role !== "ADMIN") {
+    return null;
+  }
+
   const oAuth2 = getOAuthClient();
   oAuth2.setCredentials({ refresh_token: conn.refreshToken });
 
@@ -76,7 +90,7 @@ export async function registerGoogleCalendarWatch({
     throw new Error("APP_BASE_URL oder GOOGLE_WEBHOOK_SECRET fehlt");
   }
 
-  const webhookAddress = `${appBaseUrl}/api/admin/google/webhook`;
+  const webhookAddress = `${appBaseUrl}/api/google/webhook`;
   const channelId = randomUUID();
 
   const response = await calendar.events.watch({

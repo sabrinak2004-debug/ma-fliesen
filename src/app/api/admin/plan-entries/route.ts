@@ -34,7 +34,12 @@ export async function GET(req: Request) {
   end.setUTCDate(end.getUTCDate() + 7);
 
   const entries = await prisma.planEntry.findMany({
-    where: { workDate: { gte: start, lt: end } },
+    where: {
+      workDate: { gte: start, lt: end },
+      user: {
+        companyId: admin.companyId,
+      },
+    },
     include: { user: { select: { id: true, fullName: true } } },
     orderBy: [{ workDate: "asc" }, { startHHMM: "asc" }],
   });
@@ -55,6 +60,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
+  const targetUser = await prisma.appUser.findUnique({
+    where: { id: String(userId) },
+    select: {
+      id: true,
+      companyId: true,
+      isActive: true,
+      role: true,
+    },
+  });
+
+  if (!targetUser || !targetUser.isActive) {
+    return NextResponse.json({ error: "Mitarbeiter nicht gefunden." }, { status: 404 });
+  }
+
+  if (targetUser.companyId !== admin.companyId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (targetUser.role !== "EMPLOYEE") {
+    return NextResponse.json({ error: "Planung nur für Mitarbeiter erlaubt." }, { status: 400 });
+  }
+
   const data = {
     userId: String(userId),
     workDate: parseYMD(String(workDate)),
@@ -67,6 +94,28 @@ export async function POST(req: Request) {
     // ✅ Mitarbeiter-Notiz am PlanEntry
     noteEmployee: noteEmployee ? String(noteEmployee) : null,
   };
+
+  if (id) {
+    const existingEntry = await prisma.planEntry.findUnique({
+      where: { id: String(id) },
+      select: {
+        id: true,
+        user: {
+          select: {
+            companyId: true,
+          },
+        },
+      },
+    });
+
+    if (!existingEntry) {
+      return NextResponse.json({ error: "PlanEntry not found" }, { status: 404 });
+    }
+
+    if (existingEntry.user.companyId !== admin.companyId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
 
   const saved = id
     ? await prisma.planEntry.update({ where: { id: String(id) }, data })
@@ -82,6 +131,26 @@ export async function DELETE(req: Request) {
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id missing" }, { status: 400 });
+
+  const existingEntry = await prisma.planEntry.findUnique({
+    where: { id: String(id) },
+    select: {
+      id: true,
+      user: {
+        select: {
+          companyId: true,
+        },
+      },
+    },
+  });
+
+  if (!existingEntry) {
+    return NextResponse.json({ error: "PlanEntry not found" }, { status: 404 });
+  }
+
+  if (existingEntry.user.companyId !== admin.companyId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   await prisma.planEntry.delete({ where: { id: String(id) } });
   return NextResponse.json({ ok: true });

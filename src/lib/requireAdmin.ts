@@ -6,9 +6,18 @@ export async function requireAdmin() {
   if (!session) return null;
   if (session.role !== "ADMIN") return null;
 
-  const dbUser = await prisma.appUser.findUnique({
-    where: { id: session.userId },
-    select: { id: true, role: true, isActive: true, fullName: true },
+  const dbUser = await prisma.appUser.findFirst({
+    where: {
+      id: session.userId,
+      companyId: session.companyId,
+    },
+    select: {
+      id: true,
+      role: true,
+      isActive: true,
+      fullName: true,
+      companyId: true,
+    },
   });
 
   if (!dbUser || !dbUser.isActive) return null;

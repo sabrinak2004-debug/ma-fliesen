@@ -192,7 +192,11 @@ export default function KalenderDokumentePage() {
     setErr(null);
 
     try {
-      const r = await fetch(`/api/plan-entry-documents?planEntryId=${encodeURIComponent(entryId)}`);
+      const r = await fetch(`/api/plan-entry-documents?planEntryId=${encodeURIComponent(entryId)}`, {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
       const j: unknown = await r.json().catch(() => ({}));
 
       if (!r.ok) {
@@ -276,7 +280,7 @@ export default function KalenderDokumentePage() {
 
   useEffect(() => {
     return () => {
-      if (previewUrl) {
+      if (previewUrl && previewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(previewUrl);
       }
     };

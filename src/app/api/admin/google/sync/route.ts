@@ -5,13 +5,13 @@ import { getSession } from "@/lib/auth";
 import { Role } from "@prisma/client";
 import { syncGoogleCalendarToApp } from "@/lib/googleCalendar";
 
-async function requireAdmin(userId: string) {
+async function requireAdmin(userId: string, companyId: string) {
   const u = await prisma.appUser.findUnique({
     where: { id: userId },
-    select: { role: true, isActive: true },
+    select: { role: true, isActive: true, companyId: true },
   });
 
-  return !!u && u.isActive && u.role === Role.ADMIN;
+  return !!u && u.isActive && u.role === Role.ADMIN && u.companyId === companyId;
 }
 
 export async function POST() {
@@ -24,7 +24,7 @@ export async function POST() {
     );
   }
 
-  if (!(await requireAdmin(session.userId))) {
+  if (!(await requireAdmin(session.userId, session.companyId))) {
     return NextResponse.json(
       { ok: false, error: "Keine Berechtigung" },
       { status: 403 }

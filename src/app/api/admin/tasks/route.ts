@@ -55,6 +55,11 @@ export async function GET(): Promise<NextResponse> {
 
   const [tasks, employees] = await Promise.all([
     prisma.task.findMany({
+      where: {
+        assignedToUser: {
+          companyId: admin.companyId,
+        },
+      },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
       include: {
         assignedToUser: {
@@ -82,6 +87,7 @@ export async function GET(): Promise<NextResponse> {
       where: {
         isActive: true,
         role: "EMPLOYEE",
+        companyId: admin.companyId,
       },
       orderBy: {
         fullName: "asc",
@@ -156,6 +162,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       fullName: true,
       isActive: true,
       role: true,
+      companyId: true,
     },
   });
 
@@ -163,6 +170,20 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json(
       { error: "Mitarbeiter nicht gefunden oder inaktiv." },
       { status: 404 }
+    );
+  }
+
+  if (assignedUser.companyId !== admin.companyId) {
+    return NextResponse.json(
+      { error: "Keine Berechtigung für diesen Mitarbeiter." },
+      { status: 403 }
+    );
+  }
+
+  if (assignedUser.role !== "EMPLOYEE") {
+    return NextResponse.json(
+      { error: "Aufgaben können nur Mitarbeitern zugewiesen werden." },
+      { status: 400 }
     );
   }
 

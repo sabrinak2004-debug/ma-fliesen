@@ -7,7 +7,19 @@ import Toast from "@/components/Toast";
 import Modal from "@/components/Modal";
 
 type MeResponse =
-  | { ok: true; user: { id: string; fullName: string; role: "ADMIN" | "EMPLOYEE" } }
+  | {
+      ok: true;
+      session: {
+        userId: string;
+        fullName: string;
+        role: "ADMIN" | "EMPLOYEE";
+        companyId: string;
+        companyName: string;
+        companySubdomain: string;
+        companyLogoUrl: string | null;
+        primaryColor: string | null;
+      } | null;
+    }
   | { ok: false };
 
 type WorkEntry = {
@@ -113,25 +125,32 @@ function isTimeEntryCorrectionRequestStatusResponse(
   return pendingOk && latestOk;
 }
 
-function toIsoDateLocal(d: Date) {
+function toIsoDateLocal(d: Date): string {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function formatDateDE(yyyyMmDd: string) {
+function formatDateDE(yyyyMmDd: string): string {
   const parts = yyyyMmDd.split("-");
   const y = Number(parts[0]);
   const m = Number(parts[1]);
   const d = Number(parts[2]);
-  const dt = new Date(y, (m || 1) - 1, d || 1);
-  return dt.toLocaleDateString("de-DE", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+    return yyyyMmDd;
+  }
+
+  const weekdayNames = ["So.", "Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa."] as const;
+  const dt = new Date(y, m - 1, d);
+  const weekday = weekdayNames[dt.getDay()] ?? "";
+
+  const day = String(d).padStart(2, "0");
+  const month = String(m).padStart(2, "0");
+  const year = String(y);
+
+  return `${weekday} ${day}.${month}.${year}`;
 }
 
 function formatHM(minutes: number) {
@@ -142,25 +161,47 @@ function formatHM(minutes: number) {
 }
 
 /** Gruppierung Monat/Jahr */
-function toYMD(dateStr: string) {
+function toYMD(dateStr: string): string {
   return dateStr.length >= 10 ? dateStr.slice(0, 10) : dateStr;
 }
-function monthKeyFromWorkDate(workDate: string) {
+function monthKeyFromWorkDate(workDate: string): string {
   return toYMD(workDate).slice(0, 7); // YYYY-MM
 }
-function monthLabelDE(monthKey: string) {
+function monthLabelDE(monthKey: string): string {
   const [yStr, mStr] = monthKey.split("-");
   const y = Number(yStr);
   const m = Number(mStr);
-  const d = new Date(Date.UTC(y, (m || 1) - 1, 1));
-  return new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" })
-    .format(d)
-    .replace(/^./, (c) => c.toUpperCase());
+
+  if (!Number.isFinite(y) || !Number.isFinite(m)) {
+    return monthKey;
+  }
+
+  const monthNames = [
+    "Januar",
+    "Februar",
+    "März",
+    "April",
+    "Mai",
+    "Juni",
+    "Juli",
+    "August",
+    "September",
+    "Oktober",
+    "November",
+    "Dezember",
+  ] as const;
+
+  const monthName = monthNames[m - 1];
+  if (!monthName) {
+    return monthKey;
+  }
+
+  return `${monthName} ${y}`;
 }
-function sortMonthKeysDesc(a: string, b: string) {
+function sortMonthKeysDesc(a: string, b: string): number {
   return a === b ? 0 : a > b ? -1 : 1;
 }
-function sortEntriesDesc(a: WorkEntry, b: WorkEntry) {
+function sortEntriesDesc(a: WorkEntry, b: WorkEntry): number {
   const da = toYMD(a.workDate);
   const db = toYMD(b.workDate);
   if (da !== db) return da > db ? -1 : 1;
@@ -180,7 +221,7 @@ type MonthDayGroup = {
   days: DayGroup[];
 };
 
-function sortYMDDesc(a: string, b: string) {
+function sortYMDDesc(a: string, b: string): number {
   return a === b ? 0 : a > b ? -1 : 1;
 }
 
@@ -225,14 +266,20 @@ function formatPause(minutes: number): string {
   return formatHM(m);
 }
 
-function formatDateDayLineDE(yyyyMmDd: string) {
+function formatDateDayLineDE(yyyyMmDd: string): string {
   const parts = yyyyMmDd.split("-");
   const y = Number(parts[0]);
   const m = Number(parts[1]);
   const d = Number(parts[2]);
-  const dt = new Date(y, (m || 1) - 1, d || 1);
 
-  const weekday = dt.toLocaleDateString("de-DE", { weekday: "short" }).replace(",", "");
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+    return yyyyMmDd;
+  }
+
+  const weekdayNames = ["So.", "Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa."] as const;
+  const dt = new Date(y, m - 1, d);
+  const weekday = weekdayNames[dt.getDay()] ?? "";
+
   const day = String(d).padStart(2, "0");
   const month = String(m).padStart(2, "0");
   const year = String(y);
@@ -278,7 +325,7 @@ type EditForm = {
   userFullName: string;
 };
 
-function minutesBetween(startHHMM: string, endHHMM: string) {
+function minutesBetween(startHHMM: string, endHHMM: string): number {
   const [sh, sm] = startHHMM.split(":").map((x) => Number(x));
   const [eh, em] = endHHMM.split(":").map((x) => Number(x));
   if (!Number.isFinite(sh) || !Number.isFinite(sm) || !Number.isFinite(eh) || !Number.isFinite(em)) return 0;
@@ -370,17 +417,34 @@ type SessionData = {
   userId: string;
   fullName: string;
   role: "EMPLOYEE" | "ADMIN";
+  companyId: string;
+  companyName: string;
+  companySubdomain: string;
+  companyLogoUrl: string | null;
+  primaryColor: string | null;
 };
 
 function isSessionData(v: unknown): v is SessionData {
   if (!isRecord(v)) return false;
+
   const userId = v.userId;
   const fullName = v.fullName;
   const role = v.role;
+  const companyId = v.companyId;
+  const companyName = v.companyName;
+  const companySubdomain = v.companySubdomain;
+  const companyLogoUrl = v.companyLogoUrl;
+  const primaryColor = v.primaryColor;
+
   return (
     typeof userId === "string" &&
     typeof fullName === "string" &&
-    (role === "EMPLOYEE" || role === "ADMIN")
+    (role === "EMPLOYEE" || role === "ADMIN") &&
+    typeof companyId === "string" &&
+    typeof companyName === "string" &&
+    typeof companySubdomain === "string" &&
+    (typeof companyLogoUrl === "string" || companyLogoUrl === null) &&
+    (typeof primaryColor === "string" || primaryColor === null)
   );
 }
 
@@ -589,10 +653,15 @@ useEffect(() => {
 
       setMe({
         ok: true,
-        user: {
-          id: j.session.userId,
+        session: {
+          userId: j.session.userId,
           fullName: j.session.fullName,
           role: j.session.role,
+          companyId: j.session.companyId,
+          companyName: j.session.companyName,
+          companySubdomain: j.session.companySubdomain,
+          companyLogoUrl: j.session.companyLogoUrl,
+          primaryColor: j.session.primaryColor,
         },
       });
     } catch {
@@ -609,7 +678,9 @@ useEffect(() => {
   async function loadEntries() {
     setLoadingEntries(true);
     try {
-      const r = await fetch("/api/entries");
+      const r = await fetch("/api/entries", {
+        credentials: "include",
+      });
       const j = (await r.json()) as unknown;
 
       const entriesList =
@@ -641,6 +712,7 @@ useEffect(() => {
       const r = await fetch("/api/time-entry-correction-requests", {
         method: "GET",
         cache: "no-store",
+        credentials: "include",
       });
 
       const j = (await r.json()) as unknown;
@@ -671,6 +743,7 @@ useEffect(() => {
         {
           method: "GET",
           cache: "no-store",
+          credentials: "include",
         }
       );
 
@@ -723,6 +796,7 @@ useEffect(() => {
 
       const r = await fetch("/api/entries", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -756,7 +830,10 @@ useEffect(() => {
   }
 
   async function deleteEntry(id: string) {
-    await fetch(`/api/entries?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    await fetch(`/api/entries?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
     await loadEntries();
   }
 
@@ -819,6 +896,7 @@ useEffect(() => {
 
       const r = await fetch("/api/entries", {
         method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -868,6 +946,7 @@ useEffect(() => {
     try {
       const r = await fetch("/api/day-breaks", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           workDate,
@@ -921,6 +1000,7 @@ useEffect(() => {
     try {
       const r = await fetch("/api/time-entry-correction-requests", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           targetDate: workDate,
@@ -1062,7 +1142,7 @@ useEffect(() => {
     };
   }, [edit, entries, dayBreakMap]);
 
-  const meName = me && me.ok ? me.user.fullName : "";
+  const meName = me && me.ok && me.session ? me.session.fullName : "";
 
   const canCreateCorrectionRequest = useMemo(() => {
     return Boolean(me && me.ok && isPastWorkDate(workDate));

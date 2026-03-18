@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
@@ -144,6 +145,39 @@ type OverviewApiResponse = {
   };
   isAdmin: boolean;
 };
+
+type AdminSessionDTO = {
+  userId: string;
+  fullName: string;
+  role: "ADMIN" | "EMPLOYEE";
+  companyId: string;
+  companyName: string;
+  companySubdomain: string;
+  companyLogoUrl: string | null;
+  primaryColor: string | null;
+};
+
+function isAdminSessionDTO(v: unknown): v is AdminSessionDTO {
+  if (!isRecord(v)) return false;
+
+  return (
+    isString(v["userId"]) &&
+    isString(v["fullName"]) &&
+    (v["role"] === "ADMIN" || v["role"] === "EMPLOYEE") &&
+    isString(v["companyId"]) &&
+    isString(v["companyName"]) &&
+    isString(v["companySubdomain"]) &&
+    (isString(v["companyLogoUrl"]) || v["companyLogoUrl"] === null) &&
+    (isString(v["primaryColor"]) || v["primaryColor"] === null)
+  );
+}
+
+function parseMeSession(v: unknown): AdminSessionDTO | null {
+  if (!isRecord(v)) return null;
+  const session = v["session"];
+  if (session === null) return null;
+  return isAdminSessionDTO(session) ? session : null;
+}
 
 /* =========================
    Type Guards
@@ -295,7 +329,6 @@ function lastDayOfMonth(ym: string): string {
 
 type ExportMode = "MONTH" | "YEAR" | "RANGE";
 type ExportTarget = "ALL" | "SINGLE_EMPLOYEE";
-
 function formatHM(minutes: number): string {
   const m = Number.isFinite(minutes) ? Math.max(0, Math.round(minutes)) : 0;
   const h = Math.floor(m / 60);
@@ -313,10 +346,11 @@ function formatHoursInfoFromMinutes(minutes: number): string {
 }
 
 function formatDateDE(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const dd = String(d).padStart(2, "0");
-  const mm = String(m).padStart(2, "0");
-  return `${dd}.${mm}.${y}`;
+  const normalized = iso.length >= 10 ? iso.slice(0, 10) : iso;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return iso;
+
+  const [y, m, d] = normalized.split("-");
+  return `${d}.${m}.${y}`;
 }
 
 function formatMinutesCompact(minutes: number): string {
@@ -527,11 +561,14 @@ function isMobileDevice(): boolean {
    ========================= */
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const ym = useMemo(() => monthKey(new Date()), []);
   const [month, setMonth] = useState<string>(ym);
 
   const [dash, setDash] = useState<AdminDashboardApiOk | null>(null);
   const [overview, setOverview] = useState<OverviewApiResponse | null>(null);
+  const [session, setSession] = useState<AdminSessionDTO | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   const [openUsers, setOpenUsers] = useState<Set<string>>(new Set());
   const [openCats, setOpenCats] = useState<Record<string, CatState>>({});
@@ -562,17 +599,27 @@ export default function AdminDashboardPage() {
   const [exportActionError, setExportActionError] = useState<string>("");
 
   const employeeOptions = useMemo(() => {
-    const list = (dash?.employeesTimeline ?? [])
+    const seen = new Set<string>();
+
+    return (dash?.employeesTimeline ?? [])
+      .filter((u) => {
+        if (seen.has(u.userId)) return false;
+        seen.add(u.userId);
+        return true;
+      })
       .map((u) => ({ id: u.userId, name: u.fullName }))
       .sort((a, b) => a.name.localeCompare(b.name));
-    return list;
   }, [dash]);
 
   const exportTargetError = useMemo(() => {
     if (exportTarget !== "SINGLE_EMPLOYEE") return "";
     if (!exportEmployeeId) return "Bitte Mitarbeiter auswählen.";
+
+    const exists = employeeOptions.some((u) => u.id === exportEmployeeId);
+    if (!exists) return "Ausgewählter Mitarbeiter ist in dieser Ansicht nicht verfügbar.";
+
     return "";
-  }, [exportTarget, exportEmployeeId]);
+  }, [exportTarget, exportEmployeeId, employeeOptions]);
 
   // Admin Edit WorkEntry Modal
   const [editOpen, setEditOpen] = useState(false);
@@ -850,9 +897,56 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
+  let alive = true;
+
+  (async () => {
+    try {
+      const response = await fetch("/api/me", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data: unknown = await response.json().catch(() => ({}));
+
+      if (!alive) return;
+
+      const parsed = parseMeSession(data);
+
+      if (!parsed) {
+        setSession(null);
+        return;
+      }
+
+      if (parsed.role !== "ADMIN") {
+        router.replace("/login");
+        return;
+      }
+
+      setSession(parsed);
+    } catch {
+      if (!alive) return;
+      setSession(null);
+      return;
+    } finally {
+      if (alive) {
+        setSessionChecked(true);
+      }
+    }
+  })();
+
+  return () => {
+    alive = false;
+  };
+}, [router]);
+
+  useEffect(() => {
     let alive = true;
 
     (async () => {
+      if (!sessionChecked) return;
+      if (!session || session.role !== "ADMIN") return;
+
       setLoading(true);
       setErr("");
 
@@ -904,7 +998,7 @@ export default function AdminDashboardPage() {
     return () => {
       alive = false;
     };
-  }, [month, reloadTick]);
+  }, [month, reloadTick, sessionChecked, session?.role]);
 
   const exportFooter = (
     <>
@@ -1029,7 +1123,7 @@ export default function AdminDashboardPage() {
   }
 
   async function deleteWorkEntry(entryId: string) {
-    const ok = window.confirm("Diesen Eintrag wirklich löschen?");
+    const ok = typeof window !== "undefined" ? window.confirm("Diesen Eintrag wirklich löschen?") : false;
     if (!ok) return;
 
     try {
@@ -1040,14 +1134,24 @@ export default function AdminDashboardPage() {
       const j: unknown = await r.json().catch(() => ({}));
       if (!r.ok) {
         const msg = isRecord(j) && isString(j["error"]) ? j["error"] : "Löschen fehlgeschlagen.";
-        alert(msg);
+        setErr(msg);
         return;
       }
 
       setReloadTick((x) => x + 1);
     } catch {
-      alert("Netzwerkfehler beim Löschen.");
+      setErr("Netzwerkfehler beim Löschen.");
     }
+  }
+
+    if (!sessionChecked) {
+    return (
+      <AppShell activeLabel="Dashboard">
+        <div className="card" style={{ padding: 14 }}>
+          <div style={{ color: "var(--muted)" }}>Lade...</div>
+        </div>
+      </AppShell>
+    );
   }
 
   return (

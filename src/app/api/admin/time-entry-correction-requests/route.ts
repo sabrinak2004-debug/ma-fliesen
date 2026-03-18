@@ -76,7 +76,14 @@ export async function GET(req: Request) {
     userId?: string;
     startDate?: { lt: Date };
     endDate?: { gte: Date };
-  } = {};
+    user?: {
+      companyId: string;
+    };
+  } = {
+    user: {
+      companyId: admin.companyId,
+    },
+  };
 
   if (statusParam) {
     if (!isTimeEntryCorrectionRequestStatus(statusParam)) {

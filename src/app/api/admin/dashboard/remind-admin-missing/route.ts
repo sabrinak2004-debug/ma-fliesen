@@ -37,10 +37,12 @@ export async function GET(req: Request) {
     select: {
       id: true,
       fullName: true,
+      companyId: true,
     },
-    orderBy: {
-      fullName: "asc",
-    },
+    orderBy: [
+      { companyId: "asc" },
+      { fullName: "asc" },
+    ],
   });
 
   const results = await Promise.all(
@@ -51,6 +53,7 @@ export async function GET(req: Request) {
         return {
           userId: employee.id,
           fullName: employee.fullName,
+          companyId: employee.companyId,
           missingDatesCount: 0,
           oldestMissingDate: null,
           sentCount: 0,
@@ -58,13 +61,14 @@ export async function GET(req: Request) {
       }
 
       if (missingDates.length < 5) {
-        return {
-          userId: employee.id,
-          fullName: employee.fullName,
-          missingDatesCount: missingDates.length,
-          oldestMissingDate: missingDates[0],
-          sentCount: 0,
-        };
+      return {
+        userId: employee.id,
+        fullName: employee.fullName,
+        companyId: employee.companyId,
+        missingDatesCount: missingDates.length,
+        oldestMissingDate: missingDates[0],
+        sentCount: 0,
+      };
       }
 
       const oldestMissingDate = missingDates[0];
@@ -96,6 +100,7 @@ export async function GET(req: Request) {
           where: {
             role: Role.ADMIN,
             isActive: true,
+            companyId: employee.companyId,
           },
           orderBy: {
             createdAt: "asc",
@@ -141,6 +146,7 @@ export async function GET(req: Request) {
       return {
         userId: employee.id,
         fullName: employee.fullName,
+        companyId: employee.companyId,
         missingDatesCount: missingDates.length,
         oldestMissingDate,
         sentCount,
@@ -160,6 +166,7 @@ export async function GET(req: Request) {
     notifiedEmployees: notifiedEmployees.map((item) => ({
       userId: item.userId,
       fullName: item.fullName,
+      companyId: item.companyId,
       missingDatesCount: item.missingDatesCount,
       oldestMissingDate: item.oldestMissingDate,
       referenceDate: item.referenceDate,

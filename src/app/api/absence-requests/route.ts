@@ -59,6 +59,7 @@ function toIsoDateUTC(d: Date): string {
 }
 
 async function sendPushToAdmins(
+  companyId: string,
   title: string,
   body: string,
   url: string
@@ -76,6 +77,7 @@ async function sendPushToAdmins(
       user: {
         role: Role.ADMIN,
         isActive: true,
+        companyId,
       },
     },
     select: {
@@ -400,6 +402,7 @@ export async function POST(req: Request) {
         : `${startDate} bis ${endDate}`;
 
   await sendPushToAdmins(
+    session.companyId,
     "Neuer Abwesenheitsantrag",
     `${session.fullName} hat ${typeLabel.toLowerCase()} beantragt (${dateLabel}${typeRaw === "VACATION" ? `, ${compensationLabel}` : ""}).`,
     "/admin/urlaubsantraege"

@@ -3,13 +3,73 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOAuthClient, registerGoogleCalendarWatch } from "@/lib/googleCalendar";
 
+type OAuthState = {
+  userId: string;
+  companyId: string;
+};
+
+function parseOAuthState(rawState: string): OAuthState | null {
+  try {
+    const decoded = Buffer.from(rawState, "base64url").toString("utf8");
+    const parsed = JSON.parse(decoded) as unknown;
+
+    if (typeof parsed !== "object" || parsed === null) {
+      return null;
+    }
+
+    const record = parsed as Record<string, unknown>;
+
+    if (
+      typeof record.userId !== "string" ||
+      typeof record.companyId !== "string"
+    ) {
+      return null;
+    }
+
+    return {
+      userId: record.userId,
+      companyId: record.companyId,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state"); // userId
+  const state = url.searchParams.get("state");
 
   if (!code || !state) {
     return NextResponse.json({ ok: false, error: "code/state fehlt" }, { status: 400 });
+  }
+
+  const parsedState = parseOAuthState(state);
+
+  if (!parsedState) {
+    return NextResponse.json({ ok: false, error: "Ungültiger state." }, { status: 400 });
+  }
+
+  const adminUser = await prisma.appUser.findUnique({
+    where: { id: parsedState.userId },
+    select: {
+      id: true,
+      role: true,
+      isActive: true,
+      companyId: true,
+    },
+  });
+
+  if (
+    !adminUser ||
+    !adminUser.isActive ||
+    adminUser.role !== "ADMIN" ||
+    adminUser.companyId !== parsedState.companyId
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "Admin/Firma ungültig." },
+      { status: 403 }
+    );
   }
 
   const oauth = getOAuthClient();
@@ -24,9 +84,9 @@ export async function GET(req: Request) {
   }
 
   await prisma.googleCalendarConnection.upsert({
-    where: { userId: state },
+    where: { userId: parsedState.userId },
     create: {
-      userId: state,
+      userId: parsedState.userId,
       refreshToken: tokens.refresh_token,
       calendarId: "primary",
     },
@@ -43,7 +103,7 @@ export async function GET(req: Request) {
   const base = process.env.APP_BASE_URL || "http://localhost:3000";
 
   try {
-    await registerGoogleCalendarWatch({ userId: state });
+    await registerGoogleCalendarWatch({ userId: parsedState.userId });
   } catch (error) {
     console.error("Watch registration after callback failed:", error);
   }

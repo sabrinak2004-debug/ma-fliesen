@@ -4,8 +4,42 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import AppShell from "@/components/AppShell";
+import { useRouter } from "next/navigation";
 
 type User = { id: string; fullName: string };
+
+type AdminSessionDTO = {
+  userId: string;
+  fullName: string;
+  role: "ADMIN" | "EMPLOYEE";
+  companyId: string;
+  companyName: string;
+  companySubdomain: string;
+  companyLogoUrl: string | null;
+  primaryColor: string | null;
+};
+
+function isAdminSessionDTO(v: unknown): v is AdminSessionDTO {
+  return (
+    isRecord(v) &&
+    typeof v.userId === "string" &&
+    typeof v.fullName === "string" &&
+    (v.role === "ADMIN" || v.role === "EMPLOYEE") &&
+    typeof v.companyId === "string" &&
+    typeof v.companyName === "string" &&
+    typeof v.companySubdomain === "string" &&
+    ((typeof v.companyLogoUrl === "string") || v.companyLogoUrl === null) &&
+    ((typeof v.primaryColor === "string") || v.primaryColor === null)
+  );
+}
+
+function parseMeSession(v: unknown): AdminSessionDTO | null {
+  if (!isRecord(v)) return null;
+  const session = v["session"];
+  if (session === null) return null;
+  return isAdminSessionDTO(session) ? session : null;
+}
 
 type PlanEntry = {
   id: string;
@@ -177,16 +211,28 @@ function getISOWeek(date: Date) {
   return weekNo;
 }
 
-function fmtDE(d: Date) {
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+function fmtDE(d: Date): string {
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = String(d.getFullYear());
+  return `${day}.${month}.${year}`;
 }
 
-function fmtDEshort(d: Date) {
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+function fmtDEshort(d: Date): string {
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  return `${day}.${month}`;
 }
 
-function ymdFromISO(iso: string) {
+function ymdFromISO(iso: string): string {
+  const normalized = iso.length >= 10 ? iso.slice(0, 10) : iso;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return normalized;
+  }
+
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const dd = String(d.getUTCDate()).padStart(2, "0");
@@ -306,12 +352,16 @@ function Modal({
 
 /* -------------------- Page -------------------- */
 export default function AdminWochenplanPage() {
+  const router = useRouter();
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
   const [users, setUsers] = useState<User[]>([]);
   const [entries, setEntries] = useState<PlanEntry[]>([]);
   const [adminNotes, setAdminNotes] = useState<AdminNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [session, setSession] = useState<AdminSessionDTO | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [pageError, setPageError] = useState<string>("");
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -320,6 +370,45 @@ export default function AdminWochenplanPage() {
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/me", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        const data: unknown = await response.json().catch(() => ({}));
+
+        if (!alive) return;
+
+        const parsed = parseMeSession(data);
+
+        if (!parsed || parsed.role !== "ADMIN") {
+          router.replace("/login");
+          return;
+        }
+
+        setSession(parsed);
+      } catch {
+        if (!alive) return;
+        router.replace("/login");
+        return;
+      } finally {
+        if (alive) {
+          setSessionChecked(true);
+        }
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [router]);
 
   // Plan-Entry Modal
   const [entryModalOpen, setEntryModalOpen] = useState(false);
@@ -376,17 +465,32 @@ export default function AdminWochenplanPage() {
   }, [weekStart]);
 
   async function loadData() {
+    if (!session || session.role !== "ADMIN") return;
+
     setLoading(true);
+    setPageError("");
 
     const [uRes, eRes, nRes] = await Promise.all([
-      fetch("/api/admin/users"),
-      fetch(`/api/admin/plan-entries?weekStart=${fmtYMD(weekStart)}`),
-      fetch(`/api/admin/admin-notes?weekStart=${fmtYMD(weekStart)}`),
+      fetch("/api/admin/users", { credentials: "include", cache: "no-store" }),
+      fetch(`/api/admin/plan-entries?weekStart=${fmtYMD(weekStart)}`, {
+        credentials: "include",
+        cache: "no-store",
+      }),
+      fetch(`/api/admin/admin-notes?weekStart=${fmtYMD(weekStart)}`, {
+        credentials: "include",
+        cache: "no-store",
+      }),
     ]);
+
+    if (uRes.status === 401 || eRes.status === 401 || nRes.status === 401) {
+      setLoading(false);
+      router.replace("/login");
+      return;
+    }
 
     if (uRes.status === 403 || eRes.status === 403 || nRes.status === 403) {
       setLoading(false);
-      alert("Kein Zugriff (Admin benötigt).");
+      setPageError("Kein Zugriff (Admin benötigt).");
       return;
     }
 
@@ -402,9 +506,11 @@ export default function AdminWochenplanPage() {
   }
 
   useEffect(() => {
+    if (!sessionChecked) return;
+    if (!session || session.role !== "ADMIN") return;
     void loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekStart]);
+  }, [weekStart, sessionChecked, session?.role, session?.companyId]);
 
   const entryGridMap = useMemo(() => {
     const m = new Map<string, PlanEntry[]>();
@@ -434,7 +540,11 @@ export default function AdminWochenplanPage() {
     setDocsLoading(true);
     setDocsError(null);
     try {
-      const r = await fetch(`/api/admin/plan-entry-documents?planEntryId=${encodeURIComponent(planEntryId)}`);
+      const r = await fetch(`/api/admin/plan-entry-documents?planEntryId=${encodeURIComponent(planEntryId)}`, {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
       const j: unknown = await r.json().catch(() => ({}));
 
       if (!r.ok) {
@@ -548,11 +658,11 @@ export default function AdminWochenplanPage() {
 
   async function uploadDoc() {
     if (!editEntryId) {
-      alert("Bitte erst den Plan-Eintrag speichern, dann Dokumente hochladen.");
+      setPageError("Bitte erst den Plan-Eintrag speichern, dann Dokumente hochladen.");
       return;
     }
     if (!selectedFile) {
-      alert("Bitte eine Datei auswählen.");
+      setPageError("Bitte eine Datei auswählen.");
       return;
     }
 
@@ -564,7 +674,11 @@ export default function AdminWochenplanPage() {
       fd.append("title", docTitle.trim() || "Dokument");
       fd.append("file", selectedFile);
 
-      const r = await fetch("/api/admin/plan-entry-documents", { method: "POST", body: fd });
+      const r = await fetch("/api/admin/plan-entry-documents", {
+        method: "POST",
+        credentials: "include",
+        body: fd,
+      });
       const j: unknown = await r.json().catch(() => ({}));
 
       if (!r.ok) {
@@ -584,14 +698,17 @@ export default function AdminWochenplanPage() {
 
   async function deleteDoc(id: string) {
     if (!editEntryId) return;
-    const ok = window.confirm("Dokument wirklich löschen?");
+    const ok = typeof window !== "undefined" ? window.confirm("Dokument wirklich löschen?") : false;
     if (!ok) return;
 
     setDeletingDocId(id);
     try {
-      const r = await fetch(`/api/admin/plan-entry-documents?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const r = await fetch(`/api/admin/plan-entry-documents?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
       if (!r.ok) {
-        alert("Löschen fehlgeschlagen");
+        setPageError("Löschen fehlgeschlagen.");
         return;
       }
       await loadDocs(editEntryId);
@@ -693,9 +810,9 @@ export default function AdminWochenplanPage() {
   }
 
   async function saveEntry() {
-    if (!entryForm.userId) return alert("Bitte Mitarbeiter wählen.");
-    if (!entryForm.dateYMD) return alert("Bitte Datum wählen.");
-    if (!entryForm.startHHMM || !entryForm.endHHMM) return alert("Bitte Start/Ende angeben.");
+    if (!entryForm.userId) return setPageError("Bitte Mitarbeiter wählen.");
+    if (!entryForm.dateYMD) return setPageError("Bitte Datum wählen.");
+    if (!entryForm.startHHMM || !entryForm.endHHMM) return setPageError("Bitte Start/Ende angeben.");
 
     setSavingEntry(true);
     try {
@@ -713,6 +830,7 @@ export default function AdminWochenplanPage() {
 
       const res = await fetch("/api/admin/plan-entries", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -720,7 +838,7 @@ export default function AdminWochenplanPage() {
       if (!res.ok) {
         const err: unknown = await res.json().catch(() => ({}));
         const msg = getStringProp(err, "error") ?? "unknown";
-        alert(`Speichern fehlgeschlagen: ${msg}`);
+        setPageError(`Speichern fehlgeschlagen: ${msg}`);
         return;
       }
 
@@ -738,9 +856,12 @@ export default function AdminWochenplanPage() {
 
     setDeletingEntry(true);
     try {
-      const res = await fetch(`/api/admin/plan-entries?id=${editEntryId}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/plan-entries?id=${editEntryId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
       if (!res.ok) {
-        alert("Löschen fehlgeschlagen");
+        setPageError("Löschen fehlgeschlagen.");
         return;
       }
       closeEntryModal();
@@ -751,8 +872,8 @@ export default function AdminWochenplanPage() {
   }
 
   async function saveNote() {
-    if (!noteForm.userId) return alert("Bitte Mitarbeiter wählen.");
-    if (!noteForm.dateYMD) return alert("Bitte Datum wählen.");
+    if (!noteForm.userId) return setPageError("Bitte Mitarbeiter wählen.");
+    if (!noteForm.dateYMD) return setPageError("Bitte Datum wählen.");
 
     setSavingNote(true);
     try {
@@ -765,6 +886,7 @@ export default function AdminWochenplanPage() {
 
       const res = await fetch("/api/admin/admin-notes", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -772,7 +894,7 @@ export default function AdminWochenplanPage() {
       if (!res.ok) {
         const err: unknown = await res.json().catch(() => ({}));
         const msg = getStringProp(err, "error") ?? "unknown";
-        alert(`Notiz speichern fehlgeschlagen: ${msg}`);
+        setPageError(`Notiz speichern fehlgeschlagen: ${msg}`);
         return;
       }
 
@@ -785,14 +907,17 @@ export default function AdminWochenplanPage() {
 
   async function deleteNote() {
     if (!editNoteId) return;
-    const ok = window.confirm("Admin-Notiz wirklich löschen?");
+    const ok = typeof window !== "undefined" ? window.confirm("Admin-Notiz wirklich löschen?") : false;
     if (!ok) return;
 
     setDeletingNote(true);
     try {
-      const res = await fetch(`/api/admin/admin-notes?id=${editNoteId}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/admin-notes?id=${editNoteId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
       if (!res.ok) {
-        alert("Notiz löschen fehlgeschlagen");
+        setPageError("Notiz löschen fehlgeschlagen");
         return;
       }
       closeNoteModal();
@@ -802,8 +927,34 @@ export default function AdminWochenplanPage() {
     }
   }
 
+  if (!sessionChecked) {
+    return (
+      <AppShell activeLabel="Wochenplan">
+        <div style={{ padding: 14 }}>
+          <div style={{ color: UI.muted }}>lädt…</div>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
+    <AppShell activeLabel="Wochenplan">
     <div style={{ padding: 14 }}>
+            {pageError ? (
+                <div
+                  style={{
+                    marginBottom: 12,
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(224,75,69,0.35)",
+                    background: "rgba(224,75,69,0.10)",
+                    color: "rgba(224,75,69,0.95)",
+                    fontWeight: 900,
+                  }}
+                >
+                  {pageError}
+                </div>
+              ) : null}
       <div
         style={{
           display: "flex",
@@ -1732,5 +1883,6 @@ export default function AdminWochenplanPage() {
         </div>
       </Modal>
     </div>
+  </AppShell>
   );
 }

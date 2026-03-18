@@ -112,6 +112,10 @@ type SessionDTO = {
   userId: string;
   fullName: string;
   role: "EMPLOYEE" | "ADMIN";
+  companyId: string;
+  companyName: string;
+  companySubdomain: string;
+  companyIsDemo: boolean;
 };
 
 type CalendarEventDTO = {
@@ -335,10 +339,24 @@ function parsePlanEntriesResponse(j: unknown): PlanEntry[] {
 
 function isSessionDTO(v: unknown): v is SessionDTO {
   if (!isRecord(v)) return false;
+
   const userId = getStringField(v, "userId");
   const fullName = getStringField(v, "fullName");
   const role = getStringField(v, "role");
-  return typeof userId === "string" && typeof fullName === "string" && (role === "ADMIN" || role === "EMPLOYEE");
+  const companyId = getStringField(v, "companyId");
+  const companyName = getStringField(v, "companyName");
+  const companySubdomain = getStringField(v, "companySubdomain");
+  const companyIsDemo = v["companyIsDemo"];
+
+  return (
+    typeof userId === "string" &&
+    typeof fullName === "string" &&
+    (role === "ADMIN" || role === "EMPLOYEE") &&
+    typeof companyId === "string" &&
+    typeof companyName === "string" &&
+    typeof companySubdomain === "string" &&
+    typeof companyIsDemo === "boolean"
+  );
 }
 
 function parseMeResponse(j: unknown): SessionDTO | null {
@@ -411,13 +429,41 @@ function addDaysYMD(ymd: string, diff: number): string {
 
 function fmtDateTitle(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
+
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+    return ymd;
+  }
+
+  const weekdayNames = [
+    "Montag",
+    "Dienstag",
+    "Mittwoch",
+    "Donnerstag",
+    "Freitag",
+    "Samstag",
+    "Sonntag",
+  ] as const;
+
+  const monthNames = [
+    "Januar",
+    "Februar",
+    "März",
+    "April",
+    "Mai",
+    "Juni",
+    "Juli",
+    "August",
+    "September",
+    "Oktober",
+    "November",
+    "Dezember",
+  ] as const;
+
   const dt = new Date(y, m - 1, d);
-  return dt.toLocaleDateString("de-DE", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
+  const weekday = weekdayNames[(dt.getDay() + 6) % 7] ?? "";
+  const monthName = monthNames[m - 1] ?? "";
+
+  return `${weekday}, ${String(d).padStart(2, "0")}. ${monthName} ${y}`;
 }
 
 function dateInRange(date: string, start: string, end: string): boolean {
@@ -777,8 +823,23 @@ export default function KalenderPage() {
         d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
       return `${fmt(ws)} – ${fmt(we)}`;
     }
-    const m = cursor.toLocaleString("de-DE", { month: "long" });
-    return `${m.charAt(0).toUpperCase()}${m.slice(1)} ${cursor.getFullYear()}`;
+    const monthNames = [
+      "Januar",
+      "Februar",
+      "März",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+      "August",
+      "September",
+      "Oktober",
+      "November",
+      "Dezember",
+    ] as const;
+
+    const m = monthNames[cursor.getMonth()] ?? "";
+    return `${m} ${cursor.getFullYear()}`;
   }, [cursor, viewMode]);
 
   const weekMeta = useMemo(() => {
@@ -952,8 +1013,10 @@ export default function KalenderPage() {
       const d = new Date(ws);
       d.setDate(ws.getDate() + i);
       const ymd = toYMDLocal(d);
-      const label = d.toLocaleDateString("de-DE", { weekday: "short" });
-      const dayNum = d.toLocaleDateString("de-DE", { day: "2-digit" });
+      const weekdayShort = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
+      const weekdayIndex = (d.getDay() + 6) % 7;
+      const label = weekdayShort[weekdayIndex] ?? "";
+      const dayNum = String(d.getDate()).padStart(2, "0");
       out.push({ date: ymd, label, dayNum, isToday: ymd === todayYMD });
     }
     return out;
@@ -1475,7 +1538,7 @@ export default function KalenderPage() {
                   className="btn"
                   type="button"
                   onClick={() => {
-                    window.location.href = "/api/admin/google/connect";
+                    router.push("/api/admin/google/connect");
                   }}
                   style={{ display: "flex", alignItems: "center", gap: 8 }}
                 >
@@ -1513,7 +1576,7 @@ export default function KalenderPage() {
                 className="btn"
                 type="button"
                 onClick={() => {
-                  window.location.href = "/api/admin/google/connect";
+                  router.push("/api/admin/google/connect");
                 }}
                 style={{ display: "flex", alignItems: "center", gap: 8 }}
               >

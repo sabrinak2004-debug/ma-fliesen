@@ -154,6 +154,11 @@ export async function PATCH(req: Request, context: RouteContext) {
     select: {
       id: true,
       status: true,
+      user: {
+        select: {
+          companyId: true,
+        },
+      },
     },
   });
 
@@ -161,6 +166,13 @@ export async function PATCH(req: Request, context: RouteContext) {
     return NextResponse.json(
       { ok: false, error: "Antrag nicht gefunden." },
       { status: 404 }
+    );
+  }
+
+  if (existing.user.companyId !== admin.companyId) {
+    return NextResponse.json(
+      { ok: false, error: "Keine Berechtigung." },
+      { status: 403 }
     );
   }
 
@@ -225,6 +237,11 @@ export async function DELETE(_req: Request, context: RouteContext) {
       type: true,
       dayPortion: true,
       compensation: true,
+      user: {
+        select: {
+          companyId: true,
+        },
+      },
     },
   });
 
@@ -232,6 +249,13 @@ export async function DELETE(_req: Request, context: RouteContext) {
     return NextResponse.json(
       { ok: false, error: "Antrag nicht gefunden." },
       { status: 404 }
+    );
+  }
+
+  if (existing.user.companyId !== admin.companyId) {
+    return NextResponse.json(
+      { ok: false, error: "Keine Berechtigung." },
+      { status: 403 }
     );
   }
 
@@ -243,10 +267,15 @@ export async function DELETE(_req: Request, context: RouteContext) {
         await tx.absence.deleteMany({
           where: {
             userId: existing.userId,
-            absenceDate: existing.startDate,
+            user: {
+              companyId: admin.companyId,
+            },
             type: existing.type,
             dayPortion: existing.dayPortion,
             compensation: existing.compensation,
+            absenceDate: {
+              in: dates,
+            },
           },
         });
       } else {

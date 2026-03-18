@@ -30,12 +30,26 @@ type CalendarEventDTO = {
 };
 
 
-async function requireAdmin(sessionUserId: string) {
+async function requireAdmin(sessionUserId: string, sessionCompanyId: string) {
   const user = await prisma.appUser.findUnique({
     where: { id: sessionUserId },
-    select: { role: true, isActive: true },
+    select: {
+      id: true,
+      role: true,
+      isActive: true,
+      companyId: true,
+    },
   });
-  return !!user && user.isActive && user.role === Role.ADMIN;
+
+  if (!user || !user.isActive || user.role !== Role.ADMIN) {
+    return null;
+  }
+
+  if (user.companyId !== sessionCompanyId) {
+    return null;
+  }
+
+  return user;
 }
 
 // ✅ Next kann params als Promise liefern -> deshalb await
@@ -52,16 +66,26 @@ async function getIdFromCtx(ctx: Ctx): Promise<string> {
 
 export async function PUT(req: Request, ctx: Ctx) {
   const session = await getSession();
-  if (!session?.userId) return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+  if (!session?.userId || !session.companyId) {
+    return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+  }
 
-  const isAdmin = await requireAdmin(session.userId);
-  if (!isAdmin) return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+  const admin = await requireAdmin(session.userId, session.companyId);
+  if (!admin) {
+    return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+  }
 
   const id = await getIdFromCtx(ctx);
   if (!id) return NextResponse.json({ ok: false, error: "id fehlt" }, { status: 400 });
 
   const existing = await prisma.calendarEvent.findFirst({
-    where: { id, userId: session.userId },
+    where: {
+      id,
+      userId: admin.id,
+      user: {
+        companyId: admin.companyId,
+      },
+    },
   });
   if (!existing) return NextResponse.json({ ok: false, error: "Termin nicht gefunden" }, { status: 404 });
 
@@ -97,7 +121,7 @@ export async function PUT(req: Request, ctx: Ctx) {
   });
 
   try {
-    const googleClient = await getAuthedCalendarClient(session.userId);
+    const googleClient = await getAuthedCalendarClient(admin.id);
 
     if (googleClient) {
       const { calendar, conn } = googleClient;
@@ -189,22 +213,32 @@ export async function PUT(req: Request, ctx: Ctx) {
 
 export async function DELETE(_req: Request, ctx: Ctx) {
   const session = await getSession();
-  if (!session?.userId) return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+  if (!session?.userId || !session.companyId) {
+    return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+  }
 
-  const isAdmin = await requireAdmin(session.userId);
-  if (!isAdmin) return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+  const admin = await requireAdmin(session.userId, session.companyId);
+  if (!admin) {
+    return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+  }
 
   const id = await getIdFromCtx(ctx);
   if (!id) return NextResponse.json({ ok: false, error: "id fehlt" }, { status: 400 });
 
   const existing = await prisma.calendarEvent.findFirst({
-    where: { id, userId: session.userId },
+    where: {
+      id,
+      userId: admin.id,
+      user: {
+        companyId: admin.companyId,
+      },
+    },
     select: { id: true, googleEventId: true },
   });
   if (!existing) return NextResponse.json({ ok: false, error: "Termin nicht gefunden" }, { status: 404 });
 
   try {
-    const googleClient = await getAuthedCalendarClient(session.userId);
+    const googleClient = await getAuthedCalendarClient(admin.id);
 
     if (googleClient && existing.googleEventId) {
       const { calendar, conn } = googleClient;

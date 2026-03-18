@@ -19,10 +19,18 @@ export async function POST(req: Request) {
 
   const me = await prisma.appUser.findUnique({
     where: { id: session.userId },
-    select: { id: true, isActive: true },
+    select: {
+      id: true,
+      isActive: true,
+      companyId: true,
+    },
   });
 
   if (!me || !me.isActive) {
+    return NextResponse.json({ ok: false, error: "Keine Berechtigung." }, { status: 403 });
+  }
+
+  if (me.companyId !== session.companyId) {
     return NextResponse.json({ ok: false, error: "Keine Berechtigung." }, { status: 403 });
   }
 

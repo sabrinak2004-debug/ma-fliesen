@@ -5,8 +5,16 @@ import { Role } from "@prisma/client";
 
 type SessionLike = {
   role?: unknown;
+  companyId?: unknown;
   user?: { role?: unknown };
 };
+
+function getSessionCompanyId(session: unknown): string | null {
+  if (typeof session !== "object" || session === null) return null;
+  const s = session as SessionLike;
+
+  return typeof s.companyId === "string" ? s.companyId : null;
+}
 
 function getSessionRole(session: unknown): Role | null {
   if (typeof session !== "object" || session === null) return null;
@@ -32,10 +40,18 @@ export async function GET() {
   if (!session) return NextResponse.json({ ok: false }, { status: 401 });
 
   const role = getSessionRole(session);
-  if (role !== Role.ADMIN) return NextResponse.json({ ok: false }, { status: 403 });
+  const companyId = getSessionCompanyId(session);
+
+  if (role !== Role.ADMIN || !companyId) {
+    return NextResponse.json({ ok: false }, { status: 403 });
+  }
 
   const users = await prisma.appUser.findMany({
-    where: { isActive: true, role: Role.EMPLOYEE },
+    where: {
+      isActive: true,
+      role: Role.EMPLOYEE,
+      companyId,
+    },
     select: { id: true, fullName: true },
     orderBy: { fullName: "asc" },
   });

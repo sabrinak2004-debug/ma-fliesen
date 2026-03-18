@@ -2,7 +2,7 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 
-export const COOKIE_NAME = "mafliesen_session";
+export const COOKIE_NAME = "mitarbeiterportal_session";
 
 function hmac(input: string): string {
   const secret = process.env.AUTH_SECRET;
@@ -14,6 +14,10 @@ export type SessionData = {
   userId: string;
   fullName: string;
   role: "EMPLOYEE" | "ADMIN";
+  companyId: string;
+  companyName: string;
+  companySubdomain: string;
+  companyIsDemo: boolean;
 };
 
 type SessionPayload = SessionData & { iat: number };
@@ -27,6 +31,10 @@ function isSessionPayload(v: unknown): v is SessionPayload {
     typeof r.userId === "string" &&
     typeof r.fullName === "string" &&
     (role === "EMPLOYEE" || role === "ADMIN") &&
+    typeof r.companyId === "string" &&
+    typeof r.companyName === "string" &&
+    typeof r.companySubdomain === "string" &&
+    typeof r.companyIsDemo === "boolean" &&
     typeof r.iat === "number"
   );
 }
@@ -95,5 +103,9 @@ export async function getSession(): Promise<SessionData | null> {
     userId: parsed.userId,
     fullName: parsed.fullName,
     role: parsed.role,
+    companyId: parsed.companyId,
+    companyName: parsed.companyName,
+    companySubdomain: parsed.companySubdomain,
+    companyIsDemo: parsed.companyIsDemo,
   };
 }

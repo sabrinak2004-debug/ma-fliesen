@@ -7,7 +7,12 @@ export async function GET() {
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const requests = await prisma.passwordResetRequest.findMany({
-    where: { status: "OPEN" },
+    where: {
+      status: "OPEN",
+      user: {
+        companyId: admin.companyId,
+      },
+    },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

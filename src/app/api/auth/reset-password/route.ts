@@ -42,7 +42,18 @@ export async function POST(req: Request) {
 
   const prt = await prisma.passwordResetToken.findUnique({
     where: { tokenHash },
-    select: { id: true, userId: true, usedAt: true, expiresAt: true },
+    select: {
+      id: true,
+      userId: true,
+      usedAt: true,
+      expiresAt: true,
+      user: {
+        select: {
+          id: true,
+          isActive: true,
+        },
+      },
+    },
   });
 
   if (!prt) {
@@ -52,6 +63,20 @@ export async function POST(req: Request) {
   if (prt.usedAt) {
     return NextResponse.json(
       { ok: false, error: "Token wurde bereits verwendet" },
+      { status: 400 }
+    );
+  }
+
+  if (prt.expiresAt && prt.expiresAt.getTime() < now.getTime()) {
+    return NextResponse.json(
+      { ok: false, error: "Token ist abgelaufen" },
+      { status: 400 }
+    );
+  }
+
+  if (!prt.user.isActive) {
+    return NextResponse.json(
+      { ok: false, error: "Benutzer ist nicht aktiv" },
       { status: 400 }
     );
   }

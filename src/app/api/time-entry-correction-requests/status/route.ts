@@ -60,10 +60,13 @@ export async function GET(req: Request) {
     missingRequiredWorkDates,
     lockedMissingWorkDates,
   ] = await Promise.all([
-    hasActiveTimeEntryUnlock(session.userId, workDate),
+    hasActiveTimeEntryUnlock(session.userId, workDate, new Date(), session.companyId),
     prisma.timeEntryCorrectionRequest.findFirst({
       where: {
         userId: session.userId,
+        user: {
+          companyId: session.companyId,
+        },
         status: TimeEntryCorrectionRequestStatus.PENDING,
         startDate: { lte: workDateValue },
         endDate: { gte: workDateValue },
@@ -79,6 +82,9 @@ export async function GET(req: Request) {
     prisma.timeEntryCorrectionRequest.findFirst({
       where: {
         userId: session.userId,
+        user: {
+          companyId: session.companyId,
+        },
         status: {
           in: [
             TimeEntryCorrectionRequestStatus.APPROVED,
@@ -96,11 +102,14 @@ export async function GET(req: Request) {
         status: true,
       },
     }),
-    getMissingRequiredWorkDates(session.userId, todayYMD),
+    getMissingRequiredWorkDates(session.userId, todayYMD, {
+      companyId: session.companyId,
+    }),
     getLockedMissingRequiredWorkDates(
       session.userId,
       todayYMD,
-      GRACE_WORKDAYS_LIMIT
+      GRACE_WORKDAYS_LIMIT,
+      session.companyId
     ),
   ]);
 

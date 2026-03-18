@@ -48,6 +48,7 @@ export async function GET(req: Request) {
       id: true,
       role: true,
       isActive: true,
+      companyId: true,
     },
   });
 
@@ -70,8 +71,11 @@ export async function GET(req: Request) {
   let targetUserId = sessionUserId;
 
   if (me.role === Role.ADMIN && userIdParam) {
-    const targetUser = await prisma.appUser.findUnique({
-      where: { id: userIdParam },
+    const targetUser = await prisma.appUser.findFirst({
+      where: {
+        id: userIdParam,
+        companyId: me.companyId,
+      },
       select: {
         id: true,
         role: true,

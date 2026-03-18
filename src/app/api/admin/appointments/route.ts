@@ -29,20 +29,38 @@ type CalendarEventDTO = {
   notes: string | null;
 };
 
-async function requireAdmin(sessionUserId: string) {
+async function requireAdmin(sessionUserId: string, sessionCompanyId: string) {
   const user = await prisma.appUser.findUnique({
     where: { id: sessionUserId },
-    select: { role: true, isActive: true },
+    select: {
+      id: true,
+      role: true,
+      isActive: true,
+      companyId: true,
+    },
   });
-  return !!user && user.isActive && user.role === Role.ADMIN;
+
+  if (!user || !user.isActive || user.role !== Role.ADMIN) {
+    return null;
+  }
+
+  if (user.companyId !== sessionCompanyId) {
+    return null;
+  }
+
+  return user;
 }
 
 export async function GET(req: Request) {
   const session = await getSession();
-  if (!session?.userId) return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+  if (!session?.userId || !session.companyId) {
+    return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+  }
 
-  const isAdmin = await requireAdmin(session.userId);
-  if (!isAdmin) return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+  const admin = await requireAdmin(session.userId, session.companyId);
+  if (!admin) {
+    return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+  }
 
   const url = new URL(req.url);
   const date = url.searchParams.get("date") ?? "";
@@ -76,7 +94,10 @@ export async function GET(req: Request) {
 
   const events = await prisma.calendarEvent.findMany({
     where: {
-      userId: session.userId,
+      userId: admin.id,
+      user: {
+        companyId: admin.companyId,
+      },
       startAt: { gte: rangeFrom, lt: rangeTo },
     },
     orderBy: [{ startAt: "asc" }],
@@ -97,10 +118,14 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await getSession();
-  if (!session?.userId) return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+  if (!session?.userId || !session.companyId) {
+    return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+  }
 
-  const isAdmin = await requireAdmin(session.userId);
-  if (!isAdmin) return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+  const admin = await requireAdmin(session.userId, session.companyId);
+  if (!admin) {
+    return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+  }
 
   const body: unknown = await req.json().catch(() => null);
   if (!isRecord(body)) return NextResponse.json({ ok: false, error: "Ungültige Daten" }, { status: 400 });
@@ -123,7 +148,7 @@ export async function POST(req: Request) {
 
   const created = await prisma.calendarEvent.create({
     data: {
-      userId: session.userId,
+      userId: admin.id,
       title,
       startAt,
       endAt,
@@ -134,7 +159,7 @@ export async function POST(req: Request) {
   });
 
   try {
-    const googleClient = await getAuthedCalendarClient(session.userId);
+    const googleClient = await getAuthedCalendarClient(admin.id);
 
     if (googleClient) {
       const { calendar, conn } = googleClient;

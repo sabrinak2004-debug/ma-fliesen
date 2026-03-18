@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 
 type EmployeeOption = {
@@ -46,6 +47,38 @@ type AdminTasksApiResponse = {
   tasks: TaskRow[];
   employees: EmployeeOption[];
 };
+
+type AdminSessionDTO = {
+  userId: string;
+  fullName: string;
+  role: "ADMIN" | "EMPLOYEE";
+  companyId: string;
+  companyName: string;
+  companySubdomain: string;
+  companyLogoUrl: string | null;
+  primaryColor: string | null;
+};
+
+function isAdminSessionDTO(v: unknown): v is AdminSessionDTO {
+  return (
+    isRecord(v) &&
+    isString(v["userId"]) &&
+    isString(v["fullName"]) &&
+    (v["role"] === "ADMIN" || v["role"] === "EMPLOYEE") &&
+    isString(v["companyId"]) &&
+    isString(v["companyName"]) &&
+    isString(v["companySubdomain"]) &&
+    (isString(v["companyLogoUrl"]) || v["companyLogoUrl"] === null) &&
+    (isString(v["primaryColor"]) || v["primaryColor"] === null)
+  );
+}
+
+function parseMeSession(v: unknown): AdminSessionDTO | null {
+  if (!isRecord(v)) return null;
+  const session = v["session"];
+  if (session === null) return null;
+  return isAdminSessionDTO(session) ? session : null;
+}
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -124,9 +157,12 @@ function isAdminTasksApiResponse(v: unknown): v is AdminTasksApiResponse {
 
 function formatDateDE(value: string | null): string {
   if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("de-DE").format(date);
+
+  const normalized = value.length >= 10 ? value.slice(0, 10) : value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return "—";
+
+  const [y, m, d] = normalized.split("-");
+  return `${d}.${m}.${y}`;
 }
 
 function categoryLabel(category: TaskCategory): string {
@@ -156,9 +192,12 @@ function requiredActionLabel(requiredAction: TaskRequiredAction): string {
 }
 
 export default function AdminTasksPage() {
+  const router = useRouter();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<AdminSessionDTO | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -174,6 +213,8 @@ export default function AdminTasksPage() {
   const [taskCategoryFilter, setTaskCategoryFilter] = useState<"ALL" | TaskCategory>("ALL");
 
   async function loadData(): Promise<void> {
+    if (!session || session.role !== "ADMIN") return;
+
     setLoading(true);
     setError("");
 
@@ -205,7 +246,11 @@ export default function AdminTasksPage() {
       }
 
       setTasks(data.tasks);
-      setEmployees(data.employees);
+      const uniqueEmployees = data.employees.filter(
+        (employee, index, arr) => arr.findIndex((x) => x.id === employee.id) === index
+      );
+
+      setEmployees(uniqueEmployees);
     } catch {
       setError("Netzwerkfehler beim Laden der Aufgaben.");
       setTasks([]);
@@ -216,8 +261,54 @@ export default function AdminTasksPage() {
   }
 
   useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/me", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        const data: unknown = await response.json().catch(() => ({}));
+
+        if (!alive) return;
+
+        const parsed = parseMeSession(data);
+
+        if (!parsed) {
+          setSession(null);
+          return;
+        }
+
+        if (parsed.role !== "ADMIN") {
+          router.replace("/login");
+          return;
+        }
+
+        setSession(parsed);
+      } catch {
+        if (!alive) return;
+        router.replace("/login");
+        return;
+      } finally {
+        if (alive) {
+          setSessionChecked(true);
+        }
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [router]);
+
+  useEffect(() => {
+    if (!sessionChecked) return;
+    if (!session || session.role !== "ADMIN") return;
     void loadData();
-  }, []);
+  }, [sessionChecked, session?.role, session?.companyId]);
 
   useEffect(() => {
     if (category === "WORK_TIME") {
@@ -312,6 +403,16 @@ export default function AdminTasksPage() {
     } finally {
       setSubmitLoading(false);
     }
+  }
+
+  if (!sessionChecked) {
+    return (
+      <AppShell activeLabel="Aufgaben verwalten">
+        <div className="card" style={{ padding: 18 }}>
+          <div style={{ color: "var(--muted)" }}>Lade...</div>
+        </div>
+      </AppShell>
+    );
   }
 
   return (

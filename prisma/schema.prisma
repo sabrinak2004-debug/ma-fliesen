@@ -8,15 +8,32 @@ datasource db {
   provider = "postgresql"
 }
 
+model Company {
+  id           String   @id @default(uuid())
+  name         String
+  subdomain    String   @unique
+  logoUrl      String?
+  primaryColor String?
+  isDemo       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  users AppUser[]
+
+  @@unique([name])
+}
+
 model AppUser {
-  id                String    @id @default(uuid())
-  fullName          String    @unique
-  role              Role      @default(EMPLOYEE)
-  isActive          Boolean   @default(true)
-  createdAt         DateTime  @default(now())
-  passwordHash      String?
-  passwordUpdatedAt DateTime?
+  id                    String    @id @default(uuid())
+  fullName              String
+  role                  Role      @default(EMPLOYEE)
+  isActive              Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  passwordHash          String?
+  passwordUpdatedAt     DateTime?
   missingEntriesStartAt DateTime?
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   entries                            WorkEntry[]
   dayBreaks                          DayBreak[]
@@ -41,6 +58,9 @@ model AppUser {
 
   // ✅ NEU: Upload-Relation
   uploadedPlanEntryDocuments PlanEntryDocument[] @relation("UploadedBy")
+
+  @@unique([companyId, fullName])
+  @@index([companyId])
 }
 
 model PasswordResetRequest {

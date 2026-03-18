@@ -6,8 +6,8 @@ import { createSessionCookieValue, COOKIE_NAME } from "@/lib/auth";
 import { Role } from "@prisma/client";
 
 type Body =
-  | { fullName?: unknown; password?: unknown } // normal login
-  | { fullName?: unknown; newPassword?: unknown }; // first-time setup (Employee)
+  | { fullName?: unknown; password?: unknown; companySubdomain?: unknown }
+  | { fullName?: unknown; newPassword?: unknown; companySubdomain?: unknown };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -17,35 +17,102 @@ function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
+function normalizeHost(host: string): string {
+  return host.split(":")[0].trim().toLowerCase();
+}
+
+function extractCompanySubdomainFromRequest(req: Request): string {
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const hostHeader = req.headers.get("host");
+
+  const host = normalizeHost(forwardedHost ?? hostHeader ?? "");
+
+  if (!host) return "";
+
+  if (host === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+    return "";
+  }
+
+  const parts = host.split(".");
+  if (parts.length < 3) {
+    return "";
+  }
+
+  return parts[0] ?? "";
+}
+
 export async function POST(req: Request) {
   const raw = (await req.json().catch(() => null)) as unknown;
 
   const fullName = isRecord(raw)
-  ? getString((raw as Body).fullName).trim().toLowerCase()
-  : "";
-  const password = isRecord(raw) ? getString((raw as { password?: unknown }).password) : "";
-  const newPassword = isRecord(raw) ? getString((raw as { newPassword?: unknown }).newPassword) : "";
+    ? getString((raw as Body).fullName).trim()
+    : "";
+
+  const password = isRecord(raw)
+    ? getString((raw as { password?: unknown }).password)
+    : "";
+
+  const newPassword = isRecord(raw)
+    ? getString((raw as { newPassword?: unknown }).newPassword)
+    : "";
+
+  const companySubdomainFromBody = isRecord(raw)
+    ? getString((raw as { companySubdomain?: unknown }).companySubdomain).trim().toLowerCase()
+    : "";
+
+  const companySubdomain =
+    companySubdomainFromBody || extractCompanySubdomainFromRequest(req);
 
   if (!fullName) {
     return NextResponse.json({ ok: false, error: "Name fehlt" }, { status: 400 });
   }
 
-  const user = await prisma.appUser.findFirst({
+  const matchingUsers = await prisma.appUser.findMany({
     where: {
       fullName: {
         equals: fullName,
         mode: "insensitive",
       },
+      ...(companySubdomain
+        ? {
+            company: {
+              subdomain: companySubdomain,
+            },
+          }
+        : {}),
     },
+    include: {
+      company: {
+        select: {
+          id: true,
+          name: true,
+          subdomain: true,
+          isDemo: true,
+        },
+      },
+    },
+    take: 10,
   });
 
-  // Name ist die Whitelist -> nur wer im Seed/Backend existiert, darf rein
-  if (!user) {
+  if (matchingUsers.length === 0) {
     return NextResponse.json(
       { ok: false, error: "Kein Zugriff. Name ist nicht hinterlegt." },
       { status: 403 }
     );
   }
+
+  if (!companySubdomain && matchingUsers.length > 1) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Name ist mehrfach vorhanden. Bitte über die richtige Firmen-URL einloggen.",
+      },
+      { status: 409 }
+    );
+  }
+
+  const user = matchingUsers[0];
+
   if (!user.isActive) {
     return NextResponse.json({ ok: false, error: "User inaktiv" }, { status: 403 });
   }
@@ -105,9 +172,25 @@ export async function POST(req: Request) {
     userId: user.id,
     fullName: user.fullName,
     role: user.role,
+    companyId: user.company.id,
+    companyName: user.company.name,
+    companySubdomain: user.company.subdomain,
+    companyIsDemo: user.company.isDemo,
   });
 
-  const res = NextResponse.json({ ok: true, role: user.role }, { status: 200 });
+  const res = NextResponse.json(
+    {
+      ok: true,
+      role: user.role,
+      company: {
+        id: user.company.id,
+        name: user.company.name,
+        subdomain: user.company.subdomain,
+        isDemo: user.company.isDemo,
+      },
+    },
+    { status: 200 }
+  );
 
   res.cookies.set(COOKIE_NAME, sessionValue, {
     httpOnly: true,

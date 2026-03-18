@@ -51,6 +51,9 @@ export async function GET(req: Request): Promise<NextResponse> {
     prisma.task.findMany({
       where: {
         assignedToUserId: session.userId,
+        assignedToUser: {
+          companyId: session.companyId,
+        },
         ...(statusParam === "OPEN"
           ? { status: "OPEN" }
           : statusParam === "COMPLETED"
@@ -79,6 +82,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     }),
     getMissingRequiredWorkDates(session.userId, todayYMD, {
       includeUntilDate: true,
+      companyId: session.companyId,
     }),
   ]);
 

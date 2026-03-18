@@ -212,12 +212,16 @@ export async function getMissingRequiredWorkDates(
   untilDateYMD: string,
   options?: {
     includeUntilDate?: boolean;
+    companyId?: string;
   }
 ): Promise<string[]> {
   const untilDate = parseIsoDateToUtc(untilDateYMD);
 
-  const user = await prisma.appUser.findUnique({
-    where: { id: userId },
+  const user = await prisma.appUser.findFirst({
+    where: {
+      id: userId,
+      ...(options?.companyId ? { companyId: options.companyId } : {}),
+    },
     select: { isActive: true, fullName: true },
   });
 
@@ -305,9 +309,12 @@ export async function getMissingRequiredWorkDates(
 export async function getLockedMissingRequiredWorkDates(
   userId: string,
   untilDateYMD: string,
-  graceBusinessDays: number = 5
+  graceBusinessDays: number = 5,
+  companyId?: string
 ): Promise<string[]> {
-  const missingDates = await getMissingRequiredWorkDates(userId, untilDateYMD);
+  const missingDates = await getMissingRequiredWorkDates(userId, untilDateYMD, {
+    companyId,
+  });
 
   if (missingDates.length > graceBusinessDays) {
     return missingDates;
@@ -320,13 +327,15 @@ export async function getLockedMissingRequiredWorkDates(
 export async function hasActiveTimeEntryUnlock(
   userId: string,
   workDateYMD: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  companyId?: string
 ): Promise<boolean> {
-  const unlock = await prisma.timeEntryUnlock.findUnique({
+  const unlock = await prisma.timeEntryUnlock.findFirst({
     where: {
-      userId_workDate: {
-        userId,
-        workDate: parseIsoDateToUtc(workDateYMD),
+      userId,
+      workDate: parseIsoDateToUtc(workDateYMD),
+      user: {
+        ...(companyId ? { companyId } : {}),
       },
     },
     select: {
@@ -359,6 +368,7 @@ export async function assertEmployeeMayEditDate(args: {
   role: "ADMIN" | "EMPLOYEE";
   userId: string;
   workDateYMD: string;
+  companyId?: string;
   now?: Date;
 }): Promise<void> {
   if (args.role === "ADMIN") {
@@ -380,6 +390,7 @@ export async function assertEmployeeMayEditDate(args: {
     previousDateYMD < args.workDateYMD
       ? await getMissingRequiredWorkDates(args.userId, previousDateYMD, {
           includeUntilDate: true,
+          companyId: args.companyId,
         })
       : [];
 
@@ -395,7 +406,9 @@ export async function assertEmployeeMayEditDate(args: {
 
   const lockedMissingDates = await getLockedMissingRequiredWorkDates(
     args.userId,
-    today
+    today,
+    5,
+    args.companyId
   );
 
   if (!lockedMissingDates.includes(args.workDateYMD)) {
@@ -405,7 +418,8 @@ export async function assertEmployeeMayEditDate(args: {
   const hasUnlock = await hasActiveTimeEntryUnlock(
     args.userId,
     args.workDateYMD,
-    now
+    now,
+    args.companyId
   );
 
   if (!hasUnlock) {

@@ -12,10 +12,24 @@ export async function GET(req: Request) {
 
   const entry = await prisma.planEntry.findUnique({
     where: { id: planEntryId },
-    select: { id: true, userId: true },
+    select: {
+      id: true,
+      userId: true,
+      user: {
+        select: {
+          companyId: true,
+        },
+      },
+    },
   });
 
-  if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!entry) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (entry.user.companyId !== session.companyId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const isAdmin = session.role === "ADMIN";
   if (!isAdmin && entry.userId !== session.userId) {

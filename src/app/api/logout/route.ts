@@ -13,5 +13,7 @@ export async function POST() {
     expires: new Date(0),
   });
 
+  res.headers.set("Cache-Control", "no-store");
+
   return res;
 }

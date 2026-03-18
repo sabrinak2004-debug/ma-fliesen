@@ -5,13 +5,13 @@ import { getSession } from "@/lib/auth";
 import { Role } from "@prisma/client";
 import { registerGoogleCalendarWatch } from "@/lib/googleCalendar";
 
-async function requireAdmin(userId: string) {
+async function requireAdmin(userId: string, companyId: string) {
   const user = await prisma.appUser.findUnique({
     where: { id: userId },
-    select: { role: true, isActive: true },
+    select: { role: true, isActive: true, companyId: true },
   });
 
-  return !!user && user.isActive && user.role === Role.ADMIN;
+  return !!user && user.isActive && user.role === Role.ADMIN && user.companyId === companyId;
 }
 
 export async function POST() {
@@ -24,7 +24,7 @@ export async function POST() {
     );
   }
 
-  const isAdmin = await requireAdmin(session.userId);
+  const isAdmin = await requireAdmin(session.userId, session.companyId);
   if (!isAdmin) {
     return NextResponse.json(
       { ok: false, error: "Keine Berechtigung" },

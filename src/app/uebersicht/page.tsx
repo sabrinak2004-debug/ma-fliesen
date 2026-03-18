@@ -105,13 +105,13 @@ function isAbsencesApiResponse(x: unknown): x is AbsencesApiResponse {
   return typeof x === "object" && x !== null;
 }
 
-function monthKey(d: Date) {
+function monthKey(d: Date): string {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   return `${yyyy}-${mm}`;
 }
 
-function toHours(min: number) {
+function toHours(min: number): number {
   return min / 60;
 }
 
@@ -123,7 +123,7 @@ function formatMinutesAsHM(minutes: number): string {
 }
 
 
-function lastDayOfMonth(ym: string) {
+function lastDayOfMonth(ym: string): string {
   const [y, m] = ym.split("-").map(Number);
   const last = new Date(y, m, 0);
   return String(last.getDate()).padStart(2, "0");
@@ -136,7 +136,7 @@ function currentMonth(): MonthOption {
   return String(new Date().getMonth() + 1).padStart(2, "0") as MonthOption;
 }
 
-function buildYm(year: string, month: string) {
+function buildYm(year: string, month: string): string {
   return `${year}-${month}`;
 }
 
@@ -238,7 +238,7 @@ type MonthOption =
   | "12";
 
 
-function toUTCDateFromISO(ymd: string) {
+function toUTCDateFromISO(ymd: string): Date {
   return new Date(`${ymd}T00:00:00.000Z`);
 }
 
@@ -252,7 +252,7 @@ type AbsenceBlock = {
   dayPortion: AbsenceDayPortion;
 };
 
-function daysInclusive(from: string, to: string) {
+function daysInclusive(from: string, to: string): number {
   const a = toUTCDateFromISO(from);
   const b = toUTCDateFromISO(to);
   const diff = Math.floor((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
@@ -678,8 +678,10 @@ export default function UebersichtPage() {
 
   const showByEmployee = byEmployee.length > 1;
 
-  const startDownload = (url: string) => {
-    window.location.href = url;
+  const startDownload = (url: string): void => {
+    if (typeof window !== "undefined") {
+      window.location.href = url;
+    }
   };
 
   const openExportModal = () => {
@@ -805,13 +807,13 @@ const filteredBlocks = useMemo((): AbsenceBlock[] => {
     return { total, sick, vac, unpaidVac };
   }, [filteredBlocks]);
 
-const resetAbsFilters = () => {
+const resetAbsFilters = (): void => {
   setAbsQuery("");
   setAbsType("ALL");
 };
 
   return (
-    <AppShell activeLabel="#wirkönndas">
+    <AppShell>
       {!isAdmin ? (
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
           <Link

@@ -13,6 +13,11 @@ type SessionData = {
   userId: string;
   fullName: string;
   role: "EMPLOYEE" | "ADMIN";
+  companyId: string;
+  companyName: string;
+  companySubdomain: string;
+  companyLogoUrl: string | null;
+  primaryColor: string | null;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -24,10 +29,21 @@ function isSessionData(v: unknown): v is SessionData {
   const userId = v["userId"];
   const fullName = v["fullName"];
   const role = v["role"];
+  const companyId = v["companyId"];
+  const companyName = v["companyName"];
+  const companySubdomain = v["companySubdomain"];
+  const companyLogoUrl = v["companyLogoUrl"];
+  const primaryColor = v["primaryColor"];
+
   return (
     typeof userId === "string" &&
     typeof fullName === "string" &&
-    (role === "EMPLOYEE" || role === "ADMIN")
+    (role === "EMPLOYEE" || role === "ADMIN") &&
+    typeof companyId === "string" &&
+    typeof companyName === "string" &&
+    typeof companySubdomain === "string" &&
+    (typeof companyLogoUrl === "string" || companyLogoUrl === null) &&
+    (typeof primaryColor === "string" || primaryColor === null)
   );
 }
 
@@ -36,6 +52,65 @@ function parseMe(j: unknown): SessionData | null {
   const s = j["session"];
   if (s === null) return null;
   return isSessionData(s) ? s : null;
+}
+
+type BrandConfig = {
+  appTitle: string;
+  displayName: string;
+  slogan: string;
+  logoUrl: string | null;
+  accent: string;
+};
+
+function isHexColor(value: string): boolean {
+  return /^#([0-9a-fA-F]{6})$/.test(value);
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  if (!isHexColor(hex)) return null;
+
+  const normalized = hex.slice(1);
+  const r = Number.parseInt(normalized.slice(0, 2), 16);
+  const g = Number.parseInt(normalized.slice(2, 4), 16);
+  const b = Number.parseInt(normalized.slice(4, 6), 16);
+
+  return { r, g, b };
+}
+
+function buildBrandConfig(session: SessionData | null): BrandConfig {
+  const fallback: BrandConfig = {
+    appTitle: "Mitarbeiterportal",
+    displayName: "Mitarbeiterportal",
+    slogan: "#einsatzplanung",
+    logoUrl: null,
+    accent: "#b8cf3a",
+  };
+
+  if (!session) return fallback;
+
+  const companyName = session.companyName.trim();
+  const subdomain = session.companySubdomain.trim().toLowerCase();
+  const accent = session.primaryColor && isHexColor(session.primaryColor)
+    ? session.primaryColor
+    : fallback.accent;
+
+  if (subdomain === "beispielbetrieb") {
+    return {
+      appTitle: "Beispielbetrieb Mitarbeiterportal",
+      displayName: "Beispielbetrieb",
+      slogan: "#so-kann-deine-app-aussehen",
+      logoUrl: session.companyLogoUrl,
+      accent,
+    };
+  }
+
+  return {
+    appTitle: `${companyName} Mitarbeiterportal`,
+    displayName: companyName,
+    slogan: "#einsatzplanung",
+    logoUrl: session.companyLogoUrl,
+    accent,
+  };
 }
 
 function initialsFromName(fullName: string) {
@@ -243,9 +318,18 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
 
   try {
     const [vacRes, sickRes, corrRes] = await Promise.all([
-      fetch("/api/admin/absence-requests?type=VACATION&status=PENDING", { cache: "no-store" }),
-      fetch("/api/admin/absence-requests?type=SICK&status=PENDING", { cache: "no-store" }),
-      fetch("/api/admin/time-entry-correction-requests?status=PENDING", { cache: "no-store" }),
+      fetch("/api/admin/absence-requests?type=VACATION&status=PENDING", {
+        cache: "no-store",
+        credentials: "include",
+      }),
+      fetch("/api/admin/absence-requests?type=SICK&status=PENDING", {
+        cache: "no-store",
+        credentials: "include",
+      }),
+      fetch("/api/admin/time-entry-correction-requests?status=PENDING", {
+        cache: "no-store",
+        credentials: "include",
+      }),
     ]);
 
     const vacJson: unknown = await vacRes.json().catch(() => ({}));
@@ -271,6 +355,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
 }, [session]);
 
   const isAdmin = session?.role === "ADMIN";
+  const brand = buildBrandConfig(session);
 
   const employeeNavItems: NavItem[] = [
     { href: "/erfassung", label: "Erfassung", icon: "⊞" },
@@ -314,6 +399,27 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
     window.removeEventListener("admin-requests-changed", onAdminRequestsChanged);
   };
 }, [loadOpenTaskCount, loadAdminRequestCounts]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const accent = brand.accent;
+    const rgb = hexToRgb(accent);
+
+    root.style.setProperty("--accent", accent);
+
+    if (rgb) {
+      root.style.setProperty("--accent-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+      root.style.setProperty("--accent-soft", `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.14)`);
+      root.style.setProperty("--accent-border", `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`);
+    }
+
+    return () => {
+      root.style.removeProperty("--accent");
+      root.style.removeProperty("--accent-rgb");
+      root.style.removeProperty("--accent-soft");
+      root.style.removeProperty("--accent-border");
+    };
+  }, [brand.accent]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -405,14 +511,35 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     minWidth: 0,
                   }}
                 >
-                  <Image
-                    src="/logo-ma-fliesen.jpeg"
-                    alt="ma-fliesen Logo"
-                    width={110}
-                    height={34}
-                    priority
-                    style={{ objectFit: "contain" }}
-                  />
+                  {brand.logoUrl ? (
+                    <Image
+                      src={brand.logoUrl}
+                      alt={`${brand.displayName} Logo`}
+                      width={110}
+                      height={34}
+                      priority
+                      style={{ objectFit: "contain" }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 110,
+                        height: 34,
+                        borderRadius: 10,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "var(--accent-soft, rgba(184, 207, 58, 0.14))",
+                        border: "1px solid var(--accent-border, rgba(184, 207, 58, 0.35))",
+                        color: "rgba(255,255,255,0.95)",
+                        fontWeight: 900,
+                        fontSize: 12,
+                        letterSpacing: 0.3,
+                      }}
+                    >
+                      {brand.displayName}
+                    </div>
+                  )}
                   <div
                     style={{
                       fontWeight: 900,
@@ -421,7 +548,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       marginTop: 6,
                     }}
                   >
-                    ma-fliesen
+                    {brand.displayName}
                   </div>
                   <div
                     style={{
@@ -434,7 +561,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       maxWidth: 220,
                     }}
                   >
-                    {activeLabel ?? "#wirkönnendas"}
+                    {activeLabel ?? brand.slogan}
                   </div>
                 </div>
               </div>
@@ -653,16 +780,37 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
           <aside className="appshell-sidebar">
             <div className="appshell-sidebar-top">
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <Image
-                  src="/logo-ma-fliesen.jpeg"
-                  alt="ma-fliesen Logo"
-                  width={120}
-                  height={40}
-                  priority
-                  style={{ objectFit: "contain" }}
-                />
+                {brand.logoUrl ? (
+                  <Image
+                    src={brand.logoUrl}
+                    alt={`${brand.displayName} Logo`}
+                    width={120}
+                    height={40}
+                    priority
+                    style={{ objectFit: "contain" }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 120,
+                      height: 40,
+                      borderRadius: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "var(--accent-soft, rgba(184, 207, 58, 0.14))",
+                      border: "1px solid var(--accent-border, rgba(184, 207, 58, 0.35))",
+                      color: "rgba(255,255,255,0.95)",
+                      fontWeight: 900,
+                      fontSize: 12,
+                      letterSpacing: 0.3,
+                    }}
+                  >
+                    {brand.displayName}
+                  </div>
+                )}
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 900, lineHeight: 1.05 }}>ma-fliesen</div>
+                  <div style={{ fontWeight: 900, lineHeight: 1.05 }}>{brand.displayName}</div>
                   <div
                     style={{
                       color: "var(--muted-2)",
@@ -673,7 +821,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       textOverflow: "ellipsis",
                     }}
                   >
-                    {activeLabel ?? "#wirkönnendas"}
+                    {activeLabel ?? brand.slogan}
                   </div>
                 </div>
               </div>
@@ -802,7 +950,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       lineHeight: 1.1,
                     }}
                   >
-                    {activeLabel ?? "ma-fliesen"}
+                    {activeLabel ?? brand.displayName}
                   </div>
                   <div
                     style={{

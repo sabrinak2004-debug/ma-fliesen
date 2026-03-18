@@ -12,6 +12,7 @@ if (publicKey && privateKey) {
 
 export { webpush };
 type PushPayload = {
+  companyId?: string;
   title: string;
   body: string;
   url: string;
@@ -85,6 +86,11 @@ export async function sendPushToAdmins(payload: PushPayload): Promise<number> {
       user: {
         role: Role.ADMIN,
         isActive: true,
+        ...(payload.companyId
+          ? {
+              companyId: payload.companyId,
+            }
+          : {}),
       },
     },
     select: {

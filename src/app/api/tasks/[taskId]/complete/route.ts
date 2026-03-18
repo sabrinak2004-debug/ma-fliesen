@@ -162,6 +162,7 @@ export async function POST(
         select: {
           id: true,
           fullName: true,
+          companyId: true,
         },
       },
     },
@@ -169,6 +170,10 @@ export async function POST(
 
   if (!existingTask) {
     return NextResponse.json({ error: "Aufgabe nicht gefunden." }, { status: 404 });
+  }
+
+  if (existingTask.assignedToUser.companyId !== session.companyId) {
+    return NextResponse.json({ error: "Kein Zugriff." }, { status: 403 });
   }
 
   if (existingTask.assignedToUserId !== session.userId) {
@@ -226,6 +231,7 @@ export async function POST(
   });
 
   await sendPushToAdmins({
+    companyId: session.companyId,
     title: "Aufgabe erledigt",
     body: `${task.assignedToUser.fullName}: ${task.title}`,
     url: "/admin/tasks",

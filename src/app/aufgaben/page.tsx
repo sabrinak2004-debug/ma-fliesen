@@ -123,19 +123,37 @@ function isTasksApiResponse(v: unknown): v is TasksApiResponse {
 
 function formatDateDE(value: string | null): string {
   if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("de-DE").format(date);
+
+  const normalized = value.length >= 10 ? value.slice(0, 10) : value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return "—";
+
+  const [year, month, day] = normalized.split("-");
+  return `${day}.${month}.${year}`;
 }
 
 function formatDateLongDE(value: string): string {
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
 
-  return new Intl.DateTimeFormat("de-DE", {
-    day: "2-digit",
-    month: "long",
-  }).format(date);
+  const [, month, day] = value.split("-");
+  const monthNames = [
+    "Januar",
+    "Februar",
+    "März",
+    "April",
+    "Mai",
+    "Juni",
+    "Juli",
+    "August",
+    "September",
+    "Oktober",
+    "November",
+    "Dezember",
+  ] as const;
+
+  const monthName = monthNames[Number(month) - 1];
+  if (!monthName) return value;
+
+  return `${day}. ${monthName}`;
 }
 
 function categoryLabel(category: TaskCategory): string {
@@ -200,8 +218,8 @@ function categoryAccent(category: TaskCategory): string {
 
 function sortTasksByDateDesc(tasks: TaskRow[]): TaskRow[] {
   return tasks.slice().sort((a, b) => {
-    const aKey = a.referenceDate ?? a.createdAt;
-    const bKey = b.referenceDate ?? b.createdAt;
+    const aKey = (a.referenceDate ?? a.createdAt).slice(0, 19);
+    const bKey = (b.referenceDate ?? b.createdAt).slice(0, 19);
     return bKey.localeCompare(aKey);
   });
 }
@@ -237,7 +255,9 @@ export default function AufgabenPage() {
         setError(message);
         setTasks([]);
         setMissingWorkEntryAlert(null);
-        window.dispatchEvent(new Event("tasks-changed"));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("tasks-changed"));
+        }
         return;
       }
 
@@ -245,18 +265,24 @@ export default function AufgabenPage() {
         setError("Unerwartete Antwort vom Server.");
         setTasks([]);
         setMissingWorkEntryAlert(null);
-        window.dispatchEvent(new Event("tasks-changed"));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("tasks-changed"));
+        }
         return;
       }
 
       setTasks(data.tasks);
       setMissingWorkEntryAlert(data.missingWorkEntryAlert ?? null);
-      window.dispatchEvent(new Event("tasks-changed"));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("tasks-changed"));
+      }
     } catch {
       setError("Netzwerkfehler beim Laden der Aufgaben.");
       setTasks([]);
       setMissingWorkEntryAlert(null);
-      window.dispatchEvent(new Event("tasks-changed"));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("tasks-changed"));
+      }
     } finally {
       setLoading(false);
     }

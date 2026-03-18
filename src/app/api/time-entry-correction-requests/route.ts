@@ -48,6 +48,7 @@ function addUtcDays(d: Date, days: number): Date {
 }
 
 async function sendPushToAdmins(
+  companyId: string,
   title: string,
   body: string,
   url: string
@@ -65,6 +66,7 @@ async function sendPushToAdmins(
       user: {
         role: Role.ADMIN,
         isActive: true,
+        companyId,
       },
     },
     select: {
@@ -156,6 +158,9 @@ export async function GET() {
   const requests = await prisma.timeEntryCorrectionRequest.findMany({
     where: {
       userId: session.userId,
+      user: {
+        companyId: session.companyId,
+      },
     },
     include: {
       user: {
@@ -220,12 +225,17 @@ export async function POST(req: Request) {
 
   const missingDates = await getMissingRequiredWorkDates(
     session.userId,
-    today
+    today,
+    {
+      companyId: session.companyId,
+    }
   );
 
   const lockedMissingDates = await getLockedMissingRequiredWorkDates(
     session.userId,
-    today
+    today,
+    5,
+    session.companyId
   );
 
 
@@ -306,6 +316,7 @@ export async function POST(req: Request) {
       : `${startDateYMD} bis ${endDateYMD}`;
 
   await sendPushToAdmins(
+    session.companyId,
     "Neuer Nachtragsantrag",
     `${session.fullName} hat einen Nachtragsantrag für ${dateLabel} gestellt.`,
     "/admin/nachtragsanfragen"

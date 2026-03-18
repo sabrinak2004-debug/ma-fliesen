@@ -28,10 +28,23 @@ export async function POST(req: Request) {
 
   const conn = await prisma.googleCalendarConnection.findFirst({
     where: { channelId, resourceId },
-    select: { userId: true },
+    select: {
+      userId: true,
+      user: {
+        select: {
+          id: true,
+          isActive: true,
+          companyId: true,
+        },
+      },
+    },
   });
 
   if (!conn) {
+    return NextResponse.json({ ok: true });
+  }
+
+  if (!conn.user.isActive || !conn.user.companyId) {
     return NextResponse.json({ ok: true });
   }
 

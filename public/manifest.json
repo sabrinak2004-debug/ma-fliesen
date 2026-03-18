@@ -1,10 +1,10 @@
 {
-  "name": "MA Fliesen",
-  "short_name": "MA Fliesen",
+  "name": "Mitarbeiterportal",
+  "short_name": "Portal",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#3f3f3f",
-  "theme_color": "#3f3f3f",
+  "background_color": "#0b0f0c",
+  "theme_color": "#0b0f0c",
   "icons": [
     {
       "src": "/image_2.jpeg",

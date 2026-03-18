@@ -1,7 +1,22 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
+import { getSession } from "@/lib/auth";
 import type { Prisma } from "@prisma/client";
+
+function hasCompanyScope(
+  value: unknown
+): value is { userId: string; companyId: string; role: "ADMIN" | "EMPLOYEE" } {
+  if (typeof value !== "object" || value === null) return false;
+
+  const record = value as Record<string, unknown>;
+
+  return (
+    typeof record.userId === "string" &&
+    typeof record.companyId === "string" &&
+    (record.role === "ADMIN" || record.role === "EMPLOYEE")
+  );
+}
 
 function parseYMD(ymd: string) {
   const [y, m, d] = ymd.split("-").map(Number);
@@ -84,6 +99,11 @@ export async function GET(req: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const session = await getSession();
+  if (!hasCompanyScope(session) || session.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const url = new URL(req.url);
   const weekStart = url.searchParams.get("weekStart"); // Montag YYYY-MM-DD
   if (!weekStart) {
@@ -95,7 +115,12 @@ export async function GET(req: Request) {
   end.setDate(end.getDate() + 7);
 
   const entries: WorkEntryWithUser[] = await prisma.workEntry.findMany({
-    where: { workDate: { gte: start, lt: end } },
+    where: {
+      workDate: { gte: start, lt: end },
+      user: {
+        companyId: session.companyId,
+      },
+    },
     include: { user: { select: { id: true, fullName: true } } },
     orderBy: [{ workDate: "asc" }, { startTime: "asc" }],
   });
@@ -123,6 +148,11 @@ export async function POST(req: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const session = await getSession();
+  if (!hasCompanyScope(session) || session.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const body = (await req.json()) as Partial<WorkEntryPostBody>;
 
   const {
@@ -140,6 +170,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
+  const targetUser = await prisma.appUser.findFirst({
+    where: {
+      id: String(userId),
+      companyId: session.companyId,
+      isActive: true,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!targetUser) {
+    return NextResponse.json({ error: "userId ungültig" }, { status: 400 });
+  }
+
   const grossMinutes = minutesBetween(startHHMM, endHHMM);
   if (grossMinutes <= 0) {
     return NextResponse.json({ error: "endHHMM must be after startHHMM" }, { status: 400 });
@@ -149,7 +194,7 @@ export async function POST(req: Request) {
   const netMinutes = Math.max(0, grossMinutes - brk.breakMinutes);
 
   const data: Prisma.WorkEntryUncheckedCreateInput = {
-    userId: String(userId),
+    userId: targetUser.id,
     workDate: parseYMD(String(workDate)),
     startTime: timeToDbTime(String(startHHMM)),
     endTime: timeToDbTime(String(endHHMM)),
@@ -162,9 +207,32 @@ export async function POST(req: Request) {
     workMinutes: netMinutes,
   };
 
-  const saved = id
-    ? await prisma.workEntry.update({ where: { id: String(id) }, data })
-    : await prisma.workEntry.create({ data });
+  let saved;
+
+  if (id) {
+    const existing = await prisma.workEntry.findFirst({
+      where: {
+        id: String(id),
+        user: {
+          companyId: session.companyId,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Eintrag nicht gefunden" }, { status: 404 });
+    }
+
+    saved = await prisma.workEntry.update({
+      where: { id: existing.id },
+      data,
+    });
+  } else {
+    saved = await prisma.workEntry.create({ data });
+  }
 
   return NextResponse.json({ ok: true, entry: saved });
 }
@@ -173,10 +241,31 @@ export async function DELETE(req: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const session = await getSession();
+  if (!hasCompanyScope(session) || session.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id missing" }, { status: 400 });
 
-  await prisma.workEntry.delete({ where: { id } });
+  const existing = await prisma.workEntry.findFirst({
+    where: {
+      id,
+      user: {
+        companyId: session.companyId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "Eintrag nicht gefunden" }, { status: 404 });
+  }
+
+  await prisma.workEntry.delete({ where: { id: existing.id } });
   return NextResponse.json({ ok: true });
 }

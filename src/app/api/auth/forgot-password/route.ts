@@ -19,17 +19,41 @@ export async function POST(req: Request) {
   }
 
   const fullName = isRecord(body) ? getString(body.fullName).trim() : "";
+  const companySubdomain = isRecord(body)
+    ? getString(body.companySubdomain).trim().toLowerCase()
+    : "";
   if (fullName.length < 3) {
     return NextResponse.json({ ok: false, error: "Name fehlt/zu kurz" }, { status: 400 });
   }
 
-  const user = await prisma.appUser.findUnique({
-    where: { fullName },
-    select: { id: true, role: true, isActive: true },
+  const matchingUsers = await prisma.appUser.findMany({
+    where: {
+      fullName,
+      ...(companySubdomain
+        ? {
+            company: {
+              subdomain: companySubdomain,
+            },
+          }
+        : {}),
+    },
+    select: {
+      id: true,
+      role: true,
+      isActive: true,
+      companyId: true,
+    },
+    take: 10,
   });
 
-  // bewusst gleiche Antwort auch bei Nicht-Fund (keine Info-Leaks)
-  if (!user || !user.isActive || user.role !== Role.EMPLOYEE) {
+  // bewusst gleiche Antwort auch bei Nicht-Fund oder Mehrdeutigkeit
+  if (matchingUsers.length !== 1) {
+    return NextResponse.json({ ok: true });
+  }
+
+  const user = matchingUsers[0];
+
+  if (!user.isActive || user.role !== Role.EMPLOYEE) {
     return NextResponse.json({ ok: true });
   }
 
@@ -56,6 +80,7 @@ export async function POST(req: Request) {
         user: {
           role: Role.ADMIN,
           isActive: true,
+          companyId: user.companyId,
         },
       },
       select: {
@@ -82,7 +107,7 @@ export async function POST(req: Request) {
               },
             },
             JSON.stringify({
-              title: "MA-Fliesen App",
+              title: "Mitarbeiterportal",
               body: `${fullName} möchte sein Passwort zurücksetzen.`,
               url: "/admin/dashboard",
             })

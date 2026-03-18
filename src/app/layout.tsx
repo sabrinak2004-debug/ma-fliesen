@@ -3,7 +3,7 @@ import "./globals.css";
 import PushBootstrap from "@/components/PushBootstrap";
 
 export const metadata: Metadata = {
-  title: "ma-fliesen – Mitarbeiterportal",
+  title: "Mitarbeiterportal",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -11,10 +11,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="de">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#3f3f3f" />
+        <meta name="theme-color" content="#0b0f0c" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-title" content="MA Fliesen" />
-        <link rel="apple-touch-icon" href="/icon_2.jpeg" />
+        <meta name="apple-mobile-web-app-title" content="Mitarbeiterportal" />
+        <link rel="apple-touch-icon" href="/image_2.jpeg" />
       </head>
       <body>
         <div style={{ position: "relative", zIndex: 1 }}>

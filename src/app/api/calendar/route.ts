@@ -66,7 +66,7 @@ export async function GET(req: Request) {
 
   const me = await prisma.appUser.findUnique({
     where: { id: session.userId },
-    select: { role: true, isActive: true },
+    select: { role: true, isActive: true, companyId: true },
   });
 
   if (!me || !me.isActive) return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
@@ -132,8 +132,11 @@ const holiday = holidayMap.get(date);
 const targetUserId = me.role === Role.ADMIN && userIdParam ? userIdParam : session.userId;
 
 if (me.role === Role.ADMIN && userIdParam) {
-  const target = await prisma.appUser.findUnique({
-    where: { id: userIdParam },
+  const target = await prisma.appUser.findFirst({
+    where: {
+      id: userIdParam,
+      companyId: me.companyId,
+    },
     select: { id: true, role: true, isActive: true },
   });
 
