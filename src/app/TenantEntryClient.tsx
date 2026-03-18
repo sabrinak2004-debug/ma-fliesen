@@ -237,7 +237,7 @@ export default function TenantEntryClient() {
                 lineHeight: 1.5,
               }}
             >
-              Beispiel: Nach erfolgreicher Prüfung wirst du automatisch auf den
+              Nach erfolgreicher Prüfung wirst du automatisch auf den
               passenden Firmen-Login weitergeleitet.
             </div>
           </div>
