@@ -48,12 +48,12 @@ export function getTenantAssetBasePath(subdomain: string): string {
 
 export function getTenantIcon192Href(subdomain: string): string {
   const basePath = getTenantAssetBasePath(subdomain);
-  return basePath ? `${basePath}/icon-192.png` : DEFAULT_APPLE_TOUCH_ICON;
+  return basePath ? `${basePath}/icon-192.jpeg` : DEFAULT_APPLE_TOUCH_ICON;
 }
 
 export function getTenantIcon512Href(subdomain: string): string {
   const basePath = getTenantAssetBasePath(subdomain);
-  return basePath ? `${basePath}/icon-512.png` : DEFAULT_APPLE_TOUCH_ICON;
+  return basePath ? `${basePath}/icon-512.jpeg` : DEFAULT_APPLE_TOUCH_ICON;
 }
 
 export function getTenantAppleTouchIconHref(subdomain: string): string {

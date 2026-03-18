@@ -17,7 +17,7 @@ self.addEventListener("push", function (event) {
           : "";
 
       const defaultTenantIcon = companySubdomain
-        ? `/tenant-assets/${companySubdomain}/icon-192.png`
+        ? `/tenant-assets/${companySubdomain}/icon-192.jpeg`
         : "/image_2.jpeg";
 
       data = {

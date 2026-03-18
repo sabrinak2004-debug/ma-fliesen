@@ -92,10 +92,10 @@ export async function GET(req: Request): Promise<Response> {
     company.name.length > 12 ? company.name.slice(0, 12) : company.name;
 
   const manifest: WebAppManifest = {
-    id: `/${company.subdomain}`,
+    id: `/app/${company.subdomain}`,
     name: appName,
     short_name: shortName,
-    start_url: `/${company.subdomain}/login`,
+    start_url: `/${company.subdomain}/login?source=pwa`,
     scope: "/",
     display: "standalone",
     background_color: themeColor,
@@ -104,13 +104,13 @@ export async function GET(req: Request): Promise<Response> {
       {
         src: getTenantIcon192Href(company.subdomain),
         sizes: "192x192",
-        type: "image/png",
+        type: "image/jpeg",
         purpose: "any maskable",
       },
       {
         src: getTenantIcon512Href(company.subdomain),
         sizes: "512x512",
-        type: "image/png",
+        type: "image/jpeg",
         purpose: "any maskable",
       },
       {
