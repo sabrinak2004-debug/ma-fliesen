@@ -29,6 +29,11 @@ function extractCompanySubdomainFromRequest(req: Request): string {
 
   if (!host) return "";
 
+  // ✅ WICHTIG: Vercel Domains ignorieren
+  if (host.endsWith(".vercel.app")) {
+    return "";
+  }
+
   if (host === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
     return "";
   }

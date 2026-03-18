@@ -39,7 +39,7 @@ function extractCompanySubdomainFromBrowser(): string {
   }
 
   const parts = host.split(".");
-  if (parts.length < 3) {
+  if (host.endsWith(".vercel.app")) {
     return "";
   }
 
