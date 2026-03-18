@@ -16,9 +16,13 @@ self.addEventListener("push", function (event) {
           ? parsed.companySubdomain.trim().toLowerCase()
           : "";
 
-      const defaultTenantIcon = companySubdomain
-        ? `/tenant-assets/${companySubdomain}/icon-192.jpeg`
-        : "/image_2.jpeg";
+            const defaultTenantIcon = companySubdomain
+              ? `/tenant-assets/${companySubdomain}/icon-192.jpeg`
+              : "/image_2.jpeg";
+
+            const defaultTenantBadge = companySubdomain
+              ? `/tenant-assets/${companySubdomain}/apple-touch-icon.png`
+              : "/image_2.jpeg";
 
       data = {
         title:
@@ -37,7 +41,7 @@ self.addEventListener("push", function (event) {
         badge:
           typeof parsed.badge === "string"
             ? parsed.badge
-            : defaultTenantIcon,
+            : defaultTenantBadge,
       };
     }
   } catch (err) {

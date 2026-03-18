@@ -11,6 +11,7 @@ import {
   normalizeThemeColor,
   resetAccentColorOnDocument,
 } from "@/lib/tenantBranding";
+import PushOnboarding from "@/components/PushOnboarding";
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
@@ -796,6 +797,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
 
         {/* MOBILE CONTENT */}
         <div className="md:hidden" style={{ minWidth: 0 }}>
+          <PushOnboarding/>
           {children}
         </div>
 
@@ -1063,6 +1065,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
               </div>
             </div>
 
+            <PushOnboarding />
             {children}
           </div>
         </div>

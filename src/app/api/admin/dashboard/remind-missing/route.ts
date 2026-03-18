@@ -119,10 +119,17 @@ export async function POST(req: Request) {
     createdTaskId = createdTask.id;
   }
 
+  const tenantIcon192 = `/tenant-assets/${session.companySubdomain}/icon-192.jpeg`;
+  const tenantBadge = `/tenant-assets/${session.companySubdomain}/apple-touch-icon.png`;
+
   const sentCount = await sendPushToUser(employee.id, {
+    companyId: session.companyId,
+    companySubdomain: session.companySubdomain,
     title: "Erinnerung fehlende Arbeitseinträge",
     body: `Dir fehlen noch Arbeitseinträge für ${rangeLabel}. Bitte prüfe deine Aufgaben und trage zuerst den ältesten fehlenden Tag nach.`,
     url: "/aufgaben",
+    icon: tenantIcon192,
+    badge: tenantBadge,
   });
 
   if (sentCount === 0) {

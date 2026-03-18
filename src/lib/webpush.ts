@@ -13,9 +13,12 @@ if (publicKey && privateKey) {
 export { webpush };
 type PushPayload = {
   companyId?: string;
+  companySubdomain?: string;
   title: string;
   body: string;
   url: string;
+  icon?: string;
+  badge?: string;
 };
 
 function isVapidReady(): boolean {

@@ -219,10 +219,6 @@ export default function PushBootstrap() {
         const registration = await navigator.serviceWorker.register("/sw.js");
         void getTenantAppleTouchIconHref(companySubdomain);
 
-        if (Notification.permission === "denied") {
-          return;
-        }
-
         if (Notification.permission !== "granted") {
           return;
         }
