@@ -61,7 +61,7 @@ export async function generateMetadata({
     };
   }
 
-  const themeColor = normalizeThemeColor(company.primaryColor);
+  const themeColor = "#0b0f0c";
 
   return {
     title: `${company.name} Mitarbeiterportal`,

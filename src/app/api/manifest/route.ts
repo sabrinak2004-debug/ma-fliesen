@@ -86,7 +86,7 @@ export async function GET(req: Request): Promise<Response> {
     );
   }
 
-  const themeColor = normalizeThemeColor(company.primaryColor);
+  const themeColor = "#0b0f0c";
   const appName = `${company.name} Mitarbeiterportal`;
   const shortName =
     company.name.length > 12 ? company.name.slice(0, 12) : company.name;
