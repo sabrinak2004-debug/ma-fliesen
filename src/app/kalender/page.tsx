@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
+import { readOfflineData, saveOfflineData } from "@/lib/offline/storage";
+import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import {
   CalendarDays,
   Sparkles,
@@ -15,6 +17,8 @@ import {
   Sun,
   PartyPopper,
 } from "lucide-react";
+import { createOfflineActionId, enqueueOfflineAction } from "@/lib/offline/queue";
+import { useOfflineQueueSync } from "@/hooks/useOfflineQueueSync";
 
 type CalendarDay = {
   date: string;
@@ -132,6 +136,32 @@ type CalendarEventDTO = {
 type EventCategory = "KUNDE" | "BAUSTELLE" | "INTERN" | "PRIVAT";
 type AdminApptMode = "create-global" | "create-from-day" | "edit";
 type CalendarViewMode = "MONTH" | "WEEK";
+type CalendarMonthOfflinePayload = {
+  days: CalendarDay[];
+};
+
+type CalendarAbsencesOfflinePayload = {
+  absences: AbsenceDTO[];
+};
+
+type CalendarRequestsOfflinePayload = {
+  requests: AbsenceRequestDTO[];
+};
+
+type CalendarPlansOfflinePayload = {
+  entries: PlanEntry[];
+};
+
+type CalendarUsersOfflinePayload = {
+  users: Array<{ id: string; fullName: string }>;
+};
+
+type CalendarAppointmentsOfflinePayload = {
+  events: CalendarEventDTO[];
+};
+
+const CALENDAR_OFFLINE_COMPANY_SCOPE = "";
+const CALENDAR_OFFLINE_USER_SCOPE = "";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -764,6 +794,256 @@ function smallDot(color: string): React.CSSProperties {
   };
 }
 
+function buildCalendarMonthOfflineKey(month: string, selectedUserId: string): string {
+  const normalizedUserScope = selectedUserId.trim() || "self";
+  return `calendar:${month}:${normalizedUserScope}`;
+}
+
+function buildCalendarAbsencesOfflineKey(month: string): string {
+  return `calendar-absences:${month}`;
+}
+
+function buildCalendarRequestsOfflineKey(month: string): string {
+  return `calendar-requests:${month}`;
+}
+
+function buildCalendarPlansOfflineKey(date: string, selectedUserId: string): string {
+  const normalizedUserScope = selectedUserId.trim() || "self";
+  return `calendar-plans:${date}:${normalizedUserScope}`;
+}
+
+function buildCalendarAppointmentsOfflineKey(date: string): string {
+  return `calendar-appointments:${date}`;
+}
+
+function buildCalendarUsersOfflineKey(): string {
+  return "calendar-users";
+}
+
+function buildCalendarSessionOfflineKey(): string {
+  return "calendar-session";
+}
+
+function readCalendarMonthOffline(month: string, selectedUserId: string): {
+  payload: CalendarMonthOfflinePayload | null;
+  savedAt: string | null;
+} {
+  const stored = readOfflineData<CalendarMonthOfflinePayload>(
+    "calendar",
+    CALENDAR_OFFLINE_COMPANY_SCOPE,
+    `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarMonthOfflineKey(month, selectedUserId)}`
+  );
+
+  if (!stored) {
+    return { payload: null, savedAt: null };
+  }
+
+  const payload = stored.data;
+
+  if (!isRecord(payload) || !Array.isArray(payload["days"]) || !payload["days"].every(isCalendarDay)) {
+    return { payload: null, savedAt: null };
+  }
+
+  return {
+    payload: {
+      days: payload["days"],
+    },
+    savedAt: stored.savedAt,
+  };
+}
+
+function readCalendarAbsencesOffline(month: string): {
+  payload: CalendarAbsencesOfflinePayload | null;
+  savedAt: string | null;
+} {
+  const stored = readOfflineData<CalendarAbsencesOfflinePayload>(
+    "calendar",
+    CALENDAR_OFFLINE_COMPANY_SCOPE,
+    `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarAbsencesOfflineKey(month)}`
+  );
+
+  if (!stored) {
+    return { payload: null, savedAt: null };
+  }
+
+  const payload = stored.data;
+
+  if (!isRecord(payload) || !Array.isArray(payload["absences"]) || !payload["absences"].every(isAbsenceDTO)) {
+    return { payload: null, savedAt: null };
+  }
+
+  return {
+    payload: {
+      absences: payload["absences"],
+    },
+    savedAt: stored.savedAt,
+  };
+}
+
+function readCalendarRequestsOffline(month: string): {
+  payload: CalendarRequestsOfflinePayload | null;
+  savedAt: string | null;
+} {
+  const stored = readOfflineData<CalendarRequestsOfflinePayload>(
+    "calendar",
+    CALENDAR_OFFLINE_COMPANY_SCOPE,
+    `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarRequestsOfflineKey(month)}`
+  );
+
+  if (!stored) {
+    return { payload: null, savedAt: null };
+  }
+
+  const payload = stored.data;
+
+  if (!isRecord(payload) || !Array.isArray(payload["requests"]) || !payload["requests"].every(isAbsenceRequestDTO)) {
+    return { payload: null, savedAt: null };
+  }
+
+  return {
+    payload: {
+      requests: payload["requests"],
+    },
+    savedAt: stored.savedAt,
+  };
+}
+
+function readCalendarPlansOffline(date: string, selectedUserId: string): {
+  payload: CalendarPlansOfflinePayload | null;
+  savedAt: string | null;
+} {
+  const stored = readOfflineData<CalendarPlansOfflinePayload>(
+    "calendar",
+    CALENDAR_OFFLINE_COMPANY_SCOPE,
+    `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarPlansOfflineKey(date, selectedUserId)}`
+  );
+
+  if (!stored) {
+    return { payload: null, savedAt: null };
+  }
+
+  const payload = stored.data;
+
+  if (!isRecord(payload) || !Array.isArray(payload["entries"]) || !payload["entries"].every(isPlanEntry)) {
+    return { payload: null, savedAt: null };
+  }
+
+  return {
+    payload: {
+      entries: payload["entries"],
+    },
+    savedAt: stored.savedAt,
+  };
+}
+
+function readCalendarAppointmentsOffline(date: string): {
+  payload: CalendarAppointmentsOfflinePayload | null;
+  savedAt: string | null;
+} {
+  const stored = readOfflineData<CalendarAppointmentsOfflinePayload>(
+    "calendar",
+    CALENDAR_OFFLINE_COMPANY_SCOPE,
+    `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarAppointmentsOfflineKey(date)}`
+  );
+
+  if (!stored) {
+    return { payload: null, savedAt: null };
+  }
+
+  const payload = stored.data;
+
+  if (!isRecord(payload) || !Array.isArray(payload["events"]) || !payload["events"].every(isCalendarEventDTO)) {
+    return { payload: null, savedAt: null };
+  }
+
+  return {
+    payload: {
+      events: payload["events"],
+    },
+    savedAt: stored.savedAt,
+  };
+}
+
+function readCalendarUsersOffline(): {
+  payload: CalendarUsersOfflinePayload | null;
+  savedAt: string | null;
+} {
+  const stored = readOfflineData<CalendarUsersOfflinePayload>(
+    "calendar",
+    CALENDAR_OFFLINE_COMPANY_SCOPE,
+    `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarUsersOfflineKey()}`
+  );
+
+  if (!stored) {
+    return { payload: null, savedAt: null };
+  }
+
+  const payload = stored.data;
+
+  if (!isRecord(payload) || !Array.isArray(payload["users"])) {
+    return { payload: null, savedAt: null };
+  }
+
+  const users: Array<{ id: string; fullName: string }> = [];
+
+  for (const item of payload["users"]) {
+    if (!isRecord(item)) {
+      return { payload: null, savedAt: null };
+    }
+
+    const id = getStringField(item, "id");
+    const fullName = getStringField(item, "fullName");
+
+    if (!id || !fullName) {
+      return { payload: null, savedAt: null };
+    }
+
+    users.push({ id, fullName });
+  }
+
+  return {
+    payload: { users },
+    savedAt: stored.savedAt,
+  };
+}
+
+function readCalendarSessionOffline(): {
+  payload: SessionDTO | null;
+  savedAt: string | null;
+} {
+  const stored = readOfflineData<SessionDTO>(
+    "calendar",
+    CALENDAR_OFFLINE_COMPANY_SCOPE,
+    `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarSessionOfflineKey()}`
+  );
+
+  if (!stored || !isSessionDTO(stored.data)) {
+    return { payload: null, savedAt: null };
+  }
+
+  return {
+    payload: stored.data,
+    savedAt: stored.savedAt,
+  };
+}
+
+function formatOfflineDateTimeDE(value: string | null): string {
+  if (!value) {
+    return "—";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat("de-DE", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 type KalenderPageProps = {
   forceAdminOwnCalendar?: boolean;
 };
@@ -772,6 +1052,8 @@ export default function KalenderPage({
   forceAdminOwnCalendar = false,
 }: KalenderPageProps) {
   const router = useRouter();
+  const { isOnline } = useOfflineStatus();
+
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const [viewMode, setViewMode] = useState<CalendarViewMode>("MONTH");
 
@@ -828,6 +1110,21 @@ export default function KalenderPage({
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showingOfflineData, setShowingOfflineData] = useState(false);
+  const [offlineSavedAt, setOfflineSavedAt] = useState<string | null>(null);
+  useOfflineQueueSync(() => {
+    void reloadMonthAll();
+
+    if (selectedDate) {
+      if (isAdminOwnCalendar) {
+        void loadAppointmentsForDay(selectedDate);
+      } else if (isAdminViewingEmployee) {
+        void loadAdminEmployeePlansForDay(selectedDate);
+      } else {
+        void loadPlansForDay(selectedDate);
+      }
+    }
+  });
 
   const ym = useMemo(() => monthKey(cursor), [cursor]);
   const isAdmin = forceAdminOwnCalendar || session?.role === "ADMIN";
@@ -894,6 +1191,14 @@ export default function KalenderPage({
         if (forceAdminOwnCalendar) {
           if (parsed && parsed.role === "ADMIN") {
             setSession(parsed);
+
+            saveOfflineData<SessionDTO>(
+              "calendar",
+              CALENDAR_OFFLINE_COMPANY_SCOPE,
+              `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarSessionOfflineKey()}`,
+              parsed
+            );
+
             return;
           }
 
@@ -911,9 +1216,25 @@ export default function KalenderPage({
         }
 
         setSession(parsed);
+
+        if (parsed) {
+          saveOfflineData<SessionDTO>(
+            "calendar",
+            CALENDAR_OFFLINE_COMPANY_SCOPE,
+            `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarSessionOfflineKey()}`,
+            parsed
+          );
+        }
       })
       .catch(() => {
         if (!alive) return;
+
+        const offline = readCalendarSessionOffline();
+
+        if (offline.payload) {
+          setSession(offline.payload);
+          return;
+        }
 
         if (forceAdminOwnCalendar) {
           setSession({
@@ -943,9 +1264,18 @@ export default function KalenderPage({
     fetch("/api/users")
       .then((r) => r.json())
       .then((j: unknown) => {
-        if (!isRecord(j) || j["ok"] !== true) return;
+        if (!isRecord(j) || j["ok"] !== true) {
+          const offline = readCalendarUsersOffline();
+          setUsers(offline.payload?.users ?? []);
+          return;
+        }
+
         const list = j["users"];
-        if (!Array.isArray(list)) return;
+        if (!Array.isArray(list)) {
+          const offline = readCalendarUsersOffline();
+          setUsers(offline.payload?.users ?? []);
+          return;
+        }
 
         const parsed: UserOption[] = [];
         for (const it of list) {
@@ -954,9 +1284,20 @@ export default function KalenderPage({
           const fullName = getStringField(it, "fullName");
           if (id && fullName) parsed.push({ id, fullName });
         }
+
         setUsers(parsed);
+
+        saveOfflineData<CalendarUsersOfflinePayload>(
+          "calendar",
+          CALENDAR_OFFLINE_COMPANY_SCOPE,
+          `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarUsersOfflineKey()}`,
+          { users: parsed }
+        );
       })
-      .catch(() => setUsers([]));
+      .catch(() => {
+        const offline = readCalendarUsersOffline();
+        setUsers(offline.payload?.users ?? []);
+      });
   }, [isAdmin]);
 
   useEffect(() => {
@@ -971,13 +1312,55 @@ export default function KalenderPage({
 
   async function loadCalendar(): Promise<void> {
     setLoading(true);
+
     try {
       const qs = new URLSearchParams({ month: ym });
       if (isAdminViewingEmployee && selectedUserId) qs.set("userId", selectedUserId);
+
       const r = await fetch(`/api/calendar?${qs.toString()}`);
       const j: unknown = await r.json();
       const parsed = parseCalendarResponse(j);
-      setData(parsed.ok ? parsed.days : []);
+
+      if (parsed.ok) {
+        setData(parsed.days);
+        setShowingOfflineData(false);
+        setOfflineSavedAt(null);
+
+        saveOfflineData<CalendarMonthOfflinePayload>(
+          "calendar",
+          CALENDAR_OFFLINE_COMPANY_SCOPE,
+          `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarMonthOfflineKey(ym, selectedUserId)}`,
+          { days: parsed.days }
+        );
+
+        return;
+      }
+
+      const offline = readCalendarMonthOffline(ym, selectedUserId);
+
+      if (offline.payload) {
+        setData(offline.payload.days);
+        setShowingOfflineData(true);
+        setOfflineSavedAt(offline.savedAt);
+        return;
+      }
+
+      setData([]);
+      setShowingOfflineData(false);
+      setOfflineSavedAt(null);
+    } catch {
+      const offline = readCalendarMonthOffline(ym, selectedUserId);
+
+      if (offline.payload) {
+        setData(offline.payload.days);
+        setShowingOfflineData(true);
+        setOfflineSavedAt(offline.savedAt);
+        return;
+      }
+
+      setData([]);
+      setShowingOfflineData(false);
+      setOfflineSavedAt(null);
     } finally {
       setLoading(false);
     }
@@ -985,10 +1368,30 @@ export default function KalenderPage({
 
   async function loadAbsencesMonth(): Promise<void> {
     setAbsLoading(true);
+
     try {
       const r = await fetch(`/api/absences?${new URLSearchParams({ month: ym }).toString()}`);
       const j: unknown = await r.json();
-      setMonthAbsences(r.ok ? parseAbsencesResponse(j) : []);
+
+      if (r.ok) {
+        const parsed = parseAbsencesResponse(j);
+        setMonthAbsences(parsed);
+
+        saveOfflineData<CalendarAbsencesOfflinePayload>(
+          "calendar",
+          CALENDAR_OFFLINE_COMPANY_SCOPE,
+          `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarAbsencesOfflineKey(ym)}`,
+          { absences: parsed }
+        );
+
+        return;
+      }
+
+      const offline = readCalendarAbsencesOffline(ym);
+      setMonthAbsences(offline.payload?.absences ?? []);
+    } catch {
+      const offline = readCalendarAbsencesOffline(ym);
+      setMonthAbsences(offline.payload?.absences ?? []);
     } finally {
       setAbsLoading(false);
     }
@@ -996,10 +1399,30 @@ export default function KalenderPage({
 
   async function loadRequestsMonth(): Promise<void> {
     setReqLoading(true);
+
     try {
       const r = await fetch(`/api/absence-requests?${new URLSearchParams({ month: ym }).toString()}`);
       const j: unknown = await r.json();
-      setMonthRequests(r.ok ? parseAbsenceRequestsResponse(j) : []);
+
+      if (r.ok) {
+        const parsed = parseAbsenceRequestsResponse(j);
+        setMonthRequests(parsed);
+
+        saveOfflineData<CalendarRequestsOfflinePayload>(
+          "calendar",
+          CALENDAR_OFFLINE_COMPANY_SCOPE,
+          `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarRequestsOfflineKey(ym)}`,
+          { requests: parsed }
+        );
+
+        return;
+      }
+
+      const offline = readCalendarRequestsOffline(ym);
+      setMonthRequests(offline.payload?.requests ?? []);
+    } catch {
+      const offline = readCalendarRequestsOffline(ym);
+      setMonthRequests(offline.payload?.requests ?? []);
     } finally {
       setReqLoading(false);
     }
@@ -1089,13 +1512,37 @@ export default function KalenderPage({
       const j: unknown = await r.json();
 
       if (!r.ok) {
+        const offline = readCalendarPlansOffline(date, "");
+
+        if (offline.payload) {
+          setDayPlans(offline.payload.entries);
+          setPlansError("Offline-Daten werden angezeigt. Der Tagesplan konnte nicht aktuell geladen werden.");
+          return;
+        }
+
         setDayPlans([]);
         setPlansError(extractErrorMessage(j, "Plan konnte nicht geladen werden."));
         return;
       }
 
-      setDayPlans(parsePlanEntriesResponse(j));
+      const parsed = parsePlanEntriesResponse(j);
+      setDayPlans(parsed);
+
+      saveOfflineData<CalendarPlansOfflinePayload>(
+        "calendar",
+        CALENDAR_OFFLINE_COMPANY_SCOPE,
+        `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarPlansOfflineKey(date, "")}`,
+        { entries: parsed }
+      );
     } catch {
+      const offline = readCalendarPlansOffline(date, "");
+
+      if (offline.payload) {
+        setDayPlans(offline.payload.entries);
+        setPlansError("Offline-Daten werden angezeigt, weil gerade keine Netzwerkverbindung verfügbar ist.");
+        return;
+      }
+
       setDayPlans([]);
       setPlansError("Netzwerkfehler beim Laden des Plans.");
     } finally {
@@ -1126,13 +1573,37 @@ export default function KalenderPage({
       const j: unknown = await r.json();
 
       if (!r.ok) {
+        const offline = readCalendarPlansOffline(date, selectedUserId);
+
+        if (offline.payload) {
+          setAdminEmployeeDayPlans(offline.payload.entries);
+          setAdminEmployeePlansError("Offline-Daten werden angezeigt. Der Mitarbeiter-Plan konnte nicht aktuell geladen werden.");
+          return;
+        }
+
         setAdminEmployeeDayPlans([]);
         setAdminEmployeePlansError(extractErrorMessage(j, "Plan des Mitarbeiters konnte nicht geladen werden."));
         return;
       }
 
-      setAdminEmployeeDayPlans(parsePlanEntriesResponse(j));
+      const parsed = parsePlanEntriesResponse(j);
+      setAdminEmployeeDayPlans(parsed);
+
+      saveOfflineData<CalendarPlansOfflinePayload>(
+        "calendar",
+        CALENDAR_OFFLINE_COMPANY_SCOPE,
+        `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarPlansOfflineKey(date, selectedUserId)}`,
+        { entries: parsed }
+      );
     } catch {
+      const offline = readCalendarPlansOffline(date, selectedUserId);
+
+      if (offline.payload) {
+        setAdminEmployeeDayPlans(offline.payload.entries);
+        setAdminEmployeePlansError("Offline-Daten werden angezeigt, weil gerade keine Netzwerkverbindung verfügbar ist.");
+        return;
+      }
+
       setAdminEmployeeDayPlans([]);
       setAdminEmployeePlansError("Netzwerkfehler beim Laden des Mitarbeiter-Plans.");
     } finally {
@@ -1143,19 +1614,54 @@ export default function KalenderPage({
   async function loadAppointmentsForDay(date: string): Promise<void> {
     setApptLoading(true);
     setApptError(null);
+
     try {
       const r = await fetch(`/api/admin/appointments?date=${encodeURIComponent(date)}`);
       const j: unknown = await r.json();
+
       if (!r.ok) {
+        const offline = readCalendarAppointmentsOffline(date);
+
+        if (offline.payload) {
+          const list = offline.payload.events
+            .slice()
+            .sort((a, b) => (a.startHHMM < b.startHHMM ? -1 : a.startHHMM > b.startHHMM ? 1 : 0));
+
+          setDayAppointments(list);
+          setApptError("Offline-Daten werden angezeigt. Die Termine konnten nicht aktuell geladen werden.");
+          return;
+        }
+
         setDayAppointments([]);
         setApptError(extractErrorMessage(j, "Termine konnten nicht geladen werden."));
         return;
       }
+
       const list = parseAppointmentsResponse(j)
         .slice()
         .sort((a, b) => (a.startHHMM < b.startHHMM ? -1 : a.startHHMM > b.startHHMM ? 1 : 0));
+
       setDayAppointments(list);
+
+      saveOfflineData<CalendarAppointmentsOfflinePayload>(
+        "calendar",
+        CALENDAR_OFFLINE_COMPANY_SCOPE,
+        `${CALENDAR_OFFLINE_USER_SCOPE}:${buildCalendarAppointmentsOfflineKey(date)}`,
+        { events: list }
+      );
     } catch {
+      const offline = readCalendarAppointmentsOffline(date);
+
+      if (offline.payload) {
+        const list = offline.payload.events
+          .slice()
+          .sort((a, b) => (a.startHHMM < b.startHHMM ? -1 : a.startHHMM > b.startHHMM ? 1 : 0));
+
+        setDayAppointments(list);
+        setApptError("Offline-Daten werden angezeigt, weil gerade keine Netzwerkverbindung verfügbar ist.");
+        return;
+      }
+
       setDayAppointments([]);
       setApptError("Netzwerkfehler beim Laden der Termine.");
     } finally {
@@ -1311,6 +1817,27 @@ export default function KalenderPage({
       return;
     }
 
+    if (!isOnline) {
+      enqueueOfflineAction({
+        id: createOfflineActionId(),
+        type: "SUBMIT_ABSENCE_REQUEST",
+        createdAt: new Date().toISOString(),
+        payload: {
+          startDate: absenceStart,
+          endDate: absenceEnd,
+          type: absenceType,
+          dayPortion: absenceDayPortion,
+          compensation: absenceCompensation,
+          noteEmployee: requestNote.trim(),
+        },
+      });
+
+      setOpen(false);
+      setSelectedRequestBlock(null);
+      setRequestNote("");
+      return;
+    }
+
     setSaving(true);
     try {
       const r = await fetch("/api/absence-requests", {
@@ -1364,6 +1891,46 @@ export default function KalenderPage({
     }
     if (!/^\d{2}:\d{2}$/.test(apptStart) || !/^\d{2}:\d{2}$/.test(apptEnd)) {
       setApptError("Start/Ende muss HH:MM sein.");
+      return;
+    }
+
+    if (!isOnline) {
+      if (apptEditingId) {
+        enqueueOfflineAction({
+          id: createOfflineActionId(),
+          type: "UPDATE_ADMIN_APPOINTMENT",
+          createdAt: new Date().toISOString(),
+          payload: {
+            id: apptEditingId,
+            date,
+            startHHMM: apptStart,
+            endHHMM: apptEnd,
+            title: titleValue,
+            location: apptLocation.trim(),
+            notes: apptNotes.trim(),
+          },
+        });
+      } else {
+        enqueueOfflineAction({
+          id: createOfflineActionId(),
+          type: "CREATE_ADMIN_APPOINTMENT",
+          createdAt: new Date().toISOString(),
+          payload: {
+            date,
+            startHHMM: apptStart,
+            endHHMM: apptEnd,
+            title: titleValue,
+            location: apptLocation.trim(),
+            notes: apptNotes.trim(),
+          },
+        });
+      }
+
+      resetAppointmentForm();
+      if (adminMode === "edit") {
+        setAdminMode("create-from-day");
+      }
+      setOpen(false);
       return;
     }
 
@@ -1443,6 +2010,24 @@ export default function KalenderPage({
 
   async function deleteAppointment(id: string): Promise<void> {
     if (!selectedDate) return;
+
+    if (!isOnline) {
+      enqueueOfflineAction({
+        id: createOfflineActionId(),
+        type: "DELETE_ADMIN_APPOINTMENT",
+        createdAt: new Date().toISOString(),
+        payload: {
+          id,
+        },
+      });
+
+      if (apptEditingId === id) {
+        resetAppointmentForm();
+      }
+
+      setDayAppointments((prev) => prev.filter((item) => item.id !== id));
+      return;
+    }
     setApptError(null);
     setSaving(true);
     try {
@@ -1516,7 +2101,25 @@ export default function KalenderPage({
 
   return (
     <AppShell activeLabel="#wirkönnendas">
-      <div className="card card-olive" style={{ padding: 18, position: "relative" }}>
+      <div style={{ display: "grid", gap: 12 }}>
+        {showingOfflineData ? (
+          <div
+            className="card"
+            style={{
+              padding: 14,
+              borderColor: "rgba(255, 193, 7, 0.35)",
+            }}
+          >
+            <div style={{ color: "rgba(255, 220, 120, 0.98)", fontWeight: 900 }}>
+              Es werden gespeicherte Kalenderdaten angezeigt.
+            </div>
+            <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 6 }}>
+              Letzte erfolgreiche Synchronisierung: {formatOfflineDateTimeDE(offlineSavedAt)}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="card card-olive" style={{ padding: 18, position: "relative" }}>
         <div className="calendar-mobile-header">
           <button
             className="btn calendar-nav-btn"
@@ -2685,6 +3288,7 @@ export default function KalenderPage({
           </>
         )}
       </Modal>
+      </div>
     </AppShell>
   );
 }

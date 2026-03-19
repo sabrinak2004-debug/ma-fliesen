@@ -216,7 +216,11 @@ export default function PushBootstrap() {
           return;
         }
 
-        const registration = await navigator.serviceWorker.register("/sw.js");
+        const registration = await navigator.serviceWorker.register("/sw.js", {
+          scope: "/",
+          updateViaCache: "none",
+        });
+        await navigator.serviceWorker.ready;
         void getTenantAppleTouchIconHref(companySubdomain);
 
         if (Notification.permission !== "granted") {
