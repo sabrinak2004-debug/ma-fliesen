@@ -475,6 +475,7 @@ function ErfassungPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [meResolved, setMeResolved] = useState(false);
 
   // Create-Form (ohne fullName)
   const [workDate, setWorkDate] = useState<string>(() => toIsoDateLocal(new Date()));
@@ -667,6 +668,11 @@ useEffect(() => {
     } catch {
       if (!alive) return;
       router.replace("/login");
+      return;
+    } finally {
+      if (alive) {
+        setMeResolved(true);
+      }
     }
   })();
 
@@ -1203,6 +1209,16 @@ useEffect(() => {
     currentMissingWorkdaysCount,
     graceWorkdaysLimit,
   ]);
+
+  if (!meResolved) {
+    return (
+      <AppShell activeLabel="#wirkönnendas">
+        <div className="card" style={{ padding: 14 }}>
+          <div style={{ color: "var(--muted)" }}>Lade...</div>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell activeLabel="#wirkönnendas">

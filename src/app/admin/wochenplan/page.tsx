@@ -975,11 +975,11 @@ export default function AdminWochenplanPage() {
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
           <Link
-            href="/kalender"
+            href="/admin/appointments"
             className="pill"
             style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
           >
-            ⟵ Home
+            ⟵ Termine
           </Link>
 
           <button

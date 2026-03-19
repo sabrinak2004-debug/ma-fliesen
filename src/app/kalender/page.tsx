@@ -764,7 +764,13 @@ function smallDot(color: string): React.CSSProperties {
   };
 }
 
-export default function KalenderPage() {
+type KalenderPageProps = {
+  forceAdminOwnCalendar?: boolean;
+};
+
+export default function KalenderPage({
+  forceAdminOwnCalendar = false,
+}: KalenderPageProps) {
   const router = useRouter();
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const [viewMode, setViewMode] = useState<CalendarViewMode>("MONTH");
@@ -824,7 +830,7 @@ export default function KalenderPage() {
   const [error, setError] = useState<string | null>(null);
 
   const ym = useMemo(() => monthKey(cursor), [cursor]);
-  const isAdmin = session?.role === "ADMIN";
+  const isAdmin = forceAdminOwnCalendar || session?.role === "ADMIN";
   const isAdminOwnCalendar = isAdmin && !selectedUserId;
   const isAdminViewingEmployee = isAdmin && !!selectedUserId;
 
@@ -882,17 +888,54 @@ export default function KalenderPage() {
       .then((r) => r.json())
       .then((j: unknown) => {
         if (!alive) return;
-        setSession(parseMeResponse(j));
+
+        const parsed = parseMeResponse(j);
+
+        if (forceAdminOwnCalendar) {
+          if (parsed && parsed.role === "ADMIN") {
+            setSession(parsed);
+            return;
+          }
+
+          setSession({
+            userId: "",
+            fullName: "",
+            role: "ADMIN",
+            companyId: "",
+            companyName: "",
+            companySubdomain: "",
+            companyLogoUrl: null,
+            primaryColor: null,
+          });
+          return;
+        }
+
+        setSession(parsed);
       })
       .catch(() => {
         if (!alive) return;
+
+        if (forceAdminOwnCalendar) {
+          setSession({
+            userId: "",
+            fullName: "",
+            role: "ADMIN",
+            companyId: "",
+            companyName: "",
+            companySubdomain: "",
+            companyLogoUrl: null,
+            primaryColor: null,
+          });
+          return;
+        }
+
         setSession(null);
       });
 
     return () => {
       alive = false;
     };
-  }, []);
+  }, [forceAdminOwnCalendar]);
 
   useEffect(() => {
     if (!isAdmin) return;

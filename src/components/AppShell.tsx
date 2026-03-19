@@ -205,14 +205,26 @@ export default function AppShell({
   activeLabel?: string;
 }) {
   const pathname = usePathname();
-  const [session, setSession] = useState<SessionData | null>(null);
+  const [session, setSession] = useState<SessionData | null>(() => {
+    if (typeof window === "undefined") return null;
+
+    try {
+      const raw = window.localStorage.getItem("app_session_cache");
+      if (!raw) return null;
+
+      const parsed: unknown = JSON.parse(raw);
+      return isSessionData(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  });
   const [sessionLoading, setSessionLoading] = useState(true);
   const [openTaskCount, setOpenTaskCount] = useState(0);
   const [openVacationRequests, setOpenVacationRequests] = useState(0);
   const [openSickRequests, setOpenSickRequests] = useState(0);
   const [openCorrectionRequests, setOpenCorrectionRequests] = useState(0);
 
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -235,42 +247,41 @@ export default function AppShell({
 
         const json = (await res.json()) as unknown;
 
+        const parsed = parseMe(json);
+
         if (!alive) return;
-        setSession(parseMe(json));
+
+        setSession(parsed);
+
+        try {
+          if (parsed) {
+            window.localStorage.setItem("app_session_cache", JSON.stringify(parsed));
+          } else {
+            window.localStorage.removeItem("app_session_cache");
+          }
+        } catch {
+          // ignore localStorage errors
+        }
       } catch {
         if (!alive) return;
+
         setSession(null);
+
+        try {
+          window.localStorage.removeItem("app_session_cache");
+        } catch {
+          // ignore localStorage errors
+        }
       } finally {
         if (!alive) return;
         setSessionLoading(false);
       }
     }
 
-    function onVisibilityChange() {
-      if (document.visibilityState === "visible") {
-        void loadSession();
-      }
-    }
-
-    function onFocus() {
-      void loadSession();
-    }
-
-    function onPageShow() {
-      void loadSession();
-    }
-
     void loadSession();
-
-    window.addEventListener("focus", onFocus);
-    window.addEventListener("pageshow", onPageShow);
-    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       alive = false;
-      window.removeEventListener("focus", onFocus);
-      window.removeEventListener("pageshow", onPageShow);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 
@@ -371,12 +382,15 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
   }
 }, [session]);
 
-  const isAdmin = session?.role === "ADMIN";
-  const brand = buildBrandConfig(session);
-  const brandLogoSrc = normalizeLogoSrc(
-    brand.logoUrl,
-    brand.companySubdomain
-  );
+  const pathnameSuggestsAdmin = pathname.startsWith("/admin");
+  const resolvedRole: "ADMIN" | "EMPLOYEE" =
+    session?.role ?? (pathnameSuggestsAdmin ? "ADMIN" : "EMPLOYEE");
+  const isAdmin = resolvedRole === "ADMIN";
+
+  const brand = session ? buildBrandConfig(session) : null;
+  const brandLogoSrc = brand
+    ? normalizeLogoSrc(brand.logoUrl, brand.companySubdomain)
+    : null;
 
   const employeeNavItems: NavItem[] = [
     { href: "/erfassung", label: "Erfassung", icon: "⊞" },
@@ -397,6 +411,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
   ];
 
   const navItems = isAdmin ? adminNavItems : employeeNavItems;
+  const navReady = session !== null || !sessionLoading;
 
   useEffect(() => {
     void loadOpenTaskCount();
@@ -422,14 +437,18 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
 }, [loadOpenTaskCount, loadAdminRequestCounts]);
 
   useEffect(() => {
+    if (!brand) return;
+
     applyAccentColorToDocument(brand.accent);
 
     return () => {
       resetAccentColorOnDocument();
     };
-  }, [brand.accent]);
+  }, [brand?.accent]);
 
   useEffect(() => {
+    if (!brand) return;
+
     applyTenantHeadBranding({
       title: brand.appTitle,
       themeColor: "#0b0f0c",
@@ -437,7 +456,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
       manifestHref: getTenantManifestHref(brand.companySubdomain),
       appleTouchIconHref: getTenantAppleTouchIconHref(brand.companySubdomain),
     });
-  }, [brand]);
+  }, [brand?.appTitle, brand?.displayName, brand?.companySubdomain]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -460,6 +479,11 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
     } finally {
       setMenuOpen(false);
       setMobileOpen(false);
+      try {
+        window.localStorage.removeItem("app_session_cache");
+      } catch {
+        // ignore localStorage errors
+      }
       const targetLogin =
         session?.companySubdomain
           ? `/${session.companySubdomain}/login`
@@ -469,12 +493,19 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
     }
   }
 
-  const userName = sessionLoading
-    ? "Lade..."
-    : session?.fullName ?? "Nicht eingeloggt";
+  const userName =
+    sessionLoading && !session
+      ? "Lade..."
+      : session?.fullName ?? (isAdmin ? "Admin" : "Mitarbeiter");
 
   const userInitials =
-    sessionLoading ? "…" : session ? initialsFromName(session.fullName) : "U";
+    sessionLoading && !session
+      ? "…"
+      : session
+        ? initialsFromName(session.fullName)
+        : isAdmin
+          ? "A"
+          : "M";
 
   return (
     <div style={{ padding: "18px 0 42px" }}>
@@ -537,7 +568,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                   {brandLogoSrc ? (
                     <img
                       src={brandLogoSrc}
-                      alt={`${brand.displayName} Logo`}
+                      alt={`${brand?.displayName ?? "Logo"} Logo`}
                       style={{
                         width: 92,
                         height: 92,
@@ -545,7 +576,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                         display: "block",
                       }}
                     />
-                  ) : (
+                  ) : brand ? (
                     <div
                       style={{
                         width: 110,
@@ -564,7 +595,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     >
                       {brand.displayName}
                     </div>
-                  )}
+                  ) : null}
                   <div
                     style={{
                       fontWeight: 900,
@@ -573,7 +604,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       marginTop: 6,
                     }}
                   >
-                    {brand.displayName}
+                  {brand?.displayName ?? ""}
                   </div>
                   <div
                     style={{
@@ -586,7 +617,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       maxWidth: 220,
                     }}
                   >
-                    {activeLabel ?? brand.slogan}
+                    {activeLabel ?? brand?.slogan ?? ""}
                   </div>
                 </div>
               </div>
@@ -712,7 +743,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
               <div style={{ height: 6 }} />
 
               <nav className="appshell-mobile-nav">
-                {navItems.map((item) => {
+                {(navReady ? navItems : []).map((item) => {
                   const active = isActive(pathname, item.href);
                   const showTaskBadge =
                     !isAdmin && item.href === "/aufgaben" && openTaskCount > 0;
@@ -809,7 +840,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                 {brandLogoSrc ? (
                   <img
                     src={brandLogoSrc}
-                    alt={`${brand.displayName} Logo`}
+                    alt={`${brand?.displayName ?? "Logo"} Logo`}
                     style={{
                       width: 132,
                       height: 132,
@@ -818,7 +849,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       flexShrink: 0,
                     }}
                   />
-                ) : (
+                ) : brand ? (
                   <div
                     style={{
                       width: 120,
@@ -837,9 +868,9 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                   >
                     {brand.displayName}
                   </div>
-                )}
+                ) : null}
                 <div style={{ minWidth: 0, paddingTop: 6 }}>
-                  <div style={{ fontWeight: 900, lineHeight: 1.05 }}>{brand.displayName}</div>
+                  <div style={{ fontWeight: 900, lineHeight: 1.05 }}>{brand?.displayName ?? ""}</div>
                   <div
                     style={{
                       color: "var(--muted-2)",
@@ -850,7 +881,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       textOverflow: "ellipsis",
                     }}
                   >
-                    {activeLabel ?? brand.slogan}
+                    {activeLabel ?? brand?.slogan ?? ""}
                   </div>
                 </div>
               </div>
@@ -867,7 +898,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
             </div>
 
             <nav className="appshell-sidebar-nav">
-              {navItems.map((item) => {
+              {(navReady ? navItems : []).map((item) => {
                 const active = isActive(pathname, item.href);
                 const showTaskBadge =
                   !isAdmin && item.href === "/aufgaben" && openTaskCount > 0;
@@ -979,7 +1010,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       lineHeight: 1.1,
                     }}
                   >
-                    {activeLabel ?? brand.displayName}
+                    {activeLabel ?? brand?.slogan ?? ""}
                   </div>
                   <div
                     style={{

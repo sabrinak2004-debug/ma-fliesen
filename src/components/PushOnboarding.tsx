@@ -156,6 +156,7 @@ export default function PushOnboarding() {
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | "unknown">("unknown");
   const [hasSubscription, setHasSubscription] = useState<boolean>(false);
+  const [resolved, setResolved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>("");
 
@@ -172,14 +173,15 @@ export default function PushOnboarding() {
       if (!supportsPush) {
         if (!alive) return;
         setSupported(false);
+        setPermission("unknown");
+        setHasSubscription(false);
+        setResolved(true);
         return;
       }
 
-      if (!alive) return;
-      setSupported(true);
-      setPermission(Notification.permission);
-
       try {
+        const currentPermission = Notification.permission;
+
         const meResponse = await fetch("/api/me", {
           method: "GET",
           credentials: "include",
@@ -192,18 +194,31 @@ export default function PushOnboarding() {
         if (!alive) return;
 
         if (!meResponse.ok || !parsedMe.ok || !parsedMe.session) {
+          setSupported(true);
+          setPermission(currentPermission);
+          setHasSubscription(false);
+          setResolved(true);
           return;
         }
 
-        setCompanySubdomain(parsedMe.session.companySubdomain.trim().toLowerCase());
+        const normalizedSubdomain = parsedMe.session.companySubdomain.trim().toLowerCase();
+        setCompanySubdomain(normalizedSubdomain);
 
         const registration = await navigator.serviceWorker.register("/sw.js");
         const existingSubscription = await registration.pushManager.getSubscription();
 
         if (!alive) return;
+
+        setSupported(true);
+        setPermission(currentPermission);
         setHasSubscription(existingSubscription !== null);
+        setResolved(true);
       } catch {
         if (!alive) return;
+        setSupported(true);
+        setPermission(Notification.permission);
+        setHasSubscription(false);
+        setResolved(true);
       }
     }
 
@@ -215,10 +230,11 @@ export default function PushOnboarding() {
   }, []);
 
   const shouldShow = useMemo(() => {
+    if (!resolved) return false;
     if (!supported) return false;
     if (permission === "denied") return false;
     return !hasSubscription;
-  }, [supported, permission, hasSubscription]);
+  }, [resolved, supported, permission, hasSubscription]);
 
   async function enablePush(): Promise<void> {
     setLoading(true);
@@ -268,6 +284,7 @@ export default function PushOnboarding() {
       if (existingSubscription) {
         await sendSubscriptionToBackend(existingSubscription.toJSON(), normalizedSubdomain);
         setHasSubscription(true);
+        setResolved(true);
         setMessage("Push ist jetzt aktiviert.");
         return;
       }
@@ -282,6 +299,7 @@ export default function PushOnboarding() {
       await sendSubscriptionToBackend(subscription.toJSON(), normalizedSubdomain);
 
       setHasSubscription(true);
+      setResolved(true);
       setMessage("Push ist jetzt aktiviert.");
     } catch (error: unknown) {
       const errorMessage =
