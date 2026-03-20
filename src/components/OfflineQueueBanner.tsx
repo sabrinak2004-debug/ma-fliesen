@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { readOfflineQueue } from "@/lib/offline/queue";
 import { flushOfflineQueue } from "@/lib/offline/sync";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
@@ -15,8 +15,7 @@ export default function OfflineQueueBanner() {
   const { isOnline } = useOfflineStatus();
   const [queueCount, setQueueCount] = useState<number>(() => getQueueCount());
   const [syncState, setSyncState] = useState<SyncState>("idle");
-  const [statusMessage, setStatusMessage] = useState("");
-  const autoSyncRanRef = useRef(false);
+  const [statusMessage, setStatusMessage] = useState<string>("");
 
   useEffect(() => {
     function updateQueueCount(): void {
@@ -26,56 +25,13 @@ export default function OfflineQueueBanner() {
     window.addEventListener("storage", updateQueueCount);
     window.addEventListener("focus", updateQueueCount);
     window.addEventListener("online", updateQueueCount);
-    window.addEventListener("offline-queue-changed", updateQueueCount as EventListener);
 
     return () => {
       window.removeEventListener("storage", updateQueueCount);
       window.removeEventListener("focus", updateQueueCount);
       window.removeEventListener("online", updateQueueCount);
-      window.removeEventListener("offline-queue-changed", updateQueueCount as EventListener);
     };
   }, []);
-
-  useEffect(() => {
-    if (!isOnline) return;
-    if (autoSyncRanRef.current) return;
-    if (queueCount === 0) return;
-
-    autoSyncRanRef.current = true;
-
-    void (async () => {
-      const result = await flushOfflineQueue();
-      const after = getQueueCount();
-      setQueueCount(after);
-
-      if (result.failed > 0) {
-        setSyncState("error");
-        setStatusMessage(
-          `${result.processed} Aktion(en) synchronisiert, ${result.failed} Aktion(en) noch offen.`
-        );
-        return;
-      }
-
-      if (result.processed > 0) {
-        setSyncState("success");
-        setStatusMessage(`${result.processed} Aktion(en) erfolgreich synchronisiert.`);
-      }
-    })();
-  }, [isOnline, queueCount]);
-
-  useEffect(() => {
-    if (syncState === "idle") return;
-
-    const timer = window.setTimeout(() => {
-      setSyncState("idle");
-      setStatusMessage("");
-      setQueueCount(getQueueCount());
-    }, 3500);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [syncState]);
 
   const visible = useMemo(() => {
     return queueCount > 0 || syncState === "syncing" || statusMessage.trim() !== "";
@@ -88,17 +44,13 @@ export default function OfflineQueueBanner() {
       return;
     }
 
-    if (queueCount === 0) {
-      return;
-    }
-
     setSyncState("syncing");
     setStatusMessage("");
 
     try {
       const result = await flushOfflineQueue();
-      const after = getQueueCount();
-      setQueueCount(after);
+      const nextQueueCount = getQueueCount();
+      setQueueCount(nextQueueCount);
 
       if (result.failed > 0) {
         setSyncState("error");
@@ -115,6 +67,20 @@ export default function OfflineQueueBanner() {
       setStatusMessage("Synchronisierung ist fehlgeschlagen.");
     }
   }
+
+  useEffect(() => {
+    if (syncState === "idle") return;
+
+    const timer = window.setTimeout(() => {
+      setSyncState("idle");
+      setStatusMessage("");
+      setQueueCount(getQueueCount());
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [syncState]);
 
   if (!visible) {
     return null;
@@ -160,7 +126,9 @@ export default function OfflineQueueBanner() {
             ? "Offline-Aktionen werden synchronisiert..."
             : statusMessage.trim()
             ? statusMessage
-            : `${queueCount} Offline-Aktion(en) warten auf Synchronisierung.`}
+            : queueCount > 0
+            ? `${queueCount} Offline-Aktion(en) warten auf Synchronisierung.`
+            : ""}
         </div>
 
         <button
