@@ -203,11 +203,11 @@ export default function TenantEntryClient() {
             <form onSubmit={handleSubmit}>
               <div style={{ display: "grid", gap: 14 }}>
                 <div>
-                  <div className="label">Firma oder Subdomain</div>
+                  <div className="label">Ihr Firmenname</div>
                   <input
                     className="input"
                     type="text"
-                    placeholder="z. B. MA Fliesen oder mafliesen"
+                    placeholder="z.B. Musterfirma"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     autoComplete="organization"

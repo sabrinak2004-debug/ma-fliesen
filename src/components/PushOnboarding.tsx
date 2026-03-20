@@ -347,7 +347,7 @@ export default function PushOnboarding() {
 
       {companySubdomain ? (
         <div style={{ marginTop: 8, fontSize: 12, color: "var(--muted-2)" }}>
-          Firmenkontext: {companySubdomain}
+          Firmenname: {companySubdomain}
         </div>
       ) : null}
     </div>
