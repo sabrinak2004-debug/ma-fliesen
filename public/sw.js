@@ -1,11 +1,10 @@
-const STATIC_CACHE_NAME = "ma-fliesen-static-v1";
-const RUNTIME_CACHE_NAME = "ma-fliesen-runtime-v1";
-const OFFLINE_FALLBACK_URL = "/";
+const STATIC_CACHE_NAME = "ma-fliesen-static-v2";
+const RUNTIME_CACHE_NAME = "ma-fliesen-runtime-v2";
 
 const STATIC_ASSETS = [
-  "/",
   "/manifest.json",
 ];
+
 self.addEventListener("install", function (event) {
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME).then(function (cache) {
@@ -18,27 +17,30 @@ self.addEventListener("install", function (event) {
 
 self.addEventListener("activate", function (event) {
   event.waitUntil(
-    caches.keys().then(function (cacheNames) {
-      return Promise.all(
-        cacheNames.map(function (cacheName) {
-          const isOldStaticCache =
-            cacheName.startsWith("ma-fliesen-static-") &&
-            cacheName !== STATIC_CACHE_NAME;
+    caches
+      .keys()
+      .then(function (cacheNames) {
+        return Promise.all(
+          cacheNames.map(function (cacheName) {
+            const isOldStaticCache =
+              cacheName.startsWith("ma-fliesen-static-") &&
+              cacheName !== STATIC_CACHE_NAME;
 
-          const isOldRuntimeCache =
-            cacheName.startsWith("ma-fliesen-runtime-") &&
-            cacheName !== RUNTIME_CACHE_NAME;
+            const isOldRuntimeCache =
+              cacheName.startsWith("ma-fliesen-runtime-") &&
+              cacheName !== RUNTIME_CACHE_NAME;
 
-          if (isOldStaticCache || isOldRuntimeCache) {
-            return caches.delete(cacheName);
-          }
+            if (isOldStaticCache || isOldRuntimeCache) {
+              return caches.delete(cacheName);
+            }
 
-          return Promise.resolve(false);
-        })
-      );
-    }).then(function () {
-      return self.clients.claim();
-    })
+            return Promise.resolve(false);
+          })
+        );
+      })
+      .then(function () {
+        return self.clients.claim();
+      })
   );
 });
 
@@ -59,6 +61,46 @@ self.addEventListener("fetch", function (event) {
     return;
   }
 
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request)
+        .then(function (networkResponse) {
+          if (
+            networkResponse &&
+            networkResponse.status === 200 &&
+            !networkResponse.redirected
+          ) {
+            const responseToCache = networkResponse.clone();
+            caches.open(RUNTIME_CACHE_NAME).then(function (cache) {
+              cache.put(request, responseToCache);
+            });
+          }
+
+          return networkResponse;
+        })
+        .catch(async function () {
+          const cachedResponse = await caches.match(request);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
+          const cachedRoot = await caches.match("/");
+          if (cachedRoot) {
+            return cachedRoot;
+          }
+
+          return new Response("Offline", {
+            status: 503,
+            statusText: "Offline",
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+            },
+          });
+        })
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(request).then(function (cachedResponse) {
       if (cachedResponse) {
@@ -67,7 +109,11 @@ self.addEventListener("fetch", function (event) {
 
       return fetch(request)
         .then(function (networkResponse) {
-          if (!networkResponse || networkResponse.status !== 200) {
+          if (
+            !networkResponse ||
+            networkResponse.status !== 200 ||
+            networkResponse.redirected
+          ) {
             return networkResponse;
           }
 
@@ -79,22 +125,6 @@ self.addEventListener("fetch", function (event) {
           });
         })
         .catch(function () {
-          if (request.mode === "navigate") {
-            return caches.match(OFFLINE_FALLBACK_URL).then(function (fallbackResponse) {
-              if (fallbackResponse) {
-                return fallbackResponse;
-              }
-
-              return new Response("Offline", {
-                status: 503,
-                statusText: "Offline",
-                headers: {
-                  "Content-Type": "text/plain; charset=utf-8",
-                },
-              });
-            });
-          }
-
           return new Response("", {
             status: 504,
             statusText: "Offline cache miss",
@@ -122,13 +152,13 @@ self.addEventListener("push", function (event) {
           ? parsed.companySubdomain.trim().toLowerCase()
           : "";
 
-            const defaultTenantIcon = companySubdomain
-              ? `/tenant-assets/${companySubdomain}/icon-192.jpeg`
-              : "/image_2.jpeg";
+      const defaultTenantIcon = companySubdomain
+        ? `/tenant-assets/${companySubdomain}/icon-192.jpeg`
+        : "/image_2.jpeg";
 
-            const defaultTenantBadge = companySubdomain
-              ? `/tenant-assets/${companySubdomain}/apple-touch-icon.png`
-              : "/image_2.jpeg";
+      const defaultTenantBadge = companySubdomain
+        ? `/tenant-assets/${companySubdomain}/apple-touch-icon.png`
+        : "/image_2.jpeg";
 
       data = {
         title:
@@ -177,7 +207,7 @@ self.addEventListener("notificationclick", function (event) {
       : "/";
 
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (clientList) {
       for (const client of clientList) {
         if ("focus" in client) {
           if ("navigate" in client) {

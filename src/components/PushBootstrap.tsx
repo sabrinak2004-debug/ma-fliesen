@@ -176,6 +176,7 @@ export default function PushBootstrap() {
 
     async function setupPush(): Promise<void> {
       if (shouldSkipPushOnPath(pathname)) return;
+      if (!navigator.onLine) return;
       if (!("serviceWorker" in navigator)) return;
       if (!("PushManager" in window)) return;
       if (!("Notification" in window)) return;

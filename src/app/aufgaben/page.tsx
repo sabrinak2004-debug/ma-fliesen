@@ -687,7 +687,7 @@ export default function AufgabenPage() {
             </div>
           </button>
         ) : null}
-        {error ? (
+        {error && !showingOfflineData ? (
           <div
             className="card"
             style={{
