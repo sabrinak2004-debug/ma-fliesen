@@ -172,7 +172,7 @@ export default function TenantEntryClient() {
                   color: "var(--text)",
                 }}
               >
-                Multi-Tenant Login
+                Firmenzugang
               </div>
 
               <h1
@@ -195,7 +195,7 @@ export default function TenantEntryClient() {
                   lineHeight: 1.5,
                 }}
               >
-                Gib bitte deinen Firmennamen oder die Subdomain ein, damit wir dich
+                Gebe bitte deinen Firmennamen ein, damit wir dich
                 zum richtigen Login weiterleiten können.
               </p>
             </div>
