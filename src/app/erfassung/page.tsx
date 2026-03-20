@@ -5,10 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Toast from "@/components/Toast";
 import Modal from "@/components/Modal";
-import { readOfflineData, saveOfflineData } from "@/lib/offline/storage";
-import { useOfflineStatus } from "@/hooks/useOfflineStatus";
-import { createOfflineActionId, enqueueOfflineAction } from "@/lib/offline/queue";
-import { useOfflineQueueSync } from "@/hooks/useOfflineQueueSync";
 
 type MeResponse =
   | {
@@ -453,232 +449,9 @@ function isSessionData(v: unknown): v is SessionData {
 }
 
 type MeApiResponse = { session: SessionData | null };
-type EntriesOfflinePayload = {
-  entries: WorkEntry[];
-  dayBreaks: DayBreak[];
-};
-
-type CorrectionRequestsOfflinePayload = {
-  requests: TimeEntryCorrectionRequest[];
-};
-
-type CorrectionStatusOfflinePayload = TimeEntryCorrectionRequestStatusResponse;
-
-type MeOfflinePayload = {
-  session: SessionData | null;
-};
-
-const ENTRIES_OFFLINE_COMPANY_SCOPE = "";
-const ENTRIES_OFFLINE_USER_SCOPE = "";
 
 function isMeApiResponse(v: unknown): v is MeApiResponse {
   return isRecord(v) && "session" in v && (v.session === null || isSessionData(v.session));
-}
-
-function isWorkEntry(v: unknown): v is WorkEntry {
-  if (!isRecord(v)) return false;
-
-  const user = v["user"];
-
-  return (
-    isString(v["id"]) &&
-    isString(v["workDate"]) &&
-    isString(v["startTime"]) &&
-    isString(v["endTime"]) &&
-    isString(v["activity"]) &&
-    isString(v["location"]) &&
-    typeof v["travelMinutes"] === "number" &&
-    typeof v["workMinutes"] === "number" &&
-    typeof v["grossMinutes"] === "number" &&
-    typeof v["breakMinutes"] === "number" &&
-    typeof v["breakAuto"] === "boolean" &&
-    isString(v["noteEmployee"]) &&
-    isRecord(user) &&
-    isString(user["id"]) &&
-    isString(user["fullName"])
-  );
-}
-
-function isDayBreak(v: unknown): v is DayBreak {
-  if (!isRecord(v)) return false;
-
-  const breakStartHHMM = v["breakStartHHMM"];
-  const breakEndHHMM = v["breakEndHHMM"];
-
-  return (
-    isString(v["id"]) &&
-    isString(v["workDate"]) &&
-    (breakStartHHMM === null || isString(breakStartHHMM)) &&
-    (breakEndHHMM === null || isString(breakEndHHMM)) &&
-    typeof v["manualMinutes"] === "number" &&
-    typeof v["legalMinutes"] === "number" &&
-    typeof v["autoSupplementMinutes"] === "number" &&
-    typeof v["effectiveMinutes"] === "number"
-  );
-}
-
-function isTimeEntryCorrectionRequest(v: unknown): v is TimeEntryCorrectionRequest {
-  if (!isRecord(v)) return false;
-
-  const decidedAt = v["decidedAt"];
-
-  return (
-    isString(v["id"]) &&
-    isString(v["startDate"]) &&
-    isString(v["endDate"]) &&
-    (v["status"] === "PENDING" || v["status"] === "APPROVED" || v["status"] === "REJECTED") &&
-    isString(v["noteEmployee"]) &&
-    isString(v["noteAdmin"]) &&
-    isString(v["createdAt"]) &&
-    isString(v["updatedAt"]) &&
-    (decidedAt === null || isString(decidedAt))
-  );
-}
-
-function buildEntriesOfflineKey(): string {
-  return "entries";
-}
-
-function buildCorrectionRequestsOfflineKey(): string {
-  return "time-entry-correction-requests";
-}
-
-function buildCorrectionStatusOfflineKey(dateYMD: string): string {
-  return `time-entry-correction-status:${dateYMD}`;
-}
-
-function buildMeOfflineKey(): string {
-  return "erfassung-me";
-}
-
-function readEntriesOffline(): {
-  payload: EntriesOfflinePayload | null;
-  savedAt: string | null;
-} {
-  const stored = readOfflineData<EntriesOfflinePayload>(
-    "entries",
-    ENTRIES_OFFLINE_COMPANY_SCOPE,
-    `${ENTRIES_OFFLINE_USER_SCOPE}:${buildEntriesOfflineKey()}`
-  );
-
-  if (!stored) {
-    return { payload: null, savedAt: null };
-  }
-
-  const payload = stored.data;
-
-  if (
-    !isRecord(payload) ||
-    !Array.isArray(payload["entries"]) ||
-    !payload["entries"].every(isWorkEntry) ||
-    !Array.isArray(payload["dayBreaks"]) ||
-    !payload["dayBreaks"].every(isDayBreak)
-  ) {
-    return { payload: null, savedAt: null };
-  }
-
-  return {
-    payload: {
-      entries: payload["entries"],
-      dayBreaks: payload["dayBreaks"],
-    },
-    savedAt: stored.savedAt,
-  };
-}
-
-function readCorrectionRequestsOffline(): {
-  payload: CorrectionRequestsOfflinePayload | null;
-  savedAt: string | null;
-} {
-  const stored = readOfflineData<CorrectionRequestsOfflinePayload>(
-    "entries",
-    ENTRIES_OFFLINE_COMPANY_SCOPE,
-    `${ENTRIES_OFFLINE_USER_SCOPE}:${buildCorrectionRequestsOfflineKey()}`
-  );
-
-  if (!stored) {
-    return { payload: null, savedAt: null };
-  }
-
-  const payload = stored.data;
-
-  if (
-    !isRecord(payload) ||
-    !Array.isArray(payload["requests"]) ||
-    !payload["requests"].every(isTimeEntryCorrectionRequest)
-  ) {
-    return { payload: null, savedAt: null };
-  }
-
-  return {
-    payload: {
-      requests: payload["requests"],
-    },
-    savedAt: stored.savedAt,
-  };
-}
-
-function readCorrectionStatusOffline(dateYMD: string): {
-  payload: CorrectionStatusOfflinePayload | null;
-  savedAt: string | null;
-} {
-  const stored = readOfflineData<CorrectionStatusOfflinePayload>(
-    "entries",
-    ENTRIES_OFFLINE_COMPANY_SCOPE,
-    `${ENTRIES_OFFLINE_USER_SCOPE}:${buildCorrectionStatusOfflineKey(dateYMD)}`
-  );
-
-  if (!stored || !isTimeEntryCorrectionRequestStatusResponse(stored.data)) {
-    return { payload: null, savedAt: null };
-  }
-
-  return {
-    payload: stored.data,
-    savedAt: stored.savedAt,
-  };
-}
-
-function readMeOffline(): {
-  payload: MeOfflinePayload | null;
-  savedAt: string | null;
-} {
-  const stored = readOfflineData<MeOfflinePayload>(
-    "entries",
-    ENTRIES_OFFLINE_COMPANY_SCOPE,
-    `${ENTRIES_OFFLINE_USER_SCOPE}:${buildMeOfflineKey()}`
-  );
-
-  if (!stored) {
-    return { payload: null, savedAt: null };
-  }
-
-  const payload = stored.data;
-
-  if (!isRecord(payload) || !("session" in payload) || !(payload["session"] === null || isSessionData(payload["session"]))) {
-    return { payload: null, savedAt: null };
-  }
-
-  return {
-    payload: {
-      session: payload["session"],
-    },
-    savedAt: stored.savedAt,
-  };
-}
-
-function formatOfflineDateTimeDE(value: string | null): string {
-  if (!value) return "—";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
 }
 
 function isPastWorkDate(dateYMD: string): boolean {
@@ -701,12 +474,8 @@ export default function Page() {
 function ErfassungPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isOnline } = useOfflineStatus();
-
   const [me, setMe] = useState<MeResponse | null>(null);
   const [meResolved, setMeResolved] = useState(false);
-  const [showingOfflineData, setShowingOfflineData] = useState(false);
-  const [offlineSavedAt, setOfflineSavedAt] = useState<string | null>(null);
 
   // Create-Form (ohne fullName)
   const [workDate, setWorkDate] = useState<string>(() => toIsoDateLocal(new Date()));
@@ -762,11 +531,6 @@ function ErfassungPageInner() {
   const [selectedCorrectionStatus, setSelectedCorrectionStatus] =
     useState<TimeEntryCorrectionRequestStatusResponse | null>(null);
   const [loadingSelectedCorrectionStatus, setLoadingSelectedCorrectionStatus] = useState(false);
-    useOfflineQueueSync(() => {
-    void loadEntries();
-    void loadCorrectionRequests();
-    void loadSelectedCorrectionStatus(workDate);
-  });
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
   const isEntryPreviewActive = useMemo(() => {
@@ -879,32 +643,6 @@ useEffect(() => {
       if (!alive) return;
 
       if (!isMeApiResponse(j) || !j.session) {
-        const offline = readMeOffline();
-
-        if (offline.payload?.session) {
-          const session = offline.payload.session;
-
-          if (session.role === "ADMIN") {
-            router.replace("/admin/dashboard");
-            return;
-          }
-
-          setMe({
-            ok: true,
-            session: {
-              userId: session.userId,
-              fullName: session.fullName,
-              role: session.role,
-              companyId: session.companyId,
-              companyName: session.companyName,
-              companySubdomain: session.companySubdomain,
-              companyLogoUrl: session.companyLogoUrl,
-              primaryColor: session.primaryColor,
-            },
-          });
-          return;
-        }
-
         router.replace("/login");
         return;
       }
@@ -914,57 +652,21 @@ useEffect(() => {
         return;
       }
 
-      const sessionData: SessionData = {
-        userId: j.session.userId,
-        fullName: j.session.fullName,
-        role: j.session.role,
-        companyId: j.session.companyId,
-        companyName: j.session.companyName,
-        companySubdomain: j.session.companySubdomain,
-        companyLogoUrl: j.session.companyLogoUrl,
-        primaryColor: j.session.primaryColor,
-      };
-
       setMe({
         ok: true,
-        session: sessionData,
+        session: {
+          userId: j.session.userId,
+          fullName: j.session.fullName,
+          role: j.session.role,
+          companyId: j.session.companyId,
+          companyName: j.session.companyName,
+          companySubdomain: j.session.companySubdomain,
+          companyLogoUrl: j.session.companyLogoUrl,
+          primaryColor: j.session.primaryColor,
+        },
       });
-
-      saveOfflineData<MeOfflinePayload>(
-        "entries",
-        ENTRIES_OFFLINE_COMPANY_SCOPE,
-        `${ENTRIES_OFFLINE_USER_SCOPE}:${buildMeOfflineKey()}`,
-        { session: sessionData }
-      );
     } catch {
       if (!alive) return;
-
-      const offline = readMeOffline();
-
-      if (offline.payload?.session) {
-        const session = offline.payload.session;
-
-        if (session.role === "ADMIN") {
-          router.replace("/admin/dashboard");
-          return;
-        }
-
-        setMe({
-          ok: true,
-          session: {
-            userId: session.userId,
-            fullName: session.fullName,
-            role: session.role,
-            companyId: session.companyId,
-            companyName: session.companyName,
-            companySubdomain: session.companySubdomain,
-            companyLogoUrl: session.companyLogoUrl,
-            primaryColor: session.primaryColor,
-          },
-        });
-        return;
-      }
-
       router.replace("/login");
       return;
     } finally {
@@ -981,7 +683,6 @@ useEffect(() => {
 
   async function loadEntries() {
     setLoadingEntries(true);
-
     try {
       const r = await fetch("/api/entries", {
         credentials: "include",
@@ -992,68 +693,20 @@ useEffect(() => {
         typeof j === "object" &&
         j !== null &&
         "entries" in j &&
-        Array.isArray((j as { entries: unknown }).entries) &&
-        ((j as { entries: unknown[] }).entries ?? []).every(isWorkEntry)
-          ? ((j as { entries: WorkEntry[] }).entries ?? [])
+        Array.isArray((j as { entries: unknown }).entries)
+          ? (((j as { entries: WorkEntry[] }).entries ?? []) as WorkEntry[])
           : [];
 
       const dayBreakList =
         typeof j === "object" &&
         j !== null &&
         "dayBreaks" in j &&
-        Array.isArray((j as { dayBreaks: unknown }).dayBreaks) &&
-        ((j as { dayBreaks: unknown[] }).dayBreaks ?? []).every(isDayBreak)
-          ? ((j as { dayBreaks: DayBreak[] }).dayBreaks ?? [])
+        Array.isArray((j as { dayBreaks: unknown }).dayBreaks)
+          ? (((j as { dayBreaks: DayBreak[] }).dayBreaks ?? []) as DayBreak[])
           : [];
 
-      if (r.ok) {
-        setEntries(entriesList);
-        setDayBreaks(dayBreakList);
-        setShowingOfflineData(false);
-        setOfflineSavedAt(null);
-
-        saveOfflineData<EntriesOfflinePayload>(
-          "entries",
-          ENTRIES_OFFLINE_COMPANY_SCOPE,
-          `${ENTRIES_OFFLINE_USER_SCOPE}:${buildEntriesOfflineKey()}`,
-          {
-            entries: entriesList,
-            dayBreaks: dayBreakList,
-          }
-        );
-
-        return;
-      }
-
-      const offline = readEntriesOffline();
-
-      if (offline.payload) {
-        setEntries(offline.payload.entries);
-        setDayBreaks(offline.payload.dayBreaks);
-        setShowingOfflineData(true);
-        setOfflineSavedAt(offline.savedAt);
-        return;
-      }
-
-      setEntries([]);
-      setDayBreaks([]);
-      setShowingOfflineData(false);
-      setOfflineSavedAt(null);
-    } catch {
-      const offline = readEntriesOffline();
-
-      if (offline.payload) {
-        setEntries(offline.payload.entries);
-        setDayBreaks(offline.payload.dayBreaks);
-        setShowingOfflineData(true);
-        setOfflineSavedAt(offline.savedAt);
-        return;
-      }
-
-      setEntries([]);
-      setDayBreaks([]);
-      setShowingOfflineData(false);
-      setOfflineSavedAt(null);
+      setEntries(entriesList);
+      setDayBreaks(dayBreakList);
     } finally {
       setLoadingEntries(false);
     }
@@ -1061,7 +714,6 @@ useEffect(() => {
 
   async function loadCorrectionRequests() {
     setLoadingCorrectionRequests(true);
-
     try {
       const r = await fetch("/api/time-entry-correction-requests", {
         method: "GET",
@@ -1075,26 +727,11 @@ useEffect(() => {
         typeof j === "object" &&
         j !== null &&
         "requests" in j &&
-        Array.isArray((j as { requests: unknown }).requests) &&
-        ((j as { requests: unknown[] }).requests ?? []).every(isTimeEntryCorrectionRequest)
+        Array.isArray((j as { requests: unknown }).requests)
           ? ((j as { requests: TimeEntryCorrectionRequest[] }).requests ?? [])
           : [];
 
-      if (r.ok) {
-        setCorrectionRequests(requestsList);
-
-        saveOfflineData<CorrectionRequestsOfflinePayload>(
-          "entries",
-          ENTRIES_OFFLINE_COMPANY_SCOPE,
-          `${ENTRIES_OFFLINE_USER_SCOPE}:${buildCorrectionRequestsOfflineKey()}`,
-          { requests: requestsList }
-        );
-
-        return;
-      }
-
-      const offline = readCorrectionRequestsOffline();
-      setCorrectionRequests(offline.payload?.requests ?? []);
+      setCorrectionRequests(requestsList);
     } finally {
       setLoadingCorrectionRequests(false);
     }
@@ -1119,19 +756,11 @@ useEffect(() => {
       const j = (await r.json()) as unknown;
 
       if (!r.ok || !isTimeEntryCorrectionRequestStatusResponse(j)) {
-        const offline = readCorrectionStatusOffline(dateYMD);
-        setSelectedCorrectionStatus(offline.payload);
+        setSelectedCorrectionStatus(null);
         return;
       }
 
       setSelectedCorrectionStatus(j);
-
-      saveOfflineData<CorrectionStatusOfflinePayload>(
-        "entries",
-        ENTRIES_OFFLINE_COMPANY_SCOPE,
-        `${ENTRIES_OFFLINE_USER_SCOPE}:${buildCorrectionStatusOfflineKey(dateYMD)}`,
-        j
-      );
     } finally {
       setLoadingSelectedCorrectionStatus(false);
     }
@@ -1156,33 +785,8 @@ useEffect(() => {
 
     if (!activity.trim()) return setError("Bitte Tätigkeit eingeben.");
 
+    // ✅ Falls nicht eingeloggt/Session fehlt
     if (!me || !me.ok) return setError("Bitte neu einloggen.");
-
-    if (!isOnline) {
-      enqueueOfflineAction({
-        id: createOfflineActionId(),
-        type: "CREATE_ENTRY",
-        createdAt: new Date().toISOString(),
-        payload: {
-          workDate,
-          startTime,
-          endTime,
-          activity: activity.trim(),
-          location: location.trim(),
-          travelMinutes: Number(travelMinutes) || 0,
-          noteEmployee: noteEmployee.trim(),
-        },
-      });
-
-      setStartTime("");
-      setEndTime("");
-      setActivity("");
-      setLocation("");
-      setTravelMinutes("0");
-      setNoteEmployee("");
-      setError("Eintrag wurde offline vorgemerkt und wird automatisch synchronisiert, sobald wieder Internet verfügbar ist.");
-      return;
-    }
 
     setSaving(true);
     try {
@@ -1232,21 +836,6 @@ useEffect(() => {
   }
 
   async function deleteEntry(id: string) {
-    if (!isOnline) {
-      enqueueOfflineAction({
-        id: createOfflineActionId(),
-        type: "DELETE_ENTRY",
-        createdAt: new Date().toISOString(),
-        payload: {
-          id,
-        },
-      });
-
-      setEntries((prev) => prev.filter((entry) => entry.id !== id));
-      setError("Löschung wurde offline vorgemerkt und wird automatisch synchronisiert, sobald wieder Internet verfügbar ist.");
-      return;
-    }
-
     await fetch(`/api/entries?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
       credentials: "include",
@@ -1297,29 +886,6 @@ useEffect(() => {
     setEditError(null);
     if (!edit.activity.trim()) return setEditError("Bitte Tätigkeit eingeben.");
     if (!edit.workDate || !edit.startTime || !edit.endTime) return setEditError("Datum/Zeit fehlt.");
-
-    if (!isOnline) {
-      enqueueOfflineAction({
-        id: createOfflineActionId(),
-        type: "UPDATE_ENTRY",
-        createdAt: new Date().toISOString(),
-        payload: {
-          id: edit.id,
-          workDate: edit.workDate,
-          startTime: edit.startTime,
-          endTime: edit.endTime,
-          activity: edit.activity.trim(),
-          location: edit.location.trim(),
-          travelMinutes: Number(edit.travelMinutes) || 0,
-          noteEmployee: edit.noteEmployee.trim(),
-        },
-      });
-
-      setEditOpen(false);
-      setEdit(null);
-      setError("Änderung wurde offline vorgemerkt und wird automatisch synchronisiert, sobald wieder Internet verfügbar ist.");
-      return;
-    }
 
     setEditSaving(true);
     try {
@@ -1382,22 +948,6 @@ useEffect(() => {
       return;
     }
 
-    if (!isOnline) {
-      enqueueOfflineAction({
-        id: createOfflineActionId(),
-        type: "SAVE_DAY_BREAK",
-        createdAt: new Date().toISOString(),
-        payload: {
-          workDate,
-          breakStartHHMM,
-          breakEndHHMM,
-        },
-      });
-
-      setBreakError("Pause wurde offline vorgemerkt und wird automatisch synchronisiert, sobald wieder Internet verfügbar ist.");
-      return;
-    }
-
     setBreakSaving(true);
     try {
       const r = await fetch("/api/day-breaks", {
@@ -1437,21 +987,6 @@ useEffect(() => {
     setCorrectionError(null);
     setCorrectionSuccess(null);
 
-    if (!isOnline) {
-      enqueueOfflineAction({
-        id: createOfflineActionId(),
-        type: "SUBMIT_CORRECTION_REQUEST",
-        createdAt: new Date().toISOString(),
-        payload: {
-          targetDate: workDate,
-          noteEmployee: correctionNote.trim(),
-        },
-      });
-
-      setCorrectionSuccess("Nachtragsantrag wurde offline vorgemerkt und wird automatisch synchronisiert, sobald wieder Internet verfügbar ist.");
-      setCorrectionNote("");
-      return;
-    }
     if (!canCreateCorrectionRequest) {
       setCorrectionError("Ein Nachtragsantrag ist nur für vergangene Tage möglich.");
       return;
@@ -1687,23 +1222,6 @@ useEffect(() => {
 
   return (
     <AppShell activeLabel="#wirkönnendas">
-      {showingOfflineData ? (
-        <div
-          className="card"
-          style={{
-            padding: 14,
-            marginBottom: 16,
-            borderColor: "rgba(255, 193, 7, 0.35)",
-          }}
-        >
-          <div style={{ color: "rgba(255, 220, 120, 0.98)", fontWeight: 900 }}>
-            Es werden gespeicherte Erfassungsdaten angezeigt.
-          </div>
-          <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 6 }}>
-            Letzte erfolgreiche Synchronisierung: {formatOfflineDateTimeDE(offlineSavedAt)}
-          </div>
-        </div>
-      ) : null}
 
       {/* CREATE */}
       <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
@@ -2017,11 +1535,11 @@ useEffect(() => {
             Abbrechen
           </button>
           <button
-              className="btn btn-accent erfassung-action-btn"
-              type="button"
-              onClick={saveEntry}
-              disabled={saving || !isOnline}
-            >
+            className="btn btn-accent erfassung-action-btn"
+            type="button"
+            onClick={saveEntry}
+            disabled={saving}
+          >
             {saving ? "Speichert..." : "Eintrag speichern"}
           </button>
         </div>
@@ -2103,7 +1621,7 @@ useEffect(() => {
             className="btn btn-accent erfassung-action-btn"
             type="button"
             onClick={saveDayBreak}
-            disabled={breakSaving || !isOnline}
+            disabled={breakSaving}
           >
             {breakSaving ? "Speichert..." : "Pause speichern"}
           </button>
@@ -2616,7 +2134,7 @@ useEffect(() => {
               className="btn btn-accent"
               type="button"
               onClick={submitCorrectionRequest}
-              disabled={correctionSaving || !isOnline}
+              disabled={correctionSaving}
             >
               {correctionSaving ? "Sendet..." : "Antrag senden"}
             </button>

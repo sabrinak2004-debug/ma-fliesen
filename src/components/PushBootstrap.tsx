@@ -176,7 +176,6 @@ export default function PushBootstrap() {
 
     async function setupPush(): Promise<void> {
       if (shouldSkipPushOnPath(pathname)) return;
-      if (!navigator.onLine) return;
       if (!("serviceWorker" in navigator)) return;
       if (!("PushManager" in window)) return;
       if (!("Notification" in window)) return;
@@ -217,11 +216,7 @@ export default function PushBootstrap() {
           return;
         }
 
-        const registration = await navigator.serviceWorker.register("/sw.js", {
-          scope: "/",
-          updateViaCache: "none",
-        });
-        await navigator.serviceWorker.ready;
+        const registration = await navigator.serviceWorker.register("/sw.js");
         void getTenantAppleTouchIconHref(companySubdomain);
 
         if (Notification.permission !== "granted") {

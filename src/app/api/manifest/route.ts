@@ -4,9 +4,11 @@ import {
   DEFAULT_APP_NAME,
   DEFAULT_APP_SHORT_NAME,
   DEFAULT_THEME_COLOR,
+  getTenantAppleTouchIconHref,
   getTenantIcon192Href,
   getTenantIcon512Href,
   normalizeTenantSubdomain,
+  normalizeThemeColor,
 } from "@/lib/tenantBranding";
 
 type ManifestIcon = {
@@ -55,7 +57,7 @@ export async function GET(req: Request): Promise<Response> {
     return NextResponse.json(fallbackManifest, {
       headers: {
         "Content-Type": "application/manifest+json; charset=utf-8",
-        "Cache-Control": "public, max-age=3600",
+        "Cache-Control": "no-store, max-age=0",
       },
     });
   }
@@ -78,13 +80,13 @@ export async function GET(req: Request): Promise<Response> {
         status: 404,
         headers: {
           "Content-Type": "application/json; charset=utf-8",
-          "Cache-Control": "public, max-age=3600",
+          "Cache-Control": "no-store, max-age=0",
         },
       }
     );
   }
 
-  const themeColor = DEFAULT_THEME_COLOR;
+  const themeColor = "#0b0f0c";
   const appName = `${company.name} Mitarbeiterportal`;
   const shortName =
     company.name.length > 12 ? company.name.slice(0, 12) : company.name;

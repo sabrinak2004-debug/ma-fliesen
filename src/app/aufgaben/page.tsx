@@ -3,10 +3,6 @@
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
-import { readOfflineData, saveOfflineData } from "@/lib/offline/storage";
-import { useOfflineStatus } from "@/hooks/useOfflineStatus";
-import { createOfflineActionId, enqueueOfflineAction } from "@/lib/offline/queue";
-import { useOfflineQueueSync } from "@/hooks/useOfflineQueueSync";
 
 type TaskStatus = "OPEN" | "COMPLETED";
 type TaskCategory = "WORK_TIME" | "VACATION" | "SICKNESS" | "GENERAL";
@@ -48,13 +44,6 @@ type TasksApiResponse = {
 };
 
 type CategoryGroupKey = "WORK_TIME" | "VACATION" | "SICKNESS" | "GENERAL";
-type TasksOfflinePayload = {
-  tasks: TaskRow[];
-  missingWorkEntryAlert: MissingWorkEntryAlert | null;
-};
-
-const TASKS_OFFLINE_COMPANY_SCOPE = "";
-const TASKS_OFFLINE_USER_SCOPE = "";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -167,23 +156,6 @@ function formatDateLongDE(value: string): string {
   return `${day}. ${monthName}`;
 }
 
-function formatDateTimeDE(value: string | null): string {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
-
 function categoryLabel(category: TaskCategory): string {
   switch (category) {
     case "WORK_TIME":
@@ -244,53 +216,6 @@ function categoryAccent(category: TaskCategory): string {
   }
 }
 
-function readTasksOfflinePayload(): {
-  payload: TasksOfflinePayload | null;
-  savedAt: string | null;
-} {
-  const stored = readOfflineData<TasksOfflinePayload>(
-    "tasks",
-    TASKS_OFFLINE_COMPANY_SCOPE,
-    TASKS_OFFLINE_USER_SCOPE
-  );
-
-  if (!stored) {
-    return {
-      payload: null,
-      savedAt: null,
-    };
-  }
-
-  const payload = stored.data;
-
-  if (
-    !isRecord(payload) ||
-    !Array.isArray(payload["tasks"]) ||
-    !payload["tasks"].every(isTaskRow) ||
-    !(
-      payload["missingWorkEntryAlert"] === null ||
-      payload["missingWorkEntryAlert"] === undefined ||
-      isMissingWorkEntryAlert(payload["missingWorkEntryAlert"])
-    )
-  ) {
-    return {
-      payload: null,
-      savedAt: null,
-    };
-  }
-
-  return {
-    payload: {
-      tasks: payload["tasks"],
-      missingWorkEntryAlert:
-        payload["missingWorkEntryAlert"] === undefined
-          ? null
-          : payload["missingWorkEntryAlert"],
-    },
-    savedAt: stored.savedAt,
-  };
-}
-
 function sortTasksByDateDesc(tasks: TaskRow[]): TaskRow[] {
   return tasks.slice().sort((a, b) => {
     const aKey = (a.referenceDate ?? a.createdAt).slice(0, 19);
@@ -300,8 +225,6 @@ function sortTasksByDateDesc(tasks: TaskRow[]): TaskRow[] {
 }
 
 export default function AufgabenPage() {
-  const { isOnline } = useOfflineStatus();
-
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionTaskId, setActionTaskId] = useState("");
@@ -310,133 +233,60 @@ export default function AufgabenPage() {
   const [missingWorkEntryAlert, setMissingWorkEntryAlert] =
     useState<MissingWorkEntryAlert | null>(null);
   const [showMissingWorkEntryModal, setShowMissingWorkEntryModal] = useState(false);
-  const [showingOfflineData, setShowingOfflineData] = useState(false);
-  const [offlineSavedAt, setOfflineSavedAt] = useState<string | null>(null);
-  useOfflineQueueSync(() => {
-    void loadTasks();
-  });
 
   async function loadTasks(): Promise<void> {
-  setLoading(true);
-  setError("");
+    setLoading(true);
+    setError("");
 
-  try {
-    const response = await fetch("/api/tasks", {
-      method: "GET",
-      credentials: "include",
-      cache: "no-store",
-    });
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
 
-    const data: unknown = await response.json().catch(() => ({}));
+      const data: unknown = await response.json().catch(() => ({}));
 
-    if (!response.ok) {
-      const offline = readTasksOfflinePayload();
-
-      if (offline.payload) {
-        setTasks(offline.payload.tasks);
-        setMissingWorkEntryAlert(offline.payload.missingWorkEntryAlert);
-        setShowingOfflineData(true);
-        setOfflineSavedAt(offline.savedAt);
-        setError("Offline-Daten werden angezeigt. Die Aufgaben konnten nicht aktuell vom Server geladen werden.");
-
+      if (!response.ok) {
+        const message =
+          isRecord(data) && isString(data["error"])
+            ? data["error"]
+            : "Aufgaben konnten nicht geladen werden.";
+        setError(message);
+        setTasks([]);
+        setMissingWorkEntryAlert(null);
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event("tasks-changed"));
         }
         return;
       }
 
-      const message =
-        isRecord(data) && isString(data["error"])
-          ? data["error"]
-          : "Aufgaben konnten nicht geladen werden.";
-
-      setError(message);
-      setTasks([]);
-      setMissingWorkEntryAlert(null);
-      setShowingOfflineData(false);
-      setOfflineSavedAt(null);
-
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("tasks-changed"));
-      }
-      return;
-    }
-
-    if (!isTasksApiResponse(data)) {
-      const offline = readTasksOfflinePayload();
-
-      if (offline.payload) {
-        setTasks(offline.payload.tasks);
-        setMissingWorkEntryAlert(offline.payload.missingWorkEntryAlert);
-        setShowingOfflineData(true);
-        setOfflineSavedAt(offline.savedAt);
-        setError("Gespeicherte Aufgaben werden angezeigt, weil die Server-Antwort ungültig war.");
-
+      if (!isTasksApiResponse(data)) {
+        setError("Unerwartete Antwort vom Server.");
+        setTasks([]);
+        setMissingWorkEntryAlert(null);
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event("tasks-changed"));
         }
         return;
       }
 
-      setError("Unerwartete Antwort vom Server.");
+      setTasks(data.tasks);
+      setMissingWorkEntryAlert(data.missingWorkEntryAlert ?? null);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("tasks-changed"));
+      }
+    } catch {
+      setError("Netzwerkfehler beim Laden der Aufgaben.");
       setTasks([]);
       setMissingWorkEntryAlert(null);
-      setShowingOfflineData(false);
-      setOfflineSavedAt(null);
-
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("tasks-changed"));
       }
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    setTasks(data.tasks);
-    setMissingWorkEntryAlert(data.missingWorkEntryAlert ?? null);
-    setShowingOfflineData(false);
-    setOfflineSavedAt(null);
-
-    saveOfflineData<TasksOfflinePayload>(
-      "tasks",
-      TASKS_OFFLINE_COMPANY_SCOPE,
-      TASKS_OFFLINE_USER_SCOPE,
-      {
-        tasks: data.tasks,
-        missingWorkEntryAlert: data.missingWorkEntryAlert ?? null,
-      }
-    );
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("tasks-changed"));
-    }
-  } catch {
-    const offline = readTasksOfflinePayload();
-
-    if (offline.payload) {
-      setTasks(offline.payload.tasks);
-      setMissingWorkEntryAlert(offline.payload.missingWorkEntryAlert);
-      setShowingOfflineData(true);
-      setOfflineSavedAt(offline.savedAt);
-      setError("Offline-Daten werden angezeigt, weil gerade keine Netzwerkverbindung verfügbar ist.");
-
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("tasks-changed"));
-      }
-      return;
-    }
-
-    setError("Netzwerkfehler beim Laden der Aufgaben.");
-    setTasks([]);
-    setMissingWorkEntryAlert(null);
-    setShowingOfflineData(false);
-    setOfflineSavedAt(null);
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("tasks-changed"));
-    }
-  } finally {
-    setLoading(false);
   }
-}
 
   useEffect(() => {
     void loadTasks();
@@ -477,24 +327,9 @@ export default function AufgabenPage() {
   }, [missingWorkEntryAlert]);
 
   async function completeTask(taskId: string): Promise<void> {
+    setActionTaskId(taskId);
     setError("");
     setSuccess("");
-
-    if (!isOnline) {
-      enqueueOfflineAction({
-        id: createOfflineActionId(),
-        type: "COMPLETE_TASK",
-        createdAt: new Date().toISOString(),
-        payload: {
-          taskId,
-        },
-      });
-
-      setSuccess("Die Aufgabe wurde offline vorgemerkt und wird automatisch als erledigt markiert, sobald wieder Internet verfügbar ist.");
-      return;
-    }
-
-    setActionTaskId(taskId);
 
     try {
       const response = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/complete`, {
@@ -634,7 +469,7 @@ export default function AufgabenPage() {
                 opacity: actionTaskId === task.id ? 0.7 : 1,
               }}
             >
-              {actionTaskId === task.id ? "Prüfe..." : isOnline ? "Erledigt" : "Offline vormerken"}
+              {actionTaskId === task.id ? "Prüfe..." : "Erledigt"}
             </button>
           </div>
         ) : null}
@@ -645,22 +480,6 @@ export default function AufgabenPage() {
   return (
     <AppShell activeLabel="Meine Aufgaben">
       <div style={{ display: "grid", gap: 16 }}>
-        {showingOfflineData ? (
-          <div
-            className="card"
-            style={{
-              padding: 14,
-              borderColor: "rgba(255, 193, 7, 0.35)",
-            }}
-          >
-            <div style={{ color: "rgba(255, 220, 120, 0.98)", fontWeight: 900 }}>
-              Es werden gespeicherte Aufgaben angezeigt.
-            </div>
-            <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 6 }}>
-              Letzte erfolgreiche Synchronisierung: {formatDateTimeDE(offlineSavedAt)}
-            </div>
-          </div>
-        ) : null}
         {missingWorkEntryAlert ? (
           <button
             type="button"

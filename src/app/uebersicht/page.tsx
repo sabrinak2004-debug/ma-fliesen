@@ -7,8 +7,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
-import { readOfflineData, saveOfflineData } from "@/lib/offline/storage";
-import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 
 type WorkEntry = {
   id: string;
@@ -98,134 +96,6 @@ type OverviewResponse = {
   totals?: OverviewTotals;
   isAdmin?: boolean;
 };
-
-type OverviewOfflinePayload = {
-  entries: WorkEntry[];
-  absences: Absence[];
-  absenceSummaryByUser: AbsenceUserSummary[];
-  overview: OverviewResponse;
-};
-
-const OVERVIEW_OFFLINE_COMPANY_SCOPE = "";
-const OVERVIEW_OFFLINE_USER_SCOPE = "";
-
-function isWorkEntry(v: unknown): v is WorkEntry {
-  if (typeof v !== "object" || v === null) return false;
-
-  const obj = v as Record<string, unknown>;
-  const user = obj["user"];
-
-  const userOk =
-    user === undefined ||
-    (typeof user === "object" &&
-      user !== null &&
-      typeof (user as Record<string, unknown>)["id"] === "string" &&
-      typeof (user as Record<string, unknown>)["fullName"] === "string");
-
-  return (
-    typeof obj["id"] === "string" &&
-    typeof obj["workDate"] === "string" &&
-    typeof obj["workMinutes"] === "number" &&
-    userOk
-  );
-}
-
-function isAbsence(v: unknown): v is Absence {
-  if (typeof v !== "object" || v === null) return false;
-
-  const obj = v as Record<string, unknown>;
-  const user = obj["user"];
-
-  return (
-    typeof obj["id"] === "string" &&
-    typeof obj["absenceDate"] === "string" &&
-    (obj["type"] === "VACATION" || obj["type"] === "SICK") &&
-    (obj["dayPortion"] === "FULL_DAY" || obj["dayPortion"] === "HALF_DAY") &&
-    (obj["compensation"] === "PAID" || obj["compensation"] === "UNPAID") &&
-    typeof user === "object" &&
-    user !== null &&
-    typeof (user as Record<string, unknown>)["id"] === "string" &&
-    typeof (user as Record<string, unknown>)["fullName"] === "string"
-  );
-}
-
-function isAbsenceUserSummary(v: unknown): v is AbsenceUserSummary {
-  if (typeof v !== "object" || v === null) return false;
-
-  const obj = v as Record<string, unknown>;
-  const user = obj["user"];
-
-  return (
-    typeof user === "object" &&
-    user !== null &&
-    typeof (user as Record<string, unknown>)["id"] === "string" &&
-    typeof (user as Record<string, unknown>)["fullName"] === "string" &&
-    typeof obj["sickDays"] === "number" &&
-    typeof obj["vacationDays"] === "number" &&
-    typeof obj["unpaidVacationDays"] === "number" &&
-    typeof obj["totalDays"] === "number"
-  );
-}
-
-function buildOverviewOfflineKey(month: string): string {
-  return `overview:${month}`;
-}
-
-function readOverviewOffline(month: string): {
-  payload: OverviewOfflinePayload | null;
-  savedAt: string | null;
-} {
-  const stored = readOfflineData<OverviewOfflinePayload>(
-    "overview",
-    OVERVIEW_OFFLINE_COMPANY_SCOPE,
-    `${OVERVIEW_OFFLINE_USER_SCOPE}:${buildOverviewOfflineKey(month)}`
-  );
-
-  if (!stored) {
-    return { payload: null, savedAt: null };
-  }
-
-  const payload = stored.data;
-
-  if (
-    typeof payload !== "object" ||
-    payload === null ||
-    !Array.isArray((payload as Record<string, unknown>)["entries"]) ||
-    !((payload as Record<string, unknown>)["entries"] as unknown[]).every(isWorkEntry) ||
-    !Array.isArray((payload as Record<string, unknown>)["absences"]) ||
-    !((payload as Record<string, unknown>)["absences"] as unknown[]).every(isAbsence) ||
-    !Array.isArray((payload as Record<string, unknown>)["absenceSummaryByUser"]) ||
-    !((payload as Record<string, unknown>)["absenceSummaryByUser"] as unknown[]).every(isAbsenceUserSummary) ||
-    !isOverviewResponse((payload as Record<string, unknown>)["overview"])
-  ) {
-    return { payload: null, savedAt: null };
-  }
-
-  return {
-    payload: {
-      entries: (payload as Record<string, unknown>)["entries"] as WorkEntry[],
-      absences: (payload as Record<string, unknown>)["absences"] as Absence[],
-      absenceSummaryByUser: (payload as Record<string, unknown>)["absenceSummaryByUser"] as AbsenceUserSummary[],
-      overview: (payload as Record<string, unknown>)["overview"] as OverviewResponse,
-    },
-    savedAt: stored.savedAt,
-  };
-}
-
-function formatOfflineDateTimeDE(value: string | null): string {
-  if (!value) return "—";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
 
 function isOverviewResponse(x: unknown): x is OverviewResponse {
   return typeof x === "object" && x !== null;
@@ -496,14 +366,10 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
 
 export default function UebersichtPage() {
   const router = useRouter();
-  const { isOnline } = useOfflineStatus();
-
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [absences, setAbsences] = useState<Absence[]>([]);
   const [absenceSummaryByUser, setAbsenceSummaryByUser] = useState<AbsenceUserSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showingOfflineData, setShowingOfflineData] = useState(false);
-  const [offlineSavedAt, setOfflineSavedAt] = useState<string | null>(null);
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [remainingVacationDays, setRemainingVacationDays] = useState<number>(30);
@@ -550,7 +416,6 @@ export default function UebersichtPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-
       try {
         const [re, ra, ro] = await Promise.all([
           fetch(`/api/entries?month=${encodeURIComponent(ym)}`),
@@ -566,9 +431,8 @@ export default function UebersichtPage() {
           typeof je === "object" &&
           je !== null &&
           "entries" in je &&
-          Array.isArray((je as { entries: unknown }).entries) &&
-          ((je as { entries: unknown[] }).entries ?? []).every(isWorkEntry)
-            ? ((je as { entries: WorkEntry[] }).entries ?? [])
+          Array.isArray((je as { entries: unknown }).entries)
+            ? (((je as { entries: WorkEntry[] }).entries ?? []) as WorkEntry[])
             : [];
 
         let a: Absence[] = [];
@@ -576,25 +440,22 @@ export default function UebersichtPage() {
 
         if (isAbsencesApiResponse(ja)) {
           const r = ja as AbsencesApiResponse;
-          a = Array.isArray(r.absences) ? r.absences.filter(isAbsence) : [];
-          summary = Array.isArray(r.summaryByUser)
-            ? r.summaryByUser.filter(isAbsenceUserSummary)
-            : [];
+          a = Array.isArray(r.absences) ? r.absences : [];
+          summary = Array.isArray(r.summaryByUser) ? r.summaryByUser : [];
         }
 
-        if (re.ok && ra.ok && ro.ok && isOverviewResponse(jo)) {
-          setEntries(e);
-          setAbsences(a);
-          setAbsenceSummaryByUser(summary);
-          setShowingOfflineData(false);
-          setOfflineSavedAt(null);
+        setEntries(e);
+        setAbsences(a);
+        setAbsenceSummaryByUser(summary);
+
+        if (isOverviewResponse(jo)) {
+          setIsAdmin(Boolean(jo.isAdmin));
 
           const nextAnnualVacationDays =
             typeof jo.annualVacationDays === "number" && Number.isFinite(jo.annualVacationDays)
               ? jo.annualVacationDays
               : 30;
 
-          setIsAdmin(Boolean(jo.isAdmin));
           setAnnualVacationDays(nextAnnualVacationDays);
 
           if (Array.isArray(jo.byUser) && jo.byUser.length > 0) {
@@ -678,269 +539,21 @@ export default function UebersichtPage() {
             setUnpaidAbsenceDays(0);
             setUnpaidAbsenceMinutes(0);
           }
-
-          saveOfflineData<OverviewOfflinePayload>(
-            "overview",
-            OVERVIEW_OFFLINE_COMPANY_SCOPE,
-            `${OVERVIEW_OFFLINE_USER_SCOPE}:${buildOverviewOfflineKey(ym)}`,
-            {
-              entries: e,
-              absences: a,
-              absenceSummaryByUser: summary,
-              overview: jo,
-            }
-          );
-
-          return;
+        } else {
+          setIsAdmin(false);
+          setAnnualVacationDays(30);
+          setUsedVacationDaysYtd(0);
+          setRemainingVacationDays(30);
+          setBaseTargetMinutes(0);
+          setTargetMinutes(0);
+          setNetTargetMinutes(0);
+          setHolidayCountInMonth(0);
+          setHolidayMinutes(0);
+          setVacationMinutesInfo(0);
+          setSickMinutesInfo(0);
+          setUnpaidAbsenceDays(0);
+          setUnpaidAbsenceMinutes(0);
         }
-
-        const offline = readOverviewOffline(ym);
-
-        if (offline.payload) {
-          const cached = offline.payload;
-          const joCached = cached.overview;
-
-          setEntries(cached.entries);
-          setAbsences(cached.absences);
-          setAbsenceSummaryByUser(cached.absenceSummaryByUser);
-          setShowingOfflineData(true);
-          setOfflineSavedAt(offline.savedAt);
-
-          const nextAnnualVacationDays =
-            typeof joCached.annualVacationDays === "number" && Number.isFinite(joCached.annualVacationDays)
-              ? joCached.annualVacationDays
-              : 30;
-
-          setIsAdmin(Boolean(joCached.isAdmin));
-          setAnnualVacationDays(nextAnnualVacationDays);
-
-          if (Array.isArray(joCached.byUser) && joCached.byUser.length > 0) {
-            const firstUser = joCached.byUser[0];
-
-            setUsedVacationDaysYtd(
-              typeof firstUser.usedVacationDaysYtd === "number" && Number.isFinite(firstUser.usedVacationDaysYtd)
-                ? firstUser.usedVacationDaysYtd
-                : 0
-            );
-
-            setRemainingVacationDays(
-              typeof firstUser.remainingVacationDays === "number" && Number.isFinite(firstUser.remainingVacationDays)
-                ? firstUser.remainingVacationDays
-                : nextAnnualVacationDays
-            );
-
-            setBaseTargetMinutes(
-              typeof firstUser.baseTargetMinutes === "number" && Number.isFinite(firstUser.baseTargetMinutes)
-                ? firstUser.baseTargetMinutes
-                : 0
-            );
-
-            setTargetMinutes(
-              typeof firstUser.targetMinutes === "number" && Number.isFinite(firstUser.targetMinutes)
-                ? firstUser.targetMinutes
-                : 0
-            );
-
-            setNetTargetMinutes(
-              typeof firstUser.netTargetMinutes === "number" && Number.isFinite(firstUser.netTargetMinutes)
-                ? firstUser.netTargetMinutes
-                : 0
-            );
-
-            setHolidayCountInMonth(
-              typeof firstUser.holidayCountInMonth === "number" && Number.isFinite(firstUser.holidayCountInMonth)
-                ? firstUser.holidayCountInMonth
-                : 0
-            );
-
-            setHolidayMinutes(
-              typeof firstUser.holidayMinutes === "number" && Number.isFinite(firstUser.holidayMinutes)
-                ? firstUser.holidayMinutes
-                : 0
-            );
-
-            setVacationMinutesInfo(
-              typeof firstUser.vacationMinutes === "number" && Number.isFinite(firstUser.vacationMinutes)
-                ? firstUser.vacationMinutes
-                : 0
-            );
-
-            setSickMinutesInfo(
-              typeof firstUser.sickMinutes === "number" && Number.isFinite(firstUser.sickMinutes)
-                ? firstUser.sickMinutes
-                : 0
-            );
-
-            setUnpaidAbsenceDays(
-              typeof firstUser.unpaidAbsenceDays === "number" && Number.isFinite(firstUser.unpaidAbsenceDays)
-                ? firstUser.unpaidAbsenceDays
-                : 0
-            );
-
-            setUnpaidAbsenceMinutes(
-              typeof firstUser.unpaidAbsenceMinutes === "number" && Number.isFinite(firstUser.unpaidAbsenceMinutes)
-                ? firstUser.unpaidAbsenceMinutes
-                : 0
-            );
-          } else {
-            setUsedVacationDaysYtd(0);
-            setRemainingVacationDays(nextAnnualVacationDays);
-            setBaseTargetMinutes(0);
-            setTargetMinutes(0);
-            setNetTargetMinutes(0);
-            setHolidayCountInMonth(0);
-            setHolidayMinutes(0);
-            setVacationMinutesInfo(0);
-            setSickMinutesInfo(0);
-            setUnpaidAbsenceDays(0);
-            setUnpaidAbsenceMinutes(0);
-          }
-
-          return;
-        }
-
-        setEntries([]);
-        setAbsences([]);
-        setAbsenceSummaryByUser([]);
-        setIsAdmin(false);
-        setAnnualVacationDays(30);
-        setUsedVacationDaysYtd(0);
-        setRemainingVacationDays(30);
-        setBaseTargetMinutes(0);
-        setTargetMinutes(0);
-        setNetTargetMinutes(0);
-        setHolidayCountInMonth(0);
-        setHolidayMinutes(0);
-        setVacationMinutesInfo(0);
-        setSickMinutesInfo(0);
-        setUnpaidAbsenceDays(0);
-        setUnpaidAbsenceMinutes(0);
-        setShowingOfflineData(false);
-        setOfflineSavedAt(null);
-      } catch {
-        const offline = readOverviewOffline(ym);
-
-        if (offline.payload) {
-          const cached = offline.payload;
-          const joCached = cached.overview;
-
-          setEntries(cached.entries);
-          setAbsences(cached.absences);
-          setAbsenceSummaryByUser(cached.absenceSummaryByUser);
-          setShowingOfflineData(true);
-          setOfflineSavedAt(offline.savedAt);
-
-          const nextAnnualVacationDays =
-            typeof joCached.annualVacationDays === "number" && Number.isFinite(joCached.annualVacationDays)
-              ? joCached.annualVacationDays
-              : 30;
-
-          setIsAdmin(Boolean(joCached.isAdmin));
-          setAnnualVacationDays(nextAnnualVacationDays);
-
-          if (Array.isArray(joCached.byUser) && joCached.byUser.length > 0) {
-            const firstUser = joCached.byUser[0];
-
-            setUsedVacationDaysYtd(
-              typeof firstUser.usedVacationDaysYtd === "number" && Number.isFinite(firstUser.usedVacationDaysYtd)
-                ? firstUser.usedVacationDaysYtd
-                : 0
-            );
-
-            setRemainingVacationDays(
-              typeof firstUser.remainingVacationDays === "number" && Number.isFinite(firstUser.remainingVacationDays)
-                ? firstUser.remainingVacationDays
-                : nextAnnualVacationDays
-            );
-
-            setBaseTargetMinutes(
-              typeof firstUser.baseTargetMinutes === "number" && Number.isFinite(firstUser.baseTargetMinutes)
-                ? firstUser.baseTargetMinutes
-                : 0
-            );
-
-            setTargetMinutes(
-              typeof firstUser.targetMinutes === "number" && Number.isFinite(firstUser.targetMinutes)
-                ? firstUser.targetMinutes
-                : 0
-            );
-
-            setNetTargetMinutes(
-              typeof firstUser.netTargetMinutes === "number" && Number.isFinite(firstUser.netTargetMinutes)
-                ? firstUser.netTargetMinutes
-                : 0
-            );
-
-            setHolidayCountInMonth(
-              typeof firstUser.holidayCountInMonth === "number" && Number.isFinite(firstUser.holidayCountInMonth)
-                ? firstUser.holidayCountInMonth
-                : 0
-            );
-
-            setHolidayMinutes(
-              typeof firstUser.holidayMinutes === "number" && Number.isFinite(firstUser.holidayMinutes)
-                ? firstUser.holidayMinutes
-                : 0
-            );
-
-            setVacationMinutesInfo(
-              typeof firstUser.vacationMinutes === "number" && Number.isFinite(firstUser.vacationMinutes)
-                ? firstUser.vacationMinutes
-                : 0
-            );
-
-            setSickMinutesInfo(
-              typeof firstUser.sickMinutes === "number" && Number.isFinite(firstUser.sickMinutes)
-                ? firstUser.sickMinutes
-                : 0
-            );
-
-            setUnpaidAbsenceDays(
-              typeof firstUser.unpaidAbsenceDays === "number" && Number.isFinite(firstUser.unpaidAbsenceDays)
-                ? firstUser.unpaidAbsenceDays
-                : 0
-            );
-
-            setUnpaidAbsenceMinutes(
-              typeof firstUser.unpaidAbsenceMinutes === "number" && Number.isFinite(firstUser.unpaidAbsenceMinutes)
-                ? firstUser.unpaidAbsenceMinutes
-                : 0
-            );
-          } else {
-            setUsedVacationDaysYtd(0);
-            setRemainingVacationDays(nextAnnualVacationDays);
-            setBaseTargetMinutes(0);
-            setTargetMinutes(0);
-            setNetTargetMinutes(0);
-            setHolidayCountInMonth(0);
-            setHolidayMinutes(0);
-            setVacationMinutesInfo(0);
-            setSickMinutesInfo(0);
-            setUnpaidAbsenceDays(0);
-            setUnpaidAbsenceMinutes(0);
-          }
-
-          return;
-        }
-
-        setEntries([]);
-        setAbsences([]);
-        setAbsenceSummaryByUser([]);
-        setIsAdmin(false);
-        setAnnualVacationDays(30);
-        setUsedVacationDaysYtd(0);
-        setRemainingVacationDays(30);
-        setBaseTargetMinutes(0);
-        setTargetMinutes(0);
-        setNetTargetMinutes(0);
-        setHolidayCountInMonth(0);
-        setHolidayMinutes(0);
-        setVacationMinutesInfo(0);
-        setSickMinutesInfo(0);
-        setUnpaidAbsenceDays(0);
-        setUnpaidAbsenceMinutes(0);
-        setShowingOfflineData(false);
-        setOfflineSavedAt(null);
       } finally {
         setLoading(false);
       }
@@ -1088,10 +701,6 @@ export default function UebersichtPage() {
   }, [exportMode, rangeFrom, rangeTo]);
 
   const doExport = () => {
-    if (!isOnline) {
-      setExportOpen(false);
-      return;
-    }
     if (exportMode === "MONTH") {
       startDownload(`/api/admin/export?scope=month&month=${encodeURIComponent(exportMonth)}`);
       setExportOpen(false);
@@ -1205,23 +814,6 @@ const resetAbsFilters = (): void => {
 
   return (
     <AppShell>
-      {showingOfflineData ? (
-        <div
-          className="card"
-          style={{
-            padding: 14,
-            marginBottom: 14,
-            borderColor: "rgba(255, 193, 7, 0.35)",
-          }}
-        >
-          <div style={{ color: "rgba(255, 220, 120, 0.98)", fontWeight: 900 }}>
-            Es werden gespeicherte Übersichtsdaten angezeigt.
-          </div>
-          <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 6 }}>
-            Letzte erfolgreiche Synchronisierung: {formatOfflineDateTimeDE(offlineSavedAt)}
-          </div>
-        </div>
-      ) : null}
       {!isAdmin ? (
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
           <Link
@@ -1250,11 +842,9 @@ const resetAbsFilters = (): void => {
           <button
             onClick={openExportModal}
             className="card"
-            disabled={!isOnline}
             style={{
               padding: "10px 14px",
-              cursor: !isOnline ? "not-allowed" : "pointer",
-              opacity: !isOnline ? 0.7 : 1,
+              cursor: "pointer",
               fontWeight: 900,
               borderRadius: 12,
               border: "1px solid rgba(184,207,58,0.35)",

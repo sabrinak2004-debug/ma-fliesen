@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 
 type MeSession = {
   userId: string;
@@ -153,7 +152,6 @@ async function sendSubscriptionToBackend(
 }
 
 export default function PushOnboarding() {
-  const { isOnline } = useOfflineStatus();
   const [companySubdomain, setCompanySubdomain] = useState<string>("");
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | "unknown">("unknown");
@@ -171,15 +169,6 @@ export default function PushOnboarding() {
         "serviceWorker" in navigator &&
         "PushManager" in window &&
         "Notification" in window;
-
-      if (!navigator.onLine) {
-        if (!alive) return;
-        setSupported(true);
-        setPermission("unknown");
-        setHasSubscription(false);
-        setResolved(true);
-        return;
-      }
 
       if (!supportsPush) {
         if (!alive) return;
@@ -241,18 +230,13 @@ export default function PushOnboarding() {
   }, []);
 
   const shouldShow = useMemo(() => {
-    if (!isOnline) return false;
     if (!resolved) return false;
     if (!supported) return false;
     if (permission === "denied") return false;
     return !hasSubscription;
-  }, [isOnline, resolved, supported, permission, hasSubscription]);
+  }, [resolved, supported, permission, hasSubscription]);
 
   async function enablePush(): Promise<void> {
-    if (!isOnline) {
-      setMessage("Push kann nur mit Internetverbindung aktiviert werden.");
-      return;
-    }
 
     setLoading(true);
     setMessage("");
@@ -359,6 +343,12 @@ export default function PushOnboarding() {
 
       {message ? (
         <div style={{ marginTop: 10, fontSize: 13, color: "var(--text)" }}>{message}</div>
+      ) : null}
+
+      {companySubdomain ? (
+        <div style={{ marginTop: 8, fontSize: 12, color: "var(--muted-2)" }}>
+          Firmenkontext: {companySubdomain}
+        </div>
       ) : null}
     </div>
   );
