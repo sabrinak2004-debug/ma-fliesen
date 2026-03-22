@@ -2438,7 +2438,7 @@ export default function KalenderPage({
                           lineHeight: 1.4,
                         }}
                       >
-                        Übernimmt Datum, Tätigkeit und Einsatzort. Uhrzeiten bitte in der Erfassung ergänzen.
+                        Übernimmt Datum, Tätigkeit und Einsatzort. Uhrzeiten und Fahrtminuten ,bitte in der Erfassung ergänzen.
                       </div>
                     </div>
                   ))}
