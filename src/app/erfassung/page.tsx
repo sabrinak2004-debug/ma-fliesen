@@ -1512,9 +1512,9 @@ useEffect(() => {
         </div>
 
 
-        <div className="erfassung-actions">
+        <div className="erfassung-dual-actions">
           <button
-            className="btn erfassung-action-btn"
+            className="btn"
             type="button"
             onClick={() => {
               const syncDate = searchParams.get("syncDate");
@@ -1534,8 +1534,9 @@ useEffect(() => {
           >
             Abbrechen
           </button>
+
           <button
-            className="btn btn-accent erfassung-action-btn"
+            className="btn btn-accent"
             type="button"
             onClick={saveEntry}
             disabled={saving}
@@ -1605,9 +1606,9 @@ useEffect(() => {
           Die gesetzliche Pause richtet sich nach der gesamten Arbeitszeit des Tages. Falls du zu wenig Pause einträgst, ergänzt die App die fehlende Differenz automatisch.
         </div>
 
-        <div className="erfassung-actions">
+        <div className="erfassung-dual-actions">
           <button
-            className="btn erfassung-action-btn"
+            className="btn"
             type="button"
             onClick={() => {
               setBreakStartHHMM("");
@@ -1617,8 +1618,9 @@ useEffect(() => {
           >
             Zurücksetzen
           </button>
+
           <button
-            className="btn btn-accent erfassung-action-btn"
+            className="btn btn-accent"
             type="button"
             onClick={saveDayBreak}
             disabled={breakSaving}
