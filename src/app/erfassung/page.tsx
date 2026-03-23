@@ -2206,7 +2206,14 @@ useEffect(() => {
           setEditError(null);
         }}
         footer={
-          <div style={{ display: "flex", gap: 10 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              width: "100%",
+            }}
+          >
             <button
               className="btn"
               type="button"
@@ -2215,10 +2222,17 @@ useEffect(() => {
                 setEdit(null);
                 setEditError(null);
               }}
+              style={{ flex: "1 1 220px" }}
             >
               Abbrechen
             </button>
-            <button className="btn btn-accent" type="button" onClick={saveEdit} disabled={editSaving}>
+            <button
+              className="btn btn-accent"
+              type="button"
+              onClick={saveEdit}
+              disabled={editSaving}
+              style={{ flex: "1 1 220px" }}
+            >
               {editSaving ? "Speichert..." : "Änderungen speichern"}
             </button>
           </div>
@@ -2242,21 +2256,20 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="row">
-              <div>
+            <div className="modal-grid-1">
+              <div className="modal-field">
                 <div className="label">Datum</div>
                 <input
-                  className="input"
+                  className="input modal-date-input"
                   type="date"
                   value={edit.workDate}
                   onChange={(e) => setEdit((p) => (p ? { ...p, workDate: e.target.value } : p))}
                 />
               </div>
-              <div />
             </div>
 
-            <div className="row">
-              <div>
+            <div className="modal-grid-2">
+              <div className="modal-field">
                 <div className="label">Beginn</div>
                 <input
                   className="input"
@@ -2265,7 +2278,8 @@ useEffect(() => {
                   onChange={(e) => setEdit((p) => (p ? { ...p, startTime: e.target.value } : p))}
                 />
               </div>
-              <div>
+
+              <div className="modal-field">
                 <div className="label">Ende</div>
                 <input
                   className="input"
@@ -2316,8 +2330,8 @@ useEffect(() => {
               />
             </div>
 
-            <div className="row">
-              <div>
+            <div className="modal-grid-1">
+              <div className="modal-field">
                 <div className="label">Fahrzeit (Min.)</div>
                 <input
                   className="input"

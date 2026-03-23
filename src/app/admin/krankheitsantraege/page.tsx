@@ -284,6 +284,9 @@ export default function KrankheitsantraegePage() {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthValue());
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editStartDate, setEditStartDate] = useState<string>("");
+  const [editEndDate, setEditEndDate] = useState<string>("");
 
   async function loadRequests() {
     if (!session || session.role !== "ADMIN") return;
@@ -432,9 +435,28 @@ useEffect(() => {
     setError(null);
 
     try {
+      const target = items.find((item) => item.id === id);
+      if (!target) {
+        setError("Antrag nicht gefunden.");
+        return;
+      }
+
+      const startDate = editingItemId === id ? editStartDate : target.startDate;
+      const endDate = editingItemId === id ? editEndDate : target.endDate;
+
       const response = await fetch(`/api/admin/absence-requests/${encodeURIComponent(id)}/approve`, {
         method: "POST",
         credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          startDate,
+          endDate,
+          type: "SICK",
+          dayPortion: "FULL_DAY",
+          compensation: "PAID",
+        }),
       });
 
       const json: unknown = await response.json().catch(() => ({}));
@@ -448,6 +470,7 @@ useEffect(() => {
         return;
       }
 
+      cancelEditing();
       await loadRequests();
     } catch {
       setError("Netzwerkfehler bei der Genehmigung.");
@@ -513,13 +536,109 @@ useEffect(() => {
         return;
       }
 
+      if (editingItemId === id) {
+        cancelEditing();
+      }
+
       await loadRequests();
+
     } catch {
       setError("Netzwerkfehler beim Löschen.");
     } finally {
       setBusyId(null);
     }
   }
+
+  function startEditing(item: AbsenceRequestItem) {
+  setEditingItemId(item.id);
+  setEditStartDate(item.startDate);
+  setEditEndDate(item.endDate);
+  setError(null);
+}
+
+function cancelEditing() {
+  setEditingItemId(null);
+  setEditStartDate("");
+  setEditEndDate("");
+}
+
+async function saveApprovedChange(id: string) {
+  setBusyId(id);
+  setError(null);
+
+  try {
+    const target = items.find((item) => item.id === id);
+    if (!target) {
+      setError("Antrag nicht gefunden.");
+      return;
+    }
+
+    const patchResponse = await fetch("/api/absences", {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: target.startDate,
+        to: target.endDate,
+        type: target.type,
+        dayPortion: "FULL_DAY",
+        compensation: "PAID",
+        newStartDate: editStartDate,
+        newEndDate: editEndDate,
+        newType: "SICK",
+        newDayPortion: "FULL_DAY",
+        newCompensation: "PAID",
+        userId: target.user.id,
+      }),
+    });
+
+    const patchJson: unknown = await patchResponse.json().catch(() => ({}));
+
+    if (!patchResponse.ok) {
+      const message =
+        isRecord(patchJson) && typeof patchJson["error"] === "string"
+          ? patchJson["error"]
+          : "Änderung fehlgeschlagen.";
+      setError(message);
+      return;
+    }
+
+    const requestUpdateResponse = await fetch(`/api/admin/absence-requests/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        startDate: editStartDate,
+        endDate: editEndDate,
+        type: "SICK",
+        dayPortion: "FULL_DAY",
+        compensation: "PAID",
+      }),
+    });
+
+    const requestUpdateJson: unknown = await requestUpdateResponse.json().catch(() => ({}));
+
+    if (!requestUpdateResponse.ok) {
+      const message =
+        isRecord(requestUpdateJson) && typeof requestUpdateJson["error"] === "string"
+          ? requestUpdateJson["error"]
+          : "Antragsdaten konnten nicht aktualisiert werden.";
+      setError(message);
+      return;
+    }
+
+    cancelEditing();
+    await loadRequests();
+  } catch {
+    setError("Netzwerkfehler bei der Änderung.");
+  } finally {
+    setBusyId(null);
+  }
+}
 
   const pendingItems = useMemo(
     () => items.filter((item) => item.status === "PENDING"),
@@ -543,6 +662,7 @@ useEffect(() => {
 
   function renderRequestCard(item: AbsenceRequestItem) {
     const isBusy = busyId === item.id;
+    const isEditing = editingItemId === item.id;
     const days = countDaysInclusive(item.startDate, item.endDate);
 
     return (
@@ -629,9 +749,34 @@ useEffect(() => {
         <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
           <div>
             <div className="label">Zeitraum</div>
-            <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
-              {rangeLabel(item.startDate, item.endDate)}
-            </div>
+
+            {isEditing ? (
+              <div className="modal-grid-2">
+                <div className="modal-field">
+                  <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>Start</div>
+                  <input
+                    className="input modal-date-input"
+                    type="date"
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="modal-field">
+                  <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>Ende</div>
+                  <input
+                    className="input modal-date-input"
+                    type="date"
+                    value={editEndDate}
+                    onChange={(e) => setEditEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                {rangeLabel(item.startDate, item.endDate)}
+              </div>
+            )}
           </div>
 
           <div>
@@ -666,45 +811,125 @@ useEffect(() => {
             justifyContent: "flex-end",
           }}
         >
-          <button
-            className="btn btn-danger"
-            type="button"
-            disabled={isBusy}
-            onClick={() => {
-              void deleteRequest(item.id);
-            }}
-            style={{ flex: "1 1 220px" }}
-          >
-            {isBusy ? "Löscht..." : "Löschen"}
-          </button>
-
-          {item.status === "PENDING" ? (
+          {isEditing ? (
             <>
+              <button
+                className="btn"
+                type="button"
+                disabled={isBusy}
+                onClick={cancelEditing}
+                style={{ flex: "1 1 220px" }}
+              >
+                Abbrechen
+              </button>
+
               <button
                 className="btn btn-danger"
                 type="button"
                 disabled={isBusy}
                 onClick={() => {
-                  void rejectRequest(item.id);
+                  void deleteRequest(item.id);
                 }}
                 style={{ flex: "1 1 220px" }}
               >
-                {isBusy ? "Verarbeitet..." : "Ablehnen"}
+                {isBusy ? "Löscht..." : "Löschen"}
               </button>
 
+              {item.status === "PENDING" ? (
+                <>
+                  <button
+                    className="btn btn-danger"
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      void rejectRequest(item.id);
+                    }}
+                    style={{ flex: "1 1 220px" }}
+                  >
+                    {isBusy ? "Verarbeitet..." : "Ablehnen"}
+                  </button>
+
+                  <button
+                    className="btn btn-accent"
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      void approveRequest(item.id);
+                    }}
+                    style={{ flex: "1 1 220px" }}
+                  >
+                    {isBusy ? "Verarbeitet..." : "Korrigieren & genehmigen"}
+                  </button>
+                </>
+              ) : item.status === "APPROVED" ? (
+                <button
+                  className="btn btn-accent"
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => {
+                    void saveApprovedChange(item.id);
+                  }}
+                  style={{ flex: "1 1 220px" }}
+                >
+                  {isBusy ? "Speichert..." : "Änderungen speichern"}
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <>
+              {item.status !== "REJECTED" ? (
+                <button
+                  className="btn"
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => startEditing(item)}
+                  style={{ flex: "1 1 220px" }}
+                >
+                  Bearbeiten
+                </button>
+              ) : null}
+
               <button
-                className="btn btn-accent"
+                className="btn btn-danger"
                 type="button"
                 disabled={isBusy}
                 onClick={() => {
-                  void approveRequest(item.id);
+                  void deleteRequest(item.id);
                 }}
                 style={{ flex: "1 1 220px" }}
               >
-                {isBusy ? "Verarbeitet..." : "Genehmigen"}
+                {isBusy ? "Löscht..." : "Löschen"}
               </button>
+
+              {item.status === "PENDING" ? (
+                <>
+                  <button
+                    className="btn btn-danger"
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      void rejectRequest(item.id);
+                    }}
+                    style={{ flex: "1 1 220px" }}
+                  >
+                    {isBusy ? "Verarbeitet..." : "Ablehnen"}
+                  </button>
+
+                  <button
+                    className="btn btn-accent"
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      void approveRequest(item.id);
+                    }}
+                    style={{ flex: "1 1 220px" }}
+                  >
+                    {isBusy ? "Verarbeitet..." : "Genehmigen"}
+                  </button>
+                </>
+              ) : null}
             </>
-          ) : null}
+          )}
         </div>
       </div>
     );

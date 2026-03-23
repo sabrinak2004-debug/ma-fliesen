@@ -18,15 +18,13 @@ const prisma = new PrismaClient({
 const MA_FLIESEN_EMPLOYEES: string[] = [
   "Max Mustermann",
   "Ilija Nikic",
-  "Coco",
-  "Francesco",
-  "Elvis",
-  "Leon",
-  "Behar",
-  "Kerim",
-  "Marko",
-  "Cedric",
-  "Kay",
+  "Cosmin Alexandroae",
+  "Francesco Cascania",
+  "Elvis Sulejmani",
+  "Leon Meinhold",
+  "Behar Mehmeti",
+  "Kerim Balci",
+  "Kay Bode",
 ];
 
 // ✅ Demo-Firma für neue Kunden

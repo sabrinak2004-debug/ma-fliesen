@@ -16,6 +16,10 @@ type RouteContext = {
 };
 
 type ApproveAbsenceRequestBody = {
+  startDate?: unknown;
+  endDate?: unknown;
+  type?: unknown;
+  dayPortion?: unknown;
   compensation?: unknown;
 };
 
@@ -32,6 +36,22 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
+}
+
+function isYYYYMMDD(v: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(v);
+}
+
+function dateOnlyUTC(yyyyMmDd: string): Date {
+  return new Date(`${yyyyMmDd}T00:00:00.000Z`);
+}
+
+function isAbsenceType(v: string): v is AbsenceType {
+  return v === "VACATION" || v === "SICK";
+}
+
+function isAbsenceDayPortion(v: string): v is AbsenceDayPortion {
+  return v === "FULL_DAY" || v === "HALF_DAY";
 }
 
 function isAbsenceCompensation(v: string): v is AbsenceCompensation {
@@ -135,20 +155,15 @@ export async function POST(req: Request, context: RouteContext) {
   const params = await context.params;
   const requestId = params.id.trim();
 
-  const raw = (await req.json().catch(() => null)) as unknown;
-  const body: ApproveAbsenceRequestBody = isRecord(raw) ? raw : {};
-
-  const compensationRaw = getString(body.compensation).trim();
-  const compensation: AbsenceCompensation = isAbsenceCompensation(compensationRaw)
-    ? compensationRaw
-    : AbsenceCompensation.PAID;
-
   if (!requestId) {
     return NextResponse.json(
       { ok: false, error: "Fehlende Request-ID." },
       { status: 400 }
     );
   }
+
+  const raw = (await req.json().catch(() => null)) as unknown;
+  const body: ApproveAbsenceRequestBody = isRecord(raw) ? raw : {};
 
   const existing = await prisma.absenceRequest.findUnique({
     where: { id: requestId },
@@ -192,9 +207,45 @@ export async function POST(req: Request, context: RouteContext) {
     );
   }
 
+  const startDateRaw = getString(body.startDate).trim();
+  const endDateRaw = getString(body.endDate).trim();
+  const typeRaw = getString(body.type).trim();
+  const dayPortionRaw = getString(body.dayPortion).trim();
+  const compensationRaw = getString(body.compensation).trim();
+
+  const finalType: AbsenceType = isAbsenceType(typeRaw)
+    ? typeRaw
+    : existing.type;
+
+  const finalStartDate: Date =
+    isYYYYMMDD(startDateRaw) ? dateOnlyUTC(startDateRaw) : existing.startDate;
+
+  const finalEndDate: Date =
+    isYYYYMMDD(endDateRaw) ? dateOnlyUTC(endDateRaw) : existing.endDate;
+
+  let finalDayPortion: AbsenceDayPortion = isAbsenceDayPortion(dayPortionRaw)
+    ? dayPortionRaw
+    : existing.dayPortion;
+
+  let finalCompensation: AbsenceCompensation = isAbsenceCompensation(compensationRaw)
+    ? compensationRaw
+    : existing.compensation;
+
+  if (finalType === AbsenceType.SICK) {
+    finalDayPortion = AbsenceDayPortion.FULL_DAY;
+    finalCompensation = AbsenceCompensation.PAID;
+  }
+
+  if (finalEndDate < finalStartDate) {
+    return NextResponse.json(
+      { ok: false, error: "Ende darf nicht vor Start liegen." },
+      { status: 400 }
+    );
+  }
+
   if (
-    existing.type !== "VACATION" &&
-    existing.dayPortion === AbsenceDayPortion.HALF_DAY
+    finalType !== AbsenceType.VACATION &&
+    finalDayPortion === AbsenceDayPortion.HALF_DAY
   ) {
     return NextResponse.json(
       { ok: false, error: "Halbe Tage sind nur für Urlaub erlaubt." },
@@ -203,8 +254,8 @@ export async function POST(req: Request, context: RouteContext) {
   }
 
   if (
-    existing.dayPortion === AbsenceDayPortion.HALF_DAY &&
-    toIsoDateUTC(existing.startDate) !== toIsoDateUTC(existing.endDate)
+    finalDayPortion === AbsenceDayPortion.HALF_DAY &&
+    toIsoDateUTC(finalStartDate) !== toIsoDateUTC(finalEndDate)
   ) {
     return NextResponse.json(
       { ok: false, error: "Ein halber Urlaubstag darf nur für genau ein Datum beantragt werden." },
@@ -212,14 +263,12 @@ export async function POST(req: Request, context: RouteContext) {
     );
   }
 
-  const days = eachDayInclusive(existing.startDate, existing.endDate);
-
   const conflictingAbsence = await prisma.absence.findFirst({
     where: {
       userId: existing.userId,
       absenceDate: {
-        gte: existing.startDate,
-        lte: existing.endDate,
+        gte: finalStartDate,
+        lte: finalEndDate,
       },
     },
     select: {
@@ -240,12 +289,18 @@ export async function POST(req: Request, context: RouteContext) {
     );
   }
 
+  const days = eachDayInclusive(finalStartDate, finalEndDate);
+
   const txResult = await prisma.$transaction(async (tx) => {
     const updatedRequest = await tx.absenceRequest.update({
       where: { id: existing.id },
       data: {
+        startDate: finalStartDate,
+        endDate: finalEndDate,
+        type: finalType,
+        dayPortion: finalDayPortion,
+        compensation: finalCompensation,
         status: AbsenceRequestStatus.APPROVED,
-        compensation,
         decidedAt: new Date(),
         decidedById: admin.id,
       },
@@ -255,9 +310,9 @@ export async function POST(req: Request, context: RouteContext) {
       data: days.map((day) => ({
         userId: existing.userId,
         absenceDate: day,
-        type: existing.type,
-        dayPortion: existing.dayPortion,
-        compensation,
+        type: finalType,
+        dayPortion: finalDayPortion,
+        compensation: finalCompensation,
       })),
       skipDuplicates: true,
     });
@@ -269,16 +324,17 @@ export async function POST(req: Request, context: RouteContext) {
   });
 
   const typeLabel =
-    existing.type === "VACATION" ? "Urlaubsantrag" : "Krankheitsantrag";
+    finalType === AbsenceType.VACATION ? "Urlaubsantrag" : "Krankheitsantrag";
 
   const compensationLabel =
-    compensation === AbsenceCompensation.UNPAID ? "unbezahlt" : "bezahlt";
+    finalCompensation === AbsenceCompensation.UNPAID ? "unbezahlt" : "bezahlt";
 
-  const startDate = toIsoDateUTC(existing.startDate);
-  const endDate = toIsoDateUTC(existing.endDate);
+  const startDate = toIsoDateUTC(finalStartDate);
+  const endDate = toIsoDateUTC(finalEndDate);
+
   const dateLabel = portionLabel(
-    existing.type,
-    existing.dayPortion,
+    finalType,
+    finalDayPortion,
     startDate,
     endDate
   );
@@ -304,9 +360,9 @@ export async function POST(req: Request, context: RouteContext) {
         id: existing.user.id,
         fullName: existing.user.fullName,
       },
-      type: existing.type,
-      dayPortion: existing.dayPortion,
-      compensation,
+      type: finalType,
+      dayPortion: finalDayPortion,
+      compensation: finalCompensation,
       startDate,
       endDate,
     },

@@ -308,6 +308,89 @@ body {
   padding: 16px;
 }
 
+.app-modal-panel {
+  min-width: 0;
+}
+
+.app-modal-body {
+  min-width: 0;
+}
+
+.app-modal-footer {
+  min-width: 0;
+}
+
+.modal-grid-1 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.modal-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.modal-field {
+  min-width: 0;
+  width: 100%;
+}
+
+.modal-field > .input,
+.modal-field > .textarea,
+.modal-field > select,
+.modal-field > input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: block;
+}
+
+.modal-date-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: block;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+@media (max-width: 768px) {
+  .modal-grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-modal-panel {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: calc(100dvh - 24px) !important;
+    border-radius: 18px;
+  }
+
+  .app-modal-body {
+    padding: 14px !important;
+  }
+
+  .app-modal-footer {
+    padding: 14px !important;
+  }
+
+  .app-modal-footer .btn {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    justify-content: center;
+  }
+}
+
 .badge-dot {
   width: 8px;
   height: 8px;

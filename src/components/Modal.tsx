@@ -2,26 +2,16 @@
 
 import React, { useEffect, useRef } from "react";
 
-
 type ModalProps = {
   open: boolean;
   title?: string;
   onClose: () => void;
   children: React.ReactNode;
-
-  /** Optional footer (Buttons etc.) */
   footer?: React.ReactNode;
-
-  /** Optional: max width of dialog */
   maxWidth?: number;
-
-  /** Optional: zIndex for stacking multiple modals */
   zIndex?: number;
-
-  /** Optional: disable closing by clicking the backdrop */
   disableBackdropClose?: boolean;
 };
-
 
 export default function Modal({
   open,
@@ -35,7 +25,6 @@ export default function Modal({
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ always keep latest onClose without re-running "open" effect
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -54,7 +43,6 @@ export default function Modal({
       panelRef.current?.focus();
     }, 0);
 
-    // Prevent background scrolling
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -63,7 +51,7 @@ export default function Modal({
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = prev;
     };
-  }, [open]); // ✅ only depend on "open"
+  }, [open]);
 
   if (!open) return null;
 
@@ -78,22 +66,25 @@ export default function Modal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 16,
+        padding: 12,
         background: "rgba(0,0,0,0.55)",
         backdropFilter: "blur(3px)",
+        WebkitBackdropFilter: "blur(3px)",
+        boxSizing: "border-box",
       }}
       onMouseDown={(e) => {
         if (disableBackdropClose) return;
-        // close only if clicking backdrop (not the panel)
         if (e.target === e.currentTarget) onCloseRef.current();
       }}
     >
       <div
         ref={panelRef}
         tabIndex={-1}
+        className="app-modal-panel"
         style={{
-          width: `min(${maxWidth}px, calc(100vw - 32px))`,
-          maxHeight: "85vh",
+          width: `min(${maxWidth}px, calc(100vw - 24px))`,
+          maxWidth: "calc(100vw - 24px)",
+          maxHeight: "calc(100dvh - 24px)",
           overflow: "hidden",
           borderRadius: 16,
           border: "1px solid rgba(255,255,255,0.08)",
@@ -101,9 +92,9 @@ export default function Modal({
           boxShadow: "0 18px 70px rgba(0,0,0,0.55)",
           display: "flex",
           flexDirection: "column",
+          boxSizing: "border-box",
         }}
       >
-        {/* Header */}
         <div
           style={{
             padding: "14px 16px",
@@ -113,9 +104,18 @@ export default function Modal({
             borderBottom: "1px solid rgba(255,255,255,0.08)",
             gap: 12,
             flex: "0 0 auto",
+            minWidth: 0,
+            boxSizing: "border-box",
           }}
         >
-          <div style={{ fontSize: 16, fontWeight: 700, color: "rgba(255,255,255,0.92)" }}>
+          <div
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.92)",
+              minWidth: 0,
+            }}
+          >
             {title ?? ""}
           </div>
 
@@ -126,40 +126,59 @@ export default function Modal({
             style={{
               width: 34,
               height: 34,
+              minWidth: 34,
               borderRadius: 10,
               border: "1px solid rgba(255,255,255,0.10)",
               background: "rgba(255,255,255,0.06)",
               color: "rgba(255,255,255,0.9)",
               cursor: "pointer",
+              flex: "0 0 auto",
             }}
           >
             ✕
           </button>
         </div>
 
-        {/* Body (scrollable) */}
         <div
+          className="app-modal-body"
           style={{
             padding: 16,
             overflowY: "auto",
+            overflowX: "hidden",
             overscrollBehavior: "contain",
             flex: "1 1 auto",
+            minWidth: 0,
+            width: "100%",
+            boxSizing: "border-box",
           }}
         >
-          {children}
+          <div
+            style={{
+              minWidth: 0,
+              width: "100%",
+              boxSizing: "border-box",
+            }}
+          >
+            {children}
+          </div>
         </div>
 
-        {/* Footer */}
         {footer ? (
           <div
+            className="app-modal-footer"
             style={{
               padding: 16,
               borderTop: "1px solid rgba(255,255,255,0.08)",
               display: "flex",
               justifyContent: "flex-end",
               gap: 10,
+              flexWrap: "wrap",
               flex: "0 0 auto",
               background: "rgba(12,12,12,0.92)",
+              minWidth: 0,
+              width: "100%",
+              boxSizing: "border-box",
+              overflowX: "hidden",
             }}
           >
             {footer}

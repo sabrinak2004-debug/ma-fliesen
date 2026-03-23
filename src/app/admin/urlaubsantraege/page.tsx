@@ -793,21 +793,21 @@ useEffect(() => {
             <div className="label">Zeitraum</div>
 
             {isEditing ? (
-              <div className="mobile-2col">
-                <div>
+              <div className="modal-grid-2">
+                <div className="modal-field">
                   <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>Start</div>
                   <input
-                    className="input"
+                    className="input modal-date-input"
                     type="date"
                     value={editStartDate}
                     onChange={(e) => setEditStartDate(e.target.value)}
                   />
                 </div>
 
-                <div>
+                <div className="modal-field">
                   <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>Ende</div>
                   <input
-                    className="input"
+                    className="input modal-date-input"
                     type="date"
                     value={editEndDate}
                     onChange={(e) => setEditEndDate(e.target.value)}
@@ -823,8 +823,8 @@ useEffect(() => {
             )}
           </div>
 
-          <div className="mobile-2col">
-            <div>
+          <div className="modal-grid-2">
+            <div className="modal-field">
               <div className="label">Typ</div>
               {isEditing ? (
                 <select
@@ -851,7 +851,7 @@ useEffect(() => {
               )}
             </div>
 
-            <div>
+            <div className="modal-field">
               <div className="label">Umfang</div>
               {isEditing ? (
                 <select
@@ -879,28 +879,30 @@ useEffect(() => {
             </div>
           </div>
 
-          <div>
-            <div className="label">Vergütung</div>
-            {isEditing ? (
-              <select
-                className="input"
-                value={editCompensation}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "PAID" || value === "UNPAID") {
-                    setEditCompensation(value);
-                  }
-                }}
-                disabled={editType === "SICK"}
-              >
-                <option value="PAID">Bezahlt</option>
-                <option value="UNPAID">Unbezahlt</option>
-              </select>
-            ) : (
-              <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
-                {compensationLabel(item.compensation)}
-              </div>
-            )}
+          <div className="modal-grid-1">
+            <div className="modal-field">
+              <div className="label">Vergütung</div>
+              {isEditing ? (
+                <select
+                  className="input"
+                  value={editCompensation}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "PAID" || value === "UNPAID") {
+                      setEditCompensation(value);
+                    }
+                  }}
+                  disabled={editType === "SICK"}
+                >
+                  <option value="PAID">Bezahlt</option>
+                  <option value="UNPAID">Unbezahlt</option>
+                </select>
+              ) : (
+                <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                  {compensationLabel(item.compensation)}
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
