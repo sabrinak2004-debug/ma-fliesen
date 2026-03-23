@@ -383,8 +383,6 @@ body {
   }
 
   .app-modal-footer .btn {
-    flex: 1 1 100%;
-    width: 100%;
     min-width: 0;
     box-sizing: border-box;
     justify-content: center;
@@ -437,6 +435,72 @@ body {
     min-width: 0;
     max-width: 100%;
     box-sizing: border-box;
+  }
+}
+.modal-footer-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.modal-footer-actions .btn {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 160px;
+}
+
+.modal-grid-2-compact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  align-items: start;
+}
+
+.modal-grid-2-compact > * {
+  min-width: 0;
+  width: 100%;
+}
+
+.modal-grid-2-compact .modal-field {
+  min-width: 0;
+  width: 100%;
+}
+
+.modal-grid-2-compact .input,
+.modal-grid-2-compact input,
+.modal-grid-2-compact select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: block;
+}
+
+.modal-grid-2-compact input[type="time"] {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+@media (max-width: 768px) {
+  .modal-footer-actions {
+    justify-content: flex-end;
+  }
+
+  .modal-footer-actions .btn {
+    min-width: 120px;
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .modal-grid-2-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 }
 

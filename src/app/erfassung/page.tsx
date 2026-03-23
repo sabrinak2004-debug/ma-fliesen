@@ -2118,7 +2118,7 @@ useEffect(() => {
           setCorrectionSuccess(null);
         }}
         footer={
-          <div style={{ display: "flex", gap: 10 }}>
+          <div className="modal-footer-actions">
             <button
               className="btn"
               type="button"
@@ -2206,14 +2206,7 @@ useEffect(() => {
           setEditError(null);
         }}
         footer={
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-              width: "100%",
-            }}
-          >
+          <div className="modal-footer-actions">
             <button
               className="btn"
               type="button"
@@ -2222,7 +2215,6 @@ useEffect(() => {
                 setEdit(null);
                 setEditError(null);
               }}
-              style={{ flex: "1 1 220px" }}
             >
               Abbrechen
             </button>
@@ -2231,7 +2223,6 @@ useEffect(() => {
               type="button"
               onClick={saveEdit}
               disabled={editSaving}
-              style={{ flex: "1 1 220px" }}
             >
               {editSaving ? "Speichert..." : "Änderungen speichern"}
             </button>
@@ -2268,24 +2259,54 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="modal-grid-2-compact">
-              <div className="modal-field">
+            <div
+              className="modal-grid-2-compact"
+              style={{
+                width: "100%",
+                minWidth: 0,
+              }}
+            >
+              <div
+                className="modal-field"
+                style={{
+                  minWidth: 0,
+                  width: "100%",
+                }}
+              >
                 <div className="label">Beginn</div>
                 <input
                   className="input"
                   type="time"
                   value={edit.startTime}
                   onChange={(e) => setEdit((p) => (p ? { ...p, startTime: e.target.value } : p))}
+                  style={{
+                    width: "100%",
+                    minWidth: 0,
+                    maxWidth: "100%",
+                    boxSizing: "border-box",
+                  }}
                 />
               </div>
 
-              <div className="modal-field">
+              <div
+                className="modal-field"
+                style={{
+                  minWidth: 0,
+                  width: "100%",
+                }}
+              >
                 <div className="label">Ende</div>
                 <input
                   className="input"
                   type="time"
                   value={edit.endTime}
                   onChange={(e) => setEdit((p) => (p ? { ...p, endTime: e.target.value } : p))}
+                  style={{
+                    width: "100%",
+                    minWidth: 0,
+                    maxWidth: "100%",
+                    boxSizing: "border-box",
+                  }}
                 />
               </div>
             </div>
