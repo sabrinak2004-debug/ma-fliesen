@@ -418,7 +418,10 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
-  min-width: 0;
+}
+
+.modal-grid-2-compact > * {
+  min-width: 0; /* ❗ CRITICAL FIX */
 }
 
 @media (max-width: 768px) {
@@ -435,6 +438,17 @@ body {
     max-width: 100%;
     box-sizing: border-box;
   }
+}
+
+.erfassung-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.erfassung-actions-row .btn {
+  flex: 0 0 auto; /* ❗ verhindert "fett" */
+  width: auto;
 }
 
 .badge-dot {
