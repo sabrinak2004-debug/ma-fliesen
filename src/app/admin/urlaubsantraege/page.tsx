@@ -311,7 +311,10 @@ export default function UrlaubsantraegePage() {
   const [session, setSession] = useState<AdminSessionDTO | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<{
+    id: string;
+    action: "delete" | "approve" | "reject" | "save";
+  } | null>(null);
 
   const [users, setUsers] = useState<UserOption[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
@@ -468,7 +471,7 @@ useEffect(() => {
   }, []);
 
   async function approveRequest(id: string) {
-    setBusyId(id);
+    setBusyAction({ id, action: "approve" });
     setError(null);
 
     try {
@@ -515,12 +518,12 @@ useEffect(() => {
     } catch {
       setError("Netzwerkfehler bei der Genehmigung.");
     } finally {
-      setBusyId(null);
+      setBusyAction(null);
     }
   }
 
   async function rejectRequest(id: string) {
-    setBusyId(id);
+    setBusyAction({ id, action: "reject" });
     setError(null);
 
     try {
@@ -544,7 +547,7 @@ useEffect(() => {
     } catch {
       setError("Netzwerkfehler bei der Ablehnung.");
     } finally {
-      setBusyId(null);
+      setBusyAction(null);
     }
   }
 
@@ -556,7 +559,7 @@ useEffect(() => {
 
     if (!confirmed) return;
 
-    setBusyId(id);
+    setBusyAction({ id, action: "delete" });
     setError(null);
 
     try {
@@ -584,7 +587,7 @@ useEffect(() => {
     } catch {
       setError("Netzwerkfehler beim Löschen.");
     } finally {
-      setBusyId(null);
+      setBusyAction(null);
     }
   }
 
@@ -608,7 +611,7 @@ useEffect(() => {
   }
 
   async function saveApprovedChange(id: string) {
-    setBusyId(id);
+    setBusyAction({ id, action: "save" });
     setError(null);
 
     try {
@@ -681,7 +684,7 @@ useEffect(() => {
     } catch {
       setError("Netzwerkfehler bei der Änderung.");
     } finally {
-      setBusyId(null);
+      setBusyAction(null);
     }
   }
 
@@ -706,7 +709,11 @@ useEffect(() => {
   }, [users, selectedUserId]);
 
   function renderRequestCard(item: AbsenceRequestItem) {
-    const isBusy = busyId === item.id;
+    const isDeleting = busyAction?.id === item.id && busyAction.action === "delete";
+    const isApproving = busyAction?.id === item.id && busyAction.action === "approve";
+    const isRejecting = busyAction?.id === item.id && busyAction.action === "reject";
+    const isSaving = busyAction?.id === item.id && busyAction.action === "save";
+    const isBusy = busyAction?.id === item.id;
     const isEditing = editingItemId === item.id;
     const days = countDaysInclusive(item.startDate, item.endDate);
     const durationText =
@@ -958,7 +965,7 @@ useEffect(() => {
                   void deleteRequest(item.id);
                 }}
               >
-                {isBusy ? "Löscht..." : "Löschen"}
+                {isDeleting ? "Löscht..." : "Löschen"}
               </button>
 
               {item.status === "PENDING" ? (
@@ -971,7 +978,7 @@ useEffect(() => {
                       void rejectRequest(item.id);
                     }}
                   >
-                    {isBusy ? "Verarbeitet..." : "Ablehnen"}
+                    {isRejecting ? "Verarbeitet..." : "Ablehnen"}
                   </button>
 
                   <button
@@ -982,7 +989,7 @@ useEffect(() => {
                       void approveRequest(item.id);
                     }}
                   >
-                    {isBusy ? "Verarbeitet..." : "Korrigieren & genehmigen"}
+                    {isApproving ? "Verarbeitet..." : "Korrigieren & genehmigen"}
                   </button>
                 </>
               ) : item.status === "APPROVED" ? (
@@ -994,7 +1001,7 @@ useEffect(() => {
                     void saveApprovedChange(item.id);
                   }}
                 >
-                  {isBusy ? "Speichert..." : "Änderungen speichern"}
+                  {isSaving ? "Speichert..." : "Änderungen speichern"}
                 </button>
               ) : null}
             </>
@@ -1019,7 +1026,7 @@ useEffect(() => {
                   void deleteRequest(item.id);
                 }}
               >
-                {isBusy ? "Löscht..." : "Löschen"}
+                {isDeleting ? "Löscht..." : "Löschen"}
               </button>
 
               {item.status === "PENDING" ? (
@@ -1032,7 +1039,7 @@ useEffect(() => {
                       void rejectRequest(item.id);
                     }}
                   >
-                    {isBusy ? "Verarbeitet..." : "Ablehnen"}
+                    {isRejecting ? "Verarbeitet..." : "Ablehnen"}
                   </button>
 
                   <button
@@ -1043,7 +1050,7 @@ useEffect(() => {
                       void approveRequest(item.id);
                     }}
                   >
-                    {isBusy ? "Verarbeitet..." : "Genehmigen"}
+                    {isApproving ? "Verarbeitet..." : "Genehmigen"}
                   </button>
                 </>
               ) : null}

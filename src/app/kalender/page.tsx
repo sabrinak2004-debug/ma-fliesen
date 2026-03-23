@@ -1570,9 +1570,6 @@ export default function KalenderPage({
                       Mitarbeiteransicht (read-only): Kalender zeigt Plan/Urlaub/Krank des Mitarbeiters.
                     </div>
                   ) : null}
-                  <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)", textAlign: "center" }}>
-                    Debug: role={session?.role ?? "none"} | selectedUserId={selectedUserId || "(leer)"} | isAdminOwnCalendar={String(isAdminOwnCalendar)}
-                  </div>
                 </div>
               ) : null}
 
