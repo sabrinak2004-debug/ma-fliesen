@@ -804,13 +804,17 @@ async function saveApprovedChange(id: string) {
           </div>
         </div>
 
-        <div
-          className="mobile-actions"
-          style={{
-            marginTop: 14,
-            justifyContent: "flex-end",
-          }}
-        >
+          <div
+            className="mobile-actions card-action-group"
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 12,
+              justifyContent: "flex-end",
+              flexWrap: "wrap",
+              width: "100%",
+            }}
+          >
           {isEditing ? (
             <>
               <button
@@ -818,7 +822,10 @@ async function saveApprovedChange(id: string) {
                 type="button"
                 disabled={isBusy}
                 onClick={cancelEditing}
-                style={{ flex: "1 1 220px" }}
+                style={{
+                  flex: "1 1 200px",
+                  minWidth: 0,
+                }}
               >
                 Abbrechen
               </button>
@@ -830,7 +837,10 @@ async function saveApprovedChange(id: string) {
                 onClick={() => {
                   void deleteRequest(item.id);
                 }}
-                style={{ flex: "1 1 220px" }}
+                style={{
+                  flex: "1 1 200px",
+                  minWidth: 0,
+                }}
               >
                 {isBusy ? "Löscht..." : "Löschen"}
               </button>
@@ -844,7 +854,10 @@ async function saveApprovedChange(id: string) {
                     onClick={() => {
                       void rejectRequest(item.id);
                     }}
-                    style={{ flex: "1 1 220px" }}
+                    style={{
+                      flex: "1 1 200px",
+                      minWidth: 0,
+                    }}
                   >
                     {isBusy ? "Verarbeitet..." : "Ablehnen"}
                   </button>
@@ -856,7 +869,10 @@ async function saveApprovedChange(id: string) {
                     onClick={() => {
                       void approveRequest(item.id);
                     }}
-                    style={{ flex: "1 1 220px" }}
+                    style={{
+                      flex: "1 1 200px",
+                      minWidth: 0,
+                    }}
                   >
                     {isBusy ? "Verarbeitet..." : "Korrigieren & genehmigen"}
                   </button>
@@ -869,7 +885,10 @@ async function saveApprovedChange(id: string) {
                   onClick={() => {
                     void saveApprovedChange(item.id);
                   }}
-                  style={{ flex: "1 1 220px" }}
+                  style={{
+                    flex: "1 1 200px",
+                    minWidth: 0,
+                  }}
                 >
                   {isBusy ? "Speichert..." : "Änderungen speichern"}
                 </button>
@@ -883,7 +902,10 @@ async function saveApprovedChange(id: string) {
                   type="button"
                   disabled={isBusy}
                   onClick={() => startEditing(item)}
-                  style={{ flex: "1 1 220px" }}
+                  style={{
+                    flex: "1 1 200px",
+                    minWidth: 0,
+                  }}
                 >
                   Bearbeiten
                 </button>
@@ -896,7 +918,10 @@ async function saveApprovedChange(id: string) {
                 onClick={() => {
                   void deleteRequest(item.id);
                 }}
-                style={{ flex: "1 1 220px" }}
+                style={{
+                  flex: "1 1 200px",
+                  minWidth: 0,
+                }}
               >
                 {isBusy ? "Löscht..." : "Löschen"}
               </button>
@@ -910,7 +935,10 @@ async function saveApprovedChange(id: string) {
                     onClick={() => {
                       void rejectRequest(item.id);
                     }}
-                    style={{ flex: "1 1 220px" }}
+                    style={{
+                      flex: "1 1 200px",
+                      minWidth: 0,
+                    }}
                   >
                     {isBusy ? "Verarbeitet..." : "Ablehnen"}
                   </button>
@@ -922,7 +950,10 @@ async function saveApprovedChange(id: string) {
                     onClick={() => {
                       void approveRequest(item.id);
                     }}
-                    style={{ flex: "1 1 220px" }}
+                    style={{
+                      flex: "1 1 200px",
+                      minWidth: 0,
+                    }}
                   >
                     {isBusy ? "Verarbeitet..." : "Genehmigen"}
                   </button>

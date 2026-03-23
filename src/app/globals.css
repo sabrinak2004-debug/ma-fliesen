@@ -390,6 +390,52 @@ body {
     justify-content: center;
   }
 }
+.card-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.card-action-group > .btn {
+  flex: 1 1 200px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .card-action-group {
+    gap: 12px;
+  }
+
+  .card-action-group > .btn {
+    flex: 1 1 100%;
+  }
+}
+
+.modal-grid-2-compact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .modal-grid-2-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .modal-grid-2-compact .input,
+  .modal-grid-2-compact input,
+  .modal-grid-2-compact select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
 
 .badge-dot {
   width: 8px;

@@ -2268,7 +2268,7 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="modal-grid-2">
+            <div className="modal-grid-2-compact">
               <div className="modal-field">
                 <div className="label">Beginn</div>
                 <input
