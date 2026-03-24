@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
@@ -776,7 +776,7 @@ type OpenDayPrefill = {
   absenceCompensation?: AbsenceCompensation;
 };
 
-export default function KalenderPage({
+function KalenderPageInner({
   forceAdminOwnCalendar = false,
 }: KalenderPageProps) {
   const router = useRouter();
@@ -2748,5 +2748,25 @@ export default function KalenderPage({
         )}
       </Modal>
     </AppShell>
+  );
+}
+export default function KalenderPage(
+  props: KalenderPageProps
+): React.ReactElement {
+  return (
+    <Suspense
+      fallback={
+        <div
+          style={{
+            padding: 16,
+            color: "var(--muted)",
+          }}
+        >
+          Kalender lädt...
+        </div>
+      }
+    >
+      <KalenderPageInner {...props} />
+    </Suspense>
   );
 }
