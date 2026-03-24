@@ -406,6 +406,10 @@ function currentMonthValue(): string {
   return `${y}-${m}`;
 }
 
+function currentYearValue(): string {
+  return String(new Date().getFullYear());
+}
+
 export default function UrlaubsantraegePage() {
   const router = useRouter();
   const [items, setItems] = useState<AbsenceRequestItem[]>([]);
@@ -423,6 +427,17 @@ export default function UrlaubsantraegePage() {
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthValue());
 
   const [selectedResturlaubUserId, setSelectedResturlaubUserId] = useState<string>("");
+  const [selectedResturlaubYear, setSelectedResturlaubYear] = useState<string>(currentYearValue());
+  const resturlaubYearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return [
+      String(currentYear + 1),
+      String(currentYear),
+      String(currentYear - 1),
+      String(currentYear - 2),
+      String(currentYear - 3),
+    ];
+  }, []);
   const [remainingVacationDays, setRemainingVacationDays] = useState<number>(0);
   const [resturlaubLoading, setResturlaubLoading] = useState<boolean>(true);
   const [resturlaubError, setResturlaubError] = useState<string | null>(null);
@@ -486,7 +501,7 @@ async function loadRemainingVacationKpi() {
 
   try {
     const params = new URLSearchParams();
-    params.set("month", currentMonthValue());
+    params.set("month", `${selectedResturlaubYear}-12`);
 
     const response = await fetch(`/api/overview?${params.toString()}`, {
       method: "GET",
@@ -575,7 +590,13 @@ useEffect(() => {
   if (!sessionChecked) return;
   if (!session || session.role !== "ADMIN") return;
   void loadRemainingVacationKpi();
-}, [selectedResturlaubUserId, sessionChecked, session?.role, session?.companyId]);
+}, [
+  selectedResturlaubUserId,
+  selectedResturlaubYear,
+  sessionChecked,
+  session?.role,
+  session?.companyId,
+]);
 
   useEffect(() => {
     let active = true;
@@ -1247,11 +1268,22 @@ useEffect(() => {
             <div className="big">
               {resturlaubLoading ? "…" : formatVacationDays(remainingVacationDays)}
             </div>
+
             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
               {selectedResturlaubUserLabel}
             </div>
 
-            <div style={{ marginTop: 10 }}>
+            <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
+              Stand für das ausgewählte Urlaubsjahr
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                display: "grid",
+                gap: 8,
+              }}
+            >
               <select
                 className="input"
                 value={selectedResturlaubUserId}
@@ -1271,6 +1303,28 @@ useEffect(() => {
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.fullName}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className="input"
+                value={selectedResturlaubYear}
+                onChange={(e) => setSelectedResturlaubYear(e.target.value)}
+                style={{
+                  width: "100%",
+                  minWidth: 0,
+                  boxSizing: "border-box",
+                  display: "block",
+                  maxWidth: "100%",
+                  borderRadius: 14,
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                }}
+              >
+                {resturlaubYearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    Urlaubsjahr {year}
                   </option>
                 ))}
               </select>
