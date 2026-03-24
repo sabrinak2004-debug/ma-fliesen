@@ -565,9 +565,27 @@ function ErfassungPageInner() {
     return typeof value === "string" && value.trim() !== "" ? value.trim() : "";
   }, [searchParams]);
 
+  const syncDateParam = useMemo(() => {
+    const value = searchParams.get("syncDate");
+    return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? value
+      : "";
+  }, [searchParams]);
+
   const hasAdminTaskBypassForSelectedDate =
     selectedCorrectionStatus?.adminTaskBypass?.active === true &&
     selectedCorrectionStatus.adminTaskBypass.workDate === workDate;
+  const syncToastMessage = useMemo(() => {
+    if (sourceTaskId) {
+      return "Aufgabe übernommen. Bitte Start- und Endzeit ergänzen.";
+    }
+
+    if (syncDateParam) {
+      return "Datum übernommen. Bitte Start- und Endzeit ergänzen.";
+    }
+
+    return "Planeintrag übernommen. Bitte Start- und Endzeit ergänzen.";
+  }, [sourceTaskId, syncDateParam]);
   const [loadingSelectedCorrectionStatus, setLoadingSelectedCorrectionStatus] = useState(false);
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
@@ -627,24 +645,22 @@ function ErfassungPageInner() {
   ]);
 
   useEffect(() => {
-    const syncDate = searchParams.get("syncDate");
     const syncActivity = searchParams.get("syncActivity");
     const syncLocation = searchParams.get("syncLocation");
-    const sourceTaskIdParam = searchParams.get("sourceTaskId");
 
     const hasSyncValues =
-      (typeof syncDate === "string" && syncDate.trim() !== "") ||
+      syncDateParam !== "" ||
       (typeof syncActivity === "string" && syncActivity.trim() !== "") ||
       (typeof syncLocation === "string" && syncLocation.trim() !== "") ||
-      (typeof sourceTaskIdParam === "string" && sourceTaskIdParam.trim() !== "");
+      sourceTaskId !== "";
 
     if (!hasSyncValues) {
       setPrefillApplied(true);
       return;
     }
 
-    if (typeof syncDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(syncDate)) {
-      setWorkDate(syncDate);
+    if (syncDateParam) {
+      setWorkDate(syncDateParam);
     }
 
     if (typeof syncActivity === "string" && syncActivity.trim() !== "") {
@@ -659,11 +675,11 @@ function ErfassungPageInner() {
     setEndTime("");
     setShowSyncToast(true);
     setPrefillApplied(true);
-  }, [searchParams]);
+  }, [searchParams, sourceTaskId, syncDateParam]);
 
   useEffect(() => {
     setPrefillApplied(false);
-  }, [sourceTaskId, searchParams]);
+  }, [sourceTaskId, syncDateParam]);
 
 useEffect(() => {
   let alive = true;
@@ -1594,12 +1610,7 @@ useEffect(() => {
             className="btn"
             type="button"
             onClick={() => {
-              const syncDate = searchParams.get("syncDate");
-              setWorkDate(
-                typeof syncDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(syncDate)
-                  ? syncDate
-                  : toIsoDateLocal(new Date())
-              );
+              setWorkDate(syncDateParam || toIsoDateLocal(new Date()));
               setStartTime("");
               setEndTime("");
               setActivity("");
@@ -2447,7 +2458,7 @@ useEffect(() => {
         )}
       </Modal>
       {showSyncToast && (
-        <Toast message="Planeintrag übernommen. Bitte Start- und Endzeit ergänzen." />
+        <Toast message={syncToastMessage} />
       )}
     </AppShell>
   );

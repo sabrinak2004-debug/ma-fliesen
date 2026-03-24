@@ -206,12 +206,12 @@ function taskActionHref(task: TaskRow): string {
     const params = new URLSearchParams();
 
     const syncDate =
-      task.referenceStartDate ??
-      task.referenceDate ??
+      task.referenceStartDate ||
+      task.referenceDate ||
       task.referenceEndDate;
 
     if (syncDate) {
-      params.set("syncDate", syncDate);
+      params.set("syncDate", syncDate.slice(0, 10));
     }
 
     if (task.requiredAction === "WORK_ENTRY_FOR_DATE") {
