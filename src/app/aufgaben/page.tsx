@@ -223,22 +223,64 @@ function taskActionHref(task: TaskRow): string {
   }
 
   if (task.category === "VACATION" || task.category === "SICKNESS") {
-    return "/kalender";
+    const params = new URLSearchParams();
+
+    const startDate =
+      task.referenceStartDate ||
+      task.referenceDate ||
+      task.referenceEndDate;
+
+    const endDate =
+      task.referenceEndDate ||
+      task.referenceStartDate ||
+      task.referenceDate;
+
+    const openDate = startDate || endDate;
+
+    if (openDate) {
+      params.set("openDate", openDate.slice(0, 10));
+    }
+
+    if (startDate) {
+      params.set("absenceStart", startDate.slice(0, 10));
+    }
+
+    if (endDate) {
+      params.set("absenceEnd", endDate.slice(0, 10));
+    }
+
+    params.set(
+      "absenceType",
+      task.category === "SICKNESS" ? "SICK" : "VACATION"
+    );
+
+    if (
+      task.requiredAction === "VACATION_ENTRY_FOR_DATE" ||
+      task.requiredAction === "SICK_ENTRY_FOR_DATE"
+    ) {
+      params.set("sourceTaskId", task.id);
+    }
+
+    return `/kalender?${params.toString()}`;
   }
 
   return "/aufgaben";
 }
 
 function taskActionText(task: TaskRow): string {
-  const dateText = task.referenceDate ? formatDateDE(task.referenceDate) : "den betreffenden Tag";
+  const referenceText = formatReferenceRangeDE(
+    task.referenceStartDate,
+    task.referenceEndDate,
+    task.referenceDate
+  );
 
   switch (task.requiredAction) {
     case "WORK_ENTRY_FOR_DATE":
-      return `Bitte trage deine Arbeitszeit für ${dateText} ein, bevor du die Aufgabe als erledigt markierst.`;
+      return `Bitte trage deine Arbeitszeit für ${referenceText} ein, bevor du die Aufgabe als erledigt markierst.`;
     case "VACATION_ENTRY_FOR_DATE":
-      return `Bitte erfasse für ${dateText} den Urlaub bzw. stelle den passenden Urlaubsantrag, bevor du die Aufgabe abschließt.`;
+      return `Bitte erfasse für ${referenceText} den Urlaub bzw. stelle den passenden Urlaubsantrag, bevor du die Aufgabe abschließt.`;
     case "SICK_ENTRY_FOR_DATE":
-      return `Bitte erfasse für ${dateText} die Krankheit bzw. stelle den passenden Krankheitsantrag, bevor du die Aufgabe abschließt.`;
+      return `Bitte erfasse für ${referenceText} die Krankheit bzw. stelle den passenden Krankheitsantrag, bevor du die Aufgabe abschließt.`;
     case "NONE":
       return "Bitte prüfe die Aufgabe und markiere sie erst als erledigt, wenn du sie wirklich abgeschlossen hast.";
   }

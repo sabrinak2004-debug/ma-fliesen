@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import {
@@ -768,10 +768,19 @@ type KalenderPageProps = {
   forceAdminOwnCalendar?: boolean;
 };
 
+type OpenDayPrefill = {
+  absenceStart?: string;
+  absenceEnd?: string;
+  absenceType?: AbsenceType;
+  absenceDayPortion?: AbsenceDayPortion;
+  absenceCompensation?: AbsenceCompensation;
+};
+
 export default function KalenderPage({
   forceAdminOwnCalendar = false,
 }: KalenderPageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const [viewMode, setViewMode] = useState<CalendarViewMode>("MONTH");
 
@@ -1079,7 +1088,7 @@ export default function KalenderPage({
     return out;
   }, [cursor, todayYMD]);
 
-  async function loadPlansForDay(date: string): Promise<void> {
+  const loadPlansForDay = useCallback(async (date: string): Promise<void> => {
     setPlansLoading(true);
     setPlansError(null);
 
@@ -1101,9 +1110,9 @@ export default function KalenderPage({
     } finally {
       setPlansLoading(false);
     }
-  }
+  }, []);
 
-  async function loadAdminEmployeePlansForDay(date: string): Promise<void> {
+  const loadAdminEmployeePlansForDay = useCallback(async (date: string): Promise<void> => {
     if (!selectedUserId) {
       setAdminEmployeeDayPlans([]);
       setAdminEmployeePlansError(null);
@@ -1138,9 +1147,9 @@ export default function KalenderPage({
     } finally {
       setAdminEmployeePlansLoading(false);
     }
-  }
+  }, [selectedUserId]);
 
-  async function loadAppointmentsForDay(date: string): Promise<void> {
+  const loadAppointmentsForDay = useCallback(async (date: string): Promise<void> => {
     setApptLoading(true);
     setApptError(null);
     try {
@@ -1161,7 +1170,7 @@ export default function KalenderPage({
     } finally {
       setApptLoading(false);
     }
-  }
+  }, []);
 
   function resetAppointmentForm(): void {
     setApptEditingId(null);
@@ -1176,7 +1185,7 @@ export default function KalenderPage({
     setError(null);
   }
 
-  function openDay(date: string): void {
+  const openDay = useCallback((date: string, prefill?: OpenDayPrefill): void => {
     setSelectedDate(date);
     setOpen(true);
     setError(null);
@@ -1198,12 +1207,18 @@ export default function KalenderPage({
       return;
     }
 
+    const nextAbsenceType = prefill?.absenceType ?? "VACATION";
+    const nextAbsenceStart = prefill?.absenceStart ?? date;
+    const nextAbsenceEnd = prefill?.absenceEnd ?? nextAbsenceStart;
+
     setSelectedRequestBlock(null);
-    setAbsenceStart(date);
-    setAbsenceEnd(date);
-    setAbsenceType("VACATION");
-    setAbsenceDayPortion("FULL_DAY");
-    setAbsenceCompensation("PAID");
+    setAbsenceStart(nextAbsenceStart);
+    setAbsenceEnd(nextAbsenceEnd);
+    setAbsenceType(nextAbsenceType);
+    setAbsenceDayPortion(prefill?.absenceDayPortion ?? "FULL_DAY");
+    setAbsenceCompensation(
+      prefill?.absenceCompensation ?? "PAID"
+    );
     setRequestNote("");
 
     setDayPlans([]);
@@ -1211,7 +1226,57 @@ export default function KalenderPage({
     setPlansLoading(false);
 
     void loadPlansForDay(date);
-  }
+  }, [
+    isAdminOwnCalendar,
+    isAdminViewingEmployee,
+    loadAdminEmployeePlansForDay,
+    loadAppointmentsForDay,
+    loadPlansForDay,
+  ]);
+
+  useEffect(() => {
+    if (isAdmin) return;
+
+    const openDateParam = searchParams.get("openDate");
+    const absenceStartParam = searchParams.get("absenceStart");
+    const absenceEndParam = searchParams.get("absenceEnd");
+    const absenceTypeParam = searchParams.get("absenceType");
+
+    const resolvedOpenDate =
+      openDateParam || absenceStartParam || absenceEndParam;
+
+    if (!resolvedOpenDate) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(resolvedOpenDate)) return;
+
+    const resolvedStart =
+      absenceStartParam && /^\d{4}-\d{2}-\d{2}$/.test(absenceStartParam)
+        ? absenceStartParam
+        : resolvedOpenDate;
+
+    const resolvedEnd =
+      absenceEndParam && /^\d{4}-\d{2}-\d{2}$/.test(absenceEndParam)
+        ? absenceEndParam
+        : resolvedStart;
+
+    const resolvedType: AbsenceType =
+      absenceTypeParam === "SICK"
+        ? "SICK"
+        : absenceTypeParam === "VACATION"
+        ? "VACATION"
+        : "VACATION";
+
+    setCursor(ymdToDateLocal(resolvedOpenDate));
+
+    openDay(resolvedOpenDate, {
+      absenceStart: resolvedStart,
+      absenceEnd: resolvedEnd,
+      absenceType: resolvedType,
+      absenceDayPortion: "FULL_DAY",
+      absenceCompensation: "PAID",
+    });
+
+    router.replace("/kalender");
+  }, [isAdmin, openDay, router, searchParams]);
 
   function syncPlanEntryToWorkEntry(plan: PlanEntry): void {
   const syncDate =
