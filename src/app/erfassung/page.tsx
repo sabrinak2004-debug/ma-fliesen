@@ -627,22 +627,21 @@ function ErfassungPageInner() {
   ]);
 
   useEffect(() => {
-    if (prefillApplied) return;
-
     const syncDate = searchParams.get("syncDate");
     const syncActivity = searchParams.get("syncActivity");
     const syncLocation = searchParams.get("syncLocation");
+    const sourceTaskIdParam = searchParams.get("sourceTaskId");
 
     const hasSyncValues =
       (typeof syncDate === "string" && syncDate.trim() !== "") ||
       (typeof syncActivity === "string" && syncActivity.trim() !== "") ||
-      (typeof syncLocation === "string" && syncLocation.trim() !== "");
+      (typeof syncLocation === "string" && syncLocation.trim() !== "") ||
+      (typeof sourceTaskIdParam === "string" && sourceTaskIdParam.trim() !== "");
 
     if (!hasSyncValues) {
       setPrefillApplied(true);
       return;
     }
-    setShowSyncToast(true);
 
     if (typeof syncDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(syncDate)) {
       setWorkDate(syncDate);
@@ -658,8 +657,13 @@ function ErfassungPageInner() {
 
     setStartTime("");
     setEndTime("");
+    setShowSyncToast(true);
     setPrefillApplied(true);
-  }, [prefillApplied, searchParams]);
+  }, [searchParams]);
+
+  useEffect(() => {
+    setPrefillApplied(false);
+  }, [sourceTaskId, searchParams]);
 
 useEffect(() => {
   let alive = true;

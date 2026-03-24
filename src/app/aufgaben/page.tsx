@@ -207,7 +207,8 @@ function taskActionHref(task: TaskRow): string {
 
     const syncDate =
       task.referenceStartDate ??
-      task.referenceDate;
+      task.referenceDate ??
+      task.referenceEndDate;
 
     if (syncDate) {
       params.set("syncDate", syncDate);

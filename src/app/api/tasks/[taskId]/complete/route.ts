@@ -31,114 +31,181 @@ function nextDayUTC(yyyyMmDd: string): Date {
   return d;
 }
 
+function addUtcDays(date: Date, days: number): Date {
+  const copy = new Date(date.getTime());
+  copy.setUTCDate(copy.getUTCDate() + days);
+  return copy;
+}
+
+function getTaskReferenceRange(args: {
+  referenceDate: Date | null;
+  referenceStartDate: Date | null;
+  referenceEndDate: Date | null;
+}): { startDate: Date; endDate: Date } | null {
+  const startDate = args.referenceStartDate ?? args.referenceDate;
+  const endDate = args.referenceEndDate ?? args.referenceStartDate ?? args.referenceDate;
+
+  if (!startDate || !endDate) {
+    return null;
+  }
+
+  return {
+    startDate,
+    endDate,
+  };
+}
+
 async function hasRequiredActionBeenFulfilled(
   userId: string,
   requiredAction: TaskRequiredAction,
-  referenceDate: Date | null
+  referenceDate: Date | null,
+  referenceStartDate: Date | null,
+  referenceEndDate: Date | null
 ): Promise<boolean> {
   if (requiredAction === "NONE") {
     return true;
   }
 
-  if (!referenceDate) {
+  const range = getTaskReferenceRange({
+    referenceDate,
+    referenceStartDate,
+    referenceEndDate,
+  });
+
+  if (!range) {
     return false;
   }
 
-  const referenceDateYmd = toIsoDateUTC(referenceDate);
-  const dayStart = startOfDayUTC(referenceDateYmd);
-  const dayEndExclusive = nextDayUTC(referenceDateYmd);
+  const rangeStartYmd = toIsoDateUTC(range.startDate);
+  const rangeEndYmd = toIsoDateUTC(range.endDate);
 
   if (requiredAction === "WORK_ENTRY_FOR_DATE") {
-    const workEntry = await prisma.workEntry.findFirst({
-      where: {
-        userId,
-        workDate: {
-          gte: dayStart,
-          lt: dayEndExclusive,
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
+    for (
+      let current = startOfDayUTC(rangeStartYmd);
+      current <= startOfDayUTC(rangeEndYmd);
+      current = addUtcDays(current, 1)
+    ) {
+      const nextDay = addUtcDays(current, 1);
 
-    return Boolean(workEntry);
+      const workEntry = await prisma.workEntry.findFirst({
+        where: {
+          userId,
+          workDate: {
+            gte: current,
+            lt: nextDay,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!workEntry) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   if (requiredAction === "VACATION_ENTRY_FOR_DATE") {
-    const [absence, request] = await Promise.all([
-      prisma.absence.findFirst({
-        where: {
-          userId,
-          type: "VACATION",
-          absenceDate: {
-            gte: dayStart,
-            lt: dayEndExclusive,
-          },
-        },
-        select: {
-          id: true,
-        },
-      }),
-      prisma.absenceRequest.findFirst({
-        where: {
-          userId,
-          type: "VACATION",
-          status: {
-            in: [AbsenceRequestStatus.PENDING, AbsenceRequestStatus.APPROVED],
-          },
-          startDate: {
-            lte: dayStart,
-          },
-          endDate: {
-            gte: dayStart,
-          },
-        },
-        select: {
-          id: true,
-        },
-      }),
-    ]);
+    for (
+      let current = startOfDayUTC(rangeStartYmd);
+      current <= startOfDayUTC(rangeEndYmd);
+      current = addUtcDays(current, 1)
+    ) {
+      const nextDay = addUtcDays(current, 1);
 
-    return Boolean(absence || request);
+      const [absence, request] = await Promise.all([
+        prisma.absence.findFirst({
+          where: {
+            userId,
+            type: "VACATION",
+            absenceDate: {
+              gte: current,
+              lt: nextDay,
+            },
+          },
+          select: {
+            id: true,
+          },
+        }),
+        prisma.absenceRequest.findFirst({
+          where: {
+            userId,
+            type: "VACATION",
+            status: {
+              in: [AbsenceRequestStatus.PENDING, AbsenceRequestStatus.APPROVED],
+            },
+            startDate: {
+              lte: current,
+            },
+            endDate: {
+              gte: current,
+            },
+          },
+          select: {
+            id: true,
+          },
+        }),
+      ]);
+
+      if (!absence && !request) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   if (requiredAction === "SICK_ENTRY_FOR_DATE") {
-    const [absence, request] = await Promise.all([
-      prisma.absence.findFirst({
-        where: {
-          userId,
-          type: "SICK",
-          absenceDate: {
-            gte: dayStart,
-            lt: dayEndExclusive,
-          },
-        },
-        select: {
-          id: true,
-        },
-      }),
-      prisma.absenceRequest.findFirst({
-        where: {
-          userId,
-          type: "SICK",
-          status: {
-            in: [AbsenceRequestStatus.PENDING, AbsenceRequestStatus.APPROVED],
-          },
-          startDate: {
-            lte: dayStart,
-          },
-          endDate: {
-            gte: dayStart,
-          },
-        },
-        select: {
-          id: true,
-        },
-      }),
-    ]);
+    for (
+      let current = startOfDayUTC(rangeStartYmd);
+      current <= startOfDayUTC(rangeEndYmd);
+      current = addUtcDays(current, 1)
+    ) {
+      const nextDay = addUtcDays(current, 1);
 
-    return Boolean(absence || request);
+      const [absence, request] = await Promise.all([
+        prisma.absence.findFirst({
+          where: {
+            userId,
+            type: "SICK",
+            absenceDate: {
+              gte: current,
+              lt: nextDay,
+            },
+          },
+          select: {
+            id: true,
+          },
+        }),
+        prisma.absenceRequest.findFirst({
+          where: {
+            userId,
+            type: "SICK",
+            status: {
+              in: [AbsenceRequestStatus.PENDING, AbsenceRequestStatus.APPROVED],
+            },
+            startDate: {
+              lte: current,
+            },
+            endDate: {
+              gte: current,
+            },
+          },
+          select: {
+            id: true,
+          },
+        }),
+      ]);
+
+      if (!absence && !request) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   return false;
@@ -190,23 +257,33 @@ export async function POST(
   const actionFulfilled = await hasRequiredActionBeenFulfilled(
     existingTask.assignedToUserId,
     existingTask.requiredAction,
-    existingTask.referenceDate
+    existingTask.referenceDate,
+    existingTask.referenceStartDate,
+    existingTask.referenceEndDate
   );
 
   if (!actionFulfilled) {
-    const referenceDateLabel = existingTask.referenceDate
-      ? toIsoDateUTC(existingTask.referenceDate)
-      : "ohne Datum";
+    const range = getTaskReferenceRange({
+      referenceDate: existingTask.referenceDate,
+      referenceStartDate: existingTask.referenceStartDate,
+      referenceEndDate: existingTask.referenceEndDate,
+    });
+
+    const referenceLabel = !range
+      ? "ohne Datum"
+      : toIsoDateUTC(range.startDate) === toIsoDateUTC(range.endDate)
+      ? toIsoDateUTC(range.startDate)
+      : `${toIsoDateUTC(range.startDate)} bis ${toIsoDateUTC(range.endDate)}`;
 
     return NextResponse.json(
       {
         error:
           existingTask.requiredAction === "WORK_ENTRY_FOR_DATE"
-            ? `Die Aufgabe kann erst erledigt werden, wenn für ${referenceDateLabel} ein Arbeitszeiteintrag vorhanden ist.`
+            ? `Die Aufgabe kann erst erledigt werden, wenn für ${referenceLabel} alle erforderlichen Arbeitszeiteinträge vorhanden sind.`
             : existingTask.requiredAction === "VACATION_ENTRY_FOR_DATE"
-            ? `Die Aufgabe kann erst erledigt werden, wenn für ${referenceDateLabel} ein Urlaubseintrag oder ein passender Urlaubsantrag vorhanden ist.`
+            ? `Die Aufgabe kann erst erledigt werden, wenn für ${referenceLabel} alle erforderlichen Urlaubseinträge oder passenden Urlaubsanträge vorhanden sind.`
             : existingTask.requiredAction === "SICK_ENTRY_FOR_DATE"
-            ? `Die Aufgabe kann erst erledigt werden, wenn für ${referenceDateLabel} ein Krankheitseintrag oder ein passender Krankheitsantrag vorhanden ist.`
+            ? `Die Aufgabe kann erst erledigt werden, wenn für ${referenceLabel} alle erforderlichen Krankheitseinträge oder passenden Krankheitsanträge vorhanden sind.`
             : "Die geforderte Aktion wurde noch nicht erfüllt.",
       },
       { status: 400 }
