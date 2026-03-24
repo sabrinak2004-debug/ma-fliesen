@@ -36,6 +36,29 @@ type UserOption = {
   fullName: string;
 };
 
+type OverviewUserItem = {
+  userId: string;
+  fullName: string;
+  remainingVacationDays: number;
+};
+
+type OverviewResponse =
+  | {
+      month: string;
+      annualVacationDays: number;
+      dailyTargetMinutes: number;
+      workingDaysInMonth: number;
+      holidayCountInMonth: number;
+      isAdmin: boolean;
+      byUser: OverviewUserItem[];
+      totals: {
+        remainingVacationDays: number;
+      };
+    }
+  | {
+      error: string;
+    };
+
 type AdminRequestsResponse = {
   ok: true;
   requests: AbsenceRequestItem[];
@@ -200,6 +223,85 @@ function parseAdminRequestsResponse(v: unknown): AdminRequestsResponse {
   };
 }
 
+function getNumberField(obj: Record<string, unknown>, key: string): number | null {
+  const value = obj[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function isOverviewUserItem(v: unknown): v is OverviewUserItem {
+  if (!isRecord(v)) return false;
+
+  const userId = getStringField(v, "userId");
+  const fullName = getStringField(v, "fullName");
+  const remainingVacationDays = getNumberField(v, "remainingVacationDays");
+
+  return !!userId && !!fullName && remainingVacationDays !== null;
+}
+
+function parseOverviewResponse(v: unknown): OverviewResponse {
+  if (!isRecord(v)) {
+    return { error: "Unerwartete Antwort." };
+  }
+
+  const error = getStringField(v, "error");
+  if (error) {
+    return { error };
+  }
+
+  const month = getStringField(v, "month");
+  const annualVacationDays = getNumberField(v, "annualVacationDays");
+  const dailyTargetMinutes = getNumberField(v, "dailyTargetMinutes");
+  const workingDaysInMonth = getNumberField(v, "workingDaysInMonth");
+  const holidayCountInMonth = getNumberField(v, "holidayCountInMonth");
+  const isAdmin = v["isAdmin"];
+  const byUserRaw = v["byUser"];
+  const totalsRaw = v["totals"];
+
+  if (
+    !month ||
+    annualVacationDays === null ||
+    dailyTargetMinutes === null ||
+    workingDaysInMonth === null ||
+    holidayCountInMonth === null ||
+    typeof isAdmin !== "boolean" ||
+    !Array.isArray(byUserRaw) ||
+    !isRecord(totalsRaw)
+  ) {
+    return { error: "Unerwartete Antwort." };
+  }
+
+  const totalsRemainingVacationDays = getNumberField(totalsRaw, "remainingVacationDays");
+  if (totalsRemainingVacationDays === null) {
+    return { error: "Unerwartete Antwort." };
+  }
+
+  const byUser = byUserRaw.filter(isOverviewUserItem);
+
+  return {
+    month,
+    annualVacationDays,
+    dailyTargetMinutes,
+    workingDaysInMonth,
+    holidayCountInMonth,
+    isAdmin,
+    byUser,
+    totals: {
+      remainingVacationDays: totalsRemainingVacationDays,
+    },
+  };
+}
+
+function formatVacationDays(value: number): string {
+  if (Number.isInteger(value)) {
+    return String(value);
+  }
+
+  return value.toLocaleString("de-DE", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+}
+
 function formatDateDE(ymd: string): string {
   const normalized = ymd.length >= 10 ? ymd.slice(0, 10) : ymd;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return ymd;
@@ -317,8 +419,13 @@ export default function UrlaubsantraegePage() {
   } | null>(null);
 
   const [users, setUsers] = useState<UserOption[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [selectedRequestUserId, setSelectedRequestUserId] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthValue());
+
+  const [selectedResturlaubUserId, setSelectedResturlaubUserId] = useState<string>("");
+  const [remainingVacationDays, setRemainingVacationDays] = useState<number>(0);
+  const [resturlaubLoading, setResturlaubLoading] = useState<boolean>(true);
+  const [resturlaubError, setResturlaubError] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editStartDate, setEditStartDate] = useState<string>("");
   const [editEndDate, setEditEndDate] = useState<string>("");
@@ -340,8 +447,8 @@ export default function UrlaubsantraegePage() {
         params.set("month", selectedMonth);
       }
 
-      if (selectedUserId) {
-        params.set("userId", selectedUserId);
+      if (selectedRequestUserId) {
+        params.set("userId", selectedRequestUserId);
       }
 
       const response = await fetch(`/api/admin/absence-requests?${params.toString()}`, {
@@ -370,6 +477,49 @@ export default function UrlaubsantraegePage() {
       setLoading(false);
     }
   }
+
+async function loadRemainingVacationKpi() {
+  if (!session || session.role !== "ADMIN") return;
+
+  setResturlaubLoading(true);
+  setResturlaubError(null);
+
+  try {
+    const params = new URLSearchParams();
+    params.set("month", currentMonthValue());
+
+    const response = await fetch(`/api/overview?${params.toString()}`, {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    const json: unknown = await response.json().catch(() => ({}));
+    const parsed = parseOverviewResponse(json);
+
+    if (!response.ok || "error" in parsed) {
+      setRemainingVacationDays(0);
+      setResturlaubError("Resturlaub konnte nicht geladen werden.");
+      return;
+    }
+
+    if (selectedResturlaubUserId) {
+      const selectedUser = parsed.byUser.find(
+        (user) => user.userId === selectedResturlaubUserId
+      );
+
+      setRemainingVacationDays(selectedUser?.remainingVacationDays ?? 0);
+      return;
+    }
+
+    setRemainingVacationDays(parsed.totals.remainingVacationDays);
+  } catch {
+    setRemainingVacationDays(0);
+    setResturlaubError("Netzwerkfehler beim Laden des Resturlaubs.");
+  } finally {
+    setResturlaubLoading(false);
+  }
+}
 
   useEffect(() => {
   let alive = true;
@@ -419,7 +569,13 @@ useEffect(() => {
   if (!sessionChecked) return;
   if (!session || session.role !== "ADMIN") return;
   void loadRequests();
-}, [selectedUserId, selectedMonth, sessionChecked, session?.role, session?.companyId]);
+}, [selectedRequestUserId, selectedMonth, sessionChecked, session?.role, session?.companyId]);
+
+useEffect(() => {
+  if (!sessionChecked) return;
+  if (!session || session.role !== "ADMIN") return;
+  void loadRemainingVacationKpi();
+}, [selectedResturlaubUserId, sessionChecked, session?.role, session?.companyId]);
 
   useEffect(() => {
     let active = true;
@@ -703,10 +859,21 @@ useEffect(() => {
     [items]
   );
 
-  const selectedUserLabel = useMemo(() => {
-    if (!selectedUserId) return "Alle Mitarbeiter";
-    return users.find((user) => user.id === selectedUserId)?.fullName ?? "Ausgewählter Mitarbeiter";
-  }, [users, selectedUserId]);
+  const selectedRequestUserLabel = useMemo(() => {
+    if (!selectedRequestUserId) return "Alle Mitarbeiter";
+    return (
+      users.find((user) => user.id === selectedRequestUserId)?.fullName ??
+      "Ausgewählter Mitarbeiter"
+    );
+  }, [users, selectedRequestUserId]);
+
+  const selectedResturlaubUserLabel = useMemo(() => {
+    if (!selectedResturlaubUserId) return "Alle Mitarbeiter";
+    return (
+      users.find((user) => user.id === selectedResturlaubUserId)?.fullName ??
+      "Ausgewählter Mitarbeiter"
+    );
+  }, [users, selectedResturlaubUserId]);
 
   function renderRequestCard(item: AbsenceRequestItem) {
     const isDeleting = busyAction?.id === item.id && busyAction.action === "delete";
@@ -1075,6 +1242,51 @@ useEffect(() => {
     <AppShell activeLabel="#wirkönnendas">
       <div className="kpi-grid" style={{ marginBottom: 14 }}>
         <div className="card kpi">
+          <div style={{ width: "100%" }}>
+            <div className="small">Resturlaub</div>
+            <div className="big">
+              {resturlaubLoading ? "…" : formatVacationDays(remainingVacationDays)}
+            </div>
+            <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+              {selectedResturlaubUserLabel}
+            </div>
+
+            <div style={{ marginTop: 10 }}>
+              <select
+                className="input"
+                value={selectedResturlaubUserId}
+                onChange={(e) => setSelectedResturlaubUserId(e.target.value)}
+                style={{
+                  width: "100%",
+                  minWidth: 0,
+                  boxSizing: "border-box",
+                  display: "block",
+                  maxWidth: "100%",
+                  borderRadius: 14,
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                }}
+              >
+                <option value="">Alle Mitarbeiter</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {resturlaubError ? (
+              <div style={{ marginTop: 8, color: "rgba(224, 75, 69, 0.95)", fontSize: 12 }}>
+                {resturlaubError}
+              </div>
+            ) : null}
+          </div>
+
+          <div style={{ color: "var(--muted-2)", fontSize: 22, alignSelf: "flex-start" }}>🏖️</div>
+        </div>
+
+        <div className="card kpi">
           <div>
             <div className="small">Offene Urlaubsanträge</div>
             <div className="big">{pendingItems.length}</div>
@@ -1121,8 +1333,8 @@ useEffect(() => {
             <div className="label">Mitarbeiter</div>
             <select
               className="input"
-              value={selectedUserId}
-              onChange={(e) => setSelectedUserId(e.target.value)}
+              value={selectedRequestUserId}
+              onChange={(e) => setSelectedRequestUserId(e.target.value)}
               style={{
                 width: "100%",
                 minWidth: 0,
@@ -1234,7 +1446,7 @@ useEffect(() => {
                 userSelect: "none",
               }}
             >
-              {sectionTitle(`Genehmigt – ${selectedUserLabel}`, approvedItems.length)}
+              {sectionTitle(`Genehmigt – ${selectedRequestUserLabel}`, approvedItems.length)}
             </summary>
 
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
@@ -1265,7 +1477,7 @@ useEffect(() => {
                 userSelect: "none",
               }}
             >
-              {sectionTitle(`Abgelehnt – ${selectedUserLabel}`, rejectedItems.length)}
+              {sectionTitle(`Abgelehnt – ${selectedRequestUserLabel}`, rejectedItems.length)}
             </summary>
 
             <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
