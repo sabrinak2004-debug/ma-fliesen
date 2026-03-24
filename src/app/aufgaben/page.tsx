@@ -20,6 +20,8 @@ type TaskRow = {
   status: TaskStatus;
   requiredAction: TaskRequiredAction;
   referenceDate: string | null;
+  referenceStartDate: string | null;
+  referenceEndDate: string | null;
   completedAt: string | null;
   createdAt: string;
   createdByUser: {
@@ -89,6 +91,8 @@ function isTaskRow(v: unknown): v is TaskRow {
     isTaskStatus(v["status"]) &&
     isTaskRequiredAction(v["requiredAction"]) &&
     (v["referenceDate"] === null || isString(v["referenceDate"])) &&
+    (v["referenceStartDate"] === null || isString(v["referenceStartDate"])) &&
+    (v["referenceEndDate"] === null || isString(v["referenceEndDate"])) &&
     (v["completedAt"] === null || isString(v["completedAt"])) &&
     isString(v["createdAt"]) &&
     isRecord(createdByUser) &&
@@ -156,6 +160,21 @@ function formatDateLongDE(value: string): string {
   return `${day}. ${monthName}`;
 }
 
+function formatReferenceRangeDE(
+  startDate: string | null,
+  endDate: string | null,
+  fallbackDate: string | null
+): string {
+  const start = startDate ?? fallbackDate;
+  const end = endDate ?? startDate ?? fallbackDate;
+
+  if (!start) return "—";
+  if (!end) return formatDateDE(start);
+  if (start === end) return formatDateDE(start);
+
+  return `${formatDateDE(start)} bis ${formatDateDE(end)}`;
+}
+
 function categoryLabel(category: TaskCategory): string {
   switch (category) {
     case "WORK_TIME":
@@ -186,14 +205,15 @@ function taskActionHref(task: TaskRow): string {
   if (task.category === "WORK_TIME") {
     const params = new URLSearchParams();
 
-    if (task.referenceDate) {
-      params.set("syncDate", task.referenceDate);
+    const syncDate =
+      task.referenceStartDate ??
+      task.referenceDate;
+
+    if (syncDate) {
+      params.set("syncDate", syncDate);
     }
 
-    if (
-      task.requiredAction === "WORK_ENTRY_FOR_DATE" &&
-      task.referenceDate
-    ) {
+    if (task.requiredAction === "WORK_ENTRY_FOR_DATE") {
       params.set("sourceTaskId", task.id);
     }
 
@@ -408,7 +428,11 @@ export default function AufgabenPage() {
         </div>
 
         <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-          Bezugsdatum: {formatDateDE(task.referenceDate)}
+          Bezugszeitraum: {formatReferenceRangeDE(
+            task.referenceStartDate,
+            task.referenceEndDate,
+            task.referenceDate
+          )}
         </div>
 
         <div style={{ color: "var(--muted-2)", fontSize: 13 }}>

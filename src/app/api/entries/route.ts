@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Prisma, Role } from "@prisma/client";
+import { Prisma, Role, TaskRequiredAction, TaskStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { assertEmployeeMayEditDate, berlinTodayYMD, consumeTimeEntryUnlock } from "@/lib/timesheetLock";
@@ -53,6 +53,7 @@ type EntryBody = {
   location?: unknown;
   travelMinutes?: unknown;
   noteEmployee?: unknown;
+  sourceTaskId?: unknown;
 };
 
 type EntryDTO = {
@@ -95,6 +96,102 @@ async function findActiveCompanyUser(userId: string, companyId: string) {
       isActive: true,
     },
   });
+}
+
+function addUtcDays(date: Date, days: number): Date {
+  const copy = new Date(date.getTime());
+  copy.setUTCDate(copy.getUTCDate() + days);
+  return copy;
+}
+
+type AdminTaskBypassRange = {
+  taskId: string;
+  startDate: string;
+  endDate: string;
+};
+
+async function findAdminTaskBypassRange(args: {
+  sourceTaskId: string;
+  userId: string;
+  companyId: string;
+  workDateYMD: string;
+}): Promise<AdminTaskBypassRange | null> {
+  if (!args.sourceTaskId) {
+    return null;
+  }
+
+  const task = await prisma.task.findFirst({
+    where: {
+      id: args.sourceTaskId,
+      assignedToUserId: args.userId,
+      status: TaskStatus.OPEN,
+      category: "WORK_TIME",
+      requiredAction: TaskRequiredAction.WORK_ENTRY_FOR_DATE,
+      assignedToUser: {
+        companyId: args.companyId,
+      },
+      createdByUser: {
+        role: Role.ADMIN,
+        companyId: args.companyId,
+      },
+    },
+    select: {
+      id: true,
+      referenceDate: true,
+      referenceStartDate: true,
+      referenceEndDate: true,
+    },
+  });
+
+  if (!task) {
+    return null;
+  }
+
+  const startDate = toIsoDateUTC(task.referenceStartDate ?? task.referenceDate ?? dateOnly(args.workDateYMD));
+  const endDate = toIsoDateUTC(task.referenceEndDate ?? task.referenceStartDate ?? task.referenceDate ?? dateOnly(args.workDateYMD));
+
+  if (args.workDateYMD < startDate || args.workDateYMD > endDate) {
+    return null;
+  }
+
+  return {
+    taskId: task.id,
+    startDate,
+    endDate,
+  };
+}
+
+async function ensureTimeEntryUnlockRange(userId: string, startDate: string, endDate: string): Promise<void> {
+  const updates: Prisma.PrismaPromise<unknown>[] = [];
+
+  for (
+    let current = dateOnly(startDate);
+    current <= dateOnly(endDate);
+    current = addUtcDays(current, 1)
+  ) {
+    updates.push(
+      prisma.timeEntryUnlock.upsert({
+        where: {
+          userId_workDate: {
+            userId,
+            workDate: current,
+          },
+        },
+        update: {
+          usedAt: null,
+          expiresAt: null,
+        },
+        create: {
+          userId,
+          workDate: current,
+          usedAt: null,
+          expiresAt: null,
+        },
+      })
+    );
+  }
+
+  await prisma.$transaction(updates);
 }
 
 type WorkEntryRow = {
@@ -403,21 +500,39 @@ export async function POST(req: Request) {
   const activity = getString(body.activity).trim();
   const location = getString(body.location).trim();
   const noteEmployee = getString(body.noteEmployee).trim();
+  const sourceTaskId = getString(body.sourceTaskId).trim();
 
   if (!workDate || !startTime || !endTime || !activity) {
     return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
   }
 
-  try {
-    await assertEmployeeMayEditDate({
-      role: session.role,
-      userId: session.userId,
-      workDateYMD: workDate,
-      companyId: session.companyId,
-    });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Nicht erlaubt";
-    return NextResponse.json({ error: message }, { status: 403 });
+  const adminTaskBypass = !isAdmin
+    ? await findAdminTaskBypassRange({
+        sourceTaskId,
+        userId: session.userId,
+        companyId: session.companyId,
+        workDateYMD: workDate,
+      })
+    : null;
+
+  if (adminTaskBypass) {
+    await ensureTimeEntryUnlockRange(
+      session.userId,
+      adminTaskBypass.startDate,
+      adminTaskBypass.endDate
+    );
+  } else {
+    try {
+      await assertEmployeeMayEditDate({
+        role: session.role,
+        userId: session.userId,
+        workDateYMD: workDate,
+        companyId: session.companyId,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Nicht erlaubt";
+      return NextResponse.json({ error: message }, { status: 403 });
+    }
   }
 
   const start = timeOnly(startTime);

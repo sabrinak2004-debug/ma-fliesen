@@ -14,7 +14,8 @@ type CreateTaskBody = {
   description?: string;
   category?: string;
   requiredAction?: string;
-  referenceDate?: string;
+  referenceStartDate?: string;
+  referenceEndDate?: string;
 };
 
 function isTaskCategory(value: string): value is TaskCategory {
@@ -45,6 +46,58 @@ function parseReferenceDate(value: string | null): Date | null {
   if (!value) return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   return new Date(`${value}T00:00:00.000Z`);
+}
+
+function toIsoDateUTC(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function normalizeReferenceRange(args: {
+  referenceStartDateRaw: string | null;
+  referenceEndDateRaw: string | null;
+}): {
+  referenceDate: Date | null;
+  referenceStartDate: Date | null;
+  referenceEndDate: Date | null;
+} | null {
+  const startDate = parseReferenceDate(args.referenceStartDateRaw);
+  const endDate = parseReferenceDate(args.referenceEndDateRaw ?? args.referenceStartDateRaw);
+
+  if (args.referenceStartDateRaw && !startDate) {
+    return null;
+  }
+
+  if ((args.referenceEndDateRaw ?? args.referenceStartDateRaw) && !endDate) {
+    return null;
+  }
+
+  if (!startDate && !endDate) {
+    return {
+      referenceDate: null,
+      referenceStartDate: null,
+      referenceEndDate: null,
+    };
+  }
+
+  if (!startDate || !endDate) {
+    return null;
+  }
+
+  const startYMD = toIsoDateUTC(startDate);
+  const endYMD = toIsoDateUTC(endDate);
+
+  if (startYMD > endYMD) {
+    return null;
+  }
+
+  return {
+    referenceDate: startDate,
+    referenceStartDate: startDate,
+    referenceEndDate: endDate,
+  };
 }
 
 export async function GET(): Promise<NextResponse> {
@@ -120,7 +173,8 @@ export async function POST(req: Request): Promise<NextResponse> {
   const description = parseOptionalString(body.description);
   const categoryRaw = parseOptionalString(body.category);
   const requiredActionRaw = parseOptionalString(body.requiredAction) ?? "NONE";
-  const referenceDateRaw = parseOptionalString(body.referenceDate);
+  const referenceStartDateRaw = parseOptionalString(body.referenceStartDate);
+  const referenceEndDateRaw = parseOptionalString(body.referenceEndDate);
 
   if (!assignedToUserId) {
     return NextResponse.json(
@@ -147,10 +201,14 @@ export async function POST(req: Request): Promise<NextResponse> {
     );
   }
 
-  const referenceDate = parseReferenceDate(referenceDateRaw);
-  if (referenceDateRaw && !referenceDate) {
+  const normalizedReferenceRange = normalizeReferenceRange({
+    referenceStartDateRaw,
+    referenceEndDateRaw,
+  });
+
+  if (!normalizedReferenceRange) {
     return NextResponse.json(
-      { error: "Ungültiges Datum. Erwartet wird YYYY-MM-DD." },
+      { error: "Ungültiger Bezugszeitraum. Erwartet wird YYYY-MM-DD." },
       { status: 400 }
     );
   }
@@ -196,7 +254,9 @@ export async function POST(req: Request): Promise<NextResponse> {
       category: categoryRaw,
       status: TaskStatus.OPEN,
       requiredAction: requiredActionRaw,
-      referenceDate,
+      referenceDate: normalizedReferenceRange.referenceDate,
+      referenceStartDate: normalizedReferenceRange.referenceStartDate,
+      referenceEndDate: normalizedReferenceRange.referenceEndDate,
     },
     include: {
       assignedToUser: {

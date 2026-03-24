@@ -9,12 +9,64 @@ type MissingWorkEntryAlert = {
   newestMissingDate: string;
 } | null;
 
+function toIsoDateUTC(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function addUtcDays(date: Date, days: number): Date {
+  const copy = new Date(date.getTime());
+  copy.setUTCDate(copy.getUTCDate() + days);
+  return copy;
+}
+
+function getTaskReferenceRange(args: {
+  referenceDate: Date | null;
+  referenceStartDate: Date | null;
+  referenceEndDate: Date | null;
+}): { startDate: string; endDate: string } | null {
+  const start = args.referenceStartDate ?? args.referenceDate;
+  const end = args.referenceEndDate ?? args.referenceStartDate ?? args.referenceDate;
+
+  if (!start || !end) {
+    return null;
+  }
+
+  return {
+    startDate: toIsoDateUTC(start),
+    endDate: toIsoDateUTC(end),
+  };
+}
+
+function hasMissingDateInRange(
+  missingDateSet: ReadonlySet<string>,
+  startDate: string,
+  endDate: string
+): boolean {
+  for (
+    let current = new Date(`${startDate}T00:00:00.000Z`);
+    current <= new Date(`${endDate}T00:00:00.000Z`);
+    current = addUtcDays(current, 1)
+  ) {
+    const ymd = toIsoDateUTC(current);
+    if (missingDateSet.has(ymd)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function shouldKeepTask(args: {
   task: {
     status: string;
     category: string;
     requiredAction: string;
     referenceDate: Date | null;
+    referenceStartDate: Date | null;
+    referenceEndDate: Date | null;
   };
   missingDateSet: ReadonlySet<string>;
 }): boolean {
@@ -26,11 +78,23 @@ function shouldKeepTask(args: {
 
   if (
     task.category === "WORK_TIME" &&
-    task.requiredAction === "WORK_ENTRY_FOR_DATE" &&
-    task.referenceDate
+    task.requiredAction === "WORK_ENTRY_FOR_DATE"
   ) {
-    const referenceDateYMD = task.referenceDate.toISOString().slice(0, 10);
-    return missingDateSet.has(referenceDateYMD);
+    const range = getTaskReferenceRange({
+      referenceDate: task.referenceDate,
+      referenceStartDate: task.referenceStartDate,
+      referenceEndDate: task.referenceEndDate,
+    });
+
+    if (!range) {
+      return true;
+    }
+
+    return hasMissingDateInRange(
+      missingDateSet,
+      range.startDate,
+      range.endDate
+    );
   }
 
   return true;
@@ -95,6 +159,8 @@ export async function GET(req: Request): Promise<NextResponse> {
         category: task.category,
         requiredAction: task.requiredAction,
         referenceDate: task.referenceDate,
+        referenceStartDate: task.referenceStartDate,
+        referenceEndDate: task.referenceEndDate,
       },
       missingDateSet,
     })

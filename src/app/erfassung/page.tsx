@@ -87,6 +87,8 @@ type TimeEntryCorrectionRequestStatusResponse = {
     active: boolean;
     taskId: string;
     workDate: string;
+    startDate: string;
+    endDate: string;
   } | null;
 };
 
@@ -133,12 +135,16 @@ function isTimeEntryCorrectionRequestStatusResponse(
     active: boolean;
     taskId: string;
     workDate: string;
+    startDate: string;
+    endDate: string;
   } => {
     if (!isRecord(value)) return false;
     return (
       typeof value["active"] === "boolean" &&
       isString(value["taskId"]) &&
-      isString(value["workDate"])
+      isString(value["workDate"]) &&
+      isString(value["startDate"]) &&
+      isString(value["endDate"])
     );
   };
 
@@ -837,6 +843,7 @@ useEffect(() => {
         location: location.trim(),
         travelMinutes: Number(travelMinutes) || 0,
         noteEmployee: noteEmployee.trim(),
+        sourceTaskId: sourceTaskId || null,
       };
 
       const r = await fetch("/api/entries", {
@@ -1374,6 +1381,16 @@ useEffect(() => {
 
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>
                     Du kannst den Eintrag für {formatDateDE(workDate)} direkt erfassen.
+                    {selectedCorrectionStatus?.adminTaskBypass?.startDate &&
+                    selectedCorrectionStatus?.adminTaskBypass?.endDate &&
+                    selectedCorrectionStatus.adminTaskBypass.startDate !==
+                      selectedCorrectionStatus.adminTaskBypass.endDate
+                      ? ` Der freigegebene Zeitraum reicht von ${formatDateDE(
+                          selectedCorrectionStatus.adminTaskBypass.startDate
+                        )} bis ${formatDateDE(
+                          selectedCorrectionStatus.adminTaskBypass.endDate
+                        )}.`
+                      : ""}
                   </div>
                 </>
               ) : hasActiveUnlockForSelectedDate ? (

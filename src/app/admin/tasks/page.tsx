@@ -26,6 +26,8 @@ type TaskRow = {
   status: TaskStatus;
   requiredAction: TaskRequiredAction;
   referenceDate: string | null;
+  referenceStartDate: string | null;
+  referenceEndDate: string | null;
   completedAt: string | null;
   createdAt: string;
   assignedToUser: {
@@ -128,6 +130,8 @@ function isTaskRow(v: unknown): v is TaskRow {
     isTaskStatus(v["status"]) &&
     isTaskRequiredAction(v["requiredAction"]) &&
     (v["referenceDate"] === null || isString(v["referenceDate"])) &&
+    (v["referenceStartDate"] === null || isString(v["referenceStartDate"])) &&
+    (v["referenceEndDate"] === null || isString(v["referenceEndDate"])) &&
     (v["completedAt"] === null || isString(v["completedAt"])) &&
     isString(v["createdAt"]) &&
     isRecord(assignedToUser) &&
@@ -163,6 +167,21 @@ function formatDateDE(value: string | null): string {
 
   const [y, m, d] = normalized.split("-");
   return `${d}.${m}.${y}`;
+}
+
+function formatReferenceRangeDE(
+  startDate: string | null,
+  endDate: string | null,
+  fallbackDate: string | null
+): string {
+  const start = startDate ?? fallbackDate;
+  const end = endDate ?? startDate ?? fallbackDate;
+
+  if (!start) return "—";
+  if (!end) return formatDateDE(start);
+  if (start === end) return formatDateDE(start);
+
+  return `${formatDateDE(start)} bis ${formatDateDE(end)}`;
 }
 
 function categoryLabel(category: TaskCategory): string {
@@ -207,7 +226,8 @@ export default function AdminTasksPage() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<TaskCategory>("GENERAL");
   const [requiredAction, setRequiredAction] = useState<TaskRequiredAction>("NONE");
-  const [referenceDate, setReferenceDate] = useState("");
+  const [referenceStartDate, setReferenceStartDate] = useState("");
+  const [referenceEndDate, setReferenceEndDate] = useState("");
 
   const [taskQuery, setTaskQuery] = useState("");
   const [taskCategoryFilter, setTaskCategoryFilter] = useState<"ALL" | TaskCategory>("ALL");
@@ -376,7 +396,8 @@ export default function AdminTasksPage() {
           description,
           category,
           requiredAction,
-          referenceDate: referenceDate || null,
+          referenceStartDate: referenceStartDate || null,
+          referenceEndDate: referenceEndDate || referenceStartDate || null,
         }),
       });
 
@@ -396,7 +417,8 @@ export default function AdminTasksPage() {
       setDescription("");
       setCategory("GENERAL");
       setRequiredAction("NONE");
-      setReferenceDate("");
+      setReferenceStartDate("");
+      setReferenceEndDate("");
       await loadData();
     } catch {
       setError("Netzwerkfehler beim Erstellen der Aufgabe.");
@@ -536,11 +558,34 @@ export default function AdminTasksPage() {
               </div>
 
               <div style={{ display: "grid", gap: 6 }}>
-                <div style={{ fontSize: 12, color: "var(--muted)" }}>Bezugsdatum</div>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>Bezugszeitraum von</div>
                 <input
                   type="date"
-                  value={referenceDate}
-                  onChange={(e) => setReferenceDate(e.target.value)}
+                  value={referenceStartDate}
+                  onChange={(e) => {
+                    setReferenceStartDate(e.target.value);
+                    if (!referenceEndDate) {
+                      setReferenceEndDate(e.target.value);
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    background: "rgba(0,0,0,0.25)",
+                    color: "rgba(255,255,255,0.92)",
+                    outline: "none",
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>Bezugszeitraum bis</div>
+                <input
+                  type="date"
+                  value={referenceEndDate}
+                  onChange={(e) => setReferenceEndDate(e.target.value)}
                   style={{
                     width: "100%",
                     padding: "10px 12px",
@@ -686,7 +731,11 @@ export default function AdminTasksPage() {
                   </div>
 
                   <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-                    Bezugsdatum: {formatDateDE(task.referenceDate)}
+                    Bezugszeitraum: {formatReferenceRangeDE(
+                      task.referenceStartDate,
+                      task.referenceEndDate,
+                      task.referenceDate
+                    )}
                   </div>
 
                   {task.description ? (

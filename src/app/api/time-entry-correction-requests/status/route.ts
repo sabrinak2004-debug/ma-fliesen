@@ -35,6 +35,8 @@ async function getAdminTaskBypassForWorkDate(args: {
   active: boolean;
   taskId: string;
   workDate: string;
+  startDate: string;
+  endDate: string;
 } | null> {
   if (!args.sourceTaskId) {
     return null;
@@ -47,7 +49,6 @@ async function getAdminTaskBypassForWorkDate(args: {
       status: TaskStatus.OPEN,
       category: "WORK_TIME",
       requiredAction: TaskRequiredAction.WORK_ENTRY_FOR_DATE,
-      referenceDate: dateOnlyUTC(args.workDate),
       assignedToUser: {
         companyId: args.companyId,
       },
@@ -58,6 +59,9 @@ async function getAdminTaskBypassForWorkDate(args: {
     },
     select: {
       id: true,
+      referenceDate: true,
+      referenceStartDate: true,
+      referenceEndDate: true,
     },
   });
 
@@ -65,10 +69,19 @@ async function getAdminTaskBypassForWorkDate(args: {
     return null;
   }
 
+  const startDate = toIsoDateUTC(task.referenceStartDate ?? task.referenceDate ?? dateOnlyUTC(args.workDate));
+  const endDate = toIsoDateUTC(task.referenceEndDate ?? task.referenceStartDate ?? task.referenceDate ?? dateOnlyUTC(args.workDate));
+
+  if (args.workDate < startDate || args.workDate > endDate) {
+    return null;
+  }
+
   return {
     active: true,
     taskId: task.id,
     workDate: args.workDate,
+    startDate,
+    endDate,
   };
 }
 
