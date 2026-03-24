@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { TimeEntryCorrectionRequestStatus } from "@prisma/client";
+import {
+  Role,
+  TaskRequiredAction,
+  TaskStatus,
+  TimeEntryCorrectionRequestStatus,
+} from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -19,6 +24,52 @@ function isYYYYMMDD(v: string): boolean {
 
 function dateOnlyUTC(yyyyMmDd: string): Date {
   return new Date(`${yyyyMmDd}T00:00:00.000Z`);
+}
+
+async function getAdminTaskBypassForWorkDate(args: {
+  sourceTaskId: string;
+  userId: string;
+  companyId: string;
+  workDate: string;
+}): Promise<{
+  active: boolean;
+  taskId: string;
+  workDate: string;
+} | null> {
+  if (!args.sourceTaskId) {
+    return null;
+  }
+
+  const task = await prisma.task.findFirst({
+    where: {
+      id: args.sourceTaskId,
+      assignedToUserId: args.userId,
+      status: TaskStatus.OPEN,
+      category: "WORK_TIME",
+      requiredAction: TaskRequiredAction.WORK_ENTRY_FOR_DATE,
+      referenceDate: dateOnlyUTC(args.workDate),
+      assignedToUser: {
+        companyId: args.companyId,
+      },
+      createdByUser: {
+        role: Role.ADMIN,
+        companyId: args.companyId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!task) {
+    return null;
+  }
+
+  return {
+    active: true,
+    taskId: task.id,
+    workDate: args.workDate,
+  };
 }
 
 function toIsoDateUTC(d: Date): string {
@@ -42,6 +93,7 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const workDate = getString(searchParams.get("workDate")).trim();
+  const sourceTaskId = getString(searchParams.get("sourceTaskId")).trim();
 
   if (!isYYYYMMDD(workDate)) {
     return NextResponse.json(
@@ -59,6 +111,7 @@ export async function GET(req: Request) {
     latestDecisionRequest,
     missingRequiredWorkDates,
     lockedMissingWorkDates,
+    adminTaskBypass,
   ] = await Promise.all([
     hasActiveTimeEntryUnlock(session.userId, workDate, new Date(), session.companyId),
     prisma.timeEntryCorrectionRequest.findFirst({
@@ -111,13 +164,20 @@ export async function GET(req: Request) {
       GRACE_WORKDAYS_LIMIT,
       session.companyId
     ),
+    getAdminTaskBypassForWorkDate({
+      sourceTaskId,
+      userId: session.userId,
+      companyId: session.companyId,
+      workDate,
+    }),
   ]);
 
   const missingRequiredWorkdaysCount = missingRequiredWorkDates.length;
 
   const requiresCorrectionRequest =
     workDate < todayYMD &&
-    lockedMissingWorkDates.includes(workDate);
+    lockedMissingWorkDates.includes(workDate) &&
+    adminTaskBypass === null;
   const lockedMissingWorkdaysCount = lockedMissingWorkDates.length;
   const currentMissingWorkdaysCount = missingRequiredWorkdaysCount;
 
@@ -145,5 +205,6 @@ export async function GET(req: Request) {
           status: latestDecisionRequest.status,
         }
       : null,
+    adminTaskBypass,
   });
 }

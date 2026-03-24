@@ -83,6 +83,11 @@ type TimeEntryCorrectionRequestStatusResponse = {
     endDate: string;
     status: "APPROVED" | "REJECTED";
   } | null;
+  adminTaskBypass: {
+    active: boolean;
+    taskId: string;
+    workDate: string;
+  } | null;
 };
 
 function isTimeEntryCorrectionRequestStatusResponse(
@@ -99,8 +104,11 @@ function isTimeEntryCorrectionRequestStatusResponse(
 
   const pendingRequest = v["pendingRequest"];
   const latestDecisionRequest = v["latestDecisionRequest"];
+  const adminTaskBypass = v["adminTaskBypass"];
 
-  const isRequestRange = (value: unknown): value is {
+  const isRequestRange = (
+    value: unknown
+  ): value is {
     id: string;
     startDate: string;
     endDate: string;
@@ -119,10 +127,26 @@ function isTimeEntryCorrectionRequestStatusResponse(
     );
   };
 
+  const isAdminTaskBypass = (
+    value: unknown
+  ): value is {
+    active: boolean;
+    taskId: string;
+    workDate: string;
+  } => {
+    if (!isRecord(value)) return false;
+    return (
+      typeof value["active"] === "boolean" &&
+      isString(value["taskId"]) &&
+      isString(value["workDate"])
+    );
+  };
+
   const pendingOk = pendingRequest === null || isRequestRange(pendingRequest);
   const latestOk = latestDecisionRequest === null || isRequestRange(latestDecisionRequest);
+  const bypassOk = adminTaskBypass === null || isAdminTaskBypass(adminTaskBypass);
 
-  return pendingOk && latestOk;
+  return pendingOk && latestOk && bypassOk;
 }
 
 function toIsoDateLocal(d: Date): string {
@@ -530,6 +554,14 @@ function ErfassungPageInner() {
   const [loadingCorrectionRequests, setLoadingCorrectionRequests] = useState(false);
   const [selectedCorrectionStatus, setSelectedCorrectionStatus] =
     useState<TimeEntryCorrectionRequestStatusResponse | null>(null);
+  const sourceTaskId = useMemo(() => {
+    const value = searchParams.get("sourceTaskId");
+    return typeof value === "string" && value.trim() !== "" ? value.trim() : "";
+  }, [searchParams]);
+
+  const hasAdminTaskBypassForSelectedDate =
+    selectedCorrectionStatus?.adminTaskBypass?.active === true &&
+    selectedCorrectionStatus.adminTaskBypass.workDate === workDate;
   const [loadingSelectedCorrectionStatus, setLoadingSelectedCorrectionStatus] = useState(false);
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
@@ -736,7 +768,7 @@ useEffect(() => {
       setLoadingCorrectionRequests(false);
     }
   }
-  async function loadSelectedCorrectionStatus(dateYMD: string) {
+  const loadSelectedCorrectionStatus = React.useCallback(async (dateYMD: string) => {
     if (!isPastWorkDate(dateYMD)) {
       setSelectedCorrectionStatus(null);
       return;
@@ -744,8 +776,15 @@ useEffect(() => {
 
     setLoadingSelectedCorrectionStatus(true);
     try {
+      const params = new URLSearchParams();
+      params.set("workDate", dateYMD);
+
+      if (sourceTaskId) {
+        params.set("sourceTaskId", sourceTaskId);
+      }
+
       const r = await fetch(
-        `/api/time-entry-correction-requests/status?workDate=${encodeURIComponent(dateYMD)}`,
+        `/api/time-entry-correction-requests/status?${params.toString()}`,
         {
           method: "GET",
           cache: "no-store",
@@ -764,7 +803,7 @@ useEffect(() => {
     } finally {
       setLoadingSelectedCorrectionStatus(false);
     }
-  }
+  }, [sourceTaskId]);
 
   useEffect(() => {
     loadEntries();
@@ -772,7 +811,7 @@ useEffect(() => {
   }, []);
   useEffect(() => {
     void loadSelectedCorrectionStatus(workDate);
-  }, [workDate]);
+  }, [workDate, sourceTaskId, loadSelectedCorrectionStatus]);
 
     useEffect(() => {
     setBreakStartHHMM(selectedDayBreak?.breakStartHHMM ?? "");
@@ -1011,6 +1050,7 @@ useEffect(() => {
         body: JSON.stringify({
           targetDate: workDate,
           noteEmployee: correctionNote.trim(),
+          sourceTaskId: sourceTaskId || null,
         }),
       });
 
@@ -1181,18 +1221,23 @@ useEffect(() => {
 
   const shouldShowCorrectionRequestButton = useMemo(() => {
     if (!canCreateCorrectionRequest) return false;
+    if (hasAdminTaskBypassForSelectedDate) return false;
     if (!requiresCorrectionRequestForSelectedDate) return false;
     if (hasActiveUnlockForSelectedDate) return false;
     if (pendingCorrectionRequestForSelectedDate) return false;
     return true;
   }, [
     canCreateCorrectionRequest,
+    hasAdminTaskBypassForSelectedDate,
     requiresCorrectionRequestForSelectedDate,
     hasActiveUnlockForSelectedDate,
     pendingCorrectionRequestForSelectedDate,
   ]);
   const correctionProgressText = useMemo(() => {
     if (!canCreateCorrectionRequest) return null;
+    if (hasAdminTaskBypassForSelectedDate) {
+      return "Für diesen Tag ist kein Nachtragsantrag erforderlich, weil du ihn über eine Admin-Aufgabe geöffnet hast.";
+    }
     if (hasActiveUnlockForSelectedDate) return null;
     if (pendingCorrectionRequestForSelectedDate) return null;
 
@@ -1203,6 +1248,7 @@ useEffect(() => {
     return `Ab dem ${graceWorkdaysLimit + 1}. fehlenden Arbeitstag muss ein Nachtragsantrag gestellt werden. Aktuell: ${currentMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage bis zur Sperrung.`;
   }, [
     canCreateCorrectionRequest,
+    hasAdminTaskBypassForSelectedDate,
     hasActiveUnlockForSelectedDate,
     pendingCorrectionRequestForSelectedDate,
     requiresCorrectionRequestForSelectedDate,
@@ -1320,6 +1366,16 @@ useEffect(() => {
                 <div style={{ fontSize: 13, color: "var(--muted)" }}>
                   Status für den ausgewählten Tag wird geladen...
                 </div>
+              ) : hasAdminTaskBypassForSelectedDate ? (
+                <>
+                  <div style={{ fontSize: 13, color: "var(--text)" }}>
+                    Für diesen Tag ist kein Nachtragsantrag erforderlich, weil du ihn über eine Admin-Aufgabe geöffnet hast.
+                  </div>
+
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                    Du kannst den Eintrag für {formatDateDE(workDate)} direkt erfassen.
+                  </div>
+                </>
               ) : hasActiveUnlockForSelectedDate ? (
                 <>
                   <div style={{ fontSize: 13, color: "var(--text)" }}>
@@ -2184,6 +2240,8 @@ useEffect(() => {
           <div style={{ fontSize: 12, color: "var(--muted)" }}>
             {loadingSelectedCorrectionStatus || loadingCorrectionRequests
               ? "Bestehende Nachtragsinformationen werden geladen..."
+              : hasAdminTaskBypassForSelectedDate
+              ? "Für diesen Tag ist kein Nachtragsantrag erforderlich, weil du ihn über eine Admin-Aufgabe geöffnet hast."
               : hasActiveUnlockForSelectedDate
               ? "Für den ausgewählten Tag existiert bereits eine aktive Freigabe. Ein neuer Antrag ist aktuell nicht nötig."
               : pendingCorrectionRequestForSelectedDate

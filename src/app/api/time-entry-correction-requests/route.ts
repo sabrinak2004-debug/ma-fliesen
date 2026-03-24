@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import {
   Role,
+  TaskRequiredAction,
+  TaskStatus,
   TimeEntryCorrectionRequestStatus,
 } from "@prisma/client";
 import { getSession } from "@/lib/auth";
@@ -16,6 +18,7 @@ import {
 type CreateTimeEntryCorrectionRequestBody = {
   targetDate?: unknown;
   noteEmployee?: unknown;
+  sourceTaskId?: unknown;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -45,6 +48,42 @@ function addUtcDays(d: Date, days: number): Date {
   const copy = new Date(d.getTime());
   copy.setUTCDate(copy.getUTCDate() + days);
   return copy;
+}
+
+async function findValidAdminTaskForAutoApproval(args: {
+  sourceTaskId: string;
+  userId: string;
+  companyId: string;
+  targetDate: string;
+}): Promise<{
+  id: string;
+} | null> {
+  if (!args.sourceTaskId) {
+    return null;
+  }
+
+  const task = await prisma.task.findFirst({
+    where: {
+      id: args.sourceTaskId,
+      assignedToUserId: args.userId,
+      status: TaskStatus.OPEN,
+      category: "WORK_TIME",
+      requiredAction: TaskRequiredAction.WORK_ENTRY_FOR_DATE,
+      referenceDate: dateOnlyUTC(args.targetDate),
+      assignedToUser: {
+        companyId: args.companyId,
+      },
+      createdByUser: {
+        role: Role.ADMIN,
+        companyId: args.companyId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return task ?? null;
 }
 
 async function sendPushToAdmins(
@@ -206,6 +245,7 @@ export async function POST(req: Request) {
 
   const targetDate = getString(body.targetDate).trim();
   const noteEmployee = getString(body.noteEmployee).trim();
+  const sourceTaskId = getString(body.sourceTaskId).trim();
 
   if (!isYYYYMMDD(targetDate)) {
     return NextResponse.json(
@@ -213,6 +253,13 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+
+  const adminTaskForAutoApproval = await findValidAdminTaskForAutoApproval({
+    sourceTaskId,
+    userId: session.userId,
+    companyId: session.companyId,
+    targetDate,
+  });
 
   const today = berlinTodayYMD();
 
@@ -246,7 +293,10 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!lockedMissingDates.includes(targetDate)) {
+  if (
+    !lockedMissingDates.includes(targetDate) &&
+    !adminTaskForAutoApproval
+  ) {
     return NextResponse.json(
       {
         ok: false,
@@ -286,28 +336,61 @@ export async function POST(req: Request) {
     );
   }
 
-  const created = await prisma.timeEntryCorrectionRequest.create({
-    data: {
-      userId: session.userId,
-      startDate,
-      endDate,
-      status: TimeEntryCorrectionRequestStatus.PENDING,
-      noteEmployee: noteEmployee || null,
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          fullName: true,
+  const created = await prisma.$transaction(async (tx) => {
+    const request = await tx.timeEntryCorrectionRequest.create({
+      data: {
+        userId: session.userId,
+        startDate,
+        endDate,
+        status: adminTaskForAutoApproval
+          ? TimeEntryCorrectionRequestStatus.APPROVED
+          : TimeEntryCorrectionRequestStatus.PENDING,
+        noteEmployee: noteEmployee || null,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+        decidedBy: {
+          select: {
+            id: true,
+            fullName: true,
+          },
         },
       },
-      decidedBy: {
-        select: {
-          id: true,
-          fullName: true,
-        },
-      },
-    },
+    });
+
+    if (adminTaskForAutoApproval) {
+      for (const ymd of lockedMissingDates) {
+        const day = dateOnlyUTC(ymd);
+
+        await tx.timeEntryUnlock.upsert({
+          where: {
+            userId_workDate: {
+              userId: session.userId,
+              workDate: day,
+            },
+          },
+          update: {
+            requestId: request.id,
+            usedAt: null,
+            expiresAt: null,
+          },
+          create: {
+            userId: session.userId,
+            workDate: day,
+            requestId: request.id,
+            expiresAt: null,
+            usedAt: null,
+          },
+        });
+      }
+    }
+
+    return request;
   });
 
   const dateLabel =
@@ -315,15 +398,18 @@ export async function POST(req: Request) {
       ? startDateYMD
       : `${startDateYMD} bis ${endDateYMD}`;
 
-  await sendPushToAdmins(
-    session.companyId,
-    "Neuer Nachtragsantrag",
-    `${session.fullName} hat einen Nachtragsantrag für ${dateLabel} gestellt.`,
-    "/admin/nachtragsanfragen"
-  );
+  if (!adminTaskForAutoApproval) {
+    await sendPushToAdmins(
+      session.companyId,
+      "Neuer Nachtragsantrag",
+      `${session.fullName} hat einen Nachtragsantrag für ${dateLabel} gestellt.`,
+      "/admin/nachtragsanfragen"
+    );
+  }
 
   return NextResponse.json({
     ok: true,
     request: mapRequest(created),
+    autoApprovedFromAdminTask: Boolean(adminTaskForAutoApproval),
   });
 }

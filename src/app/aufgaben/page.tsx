@@ -183,8 +183,28 @@ function requiredActionLabel(requiredAction: TaskRequiredAction): string {
 }
 
 function taskActionHref(task: TaskRow): string {
-  if (task.category === "WORK_TIME") return "/erfassung";
-  if (task.category === "VACATION" || task.category === "SICKNESS") return "/kalender";
+  if (task.category === "WORK_TIME") {
+    const params = new URLSearchParams();
+
+    if (task.referenceDate) {
+      params.set("syncDate", task.referenceDate);
+    }
+
+    if (
+      task.requiredAction === "WORK_ENTRY_FOR_DATE" &&
+      task.referenceDate
+    ) {
+      params.set("sourceTaskId", task.id);
+    }
+
+    const query = params.toString();
+    return query ? `/erfassung?${query}` : "/erfassung";
+  }
+
+  if (task.category === "VACATION" || task.category === "SICKNESS") {
+    return "/kalender";
+  }
+
   return "/aufgaben";
 }
 
@@ -665,7 +685,9 @@ export default function AufgabenPage() {
                 }}
               >
                 <Link
-                  href="/erfassung"
+                  href={`/erfassung?syncDate=${encodeURIComponent(
+                    missingWorkEntryAlert.oldestMissingDate
+                  )}`}
                   onClick={() => setShowMissingWorkEntryModal(false)}
                   style={{
                     padding: "10px 12px",
