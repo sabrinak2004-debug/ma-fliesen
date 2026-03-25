@@ -11,16 +11,6 @@ import { formatGermanDateTime } from "@/lib/time";
 const STANDARD_DAY_HOURS = 8; // Referenzwert für Urlaub/Krankheit/Feiertag in Stunden
 const ROUND_TO_MINUTES = 15; // z.B. 15 = Viertelstunde (0,25h), 5 = 5-Minuten, 1 = Minuten-genau
 
-const ANNUAL_VACATION_DAYS = 30;
-const MONTHLY_VACATION_ACCRUAL_DAYS = ANNUAL_VACATION_DAYS / 12;
-
-function getAccruedVacationDaysUntilMonth(monthOneBased: number): number {
-  return Math.min(
-    ANNUAL_VACATION_DAYS,
-    monthOneBased * MONTHLY_VACATION_ACCRUAL_DAYS
-  );
-}
-
 type SessionLike = {
   userId?: string;
   user?: { id?: string };
@@ -97,17 +87,6 @@ function monthRangeFromYYYYMM(month: string): { start: Date; endInclusive: Date 
   return { start, endInclusive };
 }
 
-function getVacationBalanceWindow(referenceTo: Date | null): { from: Date | null; to: Date | null } {
-  if (!referenceTo) {
-    return { from: null, to: null };
-  }
-
-  return {
-    from: new Date(Date.UTC(referenceTo.getUTCFullYear() - 1, 0, 1)),
-    to: referenceTo,
-  };
-}
-
 function weekdayShortDE(yyyyMmDd: string): string {
   const d = new Date(`${yyyyMmDd}T00:00:00.000Z`);
   return new Intl.DateTimeFormat("de-DE", { weekday: "short", timeZone: "UTC" }).format(d);
@@ -115,15 +94,6 @@ function weekdayShortDE(yyyyMmDd: string): string {
 
 function formatHoursDE(hours: number): string {
   return hours.toFixed(2).replace(".", ",");
-}
-
-function formatDaysDE(days: number): string {
-  const rounded = Math.round(days * 100) / 100;
-  return rounded
-    .toFixed(2)
-    .replace(".", ",")
-    .replace(/,00$/, "")
-    .replace(/0$/, "");
 }
 
 function roundMinutes(minutes: number, stepMinutes: number): number {
@@ -173,9 +143,7 @@ async function loadData(
   from: Date | null,
   to: Date | null,
   userId: string | null,
-  companyId: string,
-  vacationBalanceFrom: Date | null,
-  vacationBalanceTo: Date | null
+  companyId: string
 ) {
   const entriesWhere =
     from || to || userId
@@ -213,29 +181,7 @@ async function loadData(
           },
         };
 
-  const vacationBalanceWhere =
-    vacationBalanceFrom || vacationBalanceTo || userId
-      ? {
-          ...(userId ? { userId } : {}),
-          user: {
-            companyId,
-          },
-          type: AbsenceType.VACATION,
-          compensation: AbsenceCompensation.PAID,
-          absenceDate: {
-            gte: vacationBalanceFrom ?? undefined,
-            lte: vacationBalanceTo ?? undefined,
-          },
-        }
-      : {
-          user: {
-            companyId,
-          },
-          type: AbsenceType.VACATION,
-          compensation: AbsenceCompensation.PAID,
-        };
-
-  const [entries, absences, vacationBalanceAbsences] = await Promise.all([
+  const [entries, absences] = await Promise.all([
     prisma.workEntry.findMany({
       where: entriesWhere,
       include: { user: true },
@@ -246,14 +192,9 @@ async function loadData(
       include: { user: true },
       orderBy: [{ absenceDate: "asc" }],
     }),
-    prisma.absence.findMany({
-      where: vacationBalanceWhere,
-      include: { user: true },
-      orderBy: [{ absenceDate: "asc" }],
-    }),
   ]);
 
-  return { entries, absences, vacationBalanceAbsences };
+  return { entries, absences };
 }
 
 type Loaded = Awaited<ReturnType<typeof loadData>>;
@@ -317,86 +258,6 @@ function buildHolidayMapDE(fromISO: string, toISO: string, state: string): Map<s
   }
 
   return res;
-}
-
-type VacationBalanceSnapshot = {
-  referenceDateISO: string;
-  availableVacationDaysCurrentYear: number;
-  availableVacationDaysTotal: number;
-  usedVacationDaysInRange: number;
-  usedVacationDaysCurrentYearToReference: number;
-  carryoverVacationDaysFromPreviousYear: number;
-  remainingCarryoverVacationDays: number;
-  remainingVacationDaysCurrentYear: number;
-  remainingVacationDaysTotal: number;
-};
-
-function computeVacationBalanceSnapshot(
-  paidVacationAbsencesForBalance: Loaded["vacationBalanceAbsences"],
-  paidVacationAbsencesInRange: Loaded["absences"],
-  referenceToISO: string
-): VacationBalanceSnapshot {
-  const referenceYear = Number(referenceToISO.slice(0, 4));
-  const referenceMonth = Number(referenceToISO.slice(5, 7));
-
-  const previousYearStartISO = `${referenceYear - 1}-01-01`;
-  const previousYearEndISO = `${referenceYear - 1}-12-31`;
-  const currentYearStartISO = `${referenceYear}-01-01`;
-
-  const usedVacationDaysPreviousYear = paidVacationAbsencesForBalance.reduce((sum, row) => {
-    const iso = dateOnly(row.absenceDate);
-    if (iso < previousYearStartISO || iso > previousYearEndISO) return sum;
-    return sum + getAbsenceDayFraction(row.dayPortion);
-  }, 0);
-
-  const usedVacationDaysCurrentYearToReference = paidVacationAbsencesForBalance.reduce((sum, row) => {
-    const iso = dateOnly(row.absenceDate);
-    if (iso < currentYearStartISO || iso > referenceToISO) return sum;
-    return sum + getAbsenceDayFraction(row.dayPortion);
-  }, 0);
-
-  const usedVacationDaysInRange = paidVacationAbsencesInRange.reduce((sum, row) => {
-    return sum + getAbsenceDayFraction(row.dayPortion);
-  }, 0);
-
-  const carryoverVacationDaysFromPreviousYear = Math.max(
-    0,
-    ANNUAL_VACATION_DAYS - usedVacationDaysPreviousYear
-  );
-
-  const availableVacationDaysCurrentYear = getAccruedVacationDaysUntilMonth(referenceMonth);
-  const availableVacationDaysTotal =
-    carryoverVacationDaysFromPreviousYear + availableVacationDaysCurrentYear;
-
-  const remainingCarryoverVacationDays = Math.max(
-    0,
-    carryoverVacationDaysFromPreviousYear - usedVacationDaysCurrentYearToReference
-  );
-
-  const usedAgainstCurrentYear = Math.max(
-    0,
-    usedVacationDaysCurrentYearToReference - carryoverVacationDaysFromPreviousYear
-  );
-
-  const remainingVacationDaysCurrentYear = Math.max(
-    0,
-    availableVacationDaysCurrentYear - usedAgainstCurrentYear
-  );
-
-  const remainingVacationDaysTotal =
-    remainingCarryoverVacationDays + remainingVacationDaysCurrentYear;
-
-  return {
-    referenceDateISO: referenceToISO,
-    availableVacationDaysCurrentYear,
-    availableVacationDaysTotal,
-    usedVacationDaysInRange,
-    usedVacationDaysCurrentYearToReference,
-    carryoverVacationDaysFromPreviousYear,
-    remainingCarryoverVacationDays,
-    remainingVacationDaysCurrentYear,
-    remainingVacationDaysTotal,
-  };
 }
 
 type UserBlock = {
@@ -511,18 +372,6 @@ function buildPayrollCsv(
       (a) => a.compensation === AbsenceCompensation.PAID
     );
 
-    const paidVacationBalanceAbsencesForUser = data.vacationBalanceAbsences.filter(
-      (a) => a.userId === b.userId
-    );
-
-    const vacationBalance = rangeISO
-      ? computeVacationBalanceSnapshot(
-          paidVacationBalanceAbsencesForUser,
-          paidVacationAbsences,
-          rangeISO.toISO
-        )
-      : null;
-
     const holidayDates = new Set<string>();
     if (rangeISO) {
       for (const d of allDaysInRange) {
@@ -615,12 +464,7 @@ function buildPayrollCsv(
       "Überstunden (Brutto)",
       "Überstunden (Netto)",
       "Fahrtminuten",
-      "Urlaubsstand per",
-      "Urlaubstage im Zeitraum",
-      "Verfügbare Urlaubstage bis Zeitraumende",
-      "Resturlaub aus Vorjahr",
-      "Resturlaub aktuelles Jahr",
-      "Resturlaub gesamt",
+      "Urlaubstage",
       "Krankheitstage",
       "Feiertage",
       "Bezahlte Abwesenheitstage (U+K)",
@@ -637,12 +481,7 @@ function buildPayrollCsv(
       rangeISO ? formatHoursDE(overtimeBruttoHours) : "",
       rangeISO ? formatHoursDE(overtimeNettoHours) : "",
       totalTravelMinutes,
-      vacationBalance?.referenceDateISO ?? "",
-      vacationBalance ? formatDaysDE(vacationBalance.usedVacationDaysInRange) : formatDaysDE(vacationDays),
-      vacationBalance ? formatDaysDE(vacationBalance.availableVacationDaysTotal) : "",
-      vacationBalance ? formatDaysDE(vacationBalance.remainingCarryoverVacationDays) : "",
-      vacationBalance ? formatDaysDE(vacationBalance.remainingVacationDaysCurrentYear) : "",
-      vacationBalance ? formatDaysDE(vacationBalance.remainingVacationDaysTotal) : "",
+      formatDayHourLabel(vacationDays, vacationMinutes, "Tag"),
       formatDayHourLabel(sickDays, sickMinutes, "Tag"),
       rangeISO ? formatDayHourLabel(holidayDays, holidayMinutes, "Tag") : "",
       formatDayHourLabel(paidAbsenceDays, paidAbsenceMinutes, "Tag"),
@@ -844,15 +683,7 @@ export async function GET(req: Request) {
         const toISO = dateOnly(endInclusive);
 
         if (isAll) {
-          const vacationBalanceWindow = getVacationBalanceWindow(endInclusive);
-          const data = await loadData(
-            start,
-            endInclusive,
-            null,
-            me.companyId,
-            vacationBalanceWindow.from,
-            vacationBalanceWindow.to
-          );
+          const data = await loadData(start, endInclusive, null, me.companyId);
           const csv = buildPayrollCsv(data, key, { fromISO, toISO, state });
           zip.file(`${key}_payroll.csv`, csv);
           continue;
@@ -871,30 +702,14 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Ungültiger Mitarbeiter" }, { status: 400 });
           }
 
-          const vacationBalanceWindow = getVacationBalanceWindow(endInclusive);
-          const data = await loadData(
-            start,
-            endInclusive,
-            userId,
-            me.companyId,
-            vacationBalanceWindow.from,
-            vacationBalanceWindow.to
-          );
+          const data = await loadData(start, endInclusive, userId, me.companyId);
           const csv = buildPayrollCsv(data, key, { fromISO, toISO, state });
           zip.file(`${key}_${safeFileName(emp.fullName)}_payroll.csv`, csv);
           continue;
         }
 
         for (const e of employees) {
-          const vacationBalanceWindow = getVacationBalanceWindow(endInclusive);
-          const data = await loadData(
-            start,
-            endInclusive,
-            e.id,
-            me.companyId,
-            vacationBalanceWindow.from,
-            vacationBalanceWindow.to
-          );
+          const data = await loadData(start, endInclusive, e.id, me.companyId);
           const csv = buildPayrollCsv(data, key, { fromISO, toISO, state });
           zip.file(`${key}_${safeFileName(e.fullName)}_payroll.csv`, csv);
         }
@@ -931,15 +746,7 @@ export async function GET(req: Request) {
       const toISO = dateOnly(endInclusive);
 
       if (isAll) {
-        const vacationBalanceWindow = getVacationBalanceWindow(endInclusive);
-        const data = await loadData(
-          start,
-          endInclusive,
-          null,
-          me.companyId,
-          vacationBalanceWindow.from,
-          vacationBalanceWindow.to
-        );
+        const data = await loadData(start, endInclusive, null, me.companyId);
         const csv = buildPayrollCsv(data, month, { fromISO, toISO, state });
         const filename = `${filePrefix}_payroll_${month}.csv`;
 
@@ -966,15 +773,7 @@ export async function GET(req: Request) {
           return NextResponse.json({ error: "Ungültiger Mitarbeiter" }, { status: 400 });
         }
 
-        const vacationBalanceWindow = getVacationBalanceWindow(endInclusive);
-        const data = await loadData(
-          start,
-          endInclusive,
-          userId,
-          me.companyId,
-          vacationBalanceWindow.from,
-          vacationBalanceWindow.to
-        );
+        const data = await loadData(start, endInclusive, userId, me.companyId);
         const csv = buildPayrollCsv(data, month, { fromISO, toISO, state });
         const filename = `${filePrefix}_payroll_${month}_${safeFileName(emp.fullName)}.csv`;
 
@@ -1001,15 +800,7 @@ export async function GET(req: Request) {
       const zip = new JSZip();
 
       for (const e of employees) {
-        const vacationBalanceWindow = getVacationBalanceWindow(endInclusive);
-        const data = await loadData(
-          start,
-          endInclusive,
-          e.id,
-          me.companyId,
-          vacationBalanceWindow.from,
-          vacationBalanceWindow.to
-        );
+        const data = await loadData(start, endInclusive, e.id, me.companyId);
         const csv = buildPayrollCsv(data, `${month} · ${e.fullName}`, { fromISO, toISO, state });
         zip.file(`${month}_${safeFileName(e.fullName)}_payroll.csv`, csv);
       }
@@ -1061,15 +852,11 @@ export async function GET(req: Request) {
       }
     }
     
-    const vacationBalanceWindow = getVacationBalanceWindow(rangeTo);
-
-    const data = await loadData(
+        const data = await loadData(
       rangeFrom,
       rangeTo,
       isSingle ? userId : null,
-      me.companyId,
-      vacationBalanceWindow.from,
-      vacationBalanceWindow.to
+      me.companyId
     );
 
     const csv =
