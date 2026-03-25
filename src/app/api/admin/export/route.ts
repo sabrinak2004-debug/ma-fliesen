@@ -1,7 +1,7 @@
 // src/app/api/admin/export/route.ts
 import { NextResponse } from "next/server";
 import JSZip from "jszip";
-import { AbsenceCompensation, AbsenceType } from "@prisma/client";
+import { AbsenceCompensation, AbsenceType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import Holidays from "date-holidays";
@@ -11,9 +11,57 @@ import { formatGermanDateTime } from "@/lib/time";
 const STANDARD_DAY_HOURS = 8; // Referenzwert für Urlaub/Krankheit/Feiertag in Stunden
 const ROUND_TO_MINUTES = 15; // z.B. 15 = Viertelstunde (0,25h), 5 = 5-Minuten, 1 = Minuten-genau
 
+const ANNUAL_VACATION_DAYS = 30;
+const MONTHLY_VACATION_ACCRUAL_DAYS = ANNUAL_VACATION_DAYS / 12;
+
+function getAccruedVacationDaysUntilMonth(monthOneBased: number): number {
+  return Math.min(
+    ANNUAL_VACATION_DAYS,
+    monthOneBased * MONTHLY_VACATION_ACCRUAL_DAYS
+  );
+}
+
+function getPeriodEndInfo(
+  rangeISO?: { fromISO: string; toISO: string; state: string }
+): { year: number; month: number } | null {
+  if (!rangeISO) return null;
+
+  const endDate = new Date(`${rangeISO.toISO}T00:00:00.000Z`);
+  if (Number.isNaN(endDate.getTime())) return null;
+
+  return {
+    year: endDate.getUTCFullYear(),
+    month: endDate.getUTCMonth() + 1,
+  };
+}
+
+function sumPaidVacationDaysFromAbsences(
+  absences: Array<{ type: AbsenceType; compensation: AbsenceCompensation; dayPortion: string }>
+): number {
+  return absences.reduce((sum, row) => {
+    if (row.type !== AbsenceType.VACATION) return sum;
+    if (row.compensation !== AbsenceCompensation.PAID) return sum;
+    return sum + getAbsenceDayFraction(row.dayPortion);
+  }, 0);
+}
+
 type SessionLike = {
   userId?: string;
   user?: { id?: string };
+};
+
+type WorkEntryWithUser = Prisma.WorkEntryGetPayload<{
+  include: { user: true };
+}>;
+
+type AbsenceWithUser = Prisma.AbsenceGetPayload<{
+  include: { user: true };
+}>;
+
+type LoadDataResult = {
+  entries: WorkEntryWithUser[];
+  absences: AbsenceWithUser[];
+  vacationYtdAbsences: AbsenceWithUser[];
 };
 
 function getSessionUserId(session: unknown): string | null {
@@ -144,7 +192,7 @@ async function loadData(
   to: Date | null,
   userId: string | null,
   companyId: string
-) {
+): Promise<LoadDataResult> {
   const entriesWhere =
     from || to || userId
       ? {
@@ -181,7 +229,25 @@ async function loadData(
           },
         };
 
-  const [entries, absences] = await Promise.all([
+  const periodEnd = to ?? null;
+
+  const vacationYtdWhere =
+    periodEnd
+      ? {
+          ...(userId ? { userId } : {}),
+          user: {
+            companyId,
+          },
+          type: AbsenceType.VACATION,
+          compensation: AbsenceCompensation.PAID,
+          absenceDate: {
+            gte: new Date(Date.UTC(periodEnd.getUTCFullYear(), 0, 1)),
+            lte: periodEnd,
+          },
+        }
+      : null;
+
+  const [entries, absences, vacationYtdAbsences] = await Promise.all([
     prisma.workEntry.findMany({
       where: entriesWhere,
       include: { user: true },
@@ -192,12 +258,19 @@ async function loadData(
       include: { user: true },
       orderBy: [{ absenceDate: "asc" }],
     }),
+    vacationYtdWhere
+      ? prisma.absence.findMany({
+          where: vacationYtdWhere,
+          include: { user: true },
+          orderBy: [{ absenceDate: "asc" }],
+        })
+      : Promise.resolve<AbsenceWithUser[]>([]),
   ]);
 
-  return { entries, absences };
+  return { entries, absences, vacationYtdAbsences };
 }
 
-type Loaded = Awaited<ReturnType<typeof loadData>>;
+type Loaded = LoadDataResult;
 
 function computeDayAgg(entries: Loaded["entries"]): Map<string, DayAgg> {
   const map = new Map<string, DayAgg>();
@@ -265,35 +338,61 @@ type UserBlock = {
   name: string;
   entries: Loaded["entries"];
   absences: Loaded["absences"];
+  vacationYtdAbsences: Loaded["vacationYtdAbsences"];
 };
 
 function groupByUser(data: Loaded): UserBlock[] {
-  const map = new Map<string, UserBlock>();
+  const map: Map<string, UserBlock> = new Map();
 
   for (const e of data.entries) {
     const userId = e.userId;
     const name = e.user.fullName;
-    const cur =
+    const cur: UserBlock =
       map.get(userId) ?? {
         userId,
         name,
         entries: [],
         absences: [],
+        vacationYtdAbsences: [],
       };
 
     cur.entries.push(e);
     map.set(userId, cur);
   }
 
+  for (const a of data.vacationYtdAbsences) {
+    const userId = a.userId;
+    const name = a.user.fullName;
+
+    const existing = map.get(userId);
+
+    if (existing) {
+      existing.vacationYtdAbsences.push(a);
+      map.set(userId, existing);
+      continue;
+    }
+
+    const cur: UserBlock = {
+      userId,
+      name,
+      entries: [],
+      absences: [],
+      vacationYtdAbsences: [a],
+    };
+
+    map.set(userId, cur);
+  }
+
   for (const a of data.absences) {
     const userId = a.userId;
     const name = a.user.fullName;
-    const cur =
+    const cur: UserBlock =
       map.get(userId) ?? {
         userId,
         name,
         entries: [],
         absences: [],
+        vacationYtdAbsences: [],
       };
 
     cur.absences.push(a);
@@ -341,6 +440,39 @@ function buildPayrollCsv(
   lines.push(["Rundung (Minuten)", ROUND_TO_MINUTES]);
   lines.push(["Export erstellt am", formatGermanDateTime(new Date())]);
   lines.push([]);
+
+  const periodEndInfo = getPeriodEndInfo(rangeISO);
+
+  const vacationMetaByUser = new Map<
+    string,
+    {
+      entitlementDays: number | null;
+      remainingVacationDays: number | null;
+    }
+  >();
+
+  for (const b of blocks) {
+    if (!periodEndInfo) {
+      vacationMetaByUser.set(b.userId, {
+        entitlementDays: null,
+        remainingVacationDays: null,
+      });
+      continue;
+    }
+
+    const entitlementDays = getAccruedVacationDaysUntilMonth(periodEndInfo.month);
+    const usedVacationDaysYtd = sumPaidVacationDaysFromAbsences(b.vacationYtdAbsences);
+
+    const remainingVacationDays = Math.max(
+      0,
+      entitlementDays - usedVacationDaysYtd
+    );
+
+    vacationMetaByUser.set(b.userId, {
+      entitlementDays,
+      remainingVacationDays,
+    });
+  }
 
   for (const b of blocks) {
     const dayAgg = computeDayAgg(b.entries);
@@ -456,6 +588,11 @@ function buildPayrollCsv(
 
     lines.push(["Mitarbeiter", b.name]);
 
+    const vacationMeta = vacationMetaByUser.get(b.userId) ?? {
+      entitlementDays: null,
+      remainingVacationDays: null,
+    };
+
     lines.push([
       "Summary",
       "Soll-Arbeitstage",
@@ -464,6 +601,8 @@ function buildPayrollCsv(
       "Überstunden (Brutto)",
       "Überstunden (Netto)",
       "Fahrtminuten",
+      "Urlaubsanspruch",
+      "Resturlaub",
       "Urlaubstage",
       "Krankheitstage",
       "Feiertage",
@@ -481,6 +620,12 @@ function buildPayrollCsv(
       rangeISO ? formatHoursDE(overtimeBruttoHours) : "",
       rangeISO ? formatHoursDE(overtimeNettoHours) : "",
       totalTravelMinutes,
+      vacationMeta.entitlementDays !== null
+        ? String(vacationMeta.entitlementDays).replace(".", ",")
+        : "",
+      vacationMeta.remainingVacationDays !== null
+        ? String(vacationMeta.remainingVacationDays).replace(".", ",")
+        : "",
       formatDayHourLabel(vacationDays, vacationMinutes, "Tag"),
       formatDayHourLabel(sickDays, sickMinutes, "Tag"),
       rangeISO ? formatDayHourLabel(holidayDays, holidayMinutes, "Tag") : "",
