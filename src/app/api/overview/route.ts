@@ -133,35 +133,74 @@ export async function GET(req: Request) {
 
   const users = await prisma.appUser.findMany({
     where: isAdmin
-      ? { companyId: session.companyId, isActive: true }
-      : { id: session.userId, isActive: true },
+      ? {
+          companyId: session.companyId,
+          isActive: true,
+          role: Role.EMPLOYEE,
+        }
+      : {
+          id: session.userId,
+          isActive: true,
+        },
     orderBy: { fullName: "asc" },
   });
 
   const entries = await prisma.workEntry.findMany({
     where: {
-      ...(isAdmin ? { user: { companyId: session.companyId } } : { userId: session.userId }),
+      ...(isAdmin
+        ? {
+            user: {
+              companyId: session.companyId,
+              role: Role.EMPLOYEE,
+              isActive: true,
+            },
+          }
+        : { userId: session.userId }),
       workDate: { gte: from, lt: to },
     },
   });
 
   const dayBreaks = await prisma.dayBreak.findMany({
     where: {
-      ...(isAdmin ? { user: { companyId: session.companyId } } : { userId: session.userId }),
+      ...(isAdmin
+        ? {
+            user: {
+              companyId: session.companyId,
+              role: Role.EMPLOYEE,
+              isActive: true,
+            },
+          }
+        : { userId: session.userId }),
       workDate: { gte: from, lt: to },
     },
   });
 
   const absences = await prisma.absence.findMany({
     where: {
-      ...(isAdmin ? { user: { companyId: session.companyId } } : { userId: session.userId }),
+      ...(isAdmin
+        ? {
+            user: {
+              companyId: session.companyId,
+              role: Role.EMPLOYEE,
+              isActive: true,
+            },
+          }
+        : { userId: session.userId }),
       absenceDate: { gte: from, lt: to },
     },
   });
 
   const yearVacationAbsences = await prisma.absence.findMany({
     where: {
-      ...(isAdmin ? { user: { companyId: session.companyId } } : { userId: session.userId }),
+      ...(isAdmin
+        ? {
+            user: {
+              companyId: session.companyId,
+              role: Role.EMPLOYEE,
+              isActive: true,
+            },
+          }
+        : { userId: session.userId }),
       type: AbsenceType.VACATION,
       absenceDate: { gte: yearFrom, lt: yearToExclusive },
     },
