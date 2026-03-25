@@ -2851,6 +2851,7 @@ function KalenderPageInner({
                   >
                     Für diesen Antrag ist aktuell kein bezahlter Urlaub mehr verfügbar.
                     Der Antrag wird deshalb automatisch als unbezahlt gesetzt.
+                    Sobald bezahlter Urlaub wieder verfügbar ist, wird dieser Eintrag automatisch auf Bezahlt umgestellt
                   </div>
                 ) : null}
 
