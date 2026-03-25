@@ -125,7 +125,7 @@ export async function GET(req: Request) {
   const to = buildNextMonthStartUtc(year, monthNumber);
 
   const yearFrom = new Date(Date.UTC(year, 0, 1));
-  const yearTo = buildNextMonthStartUtc(year, monthNumber);
+  const yearToExclusive = buildNextMonthStartUtc(year, monthNumber);
 
   const holidaySet = getHolidaySetForMonth(year, month);
   const workingDaysInMonth = countWorkingDaysWithoutHolidays(year, monthNumber, holidaySet);
@@ -163,7 +163,7 @@ export async function GET(req: Request) {
     where: {
       ...(isAdmin ? { user: { companyId: session.companyId } } : { userId: session.userId }),
       type: AbsenceType.VACATION,
-      absenceDate: { gte: yearFrom, lt: yearTo },
+      absenceDate: { gte: yearFrom, lt: yearToExclusive },
     },
   });
 

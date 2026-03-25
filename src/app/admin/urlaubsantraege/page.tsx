@@ -437,6 +437,35 @@ function currentYearValue(): string {
   return String(new Date().getFullYear());
 }
 
+function currentMonthOnlyValue(): string {
+  return String(new Date().getMonth() + 1).padStart(2, "0");
+}
+
+function formatMonthLabel(ym: string): string {
+  if (!/^\d{4}-\d{2}$/.test(ym)) return ym;
+
+  const [year, month] = ym.split("-");
+  const monthNames = [
+    "Januar",
+    "Februar",
+    "März",
+    "April",
+    "Mai",
+    "Juni",
+    "Juli",
+    "August",
+    "September",
+    "Oktober",
+    "November",
+    "Dezember",
+  ] as const;
+
+  const index = Number(month) - 1;
+  const monthLabel = monthNames[index] ?? month;
+
+  return `${monthLabel} ${year}`;
+}
+
 export default function UrlaubsantraegePage() {
   const router = useRouter();
   const [items, setItems] = useState<AbsenceRequestItem[]>([]);
@@ -452,9 +481,9 @@ export default function UrlaubsantraegePage() {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [selectedRequestUserId, setSelectedRequestUserId] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthValue());
-
   const [selectedResturlaubUserId, setSelectedResturlaubUserId] = useState<string>("");
   const [selectedResturlaubYear, setSelectedResturlaubYear] = useState<string>(currentYearValue());
+  const [selectedResturlaubMonth, setSelectedResturlaubMonth] = useState<string>(currentMonthOnlyValue());
   const resturlaubYearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
     return [
@@ -463,6 +492,22 @@ export default function UrlaubsantraegePage() {
       String(currentYear - 1),
       String(currentYear - 2),
       String(currentYear - 3),
+    ];
+  }, []);
+  const resturlaubMonthOptions = useMemo(() => {
+    return [
+      { value: "01", label: "Januar" },
+      { value: "02", label: "Februar" },
+      { value: "03", label: "März" },
+      { value: "04", label: "April" },
+      { value: "05", label: "Mai" },
+      { value: "06", label: "Juni" },
+      { value: "07", label: "Juli" },
+      { value: "08", label: "August" },
+      { value: "09", label: "September" },
+      { value: "10", label: "Oktober" },
+      { value: "11", label: "November" },
+      { value: "12", label: "Dezember" },
     ];
   }, []);
   const [remainingVacationDays, setRemainingVacationDays] = useState<number>(0);
@@ -530,7 +575,7 @@ async function loadRemainingVacationKpi() {
 
   try {
     const params = new URLSearchParams();
-    params.set("month", `${selectedResturlaubYear}-12`);
+    params.set("month", `${selectedResturlaubYear}-${selectedResturlaubMonth}`);
 
     const response = await fetch(`/api/overview?${params.toString()}`, {
       method: "GET",
@@ -628,6 +673,7 @@ useEffect(() => {
 }, [
   selectedResturlaubUserId,
   selectedResturlaubYear,
+  selectedResturlaubMonth,
   sessionChecked,
   session?.role,
   session?.companyId,
@@ -1353,7 +1399,7 @@ useEffect(() => {
             </div>
 
             <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
-              Stand für das ausgewählte Urlaubsjahr
+              Stand {formatMonthLabel(`${selectedResturlaubYear}-${selectedResturlaubMonth}`)}
             </div>
 
             <div
@@ -1404,6 +1450,28 @@ useEffect(() => {
                 {resturlaubYearOptions.map((year) => (
                   <option key={year} value={year}>
                     Urlaubsjahr {year}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className="input"
+                value={selectedResturlaubMonth}
+                onChange={(e) => setSelectedResturlaubMonth(e.target.value)}
+                style={{
+                  width: "100%",
+                  minWidth: 0,
+                  boxSizing: "border-box",
+                  display: "block",
+                  maxWidth: "100%",
+                  borderRadius: 14,
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                }}
+              >
+                {resturlaubMonthOptions.map((month) => (
+                  <option key={month.value} value={month.value}>
+                    Stand {month.label}
                   </option>
                 ))}
               </select>
