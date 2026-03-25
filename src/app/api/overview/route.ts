@@ -27,6 +27,51 @@ function getAccruedVacationDaysUntilMonth(monthOneBased: number): number {
   );
 }
 
+type VacationBalanceAtMonthEnd = {
+  carryoverVacationDaysFromPreviousYear: number;
+  remainingCarryoverVacationDays: number;
+  accruedVacationDaysCurrentYear: number;
+  remainingVacationDaysCurrentYear: number;
+  remainingVacationDaysTotal: number;
+};
+
+function calculateVacationBalanceAtMonthEnd(
+  monthOneBased: number,
+  usedVacationDaysPreviousYear: number,
+  usedVacationDaysCurrentYearToMonthEnd: number
+): VacationBalanceAtMonthEnd {
+  const carryoverVacationDaysFromPreviousYear = Math.max(
+    0,
+    ANNUAL_VACATION_DAYS - usedVacationDaysPreviousYear
+  );
+
+  const accruedVacationDaysCurrentYear = getAccruedVacationDaysUntilMonth(monthOneBased);
+
+  const remainingCarryoverVacationDays = Math.max(
+    0,
+    carryoverVacationDaysFromPreviousYear - usedVacationDaysCurrentYearToMonthEnd
+  );
+
+  const usedAgainstCurrentYear = Math.max(
+    0,
+    usedVacationDaysCurrentYearToMonthEnd - carryoverVacationDaysFromPreviousYear
+  );
+
+  const remainingVacationDaysCurrentYear = Math.max(
+    0,
+    accruedVacationDaysCurrentYear - usedAgainstCurrentYear
+  );
+
+  return {
+    carryoverVacationDaysFromPreviousYear,
+    remainingCarryoverVacationDays,
+    accruedVacationDaysCurrentYear,
+    remainingVacationDaysCurrentYear,
+    remainingVacationDaysTotal:
+      remainingCarryoverVacationDays + remainingVacationDaysCurrentYear,
+  };
+}
+
 function absencePortionValue(dayPortion: AbsenceDayPortion): number {
   return dayPortion === AbsenceDayPortion.HALF_DAY ? 0.5 : 1;
 }
@@ -127,6 +172,9 @@ export async function GET(req: Request) {
   const yearFrom = new Date(Date.UTC(year, 0, 1));
   const yearToExclusive = buildNextMonthStartUtc(year, monthNumber);
 
+  const previousYearFrom = new Date(Date.UTC(year - 1, 0, 1));
+  const previousYearToExclusive = new Date(Date.UTC(year, 0, 1));
+
   const holidaySet = getHolidaySetForMonth(year, month);
   const workingDaysInMonth = countWorkingDaysWithoutHolidays(year, monthNumber, holidaySet);
   const baseTargetMinutes = workingDaysInMonth * DAILY_TARGET_MINUTES;
@@ -206,6 +254,23 @@ export async function GET(req: Request) {
     },
   });
 
+  const previousYearVacationAbsences = await prisma.absence.findMany({
+    where: {
+      ...(isAdmin
+        ? {
+            user: {
+              companyId: session.companyId,
+              role: Role.EMPLOYEE,
+              isActive: true,
+            },
+          }
+        : { userId: session.userId }),
+      type: AbsenceType.VACATION,
+      compensation: AbsenceCompensation.PAID,
+      absenceDate: { gte: previousYearFrom, lt: previousYearToExclusive },
+    },
+  });
+
   const dayBreakMap = new Map<string, number>();
 
   for (const row of dayBreaks) {
@@ -217,6 +282,10 @@ export async function GET(req: Request) {
     const userEntries = entries.filter((entry) => entry.userId === user.id);
     const userAbsences = absences.filter((absence) => absence.userId === user.id);
     const userYearVacationAbsences = yearVacationAbsences.filter(
+      (absence) => absence.userId === user.id
+    );
+
+    const userPreviousYearVacationAbsences = previousYearVacationAbsences.filter(
       (absence) => absence.userId === user.id
     );
 
@@ -285,13 +354,23 @@ export async function GET(req: Request) {
       0
     );
 
-    const accruedVacationDays = getAccruedVacationDaysUntilMonth(monthNumber);
+    const usedVacationDaysPreviousYear = userPreviousYearVacationAbsences.reduce(
+      (sum, row) => sum + absencePortionValue(row.dayPortion),
+      0
+    );
 
     const usedVacationDaysYtd = userYearVacationAbsences
       .filter((row) => row.compensation === AbsenceCompensation.PAID)
       .reduce((sum, row) => sum + absencePortionValue(row.dayPortion), 0);
 
-    const remainingVacationDays = Math.max(0, accruedVacationDays - usedVacationDaysYtd);
+    const vacationBalance = calculateVacationBalanceAtMonthEnd(
+      monthNumber,
+      usedVacationDaysPreviousYear,
+      usedVacationDaysYtd
+    );
+
+    const accruedVacationDays = vacationBalance.accruedVacationDaysCurrentYear;
+    const remainingVacationDays = vacationBalance.remainingVacationDaysTotal;
 
     const paidHolidayMinutes = countHolidayWeekdays(holidaySet) * DAILY_TARGET_MINUTES;
 
@@ -332,6 +411,9 @@ export async function GET(req: Request) {
       accruedVacationDays,
       usedVacationDaysYtd,
       remainingVacationDays,
+      carryoverVacationDaysFromPreviousYear: vacationBalance.carryoverVacationDaysFromPreviousYear,
+      remainingCarryoverVacationDays: vacationBalance.remainingCarryoverVacationDays,
+      remainingVacationDaysCurrentYear: vacationBalance.remainingVacationDaysCurrentYear,
       baseTargetMinutes,
       targetMinutes,
       netTargetMinutes,
