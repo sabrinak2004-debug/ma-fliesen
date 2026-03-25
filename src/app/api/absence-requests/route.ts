@@ -58,6 +58,63 @@ function toIsoDateUTC(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+function isUtcWeekday(date: Date): boolean {
+  const day = date.getUTCDay();
+  return day >= 1 && day <= 5;
+}
+
+function countVacationRequestDaysExcludingWeekends(
+  startDate: Date,
+  endDate: Date,
+  dayPortion: AbsenceDayPortion
+): number {
+  if (dayPortion === AbsenceDayPortion.HALF_DAY) {
+    return 0.5;
+  }
+
+  let count = 0;
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    if (isUtcWeekday(current)) {
+      count += 1;
+    }
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  return count;
+}
+
+function buildEffectiveAbsenceDays(
+  startDate: Date,
+  endDate: Date,
+  type: AbsenceType,
+  dayPortion: AbsenceDayPortion
+): Date[] {
+  if (dayPortion === AbsenceDayPortion.HALF_DAY) {
+    return [new Date(startDate)];
+  }
+
+  const out: Date[] = [];
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    const copy = new Date(current);
+
+    if (type === AbsenceType.VACATION) {
+      if (isUtcWeekday(copy)) {
+        out.push(copy);
+      }
+    } else {
+      out.push(copy);
+    }
+
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  return out;
+}
+
 const ANNUAL_VACATION_DAYS = 30;
 const MONTHLY_VACATION_ACCRUAL_DAYS = ANNUAL_VACATION_DAYS / 12;
 
@@ -95,12 +152,11 @@ function getRequestVacationDays(
   endDate: Date,
   dayPortion: AbsenceDayPortion
 ): number {
-  if (dayPortion === AbsenceDayPortion.HALF_DAY) {
-    return 0.5;
-  }
-
-  const diffMs = endDate.getTime() - startDate.getTime();
-  return Math.floor(diffMs / 86400000) + 1;
+  return countVacationRequestDaysExcludingWeekends(
+    startDate,
+    endDate,
+    dayPortion
+  );
 }
 
 function getAbsenceDayValue(dayPortion: AbsenceDayPortion): number {
@@ -699,6 +755,27 @@ export async function POST(req: Request) {
       { ok: false, error: "Ein halber Urlaubstag darf nur für genau ein Datum beantragt werden." },
       { status: 400 }
     );
+  }
+
+  if (
+    typeRaw === "VACATION" &&
+    dayPortion === AbsenceDayPortion.FULL_DAY
+  ) {
+    const effectiveVacationDays = countVacationRequestDaysExcludingWeekends(
+      start,
+      end,
+      dayPortion
+    );
+
+    if (effectiveVacationDays <= 0) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+        },
+        { status: 400 }
+      );
+    }
   }
 
   if (typeRaw === "VACATION" && requestedCompensation === AbsenceCompensation.PAID) {

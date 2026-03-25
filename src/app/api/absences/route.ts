@@ -82,6 +82,41 @@ function eachDayInclusive(from: Date, to: Date): Date[] {
   return res;
 }
 
+function isUtcWeekday(date: Date): boolean {
+  const day = date.getUTCDay();
+  return day >= 1 && day <= 5;
+}
+
+function buildEffectiveAbsenceDays(
+  startDate: Date,
+  endDate: Date,
+  type: AbsenceType,
+  dayPortion: AbsenceDayPortion
+): Date[] {
+  if (dayPortion === AbsenceDayPortion.HALF_DAY) {
+    return [new Date(startDate)];
+  }
+
+  const out: Date[] = [];
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    const copy = new Date(current);
+
+    if (type === AbsenceType.VACATION) {
+      if (isUtcWeekday(copy)) {
+        out.push(copy);
+      }
+    } else {
+      out.push(copy);
+    }
+
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  return out;
+}
+
 type AbsenceDTO = {
   id: string;
   absenceDate: string;
@@ -377,7 +412,20 @@ export async function POST(req: Request) {
     );
   }
 
-  const days = eachDayInclusive(start, end);
+  const days = buildEffectiveAbsenceDays(start, end, typeStr, dayPortion);
+
+  if (
+    typeStr === "VACATION" &&
+    dayPortion === AbsenceDayPortion.FULL_DAY &&
+    days.length === 0
+  ) {
+    return okJson(
+      {
+        error: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+      },
+      { status: 400 }
+    );
+  }
 
   const result = await prisma.absence.createMany({
     data: days.map((d) => ({
@@ -532,7 +580,25 @@ export async function PATCH(req: Request) {
   const deleteToExclusive = new Date(to);
   deleteToExclusive.setUTCDate(deleteToExclusive.getUTCDate() + 1);
 
-  const createDays = eachDayInclusive(newStart, newEnd);
+  const createDays = buildEffectiveAbsenceDays(
+    newStart,
+    newEnd,
+    newTypeStr,
+    newDayPortion
+  );
+
+  if (
+    newTypeStr === "VACATION" &&
+    newDayPortion === AbsenceDayPortion.FULL_DAY &&
+    createDays.length === 0
+  ) {
+    return okJson(
+      {
+        error: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+      },
+      { status: 400 }
+    );
+  }
 
   const tx = await prisma.$transaction(async (p) => {
     const del = await p.absence.deleteMany({

@@ -536,9 +536,22 @@ function getRequestedVacationDays(
 
   const startDate = ymdToDateLocal(start);
   const endDate = ymdToDateLocal(end);
-  const diffMs = endDate.getTime() - startDate.getTime();
 
-  return Math.floor(diffMs / 86400000) + 1;
+  let count = 0;
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    const day = current.getDay();
+    const isWeekday = day >= 1 && day <= 5;
+
+    if (isWeekday) {
+      count += 1;
+    }
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  return count;
 }
 
 function toYMDLocal(d: Date): string {
@@ -1475,6 +1488,19 @@ function KalenderPageInner({
     if (absenceDayPortion === "HALF_DAY" && absenceStart !== absenceEnd) {
       setError("Ein halber Urlaubstag darf nur für genau ein Datum beantragt werden.");
       return;
+    }
+
+    if (absenceType === "VACATION" && absenceDayPortion === "FULL_DAY") {
+      const effectiveVacationDays = getRequestedVacationDays(
+        absenceStart,
+        absenceEnd,
+        absenceDayPortion
+      );
+
+      if (effectiveVacationDays <= 0) {
+        setError("Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.");
+        return;
+      }
     }
 
     if (absenceType === "SICK" && absenceCompensation !== "PAID") {
@@ -2771,6 +2797,17 @@ function KalenderPageInner({
             {absenceType === "VACATION" ? (
               <div style={{ marginBottom: 12 }}>
                 <div className="label">Umfang</div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    marginBottom: 10,
+                    fontSize: 12,
+                    color: "var(--muted)",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Bei mehrtägigem Urlaub werden Samstage und Sonntage automatisch nicht mitgezählt.
+                </div>
                 <div className="calendar-form-grid-2">
                   <button
                     className={`btn ${absenceDayPortion === "FULL_DAY" ? "btn-accent" : ""}`}

@@ -70,6 +70,41 @@ function eachDayInclusive(from: Date, to: Date): Date[] {
   return out;
 }
 
+function isUtcWeekday(date: Date): boolean {
+  const day = date.getUTCDay();
+  return day >= 1 && day <= 5;
+}
+
+function buildEffectiveAbsenceDays(
+  startDate: Date,
+  endDate: Date,
+  type: AbsenceType,
+  dayPortion: AbsenceDayPortion
+): Date[] {
+  if (dayPortion === AbsenceDayPortion.HALF_DAY) {
+    return [new Date(startDate)];
+  }
+
+  const out: Date[] = [];
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    const copy = new Date(current);
+
+    if (type === AbsenceType.VACATION) {
+      if (isUtcWeekday(copy)) {
+        out.push(copy);
+      }
+    } else {
+      out.push(copy);
+    }
+
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  return out;
+}
+
 const ANNUAL_VACATION_DAYS = 30;
 const MONTHLY_VACATION_ACCRUAL_DAYS = ANNUAL_VACATION_DAYS / 12;
 
@@ -296,16 +331,6 @@ export async function POST(req: Request, context: RouteContext) {
     );
   }
 
-  if (
-    finalDayPortion === AbsenceDayPortion.HALF_DAY &&
-    toIsoDateUTC(finalStartDate) !== toIsoDateUTC(finalEndDate)
-  ) {
-    return NextResponse.json(
-      { ok: false, error: "Ein halber Urlaubstag darf nur für genau ein Datum beantragt werden." },
-      { status: 400 }
-    );
-  }
-
   const conflictingAbsence = await prisma.absence.findFirst({
     where: {
       userId: existing.userId,
@@ -332,7 +357,26 @@ export async function POST(req: Request, context: RouteContext) {
     );
   }
 
-  const days = eachDayInclusive(finalStartDate, finalEndDate);
+  const days = buildEffectiveAbsenceDays(
+    finalStartDate,
+    finalEndDate,
+    finalType,
+    finalDayPortion
+  );
+
+  if (
+    finalType === AbsenceType.VACATION &&
+    finalDayPortion === AbsenceDayPortion.FULL_DAY &&
+    days.length === 0
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+      },
+      { status: 400 }
+    );
+  }
 
   let nextAutoUnpaidBecauseNoBalance = existing.autoUnpaidBecauseNoBalance;
   let nextCompensationLockedBySystem = existing.compensationLockedBySystem;
