@@ -18,6 +18,15 @@ type DayAgg = {
 const ANNUAL_VACATION_DAYS = 30;
 const DAILY_TARGET_MINUTES = 8 * 60;
 
+const MONTHLY_VACATION_ACCRUAL_DAYS = ANNUAL_VACATION_DAYS / 12;
+
+function getAccruedVacationDaysUntilMonth(monthOneBased: number): number {
+  return Math.min(
+    ANNUAL_VACATION_DAYS,
+    monthOneBased * MONTHLY_VACATION_ACCRUAL_DAYS
+  );
+}
+
 function absencePortionValue(dayPortion: AbsenceDayPortion): number {
   return dayPortion === AbsenceDayPortion.HALF_DAY ? 0.5 : 1;
 }
@@ -237,11 +246,13 @@ export async function GET(req: Request) {
       0
     );
 
+    const accruedVacationDays = getAccruedVacationDaysUntilMonth(monthNumber);
+
     const usedVacationDaysYtd = userYearVacationAbsences
       .filter((row) => row.compensation === AbsenceCompensation.PAID)
       .reduce((sum, row) => sum + absencePortionValue(row.dayPortion), 0);
 
-    const remainingVacationDays = Math.max(0, ANNUAL_VACATION_DAYS - usedVacationDaysYtd);
+    const remainingVacationDays = Math.max(0, accruedVacationDays - usedVacationDaysYtd);
 
     const paidHolidayMinutes = countHolidayWeekdays(holidaySet) * DAILY_TARGET_MINUTES;
 
@@ -279,6 +290,7 @@ export async function GET(req: Request) {
       sickMinutes,
       unpaidAbsenceDays,
       unpaidAbsenceMinutes,
+      accruedVacationDays,
       usedVacationDaysYtd,
       remainingVacationDays,
       baseTargetMinutes,
@@ -308,6 +320,10 @@ export async function GET(req: Request) {
       sickMinutes: byUser.reduce((sum, user) => sum + user.sickMinutes, 0),
       unpaidAbsenceDays: byUser.reduce((sum, user) => sum + user.unpaidAbsenceDays, 0),
       unpaidAbsenceMinutes: byUser.reduce((sum, user) => sum + user.unpaidAbsenceMinutes, 0),
+      accruedVacationDays: byUser.reduce(
+        (sum, user) => sum + user.accruedVacationDays,
+        0
+      ),
       usedVacationDaysYtd: byUser.reduce(
         (sum, user) => sum + user.usedVacationDaysYtd,
         0

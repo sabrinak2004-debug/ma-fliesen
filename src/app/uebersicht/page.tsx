@@ -60,6 +60,7 @@ type OverviewUserSummary = {
   sickMinutes: number;
   unpaidAbsenceDays: number;
   unpaidAbsenceMinutes: number;
+  accruedVacationDays: number;
   usedVacationDaysYtd: number;
   remainingVacationDays: number;
   baseTargetMinutes: number;
@@ -79,6 +80,7 @@ type OverviewTotals = {
   sickMinutes: number;
   unpaidAbsenceDays: number;
   unpaidAbsenceMinutes: number;
+  accruedVacationDays: number;
   usedVacationDaysYtd: number;
   remainingVacationDays: number;
   baseTargetMinutes: number;
@@ -372,7 +374,8 @@ export default function UebersichtPage() {
   const [loading, setLoading] = useState(true);
 
   const [isAdmin, setIsAdmin] = useState(false);
-  const [remainingVacationDays, setRemainingVacationDays] = useState<number>(30);
+  const [remainingVacationDays, setRemainingVacationDays] = useState<number>(0);
+  const [accruedVacationDays, setAccruedVacationDays] = useState<number>(0);
   const [annualVacationDays, setAnnualVacationDays] = useState<number>(30);
   const [usedVacationDaysYtd, setUsedVacationDaysYtd] = useState<number>(0);
   const [targetMinutes, setTargetMinutes] = useState<number>(0);
@@ -466,11 +469,16 @@ export default function UebersichtPage() {
                 ? firstUser.usedVacationDaysYtd
                 : 0
             );
+            setAccruedVacationDays(
+              typeof firstUser.accruedVacationDays === "number" && Number.isFinite(firstUser.accruedVacationDays)
+                ? firstUser.accruedVacationDays
+                : 0
+            );
 
             setRemainingVacationDays(
               typeof firstUser.remainingVacationDays === "number" && Number.isFinite(firstUser.remainingVacationDays)
                 ? firstUser.remainingVacationDays
-                : nextAnnualVacationDays
+                : 0
             );
 
             setBaseTargetMinutes(
@@ -527,8 +535,9 @@ export default function UebersichtPage() {
                 : 0
             );
           } else {
+            setAccruedVacationDays(0);
             setUsedVacationDaysYtd(0);
-            setRemainingVacationDays(nextAnnualVacationDays);
+            setRemainingVacationDays(0);
             setBaseTargetMinutes(0);
             setTargetMinutes(0);
             setNetTargetMinutes(0);
@@ -542,8 +551,9 @@ export default function UebersichtPage() {
         } else {
           setIsAdmin(false);
           setAnnualVacationDays(30);
+          setAccruedVacationDays(0);
           setUsedVacationDaysYtd(0);
-          setRemainingVacationDays(30);
+          setRemainingVacationDays(0);
           setBaseTargetMinutes(0);
           setTargetMinutes(0);
           setNetTargetMinutes(0);
@@ -1191,7 +1201,7 @@ const resetAbsFilters = (): void => {
             <div className="small">Resturlaub</div>
             <div className="big">{String(remainingVacationDays).replace(".", ",")}</div>
             <div className="small">
-              {String(usedVacationDaysYtd).replace(".", ",")} von {annualVacationDays} Tagen verbraucht
+              {String(usedVacationDaysYtd).replace(".", ",")} von {String(accruedVacationDays).replace(".", ",")} Tagen verbraucht
             </div>
           </div>
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🗓</div>

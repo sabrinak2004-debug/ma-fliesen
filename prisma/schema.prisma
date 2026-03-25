@@ -290,6 +290,9 @@ model AbsenceRequest {
   status       AbsenceRequestStatus @default(PENDING)
   compensation AbsenceCompensation  @default(PAID)
 
+  autoUnpaidBecauseNoBalance Boolean @default(false)
+  compensationLockedBySystem Boolean @default(false)
+
   noteEmployee String?
 
   decidedAt   DateTime?

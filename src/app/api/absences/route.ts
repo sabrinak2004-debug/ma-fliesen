@@ -347,6 +347,15 @@ export async function POST(req: Request) {
     );
   }
 
+  if (start.getUTCFullYear() !== end.getUTCFullYear()) {
+    return okJson(
+      {
+        error: "Jahresübergreifende Abwesenheiten werden aktuell noch nicht unterstützt. Bitte je Kalenderjahr separat anlegen.",
+      },
+      { status: 400 }
+    );
+  }
+
   const isAdmin = session.role === Role.ADMIN;
   let targetUserId = session.userId;
 
@@ -488,6 +497,15 @@ export async function PATCH(req: Request) {
   if (newEnd < newStart) {
     return okJson(
       { error: "newEndDate darf nicht vor newStartDate liegen" },
+      { status: 400 }
+    );
+  }
+
+  if (newStart.getUTCFullYear() !== newEnd.getUTCFullYear()) {
+    return okJson(
+      {
+        error: "Jahresübergreifende Abwesenheiten werden aktuell noch nicht unterstützt. Bitte je Kalenderjahr separat bearbeiten.",
+      },
       { status: 400 }
     );
   }

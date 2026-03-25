@@ -17,6 +17,8 @@ type AbsenceRequestItem = {
   dayPortion: AbsenceDayPortion;
   status: RequestStatus;
   compensation: AbsenceCompensation;
+  autoUnpaidBecauseNoBalance: boolean;
+  compensationLockedBySystem: boolean;
   noteEmployee: string;
   createdAt: string;
   updatedAt: string;
@@ -39,6 +41,8 @@ type UserOption = {
 type OverviewUserItem = {
   userId: string;
   fullName: string;
+  accruedVacationDays: number;
+  usedVacationDaysYtd: number;
   remainingVacationDays: number;
 };
 
@@ -52,6 +56,8 @@ type OverviewResponse =
       isAdmin: boolean;
       byUser: OverviewUserItem[];
       totals: {
+        accruedVacationDays: number;
+        usedVacationDaysYtd: number;
         remainingVacationDays: number;
       };
     }
@@ -140,6 +146,8 @@ function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
   const dayPortion = v["dayPortion"];
   const status = v["status"];
   const compensation = v["compensation"];
+  const autoUnpaidBecauseNoBalance = v["autoUnpaidBecauseNoBalance"];
+  const compensationLockedBySystem = v["compensationLockedBySystem"];
   const noteEmployee = getStringField(v, "noteEmployee");
   const createdAt = getStringField(v, "createdAt");
   const updatedAt = getStringField(v, "updatedAt");
@@ -154,6 +162,8 @@ if (
   !isAbsenceType(type) ||
   !isAbsenceDayPortion(dayPortion) ||
   !isAbsenceCompensation(compensation) ||
+  typeof autoUnpaidBecauseNoBalance !== "boolean" ||
+  typeof compensationLockedBySystem !== "boolean" ||
   !isRequestStatus(status) ||
   noteEmployee === null ||
   !createdAt ||
@@ -233,9 +243,17 @@ function isOverviewUserItem(v: unknown): v is OverviewUserItem {
 
   const userId = getStringField(v, "userId");
   const fullName = getStringField(v, "fullName");
+  const accruedVacationDays = getNumberField(v, "accruedVacationDays");
+  const usedVacationDaysYtd = getNumberField(v, "usedVacationDaysYtd");
   const remainingVacationDays = getNumberField(v, "remainingVacationDays");
 
-  return !!userId && !!fullName && remainingVacationDays !== null;
+  return (
+    !!userId &&
+    !!fullName &&
+    accruedVacationDays !== null &&
+    usedVacationDaysYtd !== null &&
+    remainingVacationDays !== null
+  );
 }
 
 function parseOverviewResponse(v: unknown): OverviewResponse {
@@ -270,8 +288,15 @@ function parseOverviewResponse(v: unknown): OverviewResponse {
     return { error: "Unerwartete Antwort." };
   }
 
+  const totalsAccruedVacationDays = getNumberField(totalsRaw, "accruedVacationDays");
+  const totalsUsedVacationDaysYtd = getNumberField(totalsRaw, "usedVacationDaysYtd");
   const totalsRemainingVacationDays = getNumberField(totalsRaw, "remainingVacationDays");
-  if (totalsRemainingVacationDays === null) {
+
+  if (
+    totalsAccruedVacationDays === null ||
+    totalsUsedVacationDaysYtd === null ||
+    totalsRemainingVacationDays === null
+  ) {
     return { error: "Unerwartete Antwort." };
   }
 
@@ -286,6 +311,8 @@ function parseOverviewResponse(v: unknown): OverviewResponse {
     isAdmin,
     byUser,
     totals: {
+      accruedVacationDays: totalsAccruedVacationDays,
+      usedVacationDaysYtd: totalsUsedVacationDaysYtd,
       remainingVacationDays: totalsRemainingVacationDays,
     },
   };
@@ -439,6 +466,8 @@ export default function UrlaubsantraegePage() {
     ];
   }, []);
   const [remainingVacationDays, setRemainingVacationDays] = useState<number>(0);
+  const [accruedVacationDays, setAccruedVacationDays] = useState<number>(0);
+  const [usedVacationDaysYtd, setUsedVacationDaysYtd] = useState<number>(0);
   const [resturlaubLoading, setResturlaubLoading] = useState<boolean>(true);
   const [resturlaubError, setResturlaubError] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -523,12 +552,18 @@ async function loadRemainingVacationKpi() {
         (user) => user.userId === selectedResturlaubUserId
       );
 
+      setAccruedVacationDays(selectedUser?.accruedVacationDays ?? 0);
+      setUsedVacationDaysYtd(selectedUser?.usedVacationDaysYtd ?? 0);
       setRemainingVacationDays(selectedUser?.remainingVacationDays ?? 0);
       return;
     }
 
+    setAccruedVacationDays(parsed.totals.accruedVacationDays);
+    setUsedVacationDaysYtd(parsed.totals.usedVacationDaysYtd);
     setRemainingVacationDays(parsed.totals.remainingVacationDays);
   } catch {
+    setAccruedVacationDays(0);
+    setUsedVacationDaysYtd(0);
     setRemainingVacationDays(0);
     setResturlaubError("Netzwerkfehler beim Laden des Resturlaubs.");
   } finally {
@@ -937,6 +972,23 @@ useEffect(() => {
               {durationText}
             </div>
 
+            {item.type === "VACATION" && item.autoUnpaidBecauseNoBalance ? (
+              <div
+                style={{
+                  marginTop: 8,
+                  padding: "8px 10px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255, 184, 77, 0.28)",
+                  background: "rgba(255, 184, 77, 0.10)",
+                  color: "rgba(255,255,255,0.92)",
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                }}
+              >
+                Dieser Antrag wurde automatisch auf unbezahlt gesetzt, weil zum Zeitpunkt der Antragstellung nicht genug bezahlter Urlaub verfügbar war.
+              </div>
+            ) : null}
+
             <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span
                 style={{
@@ -1093,8 +1145,29 @@ useEffect(() => {
                   <option value="UNPAID">Unbezahlt</option>
                 </select>
               ) : (
-                <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
-                  {compensationLabel(item.compensation)}
+                <div
+                  className="input"
+                  style={{
+                    display: "block",
+                    opacity: 0.9,
+                    paddingTop: 12,
+                    paddingBottom: 12,
+                  }}
+                >
+                  <div>{compensationLabel(item.compensation)}</div>
+
+                  {item.type === "VACATION" && item.autoUnpaidBecauseNoBalance ? (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: 12,
+                        color: "var(--muted)",
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      Automatisch auf unbezahlt gesetzt, weil kein bezahlter Urlaub mehr verfügbar war.
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>
@@ -1271,6 +1344,12 @@ useEffect(() => {
 
             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
               {selectedResturlaubUserLabel}
+            </div>
+
+            <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
+              {resturlaubLoading
+                ? "Urlaubskonto wird geladen…"
+                : `${formatVacationDays(usedVacationDaysYtd)} von ${formatVacationDays(accruedVacationDays)} Tagen verbraucht`}
             </div>
 
             <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>

@@ -31,6 +31,8 @@ function mapRequest(r: {
   dayPortion: AbsenceDayPortion;
   status: AbsenceRequestStatus;
   compensation: AbsenceCompensation;
+  autoUnpaidBecauseNoBalance: boolean;
+  compensationLockedBySystem: boolean;
   noteEmployee: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -52,6 +54,8 @@ function mapRequest(r: {
     dayPortion: r.dayPortion,
     status: r.status,
     compensation: r.compensation,
+    autoUnpaidBecauseNoBalance: r.autoUnpaidBecauseNoBalance,
+    compensationLockedBySystem: r.compensationLockedBySystem,
     noteEmployee: r.noteEmployee ?? "",
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
