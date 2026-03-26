@@ -130,12 +130,20 @@ function getVacationDaysForRange(
     return 0.5;
   }
 
-  const diffMs = endDate.getTime() - startDate.getTime();
-  return Math.floor(diffMs / 86400000) + 1;
+  return buildEffectiveAbsenceDays(
+    startDate,
+    endDate,
+    AbsenceType.VACATION,
+    dayPortion
+  ).length;
 }
 
 function getDayPortionValue(dayPortion: AbsenceDayPortion): number {
   return dayPortion === AbsenceDayPortion.HALF_DAY ? 0.5 : 1;
+}
+
+function getDayPortionUnits(dayPortion: AbsenceDayPortion): number {
+  return dayPortion === AbsenceDayPortion.HALF_DAY ? 1 : 2;
 }
 
 function portionLabel(
@@ -149,6 +157,89 @@ function portionLabel(
   }
   if (startDate === endDate) return startDate;
   return `${startDate} bis ${endDate}`;
+}
+
+function buildVacationAbsenceRowsWithSplit(
+  userId: string,
+  days: Date[],
+  paidUnits: number,
+  unpaidUnits: number
+): Array<{
+  userId: string;
+  absenceDate: Date;
+  type: AbsenceType;
+  dayPortion: AbsenceDayPortion;
+  compensation: AbsenceCompensation;
+}> {
+  const rows: Array<{
+    userId: string;
+    absenceDate: Date;
+    type: AbsenceType;
+    dayPortion: AbsenceDayPortion;
+    compensation: AbsenceCompensation;
+  }> = [];
+
+  let remainingPaidUnits = paidUnits;
+  let remainingUnpaidUnits = unpaidUnits;
+
+  for (const day of days) {
+    if (remainingPaidUnits >= 2) {
+      rows.push({
+        userId,
+        absenceDate: day,
+        type: AbsenceType.VACATION,
+        dayPortion: AbsenceDayPortion.FULL_DAY,
+        compensation: AbsenceCompensation.PAID,
+      });
+      remainingPaidUnits -= 2;
+      continue;
+    }
+
+    if (remainingPaidUnits === 1 && remainingUnpaidUnits >= 1) {
+      rows.push({
+        userId,
+        absenceDate: day,
+        type: AbsenceType.VACATION,
+        dayPortion: AbsenceDayPortion.HALF_DAY,
+        compensation: AbsenceCompensation.PAID,
+      });
+      rows.push({
+        userId,
+        absenceDate: day,
+        type: AbsenceType.VACATION,
+        dayPortion: AbsenceDayPortion.HALF_DAY,
+        compensation: AbsenceCompensation.UNPAID,
+      });
+      remainingPaidUnits -= 1;
+      remainingUnpaidUnits -= 1;
+      continue;
+    }
+
+    if (remainingUnpaidUnits >= 2) {
+      rows.push({
+        userId,
+        absenceDate: day,
+        type: AbsenceType.VACATION,
+        dayPortion: AbsenceDayPortion.FULL_DAY,
+        compensation: AbsenceCompensation.UNPAID,
+      });
+      remainingUnpaidUnits -= 2;
+      continue;
+    }
+
+    if (remainingUnpaidUnits === 1) {
+      rows.push({
+        userId,
+        absenceDate: day,
+        type: AbsenceType.VACATION,
+        dayPortion: AbsenceDayPortion.HALF_DAY,
+        compensation: AbsenceCompensation.UNPAID,
+      });
+      remainingUnpaidUnits -= 1;
+    }
+  }
+
+  return rows;
 }
 
 async function sendPushToUser(
@@ -298,6 +389,8 @@ export async function POST(req: Request, context: RouteContext) {
   let finalCompensation: AbsenceCompensation = isAbsenceCompensation(compensationRaw)
     ? compensationRaw
     : existing.compensation;
+  let finalPaidVacationUnits = existing.paidVacationUnits;
+  let finalUnpaidVacationUnits = existing.unpaidVacationUnits;
 
   if (finalType === AbsenceType.SICK) {
     finalDayPortion = AbsenceDayPortion.FULL_DAY;
@@ -381,7 +474,7 @@ export async function POST(req: Request, context: RouteContext) {
   let nextAutoUnpaidBecauseNoBalance = existing.autoUnpaidBecauseNoBalance;
   let nextCompensationLockedBySystem = existing.compensationLockedBySystem;
 
-  if (finalType === AbsenceType.VACATION && existing.autoUnpaidBecauseNoBalance) {
+  if (finalType === AbsenceType.VACATION) {
     const balanceYear = finalEndDate.getUTCFullYear();
     const yearStart = startOfUtcYear(balanceYear);
     const nextYearStart = startOfNextUtcYear(balanceYear);
@@ -402,12 +495,11 @@ export async function POST(req: Request, context: RouteContext) {
       },
     });
 
-    const pendingPaidVacationRequests = await prisma.absenceRequest.findMany({
+    const pendingVacationRequests = await prisma.absenceRequest.findMany({
       where: {
         userId: existing.userId,
         type: AbsenceType.VACATION,
         status: AbsenceRequestStatus.PENDING,
-        compensation: AbsenceCompensation.PAID,
         id: {
           not: existing.id,
         },
@@ -420,40 +512,51 @@ export async function POST(req: Request, context: RouteContext) {
         },
       },
       select: {
-        startDate: true,
         endDate: true,
-        dayPortion: true,
+        paidVacationUnits: true,
       },
     });
 
-    const accruedDays = getAccruedVacationDaysUntilDate(finalEndDate);
+    const accruedUnits = Math.round(getAccruedVacationDaysUntilDate(finalEndDate) * 2);
 
-    const approvedPaidDays = approvedPaidVacationAbsences.reduce((sum, row) => {
+    const approvedPaidUnits = approvedPaidVacationAbsences.reduce((sum, row) => {
       if (row.absenceDate > finalEndDate) return sum;
-      return sum + getDayPortionValue(row.dayPortion);
+      return sum + getDayPortionUnits(row.dayPortion);
     }, 0);
 
-    const pendingPaidDays = pendingPaidVacationRequests.reduce((sum, row) => {
-      return sum + getVacationDaysForRange(row.startDate, row.endDate, row.dayPortion);
+    const pendingPaidUnits = pendingVacationRequests.reduce((sum, row) => {
+      if (row.endDate > finalEndDate) return sum;
+      return sum + row.paidVacationUnits;
     }, 0);
 
-    const requestedDays = getVacationDaysForRange(
-      finalStartDate,
-      finalEndDate,
-      finalDayPortion
+    const requestedUnits =
+      finalDayPortion === AbsenceDayPortion.HALF_DAY
+        ? 1
+        : buildEffectiveAbsenceDays(
+            finalStartDate,
+            finalEndDate,
+            AbsenceType.VACATION,
+            finalDayPortion
+          ).length * 2;
+
+    const availablePaidUnits = Math.max(
+      0,
+      accruedUnits - approvedPaidUnits - pendingPaidUnits
     );
 
-    const availableDays = Math.max(0, accruedDays - approvedPaidDays - pendingPaidDays);
+    finalPaidVacationUnits = Math.min(availablePaidUnits, requestedUnits);
+    finalUnpaidVacationUnits = Math.max(0, requestedUnits - finalPaidVacationUnits);
 
-    if (availableDays + 1e-9 >= requestedDays) {
-      finalCompensation = AbsenceCompensation.PAID;
-      nextAutoUnpaidBecauseNoBalance = false;
-      nextCompensationLockedBySystem = false;
-    } else {
-      finalCompensation = AbsenceCompensation.UNPAID;
-      nextAutoUnpaidBecauseNoBalance = true;
-      nextCompensationLockedBySystem = false;
-    }
+    finalCompensation =
+      finalPaidVacationUnits > 0
+        ? AbsenceCompensation.PAID
+        : AbsenceCompensation.UNPAID;
+
+    nextAutoUnpaidBecauseNoBalance = finalUnpaidVacationUnits > 0;
+    nextCompensationLockedBySystem = finalUnpaidVacationUnits > 0;
+  } else {
+    finalPaidVacationUnits = 0;
+    finalUnpaidVacationUnits = 0;
   }
 
   const txResult = await prisma.$transaction(async (tx) => {
@@ -465,6 +568,8 @@ export async function POST(req: Request, context: RouteContext) {
         type: finalType,
         dayPortion: finalDayPortion,
         compensation: finalCompensation,
+        paidVacationUnits: finalPaidVacationUnits,
+        unpaidVacationUnits: finalUnpaidVacationUnits,
         autoUnpaidBecauseNoBalance: nextAutoUnpaidBecauseNoBalance,
         compensationLockedBySystem: nextCompensationLockedBySystem,
         status: AbsenceRequestStatus.APPROVED,
@@ -473,14 +578,24 @@ export async function POST(req: Request, context: RouteContext) {
       },
     });
 
+    const absenceRows =
+      finalType === AbsenceType.VACATION
+        ? buildVacationAbsenceRowsWithSplit(
+            existing.userId,
+            days,
+            finalPaidVacationUnits,
+            finalUnpaidVacationUnits
+          )
+        : days.map((day) => ({
+            userId: existing.userId,
+            absenceDate: day,
+            type: finalType,
+            dayPortion: finalDayPortion,
+            compensation: finalCompensation,
+          }));
+
     const createdAbsences = await tx.absence.createMany({
-      data: days.map((day) => ({
-        userId: existing.userId,
-        absenceDate: day,
-        type: finalType,
-        dayPortion: finalDayPortion,
-        compensation: finalCompensation,
-      })),
+      data: absenceRows,
       skipDuplicates: true,
     });
 
@@ -530,6 +645,8 @@ export async function POST(req: Request, context: RouteContext) {
       type: finalType,
       dayPortion: finalDayPortion,
       compensation: finalCompensation,
+      paidVacationUnits: finalPaidVacationUnits,
+      unpaidVacationUnits: finalUnpaidVacationUnits,
       startDate,
       endDate,
     },

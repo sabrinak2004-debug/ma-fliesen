@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import {
-  Absence,
   AbsenceCompensation,
   AbsenceDayPortion,
   AbsenceRequestStatus,
@@ -21,6 +20,8 @@ type UpdateAbsenceRequestBody = {
   type?: unknown;
   dayPortion?: unknown;
   compensation?: unknown;
+  paidVacationUnits?: unknown;
+  unpaidVacationUnits?: unknown;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -29,6 +30,10 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
+}
+
+function getOptionalFiniteNumber(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
 function isYYYYMMDD(v: string): boolean {
@@ -70,6 +75,141 @@ function isAbsenceCompensation(v: string): v is AbsenceCompensation {
   return v === "PAID" || v === "UNPAID";
 }
 
+function isUtcWeekday(date: Date): boolean {
+  const day = date.getUTCDay();
+  return day >= 1 && day <= 5;
+}
+
+function buildEffectiveAbsenceDays(
+  startDate: Date,
+  endDate: Date,
+  type: AbsenceType,
+  dayPortion: AbsenceDayPortion
+): Date[] {
+  if (dayPortion === AbsenceDayPortion.HALF_DAY) {
+    return [new Date(startDate)];
+  }
+
+  const out: Date[] = [];
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    const copy = new Date(current);
+
+    if (type === AbsenceType.VACATION) {
+      if (isUtcWeekday(copy)) {
+        out.push(copy);
+      }
+    } else {
+      out.push(copy);
+    }
+
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  return out;
+}
+
+function getRequestedVacationUnits(
+  startDate: Date,
+  endDate: Date,
+  dayPortion: AbsenceDayPortion
+): number {
+  if (dayPortion === AbsenceDayPortion.HALF_DAY) {
+    return 1;
+  }
+
+  return buildEffectiveAbsenceDays(
+    startDate,
+    endDate,
+    AbsenceType.VACATION,
+    dayPortion
+  ).length * 2;
+}
+
+function buildVacationAbsenceRowsWithSplit(
+  userId: string,
+  days: Date[],
+  paidUnits: number,
+  unpaidUnits: number
+): Array<{
+  userId: string;
+  absenceDate: Date;
+  type: AbsenceType;
+  dayPortion: AbsenceDayPortion;
+  compensation: AbsenceCompensation;
+}> {
+  const rows: Array<{
+    userId: string;
+    absenceDate: Date;
+    type: AbsenceType;
+    dayPortion: AbsenceDayPortion;
+    compensation: AbsenceCompensation;
+  }> = [];
+
+  let remainingPaidUnits = paidUnits;
+  let remainingUnpaidUnits = unpaidUnits;
+
+  for (const day of days) {
+    if (remainingPaidUnits >= 2) {
+      rows.push({
+        userId,
+        absenceDate: day,
+        type: AbsenceType.VACATION,
+        dayPortion: AbsenceDayPortion.FULL_DAY,
+        compensation: AbsenceCompensation.PAID,
+      });
+      remainingPaidUnits -= 2;
+      continue;
+    }
+
+    if (remainingPaidUnits === 1 && remainingUnpaidUnits >= 1) {
+      rows.push({
+        userId,
+        absenceDate: day,
+        type: AbsenceType.VACATION,
+        dayPortion: AbsenceDayPortion.HALF_DAY,
+        compensation: AbsenceCompensation.PAID,
+      });
+      rows.push({
+        userId,
+        absenceDate: day,
+        type: AbsenceType.VACATION,
+        dayPortion: AbsenceDayPortion.HALF_DAY,
+        compensation: AbsenceCompensation.UNPAID,
+      });
+      remainingPaidUnits -= 1;
+      remainingUnpaidUnits -= 1;
+      continue;
+    }
+
+    if (remainingUnpaidUnits >= 2) {
+      rows.push({
+        userId,
+        absenceDate: day,
+        type: AbsenceType.VACATION,
+        dayPortion: AbsenceDayPortion.FULL_DAY,
+        compensation: AbsenceCompensation.UNPAID,
+      });
+      remainingUnpaidUnits -= 2;
+      continue;
+    }
+
+    if (remainingUnpaidUnits === 1) {
+      rows.push({
+        userId,
+        absenceDate: day,
+        type: AbsenceType.VACATION,
+        dayPortion: AbsenceDayPortion.HALF_DAY,
+        compensation: AbsenceCompensation.UNPAID,
+      });
+      remainingUnpaidUnits -= 1;
+    }
+  }
+
+  return rows;
+}
+
 export async function PATCH(req: Request, context: RouteContext) {
   const admin = await requireAdmin();
   if (!admin) {
@@ -97,6 +237,8 @@ export async function PATCH(req: Request, context: RouteContext) {
   const typeRaw = getString(body.type).trim();
   const dayPortionRaw = getString(body.dayPortion).trim();
   const compensationRaw = getString(body.compensation).trim();
+  const paidVacationUnitsRaw = getOptionalFiniteNumber(body.paidVacationUnits);
+  const unpaidVacationUnitsRaw = getOptionalFiniteNumber(body.unpaidVacationUnits);
 
   if (
     !isYYYYMMDD(startDateRaw) ||
@@ -142,9 +284,12 @@ export async function PATCH(req: Request, context: RouteContext) {
     );
   }
 
-  if (dayPortionRaw === "HALF_DAY" && startDateRaw !== endDateRaw) {
+  if (startDate.getUTCFullYear() !== endDate.getUTCFullYear()) {
     return NextResponse.json(
-      { ok: false, error: "Ein halber Urlaubstag darf nur für genau ein Datum bestehen." },
+      {
+        ok: false,
+        error: "Jahresübergreifende Abwesenheiten werden aktuell noch nicht unterstützt.",
+      },
       { status: 400 }
     );
   }
@@ -153,7 +298,15 @@ export async function PATCH(req: Request, context: RouteContext) {
     where: { id: requestId },
     select: {
       id: true,
+      userId: true,
       status: true,
+      type: true,
+      startDate: true,
+      endDate: true,
+      dayPortion: true,
+      compensation: true,
+      paidVacationUnits: true,
+      unpaidVacationUnits: true,
       user: {
         select: {
           companyId: true,
@@ -186,6 +339,41 @@ export async function PATCH(req: Request, context: RouteContext) {
     );
   }
 
+  const requestedVacationUnits =
+    typeRaw === AbsenceType.VACATION
+      ? getRequestedVacationUnits(startDate, endDate, dayPortionRaw)
+      : 0;
+
+  const nextPaidVacationUnits =
+    typeRaw === AbsenceType.VACATION
+      ? paidVacationUnitsRaw !== null || unpaidVacationUnitsRaw !== null
+        ? paidVacationUnitsRaw ?? 0
+        : compensationRaw === AbsenceCompensation.PAID
+          ? requestedVacationUnits
+          : 0
+      : 0;
+
+  const nextUnpaidVacationUnits =
+    typeRaw === AbsenceType.VACATION
+      ? paidVacationUnitsRaw !== null || unpaidVacationUnitsRaw !== null
+        ? unpaidVacationUnitsRaw ?? 0
+        : compensationRaw === AbsenceCompensation.UNPAID
+          ? requestedVacationUnits
+          : 0
+      : 0;
+  if (
+    typeRaw === AbsenceType.VACATION &&
+    nextPaidVacationUnits + nextUnpaidVacationUnits !== requestedVacationUnits
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Die Aufteilung in bezahlte und unbezahlte Urlaubseinheiten passt nicht zum Zeitraum.",
+      },
+      { status: 400 }
+    );
+  }
+
   const updated = await prisma.absenceRequest.update({
     where: { id: requestId },
     data: {
@@ -194,6 +382,10 @@ export async function PATCH(req: Request, context: RouteContext) {
       type: typeRaw,
       dayPortion: dayPortionRaw,
       compensation: compensationRaw,
+      paidVacationUnits: nextPaidVacationUnits,
+      unpaidVacationUnits: nextUnpaidVacationUnits,
+      autoUnpaidBecauseNoBalance: false,
+      compensationLockedBySystem: false,
       updatedAt: new Date(),
     },
   });
@@ -237,6 +429,8 @@ export async function DELETE(_req: Request, context: RouteContext) {
       type: true,
       dayPortion: true,
       compensation: true,
+      paidVacationUnits: true,
+      unpaidVacationUnits: true,
       user: {
         select: {
           companyId: true,
@@ -261,26 +455,34 @@ export async function DELETE(_req: Request, context: RouteContext) {
 
   await prisma.$transaction(async (tx) => {
     if (existing.status === AbsenceRequestStatus.APPROVED) {
-      const dates = eachDateInclusive(existing.startDate, existing.endDate);
+      if (existing.type === AbsenceType.VACATION) {
+        const days = buildEffectiveAbsenceDays(
+          existing.startDate,
+          existing.endDate,
+          existing.type,
+          existing.dayPortion
+        );
 
-      if (existing.dayPortion === "HALF_DAY") {
-        await tx.absence.deleteMany({
-          where: {
-            userId: existing.userId,
-            user: {
-              companyId: admin.companyId,
+        const absenceRows = buildVacationAbsenceRowsWithSplit(
+          existing.userId,
+          days,
+          existing.paidVacationUnits,
+          existing.unpaidVacationUnits
+        );
+
+        for (const row of absenceRows) {
+          await tx.absence.deleteMany({
+            where: {
+              userId: row.userId,
+              type: row.type,
+              dayPortion: row.dayPortion,
+              compensation: row.compensation,
+              absenceDate: row.absenceDate,
             },
-            type: existing.type,
-            dayPortion: existing.dayPortion,
-            compensation: existing.compensation,
-            absenceDate: {
-              in: dates,
-            },
-          },
-        });
+          });
+        }
       } else {
-        const absenceFilters: Absence[] | [] = [];
-        void absenceFilters;
+        const dates = eachDateInclusive(existing.startDate, existing.endDate);
 
         await tx.absence.deleteMany({
           where: {

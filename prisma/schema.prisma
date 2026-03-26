@@ -274,7 +274,7 @@ model Absence {
 
   createdAt DateTime @default(now())
 
-  @@unique([userId, absenceDate])
+  @@unique([userId, absenceDate, type, dayPortion, compensation])
   @@index([userId, absenceDate])
 }
 
@@ -289,6 +289,9 @@ model AbsenceRequest {
   dayPortion   AbsenceDayPortion    @default(FULL_DAY)
   status       AbsenceRequestStatus @default(PENDING)
   compensation AbsenceCompensation  @default(PAID)
+  
+  paidVacationUnits   Int @default(0)
+  unpaidVacationUnits Int @default(0)
 
   autoUnpaidBecauseNoBalance Boolean @default(false)
   compensationLockedBySystem Boolean @default(false)
