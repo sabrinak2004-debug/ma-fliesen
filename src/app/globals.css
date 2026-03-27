@@ -403,11 +403,18 @@ body {
 
 @media (max-width: 768px) {
   .card-action-group {
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 12px;
+    width: 100%;
   }
 
   .card-action-group > .btn {
-    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+    box-sizing: border-box;
   }
 }
 

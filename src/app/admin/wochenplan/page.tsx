@@ -340,6 +340,7 @@ function Modal({
               display: "flex",
               justifyContent: "space-between",
               gap: 8,
+              flexWrap: "wrap",
             }}
           >
             {footer}
@@ -958,22 +959,98 @@ export default function AdminWochenplanPage() {
       <div
         style={{
           display: "flex",
+          flexDirection: isDesktop ? "row" : "column",
           justifyContent: "space-between",
-          alignItems: "flex-start",
+          alignItems: isDesktop ? "flex-start" : "stretch",
           gap: 14,
           marginBottom: 14,
           color: UI.text,
         }}
       >
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 22, fontWeight: 900 }}>Wochenplanung</div>
           <div style={{ marginTop: 4 }}>
             <div style={{ fontSize: 18, fontWeight: 800 }}>KW {weekLabel.kw}</div>
             <div style={{ color: UI.muted, fontSize: 13 }}>{weekLabel.dateRange}</div>
           </div>
+
+          <div
+            style={{
+              display: isDesktop ? "none" : "grid",
+              gridTemplateColumns: "1fr",
+              gap: 8,
+              marginTop: 12,
+              width: "100%",
+            }}
+          >
+            <Link
+              href="/admin/appointments"
+              className="pill"
+              style={{
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ⟵ Termine
+            </Link>
+
+            <button
+              className="pill"
+              onClick={() =>
+                setWeekStart((w) => {
+                  const d = new Date(w);
+                  d.setDate(d.getDate() - 7);
+                  return d;
+                })
+              }
+              style={{ justifyContent: "center" }}
+            >
+              ← Woche
+            </button>
+
+            <input
+              type="date"
+              value={fmtYMD(weekStart)}
+              onChange={(e) => setWeekStart(startOfWeek(new Date(e.target.value)))}
+              style={{
+                width: "100%",
+                minWidth: 0,
+                boxSizing: "border-box",
+                padding: "10px 12px",
+                border: `1px solid ${UI.cellBorder}`,
+                borderRadius: 10,
+                background: "rgba(0,0,0,0.25)",
+                color: UI.text,
+              }}
+            />
+
+            <button
+              className="pill"
+              onClick={() =>
+                setWeekStart((w) => {
+                  const d = new Date(w);
+                  d.setDate(d.getDate() + 7);
+                  return d;
+                })
+              }
+              style={{ justifyContent: "center" }}
+            >
+              Woche →
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <div
+          style={{
+            display: isDesktop ? "flex" : "none",
+            gap: 8,
+            alignItems: "center",
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+          }}
+        >
           <Link
             href="/admin/appointments"
             className="pill"
@@ -1448,8 +1525,17 @@ export default function AdminWochenplanPage() {
           </>
         }
       >
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: isDesktop ? 12 : 10,
+            width: "100%",
+            minWidth: 0,
+            alignItems: "start",
+          }}
+        >
+          <div style={{ minWidth: 0, width: "100%" }}>
             <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datum</div>
             <input
               type="date"
@@ -1457,27 +1543,39 @@ export default function AdminWochenplanPage() {
               onChange={(e) => setEntryForm((p) => ({ ...p, dateYMD: e.target.value }))}
               style={{
                 width: "100%",
-                padding: "10px 12px",
+                minWidth: 0,
+                maxWidth: "100%",
+                boxSizing: "border-box",
+                display: "block",
+                padding: isDesktop ? "10px 12px" : "10px 10px",
                 border: `1px solid ${UI.cellBorder}`,
                 borderRadius: 10,
                 background: "rgba(0,0,0,0.25)",
                 color: UI.text,
+                appearance: "none",
+                WebkitAppearance: "none",
               }}
             />
           </div>
 
-          <div>
+          <div style={{ minWidth: 0, width: "100%" }}>
             <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Mitarbeiter</div>
             <select
               value={entryForm.userId}
               onChange={(e) => setEntryForm((p) => ({ ...p, userId: e.target.value }))}
               style={{
                 width: "100%",
-                padding: "10px 12px",
+                minWidth: 0,
+                maxWidth: "100%",
+                boxSizing: "border-box",
+                display: "block",
+                padding: isDesktop ? "10px 12px" : "10px 10px",
                 border: `1px solid ${UI.cellBorder}`,
                 borderRadius: 10,
                 background: "rgba(0,0,0,0.25)",
                 color: UI.text,
+                appearance: "none",
+                WebkitAppearance: "none",
               }}
             >
               {users.map((u) => (
@@ -1488,7 +1586,7 @@ export default function AdminWochenplanPage() {
             </select>
           </div>
 
-          <div>
+          <div style={{ minWidth: 0, width: "100%" }}>
             <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Start</div>
             <input
               type="time"
@@ -1496,16 +1594,22 @@ export default function AdminWochenplanPage() {
               onChange={(e) => setEntryForm((p) => ({ ...p, startHHMM: e.target.value }))}
               style={{
                 width: "100%",
-                padding: "10px 12px",
+                minWidth: 0,
+                maxWidth: "100%",
+                boxSizing: "border-box",
+                display: "block",
+                padding: isDesktop ? "10px 12px" : "10px 8px",
                 border: `1px solid ${UI.cellBorder}`,
                 borderRadius: 10,
                 background: "rgba(0,0,0,0.25)",
                 color: UI.text,
+                appearance: "none",
+                WebkitAppearance: "none",
               }}
             />
           </div>
 
-          <div>
+          <div style={{ minWidth: 0, width: "100%" }}>
             <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Ende</div>
             <input
               type="time"
@@ -1513,11 +1617,17 @@ export default function AdminWochenplanPage() {
               onChange={(e) => setEntryForm((p) => ({ ...p, endHHMM: e.target.value }))}
               style={{
                 width: "100%",
-                padding: "10px 12px",
+                minWidth: 0,
+                maxWidth: "100%",
+                boxSizing: "border-box",
+                display: "block",
+                padding: isDesktop ? "10px 12px" : "10px 8px",
                 border: `1px solid ${UI.cellBorder}`,
                 borderRadius: 10,
                 background: "rgba(0,0,0,0.25)",
                 color: UI.text,
+                appearance: "none",
+                WebkitAppearance: "none",
               }}
             />
           </div>
@@ -1807,6 +1917,7 @@ export default function AdminWochenplanPage() {
             ) : (
               <div />
             )}
+
             <div style={{ display: "flex", gap: 8 }}>
               <button className="pill" onClick={closeNoteModal} disabled={savingNote || deletingNote}>
                 Schließen
@@ -1819,8 +1930,17 @@ export default function AdminWochenplanPage() {
         }
       >
         <div style={{ display: "grid", gap: 10 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: isDesktop ? 12 : 10,
+              width: "100%",
+              minWidth: 0,
+              alignItems: "start",
+            }}
+          >
+            <div style={{ minWidth: 0, width: "100%" }}>
               <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datum</div>
               <input
                 type="date"
@@ -1828,27 +1948,39 @@ export default function AdminWochenplanPage() {
                 onChange={(e) => setNoteForm((p) => ({ ...p, dateYMD: e.target.value }))}
                 style={{
                   width: "100%",
-                  padding: "10px 12px",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  boxSizing: "border-box",
+                  display: "block",
+                  padding: isDesktop ? "10px 12px" : "10px 10px",
                   border: `1px solid ${UI.cellBorder}`,
                   borderRadius: 10,
                   background: "rgba(0,0,0,0.25)",
                   color: UI.text,
+                  appearance: "none",
+                  WebkitAppearance: "none",
                 }}
               />
             </div>
 
-            <div>
+            <div style={{ minWidth: 0, width: "100%" }}>
               <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Mitarbeiter</div>
               <select
                 value={noteForm.userId}
                 onChange={(e) => setNoteForm((p) => ({ ...p, userId: e.target.value }))}
                 style={{
                   width: "100%",
-                  padding: "10px 12px",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  boxSizing: "border-box",
+                  display: "block",
+                  padding: isDesktop ? "10px 12px" : "10px 10px",
                   border: `1px solid ${UI.cellBorder}`,
                   borderRadius: 10,
                   background: "rgba(0,0,0,0.25)",
                   color: UI.text,
+                  appearance: "none",
+                  WebkitAppearance: "none",
                 }}
               >
                 {users.map((u) => (
@@ -1861,13 +1993,16 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div>
-            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Interne Admin-Notiz (nur für Admin)</div>
+            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>
+              Interne Admin-Notiz (nur für Admin)
+            </div>
             <textarea
               value={noteForm.note}
               onChange={(e) => setNoteForm((p) => ({ ...p, note: e.target.value }))}
               rows={10}
               style={{
                 width: "100%",
+                boxSizing: "border-box",
                 padding: "10px 12px",
                 border: `1px solid ${UI.cellBorder}`,
                 borderRadius: 10,

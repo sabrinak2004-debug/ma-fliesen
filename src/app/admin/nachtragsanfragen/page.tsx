@@ -669,12 +669,14 @@ export default function NachtragsanfragenPage() {
         </div>
 
         <div
+          className="mobile-actions card-action-group"
           style={{
             marginTop: 14,
             display: "flex",
-            gap: 10,
+            gap: 12,
             justifyContent: "flex-end",
             flexWrap: "wrap",
+            width: "100%",
           }}
         >
           <button
@@ -683,6 +685,10 @@ export default function NachtragsanfragenPage() {
             disabled={isBusy}
             onClick={() => {
               void deleteRequest(item.id);
+            }}
+            style={{
+              flex: "1 1 200px",
+              minWidth: 0,
             }}
           >
             {isBusy ? "Löscht..." : "Löschen"}
@@ -697,6 +703,10 @@ export default function NachtragsanfragenPage() {
                 onClick={() => {
                   void rejectRequest(item.id);
                 }}
+                style={{
+                  flex: "1 1 200px",
+                  minWidth: 0,
+                }}
               >
                 {isBusy ? "Verarbeitet..." : "Ablehnen"}
               </button>
@@ -707,6 +717,10 @@ export default function NachtragsanfragenPage() {
                 disabled={isBusy}
                 onClick={() => {
                   void approveRequest(item.id);
+                }}
+                style={{
+                  flex: "1 1 200px",
+                  minWidth: 0,
                 }}
               >
                 {isBusy ? "Verarbeitet..." : "Genehmigen"}

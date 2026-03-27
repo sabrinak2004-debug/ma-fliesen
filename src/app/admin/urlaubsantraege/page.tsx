@@ -1386,12 +1386,14 @@ useEffect(() => {
         </div>
 
         <div
+          className="mobile-actions card-action-group"
           style={{
             marginTop: 14,
             display: "flex",
-            gap: 10,
+            gap: 12,
             justifyContent: "flex-end",
             flexWrap: "wrap",
+            width: "100%",
           }}
         >
           {isEditing ? (
@@ -1401,6 +1403,10 @@ useEffect(() => {
                 type="button"
                 disabled={isBusy}
                 onClick={cancelEditing}
+                style={{
+                  flex: "1 1 200px",
+                  minWidth: 0,
+                }}
               >
                 Abbrechen
               </button>
@@ -1411,6 +1417,10 @@ useEffect(() => {
                 disabled={isBusy}
                 onClick={() => {
                   void deleteRequest(item.id);
+                }}
+                style={{
+                  flex: "1 1 200px",
+                  minWidth: 0,
                 }}
               >
                 {isDeleting ? "Löscht..." : "Löschen"}
@@ -1425,6 +1435,10 @@ useEffect(() => {
                     onClick={() => {
                       void rejectRequest(item.id);
                     }}
+                    style={{
+                      flex: "1 1 200px",
+                      minWidth: 0,
+                    }}
                   >
                     {isRejecting ? "Verarbeitet..." : "Ablehnen"}
                   </button>
@@ -1435,6 +1449,10 @@ useEffect(() => {
                     disabled={isBusy}
                     onClick={() => {
                       void approveRequest(item.id);
+                    }}
+                    style={{
+                      flex: "1 1 200px",
+                      minWidth: 0,
                     }}
                   >
                     {isApproving ? "Verarbeitet..." : "Korrigieren & genehmigen"}
@@ -1447,6 +1465,10 @@ useEffect(() => {
                   disabled={isBusy}
                   onClick={() => {
                     void saveApprovedChange(item.id);
+                  }}
+                  style={{
+                    flex: "1 1 200px",
+                    minWidth: 0,
                   }}
                 >
                   {isSaving ? "Speichert..." : "Änderungen speichern"}
@@ -1461,6 +1483,10 @@ useEffect(() => {
                   type="button"
                   disabled={isBusy}
                   onClick={() => startEditing(item)}
+                  style={{
+                    flex: "1 1 200px",
+                    minWidth: 0,
+                  }}
                 >
                   Bearbeiten
                 </button>
@@ -1472,6 +1498,10 @@ useEffect(() => {
                 disabled={isBusy}
                 onClick={() => {
                   void deleteRequest(item.id);
+                }}
+                style={{
+                  flex: "1 1 200px",
+                  minWidth: 0,
                 }}
               >
                 {isDeleting ? "Löscht..." : "Löschen"}
@@ -1486,6 +1516,10 @@ useEffect(() => {
                     onClick={() => {
                       void rejectRequest(item.id);
                     }}
+                    style={{
+                      flex: "1 1 200px",
+                      minWidth: 0,
+                    }}
                   >
                     {isRejecting ? "Verarbeitet..." : "Ablehnen"}
                   </button>
@@ -1496,6 +1530,10 @@ useEffect(() => {
                     disabled={isBusy}
                     onClick={() => {
                       void approveRequest(item.id);
+                    }}
+                    style={{
+                      flex: "1 1 200px",
+                      minWidth: 0,
                     }}
                   >
                     {isApproving ? "Verarbeitet..." : "Genehmigen"}
