@@ -767,6 +767,39 @@ function getAbsenceCompensationSummary(absences: AbsenceDTO[]): string | null {
   return getRequestCompensationSummary(paidUnits, unpaidUnits, "PAID");
 }
 
+function getAbsenceCompensationBreakdown(absences: AbsenceDTO[]): string | null {
+  const vacationAbsences = absences.filter((a) => a.type === "VACATION");
+
+  if (vacationAbsences.length === 0) {
+    return null;
+  }
+
+  const paidUnits = vacationAbsences.reduce((sum, a) => {
+    return sum + (a.compensation === "PAID" ? (a.dayPortion === "HALF_DAY" ? 1 : 2) : 0);
+  }, 0);
+
+  const unpaidUnits = vacationAbsences.reduce((sum, a) => {
+    return sum + (a.compensation === "UNPAID" ? (a.dayPortion === "HALF_DAY" ? 1 : 2) : 0);
+  }, 0);
+
+  const paidDays = paidUnits / 2;
+  const unpaidDays = unpaidUnits / 2;
+
+  if (paidDays > 0 && unpaidDays > 0) {
+    return `${formatVacationDays(paidDays)} Tage bezahlt · ${formatVacationDays(unpaidDays)} Tage unbezahlt`;
+  }
+
+  if (paidDays > 0) {
+    return `${formatVacationDays(paidDays)} Tage bezahlt`;
+  }
+
+  if (unpaidDays > 0) {
+    return `${formatVacationDays(unpaidDays)} Tage unbezahlt`;
+  }
+
+  return null;
+}
+
 function requestBlockLabel(b: AbsenceRequestBlock): string {
   const icon = b.type === "VACATION" ? "🌴" : "🤒";
 
@@ -2764,34 +2797,39 @@ function KalenderPageInner({
               <div style={{ marginTop: 14 }}>
                 <div className="label">Bestätigte Abwesenheit</div>
 
-                {blocksForSelectedDay.length === 0 ? (
+                {confirmedAbsencesForSelectedDay.length === 0 ? (
                   <div className="card" style={{ padding: 12, opacity: 0.85 }}>
                     Keine bestätigte Abwesenheit eingetragen.
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {blocksForSelectedDay.map((b) => {
-                      const matchingAbsences = confirmedAbsencesForSelectedDay.filter((a) => {
-                        if (a.type !== b.type) return false;
-                        if (a.dayPortion !== b.dayPortion) return false;
-                        return dateInRange(a.absenceDate, b.start, b.end);
-                      });
+                    {confirmedAbsencesForSelectedDay.some((a) => a.type === "VACATION") ? (
+                      <div className="card" style={{ padding: 12 }}>
+                        <div style={{ fontWeight: 900 }}>🌴 Urlaub ({selectedDate})</div>
+                        <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                          Bereits vom Admin bestätigt und im Kalender registriert.
+                        </div>
 
-                      return (
-                        <div key={`${b.type}-${b.dayPortion}-${b.start}-${b.end}`} className="card" style={{ padding: 12 }}>
-                          <div style={{ fontWeight: 900 }}>{blockLabel(b)}</div>
+                        {getAbsenceCompensationBreakdown(confirmedAbsencesForSelectedDay) ? (
+                          <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                            Vergütung: {getAbsenceCompensationBreakdown(confirmedAbsencesForSelectedDay)}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {confirmedAbsencesForSelectedDay
+                      .filter((a) => a.type === "SICK")
+                      .map((a) => (
+                        <div key={a.id} className="card" style={{ padding: 12 }}>
+                          <div style={{ fontWeight: 900 }}>
+                            🤒 Krank ({a.dayPortion === "HALF_DAY" ? "0,5 Tag" : "1 Tag"})
+                          </div>
                           <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
                             Bereits vom Admin bestätigt und im Kalender registriert.
                           </div>
-
-                          {b.type === "VACATION" && getAbsenceCompensationSummary(matchingAbsences) ? (
-                            <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                              Vergütung: {getAbsenceCompensationSummary(matchingAbsences)}
-                            </div>
-                          ) : null}
                         </div>
-                      );
-                    })}
+                      ))}
                   </div>
                 )}
               </div>
@@ -2819,20 +2857,19 @@ function KalenderPageInner({
                           </div>
                         ) : null}
                         {b.type === "VACATION" ? (
-                          <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                            Vergütung: {getRequestCompensationSummary(
-                              b.paidVacationUnits,
-                              b.unpaidVacationUnits,
-                              b.compensation
-                            )}
-                          </div>
-                        ) : null}
+                          <>
+                            <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                              Gesamt: {formatVacationDays((b.paidVacationUnits + b.unpaidVacationUnits) / 2)} Tage
+                            </div>
 
-                        {b.type === "VACATION" &&
-                        getRequestCompensationHint(b.paidVacationUnits, b.unpaidVacationUnits) ? (
-                          <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                            {getRequestCompensationHint(b.paidVacationUnits, b.unpaidVacationUnits)}
-                          </div>
+                            <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                              Vergütung: {getRequestCompensationSummary(
+                                b.paidVacationUnits,
+                                b.unpaidVacationUnits,
+                                b.compensation
+                              )}
+                            </div>
+                          </>
                         ) : null}
 
                         {b.noteEmployee.trim() ? (
@@ -3001,24 +3038,18 @@ function KalenderPageInner({
                     }}
                   >
                     <div>
+                      Gesamt: {formatVacationDays(
+                        (selectedRequestBlock.paidVacationUnits + selectedRequestBlock.unpaidVacationUnits) / 2
+                      )} Tage
+                    </div>
+
+                    <div style={{ marginTop: 6, color: "var(--muted)" }}>
                       {getRequestCompensationSummary(
                         selectedRequestBlock.paidVacationUnits,
                         selectedRequestBlock.unpaidVacationUnits,
                         selectedRequestBlock.compensation
                       )}
                     </div>
-
-                    {getRequestCompensationHint(
-                      selectedRequestBlock.paidVacationUnits,
-                      selectedRequestBlock.unpaidVacationUnits
-                    ) ? (
-                      <div style={{ marginTop: 6, color: "var(--muted)" }}>
-                        {getRequestCompensationHint(
-                          selectedRequestBlock.paidVacationUnits,
-                          selectedRequestBlock.unpaidVacationUnits
-                        )}
-                      </div>
-                    ) : null}
                   </div>
                 ) : (
                   <div className="calendar-form-grid-2">

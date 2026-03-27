@@ -430,6 +430,29 @@ function mixedCompensationHint(item: AbsenceRequestItem): string | null {
   return null;
 }
 
+function totalRequestedVacationDays(item: AbsenceRequestItem): number {
+  return (item.paidVacationUnits + item.unpaidVacationUnits) / 2;
+}
+
+function compensationBreakdownLabel(item: AbsenceRequestItem): string | null {
+  const paidDays = item.paidVacationUnits / 2;
+  const unpaidDays = item.unpaidVacationUnits / 2;
+
+  if (paidDays > 0 && unpaidDays > 0) {
+    return `${formatVacationDays(paidDays)} Tage davon bezahlt · ${formatVacationDays(unpaidDays)} Tage davon unbezahlt`;
+  }
+
+  if (paidDays > 0) {
+    return `${formatVacationDays(paidDays)} Tage davon bezahlt`;
+  }
+
+  if (unpaidDays > 0) {
+    return `${formatVacationDays(unpaidDays)} Tage davon unbezahlt`;
+  }
+
+  return null;
+}
+
 function getEditedRequestedVacationUnits(
   startDate: string,
   endDate: string,
@@ -1092,11 +1115,11 @@ useEffect(() => {
     const isEditing = editingItemId === item.id;
     const isMixedCompensation =
       item.paidVacationUnits > 0 && item.unpaidVacationUnits > 0;
-    const requestedDays = getRequestedVacationDays(item);
+    const requestedDays = totalRequestedVacationDays(item);
     const durationText =
       item.dayPortion === "HALF_DAY"
-        ? `🌴 Urlaub · ${formatDateDE(item.startDate)} · 0,5 Tag · ${compensationSummaryLabel(item)}`
-        : `🌴 Urlaub · ${rangeLabel(item.startDate, item.endDate)} · ${formatVacationDays(requestedDays)} ${requestedDays === 1 ? "Tag" : "Tage"} · ${compensationSummaryLabel(item)}`;
+        ? `🌴 Urlaub · ${formatDateDE(item.startDate)} · 0,5 Tag`
+        : `🌴 Urlaub · ${rangeLabel(item.startDate, item.endDate)} · ${formatVacationDays(requestedDays)} ${requestedDays === 1 ? "Tag" : "Tage"}`;
 
     return (
       <div
@@ -1126,6 +1149,12 @@ useEffect(() => {
               {durationText}
             </div>
 
+            {item.type === "VACATION" ? (
+              <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13, lineHeight: 1.45 }}>
+                {compensationBreakdownLabel(item) ?? compensationSummaryLabel(item)}
+              </div>
+            ) : null}            
+
             {item.type === "VACATION" && item.autoUnpaidBecauseNoBalance ? (
               <div
                 style={{
@@ -1140,8 +1169,8 @@ useEffect(() => {
                 }}
               >
                 {mixedCompensationHint(item)
-                  ? `Dieser Antrag wurde automatisch aufgeteilt, weil zum Zeitpunkt der Antragstellung nicht genug bezahlter Urlaub verfügbar war. ${mixedCompensationHint(item)}`
-                  : "Dieser Antrag wurde automatisch auf unbezahlt gesetzt, weil zum Zeitpunkt der Antragstellung nicht genug bezahlter Urlaub verfügbar war."}
+                  ? `Für diesen Antrag ist aktuell eine gemischte Vergütung vorgesehen. ${mixedCompensationHint(item)}`
+                  : "Für diesen Antrag ist aktuell unbezahler Urlaub vorgesehen, weil nicht genug bezahlter Urlaub verfügbar war."}
               </div>
             ) : null}
 
@@ -1310,9 +1339,11 @@ useEffect(() => {
                     paddingBottom: 12,
                   }}
                 >
-                  <div>{compensationSummaryLabel(item)}</div>
+                  <div>
+                    {formatVacationDays(totalRequestedVacationDays(item))} {totalRequestedVacationDays(item) === 1 ? "Tag" : "Tage"} gesamt
+                  </div>
 
-                  {mixedCompensationHint(item) ? (
+                  {compensationBreakdownLabel(item) ? (
                     <div
                       style={{
                         marginTop: 6,
@@ -1321,41 +1352,13 @@ useEffect(() => {
                         lineHeight: 1.4,
                       }}
                     >
-                      {mixedCompensationHint(item)}
-                    </div>
-                  ) : item.type === "VACATION" && item.autoUnpaidBecauseNoBalance ? (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: 12,
-                        color: "var(--muted)",
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      Automatisch auf unbezahlt gesetzt, weil kein bezahlter Urlaub mehr verfügbar war.
+                      {compensationBreakdownLabel(item)}
                     </div>
                   ) : null}
                 </div>
               )}
             </div>
           </div>
-
-          {item.status === "APPROVED" && isMixedCompensation ? (
-            <div
-              style={{
-                marginTop: 2,
-                padding: "8px 10px",
-                borderRadius: 12,
-                border: "1px solid rgba(255, 184, 77, 0.28)",
-                background: "rgba(255, 184, 77, 0.10)",
-                color: "rgba(255,255,255,0.92)",
-                fontSize: 12,
-                lineHeight: 1.4,
-              }}
-            >
-              Bereits genehmigte Anträge mit gemischter Vergütung bitte aktuell löschen und mit den gewünschten Daten neu anlegen, damit die Aufteilung sauber erhalten bleibt.
-            </div>
-          ) : null}
 
           <div>
             <div className="label">Mitarbeiter-Notiz</div>
@@ -1456,13 +1459,8 @@ useEffect(() => {
                 <button
                   className="btn"
                   type="button"
-                  disabled={isBusy || (item.status === "APPROVED" && isMixedCompensation)}
+                  disabled={isBusy}
                   onClick={() => startEditing(item)}
-                  title={
-                    item.status === "APPROVED" && isMixedCompensation
-                      ? "Gemischt bezahlte und unbezahlte genehmigte Urlaubsanträge bitte aktuell löschen und neu anlegen."
-                      : undefined
-                  }
                 >
                   Bearbeiten
                 </button>
