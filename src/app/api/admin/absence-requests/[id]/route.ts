@@ -284,6 +284,26 @@ export async function PATCH(req: Request, context: RouteContext) {
     );
   }
 
+  if (
+    paidVacationUnitsRaw !== null &&
+    (!Number.isInteger(paidVacationUnitsRaw) || paidVacationUnitsRaw < 0)
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "paidVacationUnits ist ungültig." },
+      { status: 400 }
+    );
+  }
+
+  if (
+    unpaidVacationUnitsRaw !== null &&
+    (!Number.isInteger(unpaidVacationUnitsRaw) || unpaidVacationUnitsRaw < 0)
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "unpaidVacationUnits ist ungültig." },
+      { status: 400 }
+    );
+  }
+
   if (startDate.getUTCFullYear() !== endDate.getUTCFullYear()) {
     return NextResponse.json(
       {
