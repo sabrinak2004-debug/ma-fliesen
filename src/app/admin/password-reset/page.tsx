@@ -70,7 +70,7 @@ export default function AdminPasswordResetPage() {
 
       setResetUrl(data.resetUrl);
       const expiresLabel = new Date(data.expiresAt).toLocaleString("de-DE");
-      setResetInfo(`Gültig bis: ${expiresLabel}`);
+      setResetInfo(`Einmalig nutzbar. Spätestens gültig bis: ${expiresLabel}`);
       setModalOpen(true);
 
       // danach Liste aktualisieren (damit Requests ggf. verschwinden, wenn du sie bei reset schließen willst)
@@ -199,7 +199,7 @@ export default function AdminPasswordResetPage() {
               {resetUrl}
             </div>
             <div style={{ opacity: 0.8, fontSize: 13 }}>
-              Hinweis: Link ist einmalig. Danach ist er ungültig.
+              Hinweis: Der Link kann nur einmal verwendet werden und wird nach erfolgreicher Nutzung sofort ungültig. Ohne Nutzung läuft er spätestens zum angegebenen Zeitpunkt ab.
             </div>
           </div>
         </Modal>
