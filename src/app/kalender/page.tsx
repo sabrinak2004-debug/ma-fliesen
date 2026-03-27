@@ -2522,18 +2522,24 @@ function KalenderPageInner({
             </div>
 
             {adminMode === "create-global" || adminMode === "edit" ? (
-              <div style={{ marginBottom: 10 }}>
+              <div className="calendar-admin-date-field">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Datum
                 </div>
-                <input className="input" type="date" value={apptDate} onChange={(e) => setApptDate(e.target.value)} />
+                <input
+                  className="input calendar-admin-date-input"
+                  type="date"
+                  value={apptDate}
+                  onChange={(e) => setApptDate(e.target.value)}
+                />
               </div>
             ) : (
-              <div style={{ marginBottom: 10 }}>
+              <div className="calendar-admin-date-field">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Datum
                 </div>
                 <div
+                  className="calendar-admin-date-display"
                   style={{
                     padding: "10px 12px",
                     borderRadius: 12,
@@ -2547,37 +2553,37 @@ function KalenderPageInner({
               </div>
             )}
 
-            <div className="calendar-form-grid-2 admin-time-grid-mobile-fix" style={{ marginBottom: 10 }}>
-              <div className="admin-time-grid-item">
+            <div className="calendar-admin-time-grid" style={{ marginBottom: 10 }}>
+              <div className="calendar-admin-time-item">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Start
                 </div>
                 <input
-                  className="input"
+                  className="input calendar-admin-time-input"
                   type="time"
                   value={apptStart}
                   onChange={(e) => setApptStart(e.target.value)}
                 />
               </div>
-              <div className="admin-time-grid-item">
+              <div className="calendar-admin-time-item">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Ende
                 </div>
                 <input
-                  className="input"
+                  className="input calendar-admin-time-input"
                   type="time"
                   value={apptEnd}
                   onChange={(e) => setApptEnd(e.target.value)}
                 />
               </div>
             </div>
-            <div className="calendar-form-grid-2" style={{ marginBottom: 10 }}>
-              <div>
+            <div className="calendar-admin-meta-grid" style={{ marginBottom: 10 }}>
+              <div className="calendar-admin-meta-item">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Kategorie (UI-only)
                 </div>
                 <select
-                  className="input"
+                  className="input calendar-admin-meta-input"
                   value={apptCategory}
                   onChange={(e) => {
                     const v = e.target.value;
@@ -2593,12 +2599,12 @@ function KalenderPageInner({
                 </select>
               </div>
 
-              <div>
+              <div className="calendar-admin-meta-item">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Titel
                 </div>
                 <input
-                  className="input"
+                  className="input calendar-admin-meta-input"
                   value={apptTitle}
                   onChange={(e) => setApptTitle(e.target.value)}
                   placeholder="z. B. Kundentermin"

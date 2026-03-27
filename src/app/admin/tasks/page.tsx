@@ -511,13 +511,7 @@ export default function AdminTasksPage() {
               />
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: 12,
-              }}
-            >
+            <div className="admin-task-form-grid">
               <div style={{ display: "grid", gap: 6 }}>
                 <div style={{ fontSize: 12, color: "var(--muted)" }}>Kategorie</div>
                 <select
@@ -611,18 +605,13 @@ export default function AdminTasksPage() {
               </div>
             ) : null}
 
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <div className="admin-task-submit-row">
               <button
                 type="submit"
                 disabled={submitLoading}
+                className="admin-task-submit-btn"
                 style={{
-                  padding: "10px 14px",
                   cursor: submitLoading ? "not-allowed" : "pointer",
-                  fontWeight: 1000,
-                  borderRadius: 12,
-                  border: "1px solid rgba(184,207,58,0.35)",
-                  background: "rgba(184,207,58,0.12)",
-                  color: "var(--accent)",
                   opacity: submitLoading ? 0.7 : 1,
                 }}
               >
