@@ -15,6 +15,30 @@ function sanitizeFileName(name: string): string {
   return trimmed.replace(/[^\w.\- ()äöüÄÖÜß]/g, "_");
 }
 
+function getFileExtension(fileName: string): string {
+  const trimmed = fileName.trim();
+  const lastDot = trimmed.lastIndexOf(".");
+  if (lastDot < 0) return "";
+  return trimmed.slice(lastDot + 1).toLowerCase();
+}
+
+function detectAllowedMimeType(file: File): string | null {
+  const reported = file.type.trim().toLowerCase();
+
+  if (ALLOWED_MIME.has(reported)) {
+    return reported;
+  }
+
+  const ext = getFileExtension(file.name);
+
+  if (ext === "pdf") return "application/pdf";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+
+  return null;
+}
+
 const ALLOWED_MIME = new Set<string>(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 15 * 1024 * 1024; // 15 MB
 
@@ -78,14 +102,25 @@ export async function POST(req: Request) {
   const title = (getString(titleRaw) ?? "Dokument").trim().slice(0, 80);
 
   if (!planEntryId) return NextResponse.json({ error: "planEntryId missing" }, { status: 400 });
-  if (!(fileRaw instanceof File)) return NextResponse.json({ error: "file missing" }, { status: 400 });
-
-  const mimeType = fileRaw.type;
-  if (!ALLOWED_MIME.has(mimeType)) {
-    return NextResponse.json({ error: "Dateityp nicht erlaubt (PDF/JPG/PNG/WEBP)." }, { status: 400 });
+  if (
+    !fileRaw ||
+    typeof fileRaw !== "object" ||
+    !("arrayBuffer" in fileRaw) ||
+    !("name" in fileRaw) ||
+    !("type" in fileRaw) ||
+    !("size" in fileRaw)
+  ) {
+    return NextResponse.json({ error: "file missing" }, { status: 400 });
   }
 
-  const sizeBytes = fileRaw.size;
+const file = fileRaw as File;
+
+const mimeType = detectAllowedMimeType(fileRaw);
+if (!mimeType) {
+  return NextResponse.json({ error: "Dateityp nicht erlaubt (PDF/JPG/PNG/WEBP)." }, { status: 400 });
+}
+
+  const sizeBytes = file.size;
   if (sizeBytes <= 0 || sizeBytes > MAX_BYTES) {
     return NextResponse.json({ error: "Datei zu groß (max. 15 MB)." }, { status: 400 });
   }
@@ -110,10 +145,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const ab = await fileRaw.arrayBuffer();
+  const ab = await file.arrayBuffer();
   const data = Buffer.from(ab);
 
-  const fileName = sanitizeFileName(fileRaw.name || "upload");
+  const fileName = sanitizeFileName(file.name || "upload");
 
   const created = await prisma.planEntryDocument.create({
     data: {

@@ -421,6 +421,7 @@ export default function AdminWochenplanPage() {
   const [docsError, setDocsError] = useState<string | null>(null);
   const [docTitle, setDocTitle] = useState<string>("Baustellenzettel");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
 
@@ -683,12 +684,13 @@ export default function AdminWochenplanPage() {
       const j: unknown = await r.json().catch(() => ({}));
 
       if (!r.ok) {
-        const msg = getStringProp(j, "error") ?? "Upload fehlgeschlagen.";
+        const msg = getStringProp(j, "error") ?? `Upload fehlgeschlagen (HTTP ${r.status}).`;
         setDocsError(msg);
         return;
       }
 
       setSelectedFile(null);
+      setFileInputKey((prev) => prev + 1);
       await loadDocs(editEntryId);
     } catch {
       setDocsError("Netzwerkfehler beim Upload.");
@@ -1758,8 +1760,9 @@ export default function AdminWochenplanPage() {
                   <div>
                     <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datei</div>
                     <input
+                      key={fileInputKey}
                       type="file"
-                      accept=".pdf,image/*"
+                      accept=".pdf,image/*,.jpg,.jpeg,.png,.webp"
                       onChange={(e) => {
                         const f = e.target.files?.[0] ?? null;
                         setSelectedFile(f);
