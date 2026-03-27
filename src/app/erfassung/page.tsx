@@ -575,17 +575,31 @@ function ErfassungPageInner() {
   const hasAdminTaskBypassForSelectedDate =
     selectedCorrectionStatus?.adminTaskBypass?.active === true &&
     selectedCorrectionStatus.adminTaskBypass.workDate === workDate;
+  const syncActivityParam = useMemo(() => {
+    const value = searchParams.get("syncActivity");
+    return typeof value === "string" ? value.trim() : "";
+  }, [searchParams]);
+
+  const syncLocationParam = useMemo(() => {
+    const value = searchParams.get("syncLocation");
+    return typeof value === "string" ? value.trim() : "";
+  }, [searchParams]);
+
   const syncToastMessage = useMemo(() => {
     if (sourceTaskId) {
       return "Aufgabe übernommen. Bitte Start- und Endzeit ergänzen.";
     }
 
+    if (syncDateParam && !syncActivityParam && !syncLocationParam) {
+      return "Datum aus der Benachrichtigung übernommen. Bitte Start- und Endzeit ergänzen.";
+    }
+
     if (syncDateParam) {
-      return "Datum übernommen. Bitte Start- und Endzeit ergänzen.";
+      return "Planeintrag übernommen. Bitte Start- und Endzeit ergänzen.";
     }
 
     return "Planeintrag übernommen. Bitte Start- und Endzeit ergänzen.";
-  }, [sourceTaskId, syncDateParam]);
+  }, [sourceTaskId, syncDateParam, syncActivityParam, syncLocationParam]);
   const [loadingSelectedCorrectionStatus, setLoadingSelectedCorrectionStatus] = useState(false);
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);

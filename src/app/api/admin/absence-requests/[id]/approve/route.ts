@@ -564,7 +564,9 @@ export async function POST(req: Request, context: RouteContext) {
   await sendPushToUser(existing.userId, {
     title: "Antrag genehmigt",
     body: `Dein ${typeLabel.toLowerCase()} wurde genehmigt (${dateLabel}, ${compensationLabel}).`,
-    url: buildPushUrl("/kalender"),
+    url: buildPushUrl(
+      `/kalender?openDate=${encodeURIComponent(startDate)}&absenceStart=${encodeURIComponent(startDate)}&absenceEnd=${encodeURIComponent(endDate)}&absenceType=${encodeURIComponent(finalType)}&absenceDayPortion=${encodeURIComponent(finalDayPortion)}&absenceCompensation=${encodeURIComponent(finalCompensation)}`
+    ),
   });
 
   return NextResponse.json({

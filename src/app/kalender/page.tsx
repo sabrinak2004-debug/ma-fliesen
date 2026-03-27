@@ -951,6 +951,30 @@ type KalenderPageProps = {
   forceAdminOwnCalendar?: boolean;
 };
 
+function parseAbsenceTypeParam(value: string | null): AbsenceType | undefined {
+  if (value === "VACATION" || value === "SICK") {
+    return value;
+  }
+
+  return undefined;
+}
+
+function parseAbsenceDayPortionParam(value: string | null): AbsenceDayPortion | undefined {
+  if (value === "FULL_DAY" || value === "HALF_DAY") {
+    return value;
+  }
+
+  return undefined;
+}
+
+function parseAbsenceCompensationParam(value: string | null): AbsenceCompensation | undefined {
+  if (value === "PAID" || value === "UNPAID") {
+    return value;
+  }
+
+  return undefined;
+}
+
 type OpenDayPrefill = {
   absenceStart?: string;
   absenceEnd?: string;
@@ -1485,6 +1509,8 @@ function KalenderPageInner({
     const absenceStartParam = searchParams.get("absenceStart");
     const absenceEndParam = searchParams.get("absenceEnd");
     const absenceTypeParam = searchParams.get("absenceType");
+    const absenceDayPortionParam = searchParams.get("absenceDayPortion");
+    const absenceCompensationParam = searchParams.get("absenceCompensation");
 
     const resolvedOpenDate =
       openDateParam || absenceStartParam || absenceEndParam;
@@ -1502,12 +1528,14 @@ function KalenderPageInner({
         ? absenceEndParam
         : resolvedStart;
 
-    const resolvedType: AbsenceType =
-      absenceTypeParam === "SICK"
-        ? "SICK"
-        : absenceTypeParam === "VACATION"
-        ? "VACATION"
-        : "VACATION";
+    const resolvedType =
+      parseAbsenceTypeParam(absenceTypeParam) ?? "VACATION";
+
+    const resolvedDayPortion =
+      parseAbsenceDayPortionParam(absenceDayPortionParam) ?? "FULL_DAY";
+
+    const resolvedCompensation =
+      parseAbsenceCompensationParam(absenceCompensationParam) ?? "PAID";
 
     setCursor(ymdToDateLocal(resolvedOpenDate));
 
@@ -1515,8 +1543,8 @@ function KalenderPageInner({
       absenceStart: resolvedStart,
       absenceEnd: resolvedEnd,
       absenceType: resolvedType,
-      absenceDayPortion: "FULL_DAY",
-      absenceCompensation: "PAID",
+      absenceDayPortion: resolvedDayPortion,
+      absenceCompensation: resolvedCompensation,
     });
 
     router.replace("/kalender");

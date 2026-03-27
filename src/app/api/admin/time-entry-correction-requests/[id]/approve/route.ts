@@ -155,7 +155,7 @@ export async function POST(_req: Request, context: RouteContext) {
   await sendPushToUser(existing.userId, {
     title: "Nachtragsantrag genehmigt",
     body: `Dein Nachtragsantrag wurde genehmigt (${dateLabel}).`,
-    url: buildPushUrl("/erfassung"),
+    url: buildPushUrl(`/erfassung?syncDate=${encodeURIComponent(startDate)}`),
   });
 
   return NextResponse.json({

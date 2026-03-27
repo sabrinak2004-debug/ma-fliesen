@@ -63,12 +63,16 @@ export async function POST(_req: Request, context: RouteContext) {
   });
 
   const typeLabel = existing.type === "VACATION" ? "Urlaubsantrag" : "Krankheitsantrag";
-
+  const startDate = existing.startDate.toISOString().slice(0, 10);
+  const endDate = existing.endDate.toISOString().slice(0, 10);
   await sendPushToUser(existing.userId, {
     title: "Antrag abgelehnt",
     body: `Dein ${typeLabel.toLowerCase()} wurde abgelehnt.`,
-    url: buildPushUrl("/kalender"),
+    url: buildPushUrl(
+      `/kalender?openDate=${encodeURIComponent(startDate)}&absenceStart=${encodeURIComponent(startDate)}&absenceEnd=${encodeURIComponent(endDate)}&absenceType=${encodeURIComponent(existing.type)}&absenceDayPortion=${encodeURIComponent(existing.dayPortion)}&absenceCompensation=${encodeURIComponent(existing.compensation)}`
+    ),
   });
+
 
   return NextResponse.json({
     ok: true,

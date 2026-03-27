@@ -83,7 +83,7 @@ export async function POST(_req: Request, context: RouteContext) {
   await sendPushToUser(existing.userId, {
     title: "Nachtragsantrag abgelehnt",
     body: "Dein Nachtragsantrag wurde abgelehnt.",
-    url: buildPushUrl("/erfassung"),
+    url: buildPushUrl(`/erfassung?syncDate=${encodeURIComponent(existing.startDate.toISOString().slice(0, 10))}`),
   });
 
   return NextResponse.json({
