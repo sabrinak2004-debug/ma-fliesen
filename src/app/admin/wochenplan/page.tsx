@@ -277,8 +277,49 @@ async function withTimeout<T>(
   });
 }
 
+async function readFileViaFileReader(file: Blob): Promise<ArrayBuffer> {
+  return await new Promise<ArrayBuffer>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = () => {
+      reject(new Error("Datei konnte per FileReader nicht gelesen werden."));
+    };
+
+    reader.onabort = () => {
+      reject(new Error("Dateilesen wurde abgebrochen."));
+    };
+
+    reader.onload = () => {
+      const result = reader.result;
+
+      if (!(result instanceof ArrayBuffer)) {
+        reject(new Error("Ungültiges Dateiformat beim Lesen."));
+        return;
+      }
+
+      resolve(result);
+    };
+
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 async function normalizeUploadFile(file: File): Promise<File> {
-  const arrayBuffer = await file.arrayBuffer();
+  let arrayBuffer: ArrayBuffer | null = null;
+
+  try {
+    arrayBuffer = await withTimeout(
+      file.arrayBuffer(),
+      8000,
+      "arrayBuffer timeout"
+    );
+  } catch {
+    arrayBuffer = await withTimeout(
+      readFileViaFileReader(file),
+      15000,
+      "Die Datei konnte auf diesem Gerät nicht gelesen werden."
+    );
+  }
 
   return new File([arrayBuffer], file.name, {
     type: file.type || "application/octet-stream",
@@ -783,7 +824,7 @@ export default function AdminWochenplanPage() {
       }
 
       if (error instanceof Error) {
-        setDocsError(error.message || "Netzwerkfehler beim Upload.");
+        setDocsError(error.message || "Datei konnte nicht verarbeitet werden.");
         return;
       }
 
@@ -1856,7 +1897,7 @@ export default function AdminWochenplanPage() {
                     <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datei</div>
                     <input
                       type="file"
-                      accept=".pdf,image/*"
+                      accept=".pdf,image/jpeg,image/png,image/webp"
                       onChange={(e) => {
                         const f = e.target.files?.[0] ?? null;
                         setDocsError(null);
