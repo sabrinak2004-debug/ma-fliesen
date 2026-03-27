@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { COOKIE_NAME } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
@@ -129,5 +130,18 @@ export async function POST(req: Request): Promise<Response> {
     }),
   ]);
 
-  return NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true });
+
+  res.cookies.set(COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+    expires: new Date(0),
+  });
+
+  res.headers.set("Cache-Control", "no-store");
+
+  return res;
 }

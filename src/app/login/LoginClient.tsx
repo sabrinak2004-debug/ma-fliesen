@@ -257,8 +257,8 @@ export default function LoginClient({
     }
 
     if (needsSetup) {
-      if (newPassword.length < 6) {
-        setError("Passwort muss mind. 6 Zeichen haben.");
+      if (newPassword.length < 8) {
+        setError("Passwort muss mind. 8 Zeichen haben.");
         return;
       }
 

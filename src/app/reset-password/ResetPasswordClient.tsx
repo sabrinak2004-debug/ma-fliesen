@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 
 type ApiResponse = { ok: true } | { ok: false; error: string };
 
@@ -14,7 +13,6 @@ export default function ResetPasswordClient({
   token,
   companySubdomain,
 }: ResetPasswordClientProps) {
-  const router = useRouter();
   const redirectTimerRef = useRef<number | null>(null);
 
   const [pw1, setPw1] = useState("");
@@ -41,6 +39,7 @@ export default function ResetPasswordClient({
       setBusy(true);
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
@@ -58,11 +57,11 @@ export default function ResetPasswordClient({
       setMsg("Passwort wurde gesetzt. Du kannst dich jetzt einloggen.");
       redirectTimerRef.current = window.setTimeout(() => {
         if (companySubdomain) {
-          router.push(`/${companySubdomain}/login`);
+          window.location.replace(`/${companySubdomain}/login`);
           return;
         }
 
-        router.push("/login");
+        window.location.replace("/login");
       }, 800);
     } catch {
       setMsg("Reset fehlgeschlagen.");
