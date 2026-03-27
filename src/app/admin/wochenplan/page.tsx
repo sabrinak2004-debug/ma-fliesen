@@ -1040,7 +1040,7 @@ export default function AdminWochenplanPage() {
                     padding: "8px 10px",
                     justifyContent: "center",
                     whiteSpace: "nowrap",
-                    marginLeft: 6, // 👈 DAS ist der Fix
+                    marginLeft: 15, // 👈 DAS ist der Fix
                   }}
                 >
                   Woche →
