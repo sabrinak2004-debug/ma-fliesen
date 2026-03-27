@@ -1764,10 +1764,11 @@ export default function AdminWochenplanPage() {
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept=".pdf,image/*"
+                      accept="application/pdf,.pdf,image/jpeg,image/png,image/webp"
                       onChange={(e) => {
                         const f = e.target.files?.[0] ?? null;
                         setSelectedFile(f);
+                        setDocsError(null);
                       }}
                       style={{
                         width: "100%",

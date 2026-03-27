@@ -28,7 +28,54 @@ function sanitizeFileName(name: string): string {
   return trimmed.replace(/[^\w.\- ()äöüÄÖÜß]/g, "_");
 }
 
-const ALLOWED_MIME = new Set<string>(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
+function getFileExtension(fileName: string): string {
+  const safeName = fileName.trim();
+  const lastDot = safeName.lastIndexOf(".");
+  if (lastDot < 0) return "";
+  return safeName.slice(lastDot + 1).toLowerCase();
+}
+
+function detectAllowedMimeType(file: File): string | null {
+  const reportedMimeType = file.type.trim().toLowerCase();
+  const extension = getFileExtension(file.name);
+
+  if (reportedMimeType === "application/pdf") {
+    return "application/pdf";
+  }
+
+  if (ALLOWED_IMAGE_MIME.has(reportedMimeType)) {
+    return reportedMimeType;
+  }
+
+  if (extension === "pdf") {
+    return "application/pdf";
+  }
+
+  if (extension === "jpg" || extension === "jpeg") {
+    return "image/jpeg";
+  }
+
+  if (extension === "png") {
+    return "image/png";
+  }
+
+  if (extension === "webp") {
+    return "image/webp";
+  }
+
+  return null;
+}
+const ALLOWED_MIME = new Set<string>([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+const ALLOWED_IMAGE_MIME = new Set<string>([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 const MAX_BYTES = 15 * 1024 * 1024; // 15 MB
 
 export async function GET(req: Request) {
@@ -101,8 +148,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "file missing" }, { status: 400 });
     }
 
-    const mimeType = fileRaw.type;
-    if (!ALLOWED_MIME.has(mimeType)) {
+    const mimeType = detectAllowedMimeType(fileRaw);
+    if (!mimeType || !ALLOWED_MIME.has(mimeType)) {
       return NextResponse.json(
         { error: "Dateityp nicht erlaubt (PDF/JPG/PNG/WEBP)." },
         { status: 400 }
