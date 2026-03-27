@@ -984,12 +984,12 @@ export default function AdminWochenplanPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "auto minmax(0, 1fr) auto",
+                  gridTemplateColumns: "110px minmax(0, 120px) 110px",
                   gap: 8,
                   alignItems: "center",
                   marginTop: 12,
                   width: "100%",
-                  maxWidth: 340,
+                  maxWidth: 356,
                 }}
               >
                 <button
@@ -1002,9 +1002,12 @@ export default function AdminWochenplanPage() {
                     })
                   }
                   style={{
+                    width: "100%",
+                    minWidth: 0,
                     padding: "8px 10px",
                     justifyContent: "center",
                     whiteSpace: "nowrap",
+                    boxSizing: "border-box",
                   }}
                 >
                   ← Woche
@@ -1017,13 +1020,16 @@ export default function AdminWochenplanPage() {
                   style={{
                     width: "100%",
                     minWidth: 0,
-                    maxWidth: "100%",
+                    maxWidth: 120,
+                    justifySelf: "center",
                     boxSizing: "border-box",
-                    padding: "8px 10px",
+                    padding: "8px 8px",
                     border: `1px solid ${UI.cellBorder}`,
                     borderRadius: 10,
                     background: "rgba(0,0,0,0.25)",
                     color: UI.text,
+                    appearance: "none",
+                    WebkitAppearance: "none",
                   }}
                 />
 
@@ -1037,9 +1043,12 @@ export default function AdminWochenplanPage() {
                     })
                   }
                   style={{
+                    width: "100%",
+                    minWidth: 0,
                     padding: "8px 10px",
                     justifyContent: "center",
                     whiteSpace: "nowrap",
+                    boxSizing: "border-box",
                   }}
                 >
                   Woche →
