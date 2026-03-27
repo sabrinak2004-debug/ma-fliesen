@@ -959,145 +959,157 @@ export default function AdminWochenplanPage() {
       <div
         style={{
           display: "flex",
-          flexDirection: isDesktop ? "row" : "column",
-          justifyContent: "space-between",
-          alignItems: isDesktop ? "flex-start" : "stretch",
-          gap: 14,
+          flexDirection: "column",
+          gap: 12,
           marginBottom: 14,
           color: UI.text,
         }}
       >
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 22, fontWeight: 900 }}>Wochenplanung</div>
-          <div style={{ marginTop: 4 }}>
-            <div style={{ fontSize: 18, fontWeight: 800 }}>KW {weekLabel.kw}</div>
-            <div style={{ color: UI.muted, fontSize: 13 }}>{weekLabel.dateRange}</div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 14,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 22, fontWeight: 900 }}>Wochenplanung</div>
+            <div style={{ marginTop: 4 }}>
+              <div style={{ fontSize: 18, fontWeight: 800 }}>KW {weekLabel.kw}</div>
+              <div style={{ color: UI.muted, fontSize: 13 }}>{weekLabel.dateRange}</div>
+            </div>
+
+            {!isDesktop ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "auto minmax(0, 1fr) auto",
+                  gap: 8,
+                  alignItems: "center",
+                  marginTop: 12,
+                  width: "100%",
+                  maxWidth: 340,
+                }}
+              >
+                <button
+                  className="pill"
+                  onClick={() =>
+                    setWeekStart((w) => {
+                      const d = new Date(w);
+                      d.setDate(d.getDate() - 7);
+                      return d;
+                    })
+                  }
+                  style={{
+                    padding: "8px 10px",
+                    justifyContent: "center",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  ← Woche
+                </button>
+
+                <input
+                  type="date"
+                  value={fmtYMD(weekStart)}
+                  onChange={(e) => setWeekStart(startOfWeek(new Date(e.target.value)))}
+                  style={{
+                    width: "100%",
+                    minWidth: 0,
+                    maxWidth: "100%",
+                    boxSizing: "border-box",
+                    padding: "8px 10px",
+                    border: `1px solid ${UI.cellBorder}`,
+                    borderRadius: 10,
+                    background: "rgba(0,0,0,0.25)",
+                    color: UI.text,
+                  }}
+                />
+
+                <button
+                  className="pill"
+                  onClick={() =>
+                    setWeekStart((w) => {
+                      const d = new Date(w);
+                      d.setDate(d.getDate() + 7);
+                      return d;
+                    })
+                  }
+                  style={{
+                    padding: "8px 10px",
+                    justifyContent: "center",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Woche →
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <div
             style={{
-              display: isDesktop ? "none" : "grid",
-              gridTemplateColumns: "1fr",
+              display: "flex",
               gap: 8,
-              marginTop: 12,
-              width: "100%",
+              alignItems: "center",
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+              flexShrink: 0,
             }}
           >
             <Link
               href="/admin/appointments"
               className="pill"
-              style={{
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
             >
               ⟵ Termine
             </Link>
 
-            <button
-              className="pill"
-              onClick={() =>
-                setWeekStart((w) => {
-                  const d = new Date(w);
-                  d.setDate(d.getDate() - 7);
-                  return d;
-                })
-              }
-              style={{ justifyContent: "center" }}
-            >
-              ← Woche
-            </button>
+            {isDesktop ? (
+              <>
+                <button
+                  className="pill"
+                  onClick={() =>
+                    setWeekStart((w) => {
+                      const d = new Date(w);
+                      d.setDate(d.getDate() - 7);
+                      return d;
+                    })
+                  }
+                >
+                  ← Woche
+                </button>
 
-            <input
-              type="date"
-              value={fmtYMD(weekStart)}
-              onChange={(e) => setWeekStart(startOfWeek(new Date(e.target.value)))}
-              style={{
-                width: "100%",
-                minWidth: 0,
-                boxSizing: "border-box",
-                padding: "10px 12px",
-                border: `1px solid ${UI.cellBorder}`,
-                borderRadius: 10,
-                background: "rgba(0,0,0,0.25)",
-                color: UI.text,
-              }}
-            />
+                <input
+                  type="date"
+                  value={fmtYMD(weekStart)}
+                  onChange={(e) => setWeekStart(startOfWeek(new Date(e.target.value)))}
+                  style={{
+                    padding: "8px 10px",
+                    border: `1px solid ${UI.cellBorder}`,
+                    borderRadius: 10,
+                    background: "rgba(0,0,0,0.25)",
+                    color: UI.text,
+                    maxWidth: 180,
+                  }}
+                />
 
-            <button
-              className="pill"
-              onClick={() =>
-                setWeekStart((w) => {
-                  const d = new Date(w);
-                  d.setDate(d.getDate() + 7);
-                  return d;
-                })
-              }
-              style={{ justifyContent: "center" }}
-            >
-              Woche →
-            </button>
+                <button
+                  className="pill"
+                  onClick={() =>
+                    setWeekStart((w) => {
+                      const d = new Date(w);
+                      d.setDate(d.getDate() + 7);
+                      return d;
+                    })
+                  }
+                >
+                  Woche →
+                </button>
+              </>
+            ) : null}
           </div>
-        </div>
-
-        <div
-          style={{
-            display: isDesktop ? "flex" : "none",
-            gap: 8,
-            alignItems: "center",
-            flexWrap: "wrap",
-            justifyContent: "flex-end",
-          }}
-        >
-          <Link
-            href="/admin/appointments"
-            className="pill"
-            style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
-          >
-            ⟵ Termine
-          </Link>
-
-          <button
-            className="pill"
-            onClick={() =>
-              setWeekStart((w) => {
-                const d = new Date(w);
-                d.setDate(d.getDate() - 7);
-                return d;
-              })
-            }
-          >
-            ← Woche
-          </button>
-
-          <input
-            type="date"
-            value={fmtYMD(weekStart)}
-            onChange={(e) => setWeekStart(startOfWeek(new Date(e.target.value)))}
-            style={{
-              padding: "8px 10px",
-              border: `1px solid ${UI.cellBorder}`,
-              borderRadius: 10,
-              background: "rgba(0,0,0,0.25)",
-              color: UI.text,
-              maxWidth: 180,
-            }}
-          />
-
-          <button
-            className="pill"
-            onClick={() =>
-              setWeekStart((w) => {
-                const d = new Date(w);
-                d.setDate(d.getDate() + 7);
-                return d;
-              })
-            }
-          >
-            Woche →
-          </button>
         </div>
       </div>
 
