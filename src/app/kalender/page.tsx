@@ -2522,24 +2522,24 @@ function KalenderPageInner({
             </div>
 
             {adminMode === "create-global" || adminMode === "edit" ? (
-              <div className="calendar-admin-date-field">
+              <div className="calendar-admin-date-field calendar-admin-date-field-compact">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Datum
                 </div>
                 <input
-                  className="input calendar-admin-date-input"
+                  className="input calendar-admin-date-input calendar-admin-date-input-compact"
                   type="date"
                   value={apptDate}
                   onChange={(e) => setApptDate(e.target.value)}
                 />
               </div>
             ) : (
-              <div className="calendar-admin-date-field">
+              <div className="calendar-admin-date-field calendar-admin-date-field-compact">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Datum
                 </div>
                 <div
-                  className="calendar-admin-date-display"
+                  className="calendar-admin-date-display calendar-admin-date-input-compact"
                   style={{
                     padding: "10px 12px",
                     borderRadius: 12,

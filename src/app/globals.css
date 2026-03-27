@@ -1566,3 +1566,42 @@ li {
     width: 100%;
   }
 }
+
+.admin-task-date-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.admin-task-date-input {
+  width: min(100%, 260px);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.calendar-admin-date-field-compact {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  width: 100%;
+  min-width: 0;
+}
+
+.calendar-admin-date-input-compact {
+  width: min(100%, 260px);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .admin-task-date-input {
+    width: min(100%, 240px);
+  }
+
+  .calendar-admin-date-input-compact {
+    width: min(100%, 240px);
+  }
+}

@@ -551,7 +551,7 @@ export default function AdminTasksPage() {
                 />
               </div>
 
-              <div style={{ display: "grid", gap: 6 }}>
+              <div className="admin-task-date-field">
                 <div style={{ fontSize: 12, color: "var(--muted)" }}>Bezugszeitraum von</div>
                 <input
                   type="date"
@@ -562,8 +562,8 @@ export default function AdminTasksPage() {
                       setReferenceEndDate(e.target.value);
                     }
                   }}
+                  className="admin-task-date-input"
                   style={{
-                    width: "100%",
                     padding: "10px 12px",
                     borderRadius: 12,
                     border: "1px solid rgba(255,255,255,0.18)",
@@ -574,14 +574,14 @@ export default function AdminTasksPage() {
                 />
               </div>
 
-              <div style={{ display: "grid", gap: 6 }}>
+              <div className="admin-task-date-field">
                 <div style={{ fontSize: 12, color: "var(--muted)" }}>Bezugszeitraum bis</div>
                 <input
                   type="date"
                   value={referenceEndDate}
                   onChange={(e) => setReferenceEndDate(e.target.value)}
+                  className="admin-task-date-input"
                   style={{
-                    width: "100%",
                     padding: "10px 12px",
                     borderRadius: 12,
                     border: "1px solid rgba(255,255,255,0.18)",
