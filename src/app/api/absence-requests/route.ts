@@ -4,11 +4,10 @@ import {
   AbsenceDayPortion,
   AbsenceRequestStatus,
   AbsenceType,
-  Role,
 } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { webpush } from "@/lib/webpush";
+import { buildPushUrl, sendPushToAdmins } from "@/lib/webpush";
 
 type CreateAbsenceRequestBody = {
   startDate?: unknown;
@@ -501,64 +500,6 @@ async function getRemainingPaidVacationDaysForMonth(
   return Math.max(0, (accruedUnits - approvedPaidUnits - reservedPendingUnits) / 2);
 }
 
-async function sendPushToAdmins(
-  companyId: string,
-  title: string,
-  body: string,
-  url: string
-): Promise<void> {
-  const vapidReady =
-    typeof process.env.VAPID_PUBLIC_KEY === "string" &&
-    process.env.VAPID_PUBLIC_KEY.trim() !== "" &&
-    typeof process.env.VAPID_PRIVATE_KEY === "string" &&
-    process.env.VAPID_PRIVATE_KEY.trim() !== "";
-
-  if (!vapidReady) return;
-
-  const admins = await prisma.pushSubscription.findMany({
-    where: {
-      user: {
-        role: Role.ADMIN,
-        isActive: true,
-        companyId,
-      },
-    },
-    select: {
-      id: true,
-      endpoint: true,
-      p256dh: true,
-      auth: true,
-    },
-  });
-
-  const payload = JSON.stringify({
-    title,
-    body,
-    url,
-  });
-
-  await Promise.all(
-    admins.map(async (sub) => {
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: {
-              p256dh: sub.p256dh,
-              auth: sub.auth,
-            },
-          },
-          payload
-        );
-      } catch {
-        await prisma.pushSubscription.deleteMany({
-          where: { endpoint: sub.endpoint },
-        });
-      }
-    })
-  );
-}
-
 function mapRequest(r: {
   id: string;
   startDate: Date;
@@ -937,12 +878,17 @@ export async function POST(req: Request) {
         ? startDate
         : `${startDate} bis ${endDate}`;
 
-  await sendPushToAdmins(
-    session.companyId,
-    "Neuer Abwesenheitsantrag",
-    `${session.fullName} hat ${typeLabel.toLowerCase()} beantragt (${dateLabel}${typeRaw === "VACATION" ? `, ${compensationLabel}` : ""}).`,
-    "/admin/urlaubsantraege"
-  );
+  const adminTargetUrl =
+    typeRaw === "VACATION"
+      ? buildPushUrl("/admin/urlaubsantraege")
+      : buildPushUrl("/admin/krankheitsantraege");
+
+  await sendPushToAdmins({
+    companyId: session.companyId,
+    title: "Neuer Abwesenheitsantrag",
+    body: `${session.fullName} hat ${typeLabel.toLowerCase()} beantragt (${dateLabel}${typeRaw === "VACATION" ? `, ${compensationLabel}` : ""}).`,
+    url: adminTargetUrl,
+  });
 
   return NextResponse.json({
     ok: true,

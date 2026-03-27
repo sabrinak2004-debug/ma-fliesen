@@ -2,68 +2,13 @@ import { NextResponse } from "next/server";
 import { AbsenceRequestStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
-import { webpush } from "@/lib/webpush";
+import { buildPushUrl, sendPushToUser } from "@/lib/webpush";
 
 type RouteContext = {
   params: Promise<{
     id: string;
   }>;
 };
-
-async function sendPushToUser(userId: string, title: string, body: string, url: string): Promise<void> {
-  const vapidReady =
-    typeof process.env.VAPID_PUBLIC_KEY === "string" &&
-    process.env.VAPID_PUBLIC_KEY.trim() !== "" &&
-    typeof process.env.VAPID_PRIVATE_KEY === "string" &&
-    process.env.VAPID_PRIVATE_KEY.trim() !== "";
-
-  if (!vapidReady) return;
-
-  const subs = await prisma.pushSubscription.findMany({
-    where: {
-      userId,
-      user: {
-        isActive: true,
-      },
-    },
-    select: {
-      endpoint: true,
-      p256dh: true,
-      auth: true,
-    },
-  });
-
-  if (subs.length === 0) return;
-
-  const payload = JSON.stringify({
-    title,
-    body,
-    url,
-  });
-
-  await Promise.all(
-    subs.map(async (sub) => {
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: {
-              p256dh: sub.p256dh,
-              auth: sub.auth,
-            },
-          },
-          payload
-        );
-      } catch {
-        await prisma.pushSubscription.deleteMany({
-          where: {
-            endpoint: sub.endpoint,
-          },
-        });
-      }
-    })
-  );
-}
 
 export async function POST(_req: Request, context: RouteContext) {
   const admin = await requireAdmin();
@@ -119,12 +64,11 @@ export async function POST(_req: Request, context: RouteContext) {
 
   const typeLabel = existing.type === "VACATION" ? "Urlaubsantrag" : "Krankheitsantrag";
 
-  await sendPushToUser(
-    existing.userId,
-    "Antrag abgelehnt",
-    `Dein ${typeLabel.toLowerCase()} wurde abgelehnt.`,
-    "/kalender"
-  );
+  await sendPushToUser(existing.userId, {
+    title: "Antrag abgelehnt",
+    body: `Dein ${typeLabel.toLowerCase()} wurde abgelehnt.`,
+    url: buildPushUrl("/kalender"),
+  });
 
   return NextResponse.json({
     ok: true,

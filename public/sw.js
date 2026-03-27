@@ -63,22 +63,40 @@ self.addEventListener("push", function (event) {
 self.addEventListener("notificationclick", function (event) {
   event.notification.close();
 
-  const targetUrl =
+  const rawUrl =
     event.notification &&
     event.notification.data &&
     typeof event.notification.data.url === "string"
       ? event.notification.data.url
       : "/";
 
+  const targetUrl = rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`;
+
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (clientList) => {
       for (const client of clientList) {
-        if ("focus" in client) {
-          if ("navigate" in client) {
-            client.navigate(targetUrl);
-          }
+        if (!("focus" in client)) {
+          continue;
+        }
+
+        const currentUrl = new URL(client.url);
+        const samePath = currentUrl.pathname === targetUrl;
+
+        if (samePath) {
           return client.focus();
         }
+      }
+
+      for (const client of clientList) {
+        if (!("focus" in client)) {
+          continue;
+        }
+
+        if ("navigate" in client) {
+          await client.navigate(targetUrl);
+        }
+
+        return client.focus();
       }
 
       if (clients.openWindow) {
