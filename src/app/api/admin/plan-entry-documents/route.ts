@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
@@ -92,87 +95,104 @@ export async function POST(req: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const form = await req.formData();
+    try {
+    const form = await req.formData();
 
-  const planEntryIdRaw = form.get("planEntryId");
-  const titleRaw = form.get("title");
-  const fileRaw = form.get("file");
+    const planEntryIdRaw = form.get("planEntryId");
+    const titleRaw = form.get("title");
+    const fileRaw = form.get("file");
 
-  const planEntryId = getString(planEntryIdRaw);
-  const title = (getString(titleRaw) ?? "Dokument").trim().slice(0, 80);
+    const planEntryId = getString(planEntryIdRaw);
+    const title = (getString(titleRaw) ?? "Dokument").trim().slice(0, 80);
 
-  if (!planEntryId) return NextResponse.json({ error: "planEntryId missing" }, { status: 400 });
-  if (
-    !fileRaw ||
-    typeof fileRaw !== "object" ||
-    !("arrayBuffer" in fileRaw) ||
-    !("name" in fileRaw) ||
-    !("type" in fileRaw) ||
-    !("size" in fileRaw)
-  ) {
-    return NextResponse.json({ error: "file missing" }, { status: 400 });
-  }
+    if (!planEntryId) {
+      return NextResponse.json({ error: "planEntryId missing" }, { status: 400 });
+    }
 
-const file = fileRaw as File;
+    if (
+      !fileRaw ||
+      typeof fileRaw !== "object" ||
+      !("arrayBuffer" in fileRaw) ||
+      !("name" in fileRaw) ||
+      !("type" in fileRaw) ||
+      !("size" in fileRaw)
+    ) {
+      return NextResponse.json({ error: "file missing" }, { status: 400 });
+    }
 
-const mimeType = detectAllowedMimeType(fileRaw);
-if (!mimeType) {
-  return NextResponse.json({ error: "Dateityp nicht erlaubt (PDF/JPG/PNG/WEBP)." }, { status: 400 });
-}
+    const file = fileRaw as File;
 
-  const sizeBytes = file.size;
-  if (sizeBytes <= 0 || sizeBytes > MAX_BYTES) {
-    return NextResponse.json({ error: "Datei zu groß (max. 15 MB)." }, { status: 400 });
-  }
+    const mimeType = detectAllowedMimeType(file);
+    if (!mimeType) {
+      return NextResponse.json({ error: "Dateityp nicht erlaubt (PDF/JPG/PNG/WEBP)." }, { status: 400 });
+    }
 
-  const entry = await prisma.planEntry.findUnique({
-    where: { id: planEntryId },
-    select: {
-      id: true,
-      user: {
-        select: {
-          companyId: true,
+    const sizeBytes = file.size;
+    if (sizeBytes <= 0 || sizeBytes > MAX_BYTES) {
+      return NextResponse.json({ error: "Datei zu groß (max. 15 MB)." }, { status: 400 });
+    }
+
+    const entry = await prisma.planEntry.findUnique({
+      where: { id: planEntryId },
+      select: {
+        id: true,
+        user: {
+          select: {
+            companyId: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  if (!entry) {
-    return NextResponse.json({ error: "PlanEntry not found" }, { status: 404 });
+    if (!entry) {
+      return NextResponse.json({ error: "PlanEntry not found" }, { status: 404 });
+    }
+
+    if (entry.user.companyId !== admin.companyId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const ab = await file.arrayBuffer();
+    const data = new Uint8Array(ab);
+
+    const fileName = sanitizeFileName(file.name || "upload");
+
+    const created = await prisma.planEntryDocument.create({
+      data: {
+        planEntryId,
+        uploadedById: admin.id,
+        title: title.length ? title : "Dokument",
+        fileName,
+        mimeType,
+        sizeBytes,
+        data,
+      },
+      select: {
+        id: true,
+        planEntryId: true,
+        title: true,
+        fileName: true,
+        mimeType: true,
+        sizeBytes: true,
+        createdAt: true,
+        uploadedBy: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({ ok: true, document: created });
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error && error.message.trim()
+        ? error.message
+        : "Upload serverseitig fehlgeschlagen.";
+
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  if (entry.user.companyId !== admin.companyId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const ab = await file.arrayBuffer();
-  const data = Buffer.from(ab);
-
-  const fileName = sanitizeFileName(file.name || "upload");
-
-  const created = await prisma.planEntryDocument.create({
-    data: {
-      planEntryId,
-      uploadedById: admin.id,
-      title: title.length ? title : "Dokument",
-      fileName,
-      mimeType,
-      sizeBytes,
-      data,
-    },
-    select: {
-      id: true,
-      planEntryId: true,
-      title: true,
-      fileName: true,
-      mimeType: true,
-      sizeBytes: true,
-      createdAt: true,
-      uploadedBy: { select: { id: true, fullName: true } },
-    },
-  });
-
-  return NextResponse.json({ ok: true, document: created });
 }
 
 export async function DELETE(req: Request) {
