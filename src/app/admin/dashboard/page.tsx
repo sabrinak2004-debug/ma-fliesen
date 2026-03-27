@@ -373,6 +373,31 @@ function getDayBreakForDate(dayBreaks: AdminDayBreak[], workDate: string): Admin
   return dayBreaks.find((item) => item.workDate === workDate) ?? null;
 }
 
+function buildFallbackDayBreakFromItems(workDate: string, items: AdminTimelineWork[]): AdminDayBreak | null {
+  const effectiveMinutes = items.reduce((sum, item) => sum + Math.max(0, item.breakMinutes), 0);
+
+  if (effectiveMinutes <= 0) {
+    return null;
+  }
+
+  const autoSupplementMinutes = items.reduce(
+    (sum, item) => sum + (item.breakAuto ? Math.max(0, item.breakMinutes) : 0),
+    0
+  );
+
+  const manualMinutes = Math.max(0, effectiveMinutes - autoSupplementMinutes);
+
+  return {
+    workDate,
+    breakStartHHMM: null,
+    breakEndHHMM: null,
+    manualMinutes,
+    legalMinutes: 0,
+    autoSupplementMinutes,
+    effectiveMinutes,
+  };
+}
+
 function groupWorkItemsByDay(items: AdminTimelineWork[]): Record<string, AdminTimelineWork[]> {
   const grouped: Record<string, AdminTimelineWork[]> = {};
 
@@ -2227,7 +2252,8 @@ export default function AdminDashboardPage() {
 
                                       const dayTotalMinutes = dayItems.reduce((sum, it) => sum + it.workMinutes, 0);
                                       const dayEntriesCount = dayItems.length;
-                                      const dayBreak = getDayBreakForDate(u.dayBreaks, dayKey);
+                                      const storedDayBreak = getDayBreakForDate(u.dayBreaks, dayKey);
+                                      const dayBreak = storedDayBreak ?? buildFallbackDayBreakFromItems(dayKey, dayItems);
                                       const dayPauseMinutes = dayBreak?.effectiveMinutes ?? 0;
 
                                       return (

@@ -8,6 +8,7 @@ import {
   getMissingRequiredWorkDates,
   isWorkEntryRequiredOnDateForUserMeta,
 } from "@/lib/timesheetLock";
+import { computeDayBreakFromGross } from "@/lib/breaks";
 
 function dateOnlyLocalIso(d: Date) {
   const yyyy = d.getFullYear();
@@ -63,6 +64,110 @@ type TimelineDayBreak = {
   autoSupplementMinutes: number;
   effectiveMinutes: number;
 };
+
+type WorkEntryMonthRow = {
+  id: string;
+  userId: string;
+  workDate: Date;
+  startTime: Date;
+  endTime: Date;
+  activity: string | null;
+  location: string | null;
+  travelMinutes: number | null;
+  breakMinutes: number | null;
+  breakAuto: boolean | null;
+  workMinutes: number | null;
+  noteEmployee: string | null;
+};
+
+function buildPatchedDashboardEntries(
+  rows: WorkEntryMonthRow[],
+  dayBreakMap: Map<string, TimelineDayBreak>
+) {
+  const groups = new Map<string, WorkEntryMonthRow[]>();
+
+  for (const row of rows) {
+    const ymd = dateOnlyLocalIso(new Date(row.workDate));
+    const key = `${row.userId}:${ymd}`;
+    const arr = groups.get(key) ?? [];
+    arr.push(row);
+    groups.set(key, arr);
+  }
+
+  const patched = new Map<
+    string,
+    {
+      grossMinutes: number;
+      breakMinutes: number;
+      breakAuto: boolean;
+      workMinutes: number;
+    }
+  >();
+
+  for (const [key, arr] of groups.entries()) {
+    const ymd = key.split(":")[1];
+    const dayBreak = dayBreakMap.get(key);
+
+    const dayGross = arr.reduce((sum, row) => {
+      const startMs = row.startTime.getTime();
+      const endMs = row.endTime.getTime();
+      const gross = Math.max(0, Math.round((endMs - startMs) / 60000));
+      return sum + gross;
+    }, 0);
+
+    const manualMinutes = dayBreak?.manualMinutes ?? 0;
+    const result = computeDayBreakFromGross(dayGross, manualMinutes);
+
+    const sortedAsc = [...arr].sort((a, b) => {
+      const endDiff = a.endTime.getTime() - b.endTime.getTime();
+      if (endDiff !== 0) return endDiff;
+      return a.startTime.getTime() - b.startTime.getTime();
+    });
+
+    for (const row of sortedAsc) {
+      const gross = Math.max(0, Math.round((row.endTime.getTime() - row.startTime.getTime()) / 60000));
+
+      patched.set(row.id, {
+        grossMinutes: gross,
+        breakMinutes: 0,
+        breakAuto: false,
+        workMinutes: gross,
+      });
+    }
+
+    let remainingBreak = result.effectiveBreakMinutes;
+    const reversedEntries = [...sortedAsc].reverse();
+
+    for (const row of reversedEntries) {
+      const current = patched.get(row.id);
+      if (!current) continue;
+
+      const allocatedBreak = Math.min(current.grossMinutes, remainingBreak);
+      remainingBreak -= allocatedBreak;
+
+      patched.set(row.id, {
+        grossMinutes: current.grossMinutes,
+        breakMinutes: allocatedBreak,
+        breakAuto: allocatedBreak > 0 ? result.breakAuto : false,
+        workMinutes: Math.max(0, current.grossMinutes - allocatedBreak),
+      });
+    }
+
+    if (!dayBreakMap.has(key)) {
+      dayBreakMap.set(key, {
+        workDate: ymd,
+        breakStartHHMM: null,
+        breakEndHHMM: null,
+        manualMinutes: 0,
+        legalMinutes: result.legalBreakMinutes,
+        autoSupplementMinutes: result.autoSupplementMinutes,
+        effectiveMinutes: result.effectiveBreakMinutes,
+      });
+    }
+  }
+
+  return patched;
+}
 
 type DashboardPersonRow = {
   userId: string;
@@ -381,6 +486,23 @@ export async function GET(req: Request) {
     });
   }
 
+  const typedWorkEntriesMonth: WorkEntryMonthRow[] = workEntriesMonth.map((row) => ({
+    id: row.id,
+    userId: row.userId,
+    workDate: row.workDate,
+    startTime: row.startTime,
+    endTime: row.endTime,
+    activity: row.activity ?? null,
+    location: row.location ?? null,
+    travelMinutes: row.travelMinutes ?? 0,
+    breakMinutes: row.breakMinutes ?? 0,
+    breakAuto: row.breakAuto ?? false,
+    workMinutes: row.workMinutes ?? 0,
+    noteEmployee: row.noteEmployee ?? null,
+  }));
+
+  const patchedWorkEntries = buildPatchedDashboardEntries(typedWorkEntriesMonth, dayBreakMap);
+
   const employeesTimeline = employees.map((employee) => {
     const items: Array<
       | {
@@ -407,12 +529,18 @@ export async function GET(req: Request) {
 
     const dayBreaks: TimelineDayBreak[] = [];
 
-    for (const workEntry of workEntriesMonth) {
+    for (const workEntry of typedWorkEntriesMonth) {
       if (workEntry.userId !== employee.id) continue;
 
       const date = dateOnlyLocalIso(new Date(workEntry.workDate));
       const startHHMM = toHHMMUTC(new Date(workEntry.startTime));
       const endHHMM = toHHMMUTC(new Date(workEntry.endTime));
+      const patched = patchedWorkEntries.get(workEntry.id);
+
+      const grossMinutes = Math.max(
+        0,
+        Math.round((workEntry.endTime.getTime() - workEntry.startTime.getTime()) / 60000)
+      );
 
       items.push({
         type: "WORK",
@@ -423,9 +551,9 @@ export async function GET(req: Request) {
         activity: workEntry.activity ?? null,
         location: workEntry.location ?? null,
         travelMinutes: workEntry.travelMinutes ?? 0,
-        breakMinutes: workEntry.breakMinutes ?? 0,
-        breakAuto: workEntry.breakAuto ?? false,
-        workMinutes: workEntry.workMinutes ?? 0,
+        breakMinutes: patched?.breakMinutes ?? workEntry.breakMinutes ?? 0,
+        breakAuto: patched?.breakAuto ?? workEntry.breakAuto ?? false,
+        workMinutes: patched?.workMinutes ?? workEntry.workMinutes ?? Math.max(0, grossMinutes),
         noteEmployee: workEntry.noteEmployee ?? null,
       });
     }
