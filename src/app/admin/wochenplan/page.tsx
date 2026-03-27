@@ -254,6 +254,38 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string
+): Promise<T> {
+  return await new Promise<T>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error: unknown) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      }
+    );
+  });
+}
+
+async function normalizeUploadFile(file: File): Promise<File> {
+  const arrayBuffer = await file.arrayBuffer();
+
+  return new File([arrayBuffer], file.name, {
+    type: file.type || "application/octet-stream",
+    lastModified: file.lastModified,
+  });
+}
+
 /* -------------------- Scroll-Modal (Header/Footer fix, Body scroll) -------------------- */
 function useLockBodyScroll(locked: boolean) {
   useEffect(() => {
@@ -709,14 +741,21 @@ export default function AdminWochenplanPage() {
     }, 120000);
 
     try {
+      const normalizedFile = await withTimeout(
+        normalizeUploadFile(selectedFile),
+        15000,
+        "Die Datei konnte auf diesem Gerät nicht gelesen werden."
+      );
+
       const fd = new FormData();
       fd.append("planEntryId", editEntryId);
       fd.append("title", docTitle.trim() || "Dokument");
-      fd.append("file", selectedFile);
+      fd.append("file", normalizedFile, normalizedFile.name);
 
       const r = await fetch("/api/admin/plan-entry-documents", {
         method: "POST",
         credentials: "include",
+        cache: "no-store",
         body: fd,
         signal: controller.signal,
       });
@@ -739,7 +778,12 @@ export default function AdminWochenplanPage() {
       await loadDocs(editEntryId);
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === "AbortError") {
-        setDocsError("Upload dauert zu lange. Bitte kleinere Datei testen.");
+        setDocsError("Upload dauert zu lange. Bitte Datei erneut auswählen und erneut versuchen.");
+        return;
+      }
+
+      if (error instanceof Error) {
+        setDocsError(error.message || "Netzwerkfehler beim Upload.");
         return;
       }
 
