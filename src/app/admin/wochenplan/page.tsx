@@ -1764,7 +1764,7 @@ export default function AdminWochenplanPage() {
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept="application/pdf,.pdf,image/jpeg,image/png,image/webp"
+                      accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
                       onChange={(e) => {
                         const f = e.target.files?.[0] ?? null;
                         setSelectedFile(f);

@@ -29,10 +29,41 @@ function sanitizeFileName(name: string): string {
 }
 
 function getFileExtension(fileName: string): string {
-  const safeName = fileName.trim();
-  const lastDot = safeName.lastIndexOf(".");
+  const trimmed = fileName.trim();
+  const lastDot = trimmed.lastIndexOf(".");
   if (lastDot < 0) return "";
-  return safeName.slice(lastDot + 1).toLowerCase();
+  return trimmed.slice(lastDot + 1).toLowerCase();
+}
+
+function detectStoredMimeType(file: File): string | null {
+  const reported = file.type.trim().toLowerCase();
+  const ext = getFileExtension(file.name);
+
+  if (ALLOWED_IMAGE_MIME.has(reported)) {
+    return reported;
+  }
+
+  if (ext === "pdf") {
+    return "application/pdf";
+  }
+
+  if (ext === "jpg" || ext === "jpeg") {
+    return "image/jpeg";
+  }
+
+  if (ext === "png") {
+    return "image/png";
+  }
+
+  if (ext === "webp") {
+    return "image/webp";
+  }
+
+  if (reported === "application/pdf") {
+    return "application/pdf";
+  }
+
+  return null;
 }
 
 function detectAllowedMimeType(file: File): string | null {
@@ -65,12 +96,6 @@ function detectAllowedMimeType(file: File): string | null {
 
   return null;
 }
-const ALLOWED_MIME = new Set<string>([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
 const ALLOWED_IMAGE_MIME = new Set<string>([
   "image/jpeg",
   "image/png",
@@ -148,8 +173,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "file missing" }, { status: 400 });
     }
 
-    const mimeType = detectAllowedMimeType(fileRaw);
-    if (!mimeType || !ALLOWED_MIME.has(mimeType)) {
+    const mimeType = detectStoredMimeType(fileRaw);
+    if (!mimeType) {
       return NextResponse.json(
         { error: "Dateityp nicht erlaubt (PDF/JPG/PNG/WEBP)." },
         { status: 400 }
@@ -187,6 +212,13 @@ export async function POST(req: Request) {
     const ab = await fileRaw.arrayBuffer();
     const data = Buffer.from(ab);
     const fileName = sanitizeFileName(fileRaw.name || "upload");
+
+    if (mimeType === "application/pdf" && getFileExtension(fileName) !== "pdf") {
+      return NextResponse.json(
+        { error: "PDF-Datei konnte nicht eindeutig erkannt werden." },
+        { status: 400 }
+      );
+    }
 
     const created = await prisma.planEntryDocument.create({
       data: {
