@@ -35,16 +35,23 @@ function getFileExtension(fileName: string): string {
   return trimmed.slice(lastDot + 1).toLowerCase();
 }
 
-function detectStoredMimeType(file: File): string | null {
+function isPdfSignature(bytes: Uint8Array): boolean {
+  return (
+    bytes.length >= 5 &&
+    bytes[0] === 0x25 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x44 &&
+    bytes[3] === 0x46 &&
+    bytes[4] === 0x2d
+  );
+}
+
+function detectImageMimeType(file: File): string | null {
   const reported = file.type.trim().toLowerCase();
   const ext = getFileExtension(file.name);
 
   if (ALLOWED_IMAGE_MIME.has(reported)) {
     return reported;
-  }
-
-  if (ext === "pdf") {
-    return "application/pdf";
   }
 
   if (ext === "jpg" || ext === "jpeg") {
@@ -56,41 +63,6 @@ function detectStoredMimeType(file: File): string | null {
   }
 
   if (ext === "webp") {
-    return "image/webp";
-  }
-
-  if (reported === "application/pdf") {
-    return "application/pdf";
-  }
-
-  return null;
-}
-
-function detectAllowedMimeType(file: File): string | null {
-  const reportedMimeType = file.type.trim().toLowerCase();
-  const extension = getFileExtension(file.name);
-
-  if (reportedMimeType === "application/pdf") {
-    return "application/pdf";
-  }
-
-  if (ALLOWED_IMAGE_MIME.has(reportedMimeType)) {
-    return reportedMimeType;
-  }
-
-  if (extension === "pdf") {
-    return "application/pdf";
-  }
-
-  if (extension === "jpg" || extension === "jpeg") {
-    return "image/jpeg";
-  }
-
-  if (extension === "png") {
-    return "image/png";
-  }
-
-  if (extension === "webp") {
     return "image/webp";
   }
 
@@ -173,18 +145,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "file missing" }, { status: 400 });
     }
 
-    const mimeType = detectStoredMimeType(fileRaw);
-    if (!mimeType) {
-      return NextResponse.json(
-        { error: "Dateityp nicht erlaubt (PDF/JPG/PNG/WEBP)." },
-        { status: 400 }
-      );
-    }
-
     const sizeBytes = fileRaw.size;
     if (sizeBytes <= 0 || sizeBytes > MAX_BYTES) {
       return NextResponse.json(
         { error: "Datei zu groß (max. 15 MB)." },
+        { status: 400 }
+      );
+    }
+
+    const ab = await fileRaw.arrayBuffer();
+    const bytes = new Uint8Array(ab);
+    const fileName = sanitizeFileName(fileRaw.name || "upload");
+    const extension = getFileExtension(fileName);
+
+    let mimeType: string | null = null;
+
+    if (extension === "pdf" || isPdfSignature(bytes)) {
+      mimeType = "application/pdf";
+    } else {
+      mimeType = detectImageMimeType(fileRaw);
+    }
+
+    if (!mimeType) {
+      return NextResponse.json(
+        { error: "Dateityp nicht erlaubt (PDF/JPG/PNG/WEBP)." },
         { status: 400 }
       );
     }
@@ -209,16 +193,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const ab = await fileRaw.arrayBuffer();
     const data = Buffer.from(ab);
-    const fileName = sanitizeFileName(fileRaw.name || "upload");
-
-    if (mimeType === "application/pdf" && getFileExtension(fileName) !== "pdf") {
-      return NextResponse.json(
-        { error: "PDF-Datei konnte nicht eindeutig erkannt werden." },
-        { status: 400 }
-      );
-    }
 
     const created = await prisma.planEntryDocument.create({
       data: {

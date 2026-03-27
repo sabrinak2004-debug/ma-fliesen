@@ -681,10 +681,18 @@ export default function AdminWochenplanPage() {
         credentials: "include",
         body: fd,
       });
-      const j: unknown = await r.json().catch(() => ({}));
+
+      const rawText = await r.text();
+      let j: unknown = {};
+
+      try {
+        j = rawText ? (JSON.parse(rawText) as unknown) : {};
+      } catch {
+        j = { error: rawText || `Upload fehlgeschlagen (${r.status}).` };
+      }
 
       if (!r.ok) {
-        const msg = getStringProp(j, "error") ?? "Upload fehlgeschlagen.";
+        const msg = getStringProp(j, "error") ?? `Upload fehlgeschlagen (${r.status}).`;
         setDocsError(msg);
         return;
       }
