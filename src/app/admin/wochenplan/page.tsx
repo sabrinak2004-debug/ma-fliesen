@@ -1,7 +1,7 @@
 // src/app/admin/wochenplan/page.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
@@ -423,7 +423,6 @@ export default function AdminWochenplanPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewDocUrl, setPreviewDocUrl] = useState<string | null>(null);
@@ -681,26 +680,15 @@ export default function AdminWochenplanPage() {
         credentials: "include",
         body: fd,
       });
-
-      const rawText = await r.text();
-      let j: unknown = {};
-
-      try {
-        j = rawText ? (JSON.parse(rawText) as unknown) : {};
-      } catch {
-        j = { error: rawText || `Upload fehlgeschlagen (${r.status}).` };
-      }
+      const j: unknown = await r.json().catch(() => ({}));
 
       if (!r.ok) {
-        const msg = getStringProp(j, "error") ?? `Upload fehlgeschlagen (${r.status}).`;
+        const msg = getStringProp(j, "error") ?? "Upload fehlgeschlagen.";
         setDocsError(msg);
         return;
       }
 
       setSelectedFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
       await loadDocs(editEntryId);
     } catch {
       setDocsError("Netzwerkfehler beim Upload.");
@@ -1770,13 +1758,11 @@ export default function AdminWochenplanPage() {
                   <div>
                     <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datei</div>
                     <input
-                      ref={fileInputRef}
                       type="file"
-                      accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
+                      accept=".pdf,image/*"
                       onChange={(e) => {
                         const f = e.target.files?.[0] ?? null;
                         setSelectedFile(f);
-                        setDocsError(null);
                       }}
                       style={{
                         width: "100%",
