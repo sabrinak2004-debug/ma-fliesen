@@ -416,7 +416,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
   useEffect(() => {
     void loadOpenTaskCount();
     void loadAdminRequestCounts();
-  }, [loadOpenTaskCount, loadAdminRequestCounts, pathname]);
+  }, [loadOpenTaskCount, loadAdminRequestCounts]);
 
   useEffect(() => {
   function onTasksChanged() {
@@ -761,6 +761,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     <Link
                       key={item.href}
                       href={item.href}
+                      prefetch={false}
                       className={`appshell-nav-item ${active ? "is-active" : ""}`}
                     >
                       <span className="appshell-nav-icon" aria-hidden="true">
@@ -916,6 +917,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={false}
                     className={`appshell-nav-item ${active ? "is-active" : ""}`}
                   >
                     <span className="appshell-nav-icon" aria-hidden="true">

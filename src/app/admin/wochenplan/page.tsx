@@ -1078,6 +1078,7 @@ export default function AdminWochenplanPage() {
           >
             <Link
               href="/admin/appointments"
+              prefetch={false}
               className="pill"
               style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
             >
