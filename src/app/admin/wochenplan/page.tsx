@@ -983,13 +983,12 @@ export default function AdminWochenplanPage() {
             {!isDesktop ? (
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "auto minmax(0, 1fr) auto",
-                  gap: 8,
+                  display: "flex",
                   alignItems: "center",
+                  gap: 8,
                   marginTop: 12,
-                  width: "100%",
-                  maxWidth: 340,
+                  width: "fit-content",
+                  maxWidth: "100%",
                 }}
               >
                 <button
@@ -1002,6 +1001,7 @@ export default function AdminWochenplanPage() {
                     })
                   }
                   style={{
+                    flex: "0 0 auto",
                     padding: "8px 10px",
                     justifyContent: "center",
                     whiteSpace: "nowrap",
@@ -1015,15 +1015,18 @@ export default function AdminWochenplanPage() {
                   value={fmtYMD(weekStart)}
                   onChange={(e) => setWeekStart(startOfWeek(new Date(e.target.value)))}
                   style={{
-                    width: "100%",
-                    minWidth: 0,
-                    maxWidth: "100%",
+                    flex: "0 0 136px",
+                    width: 136,
+                    minWidth: 136,
+                    maxWidth: 136,
                     boxSizing: "border-box",
                     padding: "8px 10px",
                     border: `1px solid ${UI.cellBorder}`,
                     borderRadius: 10,
                     background: "rgba(0,0,0,0.25)",
                     color: UI.text,
+                    appearance: "none",
+                    WebkitAppearance: "none",
                   }}
                 />
 
@@ -1037,10 +1040,10 @@ export default function AdminWochenplanPage() {
                     })
                   }
                   style={{
+                    flex: "0 0 auto",
                     padding: "8px 10px",
                     justifyContent: "center",
                     whiteSpace: "nowrap",
-                    marginLeft: 15, // 👈 DAS ist der Fix
                   }}
                 >
                   Woche →
