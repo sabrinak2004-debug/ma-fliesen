@@ -1519,3 +1519,50 @@ li {
   height: auto !important;
   border-radius: 12px;
 }
+
+.admin-task-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-task-form-grid > * {
+  min-width: 0;
+}
+
+.admin-task-submit-row {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-task-submit-btn {
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px 14px;
+  font-weight: 1000;
+  border-radius: 12px;
+  border: 1px solid rgba(184, 207, 58, 0.35);
+  background: rgba(184, 207, 58, 0.12);
+  color: var(--accent);
+  box-sizing: border-box;
+}
+
+@media (min-width: 900px) {
+  .admin-task-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-task-submit-row {
+    justify-content: stretch;
+  }
+
+  .admin-task-submit-btn {
+    width: 100%;
+  }
+}
