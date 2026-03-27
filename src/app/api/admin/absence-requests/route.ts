@@ -31,6 +31,8 @@ function mapRequest(r: {
   dayPortion: AbsenceDayPortion;
   status: AbsenceRequestStatus;
   compensation: AbsenceCompensation;
+  paidVacationUnits: number;
+  unpaidVacationUnits: number;
   autoUnpaidBecauseNoBalance: boolean;
   compensationLockedBySystem: boolean;
   noteEmployee: string | null;
@@ -54,6 +56,8 @@ function mapRequest(r: {
     dayPortion: r.dayPortion,
     status: r.status,
     compensation: r.compensation,
+    paidVacationUnits: r.paidVacationUnits,
+    unpaidVacationUnits: r.unpaidVacationUnits,
     autoUnpaidBecauseNoBalance: r.autoUnpaidBecauseNoBalance,
     compensationLockedBySystem: r.compensationLockedBySystem,
     noteEmployee: r.noteEmployee ?? "",
