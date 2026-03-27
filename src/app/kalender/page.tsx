@@ -76,6 +76,8 @@ type AbsenceRequestDTO = {
   dayPortion: AbsenceDayPortion;
   status: AbsenceRequestStatus;
   compensation: AbsenceCompensation;
+  paidVacationUnits: number;
+  unpaidVacationUnits: number;
   autoUnpaidBecauseNoBalance: boolean;
   compensationLockedBySystem: boolean;
   noteEmployee: string;
@@ -98,6 +100,8 @@ type AbsenceRequestBlock = {
   dayPortion: AbsenceDayPortion;
   status: AbsenceRequestStatus;
   compensation: AbsenceCompensation;
+  paidVacationUnits: number;
+  unpaidVacationUnits: number;
   autoUnpaidBecauseNoBalance: boolean;
   compensationLockedBySystem: boolean;
   start: string;
@@ -248,6 +252,8 @@ function isAbsenceRequestDTO(v: unknown): v is AbsenceRequestDTO {
   const type = v["type"];
   const dayPortion = v["dayPortion"];
   const compensation = v["compensation"];
+  const paidVacationUnits = v["paidVacationUnits"];
+  const unpaidVacationUnits = v["unpaidVacationUnits"];
   const autoUnpaidBecauseNoBalance = getBooleanField(v, "autoUnpaidBecauseNoBalance");
   const compensationLockedBySystem = getBooleanField(v, "compensationLockedBySystem");
   const status = v["status"];
@@ -265,6 +271,10 @@ function isAbsenceRequestDTO(v: unknown): v is AbsenceRequestDTO {
     !isAbsenceType(type) ||
     !isAbsenceDayPortion(dayPortion) ||
     !isAbsenceCompensation(compensation) ||
+    typeof paidVacationUnits !== "number" ||
+    !Number.isFinite(paidVacationUnits) ||
+    typeof unpaidVacationUnits !== "number" ||
+    !Number.isFinite(unpaidVacationUnits) ||
     typeof autoUnpaidBecauseNoBalance !== "boolean" ||
     typeof compensationLockedBySystem !== "boolean" ||
     !isAbsenceRequestStatus(status) ||
@@ -667,6 +677,8 @@ function buildRequestBlocks(requests: AbsenceRequestDTO[]): AbsenceRequestBlock[
       dayPortion: r.dayPortion,
       status: r.status,
       compensation: r.compensation,
+      paidVacationUnits: r.paidVacationUnits,
+      unpaidVacationUnits: r.unpaidVacationUnits,
       autoUnpaidBecauseNoBalance: r.autoUnpaidBecauseNoBalance,
       compensationLockedBySystem: r.compensationLockedBySystem,
       start: r.startDate,
@@ -687,6 +699,72 @@ function requestStatusLabel(status: AbsenceRequestStatus): string {
   if (status === "PENDING") return "Offen";
   if (status === "APPROVED") return "Genehmigt";
   return "Abgelehnt";
+}
+
+function formatVacationDays(value: number): string {
+  if (Number.isInteger(value)) {
+    return String(value);
+  }
+
+  return value.toLocaleString("de-DE", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+}
+
+function getRequestCompensationSummary(
+  paidVacationUnits: number,
+  unpaidVacationUnits: number,
+  compensation: AbsenceCompensation
+): string {
+  const paidDays = paidVacationUnits / 2;
+  const unpaidDays = unpaidVacationUnits / 2;
+
+  if (paidDays > 0 && unpaidDays > 0) {
+    return `${formatVacationDays(paidDays)} Tage bezahlt · ${formatVacationDays(unpaidDays)} Tage unbezahlt`;
+  }
+
+  if (paidDays > 0) {
+    return "Bezahlt";
+  }
+
+  if (unpaidDays > 0) {
+    return "Unbezahlt";
+  }
+
+  return compensation === "PAID" ? "Bezahlt" : "Unbezahlt";
+}
+
+function getRequestCompensationHint(
+  paidVacationUnits: number,
+  unpaidVacationUnits: number
+): string | null {
+  const paidDays = paidVacationUnits / 2;
+  const unpaidDays = unpaidVacationUnits / 2;
+
+  if (paidDays > 0 && unpaidDays > 0) {
+    return `Davon ${formatVacationDays(paidDays)} Tage bezahlt und ${formatVacationDays(unpaidDays)} Tage unbezahlt.`;
+  }
+
+  return null;
+}
+
+function getAbsenceCompensationSummary(absences: AbsenceDTO[]): string | null {
+  const vacationAbsences = absences.filter((a) => a.type === "VACATION");
+
+  if (vacationAbsences.length === 0) {
+    return null;
+  }
+
+  const paidUnits = vacationAbsences.reduce((sum, a) => {
+    return sum + (a.compensation === "PAID" ? (a.dayPortion === "HALF_DAY" ? 1 : 2) : 0);
+  }, 0);
+
+  const unpaidUnits = vacationAbsences.reduce((sum, a) => {
+    return sum + (a.compensation === "UNPAID" ? (a.dayPortion === "HALF_DAY" ? 1 : 2) : 0);
+  }, 0);
+
+  return getRequestCompensationSummary(paidUnits, unpaidUnits, "PAID");
 }
 
 function requestBlockLabel(b: AbsenceRequestBlock): string {
@@ -1069,7 +1147,13 @@ function KalenderPageInner({
   async function loadAbsencesMonth(): Promise<void> {
     setAbsLoading(true);
     try {
-      const r = await fetch(`/api/absences?${new URLSearchParams({ month: ym }).toString()}`);
+      const params = new URLSearchParams({ month: ym });
+
+      if (isAdminViewingEmployee && selectedUserId) {
+        params.set("userId", selectedUserId);
+      }
+
+      const r = await fetch(`/api/absences?${params.toString()}`);
       const j: unknown = await r.json();
       setMonthAbsences(r.ok ? parseAbsencesResponse(j) : []);
     } finally {
@@ -1098,10 +1182,16 @@ function KalenderPageInner({
   }
 
   async function reloadMonthAll(): Promise<void> {
-    if (isAdmin) {
+    if (isAdminViewingEmployee) {
+      await Promise.all([loadCalendar(), loadAbsencesMonth()]);
+      return;
+    }
+
+    if (isAdminOwnCalendar) {
       await loadCalendar();
       return;
     }
+
     await Promise.all([loadCalendar(), loadAbsencesMonth(), loadRequestsMonth()]);
   }
 
@@ -1165,6 +1255,11 @@ function KalenderPageInner({
     if (!selectedDate || isAdmin) return [];
     return requestBlocks.filter((b) => b.status === "PENDING" && dateInRange(selectedDate, b.start, b.end));
   }, [requestBlocks, selectedDate, isAdmin]);
+
+  const confirmedAbsencesForSelectedDay = useMemo(() => {
+    if (!selectedDate || isAdmin) return [];
+    return monthAbsences.filter((a) => a.absenceDate === selectedDate);
+  }, [monthAbsences, selectedDate, isAdmin]);
 
   const grid = useMemo(() => {
     const [y, m] = ym.split("-").map(Number);
@@ -2553,7 +2648,17 @@ function KalenderPageInner({
                       Feiertag
                     </span>
                   ) : null}
-                  {dayMap.get(selectedDate)?.hasVacation ? <span style={pillStyle()}>Urlaub</span> : null}
+                  {dayMap.get(selectedDate)?.hasVacation ? (
+                    <span style={pillStyle()}>
+                      {getAbsenceCompensationSummary(
+                        monthAbsences.filter(
+                          (a) => a.absenceDate === selectedDate && a.type === "VACATION"
+                        )
+                      ) === "Unbezahlt"
+                        ? "Unbezahlter Urlaub"
+                        : "Urlaub"}
+                    </span>
+                  ) : null}
                   {dayMap.get(selectedDate)?.hasSick ? <span style={pillStyle()}>Krank</span> : null}
                 </div>
 
@@ -2665,14 +2770,28 @@ function KalenderPageInner({
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {blocksForSelectedDay.map((b) => (
-                      <div key={`${b.type}-${b.start}-${b.end}`} className="card" style={{ padding: 12 }}>
-                        <div style={{ fontWeight: 900 }}>{blockLabel(b)}</div>
-                        <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                          Bereits vom Admin bestätigt und im Kalender registriert.
+                    {blocksForSelectedDay.map((b) => {
+                      const matchingAbsences = confirmedAbsencesForSelectedDay.filter((a) => {
+                        if (a.type !== b.type) return false;
+                        if (a.dayPortion !== b.dayPortion) return false;
+                        return dateInRange(a.absenceDate, b.start, b.end);
+                      });
+
+                      return (
+                        <div key={`${b.type}-${b.dayPortion}-${b.start}-${b.end}`} className="card" style={{ padding: 12 }}>
+                          <div style={{ fontWeight: 900 }}>{blockLabel(b)}</div>
+                          <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                            Bereits vom Admin bestätigt und im Kalender registriert.
+                          </div>
+
+                          {b.type === "VACATION" && getAbsenceCompensationSummary(matchingAbsences) ? (
+                            <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                              Vergütung: {getAbsenceCompensationSummary(matchingAbsences)}
+                            </div>
+                          ) : null}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -2699,10 +2818,20 @@ function KalenderPageInner({
                             Umfang: {b.dayPortion === "HALF_DAY" ? "Halber Urlaubstag" : "Ganzer Urlaubstag"}
                           </div>
                         ) : null}
-
                         {b.type === "VACATION" ? (
                           <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                            Vergütung: {b.compensation === "UNPAID" ? "Unbezahlt" : "Bezahlt"}
+                            Vergütung: {getRequestCompensationSummary(
+                              b.paidVacationUnits,
+                              b.unpaidVacationUnits,
+                              b.compensation
+                            )}
+                          </div>
+                        ) : null}
+
+                        {b.type === "VACATION" &&
+                        getRequestCompensationHint(b.paidVacationUnits, b.unpaidVacationUnits) ? (
+                          <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                            {getRequestCompensationHint(b.paidVacationUnits, b.unpaidVacationUnits)}
                           </div>
                         ) : null}
 
@@ -2836,43 +2965,81 @@ function KalenderPageInner({
               <div style={{ marginBottom: 12 }}>
                 <div className="label">Vergütung</div>
 
-                {compensationLockedBySystem && !selectedRequestBlock ? (
+                {!selectedRequestBlock ? (
                   <div
                     className="card"
                     style={{
                       padding: 10,
                       marginBottom: 10,
-                      borderColor: "rgba(255, 184, 77, 0.35)",
-                      background: "rgba(255, 184, 77, 0.08)",
+                      borderColor: compensationLockedBySystem
+                        ? "rgba(255, 184, 77, 0.35)"
+                        : "rgba(255,255,255,0.10)",
+                      background: compensationLockedBySystem
+                        ? "rgba(255, 184, 77, 0.08)"
+                        : "rgba(255,255,255,0.03)",
                       color: "rgba(255,255,255,0.92)",
                       fontSize: 13,
                       lineHeight: 1.45,
                     }}
                   >
-                    Für diesen Antrag ist aktuell kein bezahlter Urlaub mehr verfügbar.
-                    Der Antrag wird deshalb automatisch als unbezahlt gesetzt.
-                    Sobald bezahlter Urlaub wieder verfügbar ist, wird dieser Eintrag automatisch auf Bezahlt umgestellt
+                    {compensationLockedBySystem
+                      ? "Für diesen Antrag ist aktuell nicht genug bezahlter Urlaub verfügbar. Der Antrag wird deshalb vorläufig als unbezahlt eingereicht. Bei der Prüfung kann der Admin den Antrag ganz oder teilweise in bezahlten und unbezahlten Urlaub aufteilen."
+                      : "Falls bezahlter Resturlaub nicht vollständig ausreicht, kann der Antrag bei der Prüfung ganz oder teilweise in bezahlten und unbezahlten Urlaub aufgeteilt werden."}
                   </div>
                 ) : null}
 
-                <div className="calendar-form-grid-2">
-                  <button
-                    className={`btn ${absenceCompensation === "PAID" ? "btn-accent" : ""}`}
-                    type="button"
-                    onClick={() => setAbsenceCompensation("PAID")}
-                    disabled={!!selectedRequestBlock || compensationLockedBySystem}
+                {selectedRequestBlock ? (
+                  <div
+                    className="card"
+                    style={{
+                      padding: 10,
+                      borderColor: "rgba(255,255,255,0.10)",
+                      background: "rgba(255,255,255,0.03)",
+                      color: "rgba(255,255,255,0.92)",
+                      fontSize: 13,
+                      lineHeight: 1.45,
+                    }}
                   >
-                    Bezahlt
-                  </button>
-                  <button
-                    className={`btn ${absenceCompensation === "UNPAID" ? "btn-accent" : ""}`}
-                    type="button"
-                    onClick={() => setAbsenceCompensation("UNPAID")}
-                    disabled={!!selectedRequestBlock || compensationLockedBySystem}
-                  >
-                    Unbezahlt
-                  </button>
-                </div>
+                    <div>
+                      {getRequestCompensationSummary(
+                        selectedRequestBlock.paidVacationUnits,
+                        selectedRequestBlock.unpaidVacationUnits,
+                        selectedRequestBlock.compensation
+                      )}
+                    </div>
+
+                    {getRequestCompensationHint(
+                      selectedRequestBlock.paidVacationUnits,
+                      selectedRequestBlock.unpaidVacationUnits
+                    ) ? (
+                      <div style={{ marginTop: 6, color: "var(--muted)" }}>
+                        {getRequestCompensationHint(
+                          selectedRequestBlock.paidVacationUnits,
+                          selectedRequestBlock.unpaidVacationUnits
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="calendar-form-grid-2">
+                    <button
+                      className={`btn ${absenceCompensation === "PAID" ? "btn-accent" : ""}`}
+                      type="button"
+                      onClick={() => setAbsenceCompensation("PAID")}
+                      disabled={!!selectedRequestBlock || compensationLockedBySystem}
+                    >
+                      Bezahlt
+                    </button>
+                    <button
+                      className={`btn ${absenceCompensation === "UNPAID" ? "btn-accent" : ""}`}
+                      type="button"
+                      onClick={() => setAbsenceCompensation("UNPAID")}
+                      disabled={!!selectedRequestBlock || compensationLockedBySystem}
+                    >
+                      Unbezahlt
+                    </button>
+                  </div>
+                )}
               </div>
             ) : null}
 
