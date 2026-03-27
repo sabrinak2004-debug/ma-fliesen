@@ -2603,7 +2603,7 @@ function KalenderPageInner({
               </div>
 
               <div className="calendar-admin-meta-item">
-                <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                <div className="label" style={{ marginTop: 14, marginBottom: 10, fontSize: 12, opacity: 0.8 }}>
                   Titel
                 </div>
                 <input
