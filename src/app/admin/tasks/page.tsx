@@ -210,6 +210,31 @@ function requiredActionLabel(requiredAction: TaskRequiredAction): string {
   }
 }
 
+function sortTasksByDateDesc(tasks: TaskRow[]): TaskRow[] {
+  return tasks.slice().sort((a, b) => {
+    const aPrimary =
+      a.referenceStartDate ??
+      a.referenceDate ??
+      a.referenceEndDate ??
+      a.completedAt ??
+      a.createdAt;
+
+    const bPrimary =
+      b.referenceStartDate ??
+      b.referenceDate ??
+      b.referenceEndDate ??
+      b.completedAt ??
+      b.createdAt;
+
+    const byPrimary = bPrimary.slice(0, 19).localeCompare(aPrimary.slice(0, 19));
+    if (byPrimary !== 0) {
+      return byPrimary;
+    }
+
+    return b.createdAt.slice(0, 19).localeCompare(a.createdAt.slice(0, 19));
+  });
+}
+
 export default function AdminTasksPage() {
   const router = useRouter();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
@@ -368,12 +393,12 @@ export default function AdminTasksPage() {
   }, [tasks, taskCategoryFilter, taskQuery]);
 
   const openTasks = useMemo(
-    () => filteredTasks.filter((task) => task.status === "OPEN"),
+    () => sortTasksByDateDesc(filteredTasks.filter((task) => task.status === "OPEN")),
     [filteredTasks]
   );
 
   const completedTasks = useMemo(
-    () => filteredTasks.filter((task) => task.status === "COMPLETED"),
+    () => sortTasksByDateDesc(filteredTasks.filter((task) => task.status === "COMPLETED")),
     [filteredTasks]
   );
 

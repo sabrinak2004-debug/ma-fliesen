@@ -317,7 +317,7 @@ async function normalizeUploadFile(file: File): Promise<File> {
     arrayBuffer = await withTimeout(
       readFileViaFileReader(file),
       15000,
-      "Die Datei konnte auf diesem Gerät nicht gelesen werden."
+      "Die Datei konnte nicht gelesen werden. Bitte Datei zuerst lokal auf den Mac laden oder nach Downloads kopieren."
     );
   }
 
@@ -824,7 +824,9 @@ export default function AdminWochenplanPage() {
       }
 
       if (error instanceof Error) {
-        setDocsError(error.message || "Datei konnte nicht verarbeitet werden.");
+        setDocsError(
+          error.message || "Datei konnte nicht verarbeitet werden. Bitte Datei zuerst lokal verfügbar machen."
+        );
         return;
       }
 

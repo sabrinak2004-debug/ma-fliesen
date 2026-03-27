@@ -301,9 +301,26 @@ function categoryAccent(category: TaskCategory): string {
 
 function sortTasksByDateDesc(tasks: TaskRow[]): TaskRow[] {
   return tasks.slice().sort((a, b) => {
-    const aKey = (a.referenceDate ?? a.createdAt).slice(0, 19);
-    const bKey = (b.referenceDate ?? b.createdAt).slice(0, 19);
-    return bKey.localeCompare(aKey);
+    const aPrimary =
+      a.referenceStartDate ??
+      a.referenceDate ??
+      a.referenceEndDate ??
+      a.completedAt ??
+      a.createdAt;
+
+    const bPrimary =
+      b.referenceStartDate ??
+      b.referenceDate ??
+      b.referenceEndDate ??
+      b.completedAt ??
+      b.createdAt;
+
+    const byPrimary = bPrimary.slice(0, 19).localeCompare(aPrimary.slice(0, 19));
+    if (byPrimary !== 0) {
+      return byPrimary;
+    }
+
+    return b.createdAt.slice(0, 19).localeCompare(a.createdAt.slice(0, 19));
   });
 }
 
@@ -695,6 +712,8 @@ export default function AufgabenPage() {
               {completedTasks.map((task) => renderTaskCard(task, false))}
             </div>
           )}
+        </div>
+
         {showMissingWorkEntryModal && missingWorkEntryAlert ? (
           <div
             role="dialog"
@@ -788,7 +807,6 @@ export default function AufgabenPage() {
             </div>
           </div>
         ) : null}
-        </div>
       </div>
     </AppShell>
   );

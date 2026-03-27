@@ -126,6 +126,8 @@ export async function GET(req: Request): Promise<NextResponse> {
       },
       orderBy: [
         { status: "asc" },
+        { completedAt: "desc" },
+        { referenceStartDate: "desc" },
         { referenceDate: "desc" },
         { createdAt: "desc" },
       ],
