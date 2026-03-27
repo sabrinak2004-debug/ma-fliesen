@@ -421,7 +421,6 @@ export default function AdminWochenplanPage() {
   const [docsError, setDocsError] = useState<string | null>(null);
   const [docTitle, setDocTitle] = useState<string>("Baustellenzettel");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileInputKey, setFileInputKey] = useState(0);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
 
@@ -676,36 +675,23 @@ export default function AdminWochenplanPage() {
       fd.append("title", docTitle.trim() || "Dokument");
       fd.append("file", selectedFile);
 
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), 30000);
-
       const r = await fetch("/api/admin/plan-entry-documents", {
         method: "POST",
         credentials: "include",
         body: fd,
-        signal: controller.signal,
       });
-
-      window.clearTimeout(timeoutId);
       const j: unknown = await r.json().catch(() => ({}));
 
       if (!r.ok) {
-        const msg = getStringProp(j, "error") ?? `Upload fehlgeschlagen (HTTP ${r.status}).`;
+        const msg = getStringProp(j, "error") ?? "Upload fehlgeschlagen.";
         setDocsError(msg);
         return;
       }
 
       setSelectedFile(null);
-      setFileInputKey((prev) => prev + 1);
       await loadDocs(editEntryId);
-    } catch (error: unknown) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        setDocsError("Upload-Zeitüberschreitung. Der Server hat nicht rechtzeitig geantwortet.");
-      } else if (error instanceof Error && error.message.trim()) {
-        setDocsError(error.message);
-      } else {
-        setDocsError("Netzwerkfehler beim Upload.");
-      }
+    } catch {
+      setDocsError("Netzwerkfehler beim Upload.");
     } finally {
       setUploadingDoc(false);
     }
@@ -1078,7 +1064,6 @@ export default function AdminWochenplanPage() {
           >
             <Link
               href="/admin/appointments"
-              prefetch={false}
               className="pill"
               style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
             >
@@ -1773,19 +1758,10 @@ export default function AdminWochenplanPage() {
                   <div>
                     <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datei</div>
                     <input
-                      key={fileInputKey}
                       type="file"
-                      accept=".pdf,image/*,.jpg,.jpeg,.png,.webp"
+                      accept=".pdf,image/*"
                       onChange={(e) => {
                         const f = e.target.files?.[0] ?? null;
-
-                        if (f && f.size > 15 * 1024 * 1024) {
-                          setDocsError("Datei zu groß (max. 15 MB).");
-                          setSelectedFile(null);
-                          return;
-                        }
-
-                        setDocsError(null);
                         setSelectedFile(f);
                       }}
                       style={{
