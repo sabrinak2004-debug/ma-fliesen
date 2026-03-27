@@ -239,6 +239,21 @@ function ymdFromISO(iso: string): string {
   return `${y}-${m}-${dd}`;
 }
 
+const PLAN_DOC_ALLOWED_MIME = new Set<string>([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+const PLAN_DOC_MAX_BYTES = 15 * 1024 * 1024;
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 /* -------------------- Scroll-Modal (Header/Footer fix, Body scroll) -------------------- */
 function useLockBodyScroll(locked: boolean) {
   useEffect(() => {
@@ -662,13 +677,37 @@ export default function AdminWochenplanPage() {
       setPageError("Bitte erst den Plan-Eintrag speichern, dann Dokumente hochladen.");
       return;
     }
+
     if (!selectedFile) {
-      setPageError("Bitte eine Datei auswählen.");
+      setDocsError("Bitte eine Datei auswählen.");
+      return;
+    }
+
+    if (!PLAN_DOC_ALLOWED_MIME.has(selectedFile.type)) {
+      setDocsError("Dateityp nicht erlaubt. Erlaubt sind PDF, JPG, PNG und WEBP.");
+      return;
+    }
+
+    if (selectedFile.size <= 0) {
+      setDocsError("Die gewählte Datei ist leer.");
+      return;
+    }
+
+    if (selectedFile.size > PLAN_DOC_MAX_BYTES) {
+      setDocsError(
+        `Datei zu groß (${formatBytes(selectedFile.size)}). Maximal erlaubt sind ${formatBytes(PLAN_DOC_MAX_BYTES)}.`
+      );
       return;
     }
 
     setUploadingDoc(true);
     setDocsError(null);
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      controller.abort();
+    }, 120000);
+
     try {
       const fd = new FormData();
       fd.append("planEntryId", editEntryId);
@@ -679,20 +718,34 @@ export default function AdminWochenplanPage() {
         method: "POST",
         credentials: "include",
         body: fd,
+        signal: controller.signal,
       });
-      const j: unknown = await r.json().catch(() => ({}));
+
+      const contentType = r.headers.get("content-type") ?? "";
+      const j: unknown = contentType.includes("application/json")
+        ? await r.json().catch(() => ({}))
+        : {};
 
       if (!r.ok) {
-        const msg = getStringProp(j, "error") ?? "Upload fehlgeschlagen.";
+        const msg =
+          r.status === 413
+            ? "Die Datei ist für den Upload zu groß."
+            : getStringProp(j, "error") ?? "Upload fehlgeschlagen.";
         setDocsError(msg);
         return;
       }
 
       setSelectedFile(null);
       await loadDocs(editEntryId);
-    } catch {
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setDocsError("Upload dauert zu lange. Bitte kleinere Datei testen.");
+        return;
+      }
+
       setDocsError("Netzwerkfehler beim Upload.");
     } finally {
+      window.clearTimeout(timeoutId);
       setUploadingDoc(false);
     }
   }
@@ -1762,6 +1815,7 @@ export default function AdminWochenplanPage() {
                       accept=".pdf,image/*"
                       onChange={(e) => {
                         const f = e.target.files?.[0] ?? null;
+                        setDocsError(null);
                         setSelectedFile(f);
                       }}
                       style={{
@@ -1779,6 +1833,10 @@ export default function AdminWochenplanPage() {
                 <button className="pill pill-active" type="button" onClick={uploadDoc} disabled={uploadingDoc}>
                   {uploadingDoc ? "Upload..." : "Dokument hochladen"}
                 </button>
+
+                <div style={{ fontSize: 12, color: UI.muted, marginTop: 8 }}>
+                  Erlaubt: PDF, JPG, PNG, WEBP · max. 15 MB
+                </div>
 
                 <div style={{ marginTop: 12 }}>
                   {docsLoading ? (

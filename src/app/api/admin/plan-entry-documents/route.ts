@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
@@ -68,7 +71,16 @@ export async function POST(req: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const form = await req.formData();
+  let form: FormData;
+
+  try {
+    form = await req.formData();
+  } catch {
+    return NextResponse.json(
+      { error: "Upload konnte nicht gelesen werden. Bitte Datei prüfen und erneut versuchen." },
+      { status: 400 }
+    );
+  }
 
   const planEntryIdRaw = form.get("planEntryId");
   const titleRaw = form.get("title");
@@ -110,8 +122,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const ab = await fileRaw.arrayBuffer();
-  const data = Buffer.from(ab);
+  let data: Uint8Array<ArrayBuffer>;
+
+  try {
+    const ab = await fileRaw.arrayBuffer();
+    const source = new Uint8Array(ab);
+    const targetBuffer = new ArrayBuffer(source.byteLength);
+    data = new Uint8Array(targetBuffer);
+    data.set(source);
+  } catch {
+    return NextResponse.json(
+      { error: "Datei konnte serverseitig nicht verarbeitet werden." },
+      { status: 400 }
+    );
+  }
 
   const fileName = sanitizeFileName(fileRaw.name || "upload");
 
