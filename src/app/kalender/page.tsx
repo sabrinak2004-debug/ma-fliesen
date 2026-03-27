@@ -2553,7 +2553,10 @@ function KalenderPageInner({
               </div>
             )}
 
-            <div className="calendar-form-grid-2 admin-time-grid-mobile-fix" style={{ marginBottom: 10 }}>
+            <div
+              className="calendar-form-grid-2 admin-time-grid-mobile-fix"
+              style={{ marginTop: 14, marginBottom: 10 }}
+            >
               <div className="admin-time-grid-item">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
                   Start
