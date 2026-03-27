@@ -1364,6 +1364,20 @@ li {
     box-sizing: border-box;
   }
 
+  .absence-date-grid-item > .input[type="date"],
+  .admin-time-grid-item > .input[type="date"],
+  .admin-time-grid-item > .input[type="time"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 16px;
+  }
+
   .card {
     overflow-x: hidden;
   }
@@ -1575,10 +1589,13 @@ li {
 }
 
 .admin-task-date-input {
-  width: min(100%, 260px);
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+  display: block;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .calendar-admin-date-field-compact {
@@ -1590,18 +1607,11 @@ li {
 }
 
 .calendar-admin-date-input-compact {
-  width: min(100%, 260px);
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-}
-
-@media (max-width: 768px) {
-  .admin-task-date-input {
-    width: min(100%, 240px);
-  }
-
-  .calendar-admin-date-input-compact {
-    width: min(100%, 240px);
-  }
+  display: block;
+  appearance: none;
+  -webkit-appearance: none;
 }
