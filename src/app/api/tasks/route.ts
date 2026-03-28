@@ -152,22 +152,6 @@ export async function GET(req: Request): Promise<NextResponse> {
     }),
   ]);
 
-  const missingDateSet = new Set<string>(missingDates);
-
-  const visibleTasks = tasks.filter((task) =>
-    shouldKeepTask({
-      task: {
-        status: task.status,
-        category: task.category,
-        requiredAction: task.requiredAction,
-        referenceDate: task.referenceDate,
-        referenceStartDate: task.referenceStartDate,
-        referenceEndDate: task.referenceEndDate,
-      },
-      missingDateSet,
-    })
-  );
-
   const missingWorkEntryAlert: MissingWorkEntryAlert =
     missingDates.length > 0
       ? {
@@ -177,5 +161,5 @@ export async function GET(req: Request): Promise<NextResponse> {
         }
       : null;
 
-  return NextResponse.json({ tasks: visibleTasks, missingWorkEntryAlert });
+  return NextResponse.json({ tasks, missingWorkEntryAlert });
 }

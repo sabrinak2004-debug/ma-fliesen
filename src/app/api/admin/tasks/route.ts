@@ -6,7 +6,6 @@ import {
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
-import { berlinTodayYMD, getMissingRequiredWorkDates } from "@/lib/timesheetLock";
 import { sendPushToUser } from "@/lib/webpush";
 
 type CreateTaskBody = {
@@ -191,9 +190,7 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
   }
 
-  const todayYMD = berlinTodayYMD();
-
-  const [tasks, employees, activeEmployees] = await Promise.all([
+  const [tasks, employees] = await Promise.all([
     prisma.task.findMany({
       where: {
         assignedToUser: {
@@ -243,48 +240,9 @@ export async function GET(): Promise<NextResponse> {
         fullName: true,
       },
     }),
-    prisma.appUser.findMany({
-      where: {
-        isActive: true,
-        role: "EMPLOYEE",
-        companyId: admin.companyId,
-      },
-      select: {
-        id: true,
-      },
-    }),
   ]);
 
-  const missingDatesByUserId = new Map<string, ReadonlySet<string>>();
-
-  await Promise.all(
-    activeEmployees.map(async (employee) => {
-      const missingDates = await getMissingRequiredWorkDates(employee.id, todayYMD, {
-        includeUntilDate: true,
-        companyId: admin.companyId,
-      });
-
-      missingDatesByUserId.set(employee.id, new Set<string>(missingDates));
-    })
-  );
-
-  const visibleTasks = tasks.filter((task) => {
-    const missingDateSet = missingDatesByUserId.get(task.assignedToUser.id) ?? new Set<string>();
-
-    return shouldKeepTask({
-      task: {
-        status: task.status,
-        category: task.category,
-        requiredAction: task.requiredAction,
-        referenceDate: task.referenceDate,
-        referenceStartDate: task.referenceStartDate,
-        referenceEndDate: task.referenceEndDate,
-      },
-      missingDateSet,
-    });
-  });
-
-  return NextResponse.json({ tasks: visibleTasks, employees });
+  return NextResponse.json({ tasks, employees });
 }
 
 export async function POST(req: Request): Promise<NextResponse> {
