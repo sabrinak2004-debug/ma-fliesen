@@ -1688,13 +1688,7 @@ li {
 }
 
 .wochenplan-shell::before {
-  left: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(11, 15, 12, 0.98) 0%,
-    rgba(11, 15, 12, 0.82) 45%,
-    rgba(11, 15, 12, 0) 100%
-  );
+  display: none;
 }
 
 .wochenplan-shell::after {
@@ -1708,7 +1702,7 @@ li {
 }
 
 .wochenplan-shell.is-scrolled-left::before {
-  opacity: 1;
+  opacity: 0;
 }
 
 .wochenplan-shell.is-scrolled-right::after {
@@ -1721,4 +1715,36 @@ li {
 
 .wochenplan-shell.is-scrolled-top::marker {
   content: "";
+}
+
+.app-modal-body,
+.modal-body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.app-modal-body::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent !important;
+}
+
+.app-modal-body::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.app-modal-body::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.app-modal-body::-webkit-scrollbar-corner,
+.modal-body::-webkit-scrollbar-corner {
+  background: transparent !important;
 }
