@@ -1071,7 +1071,13 @@ export default function AdminWochenplanPage() {
   if (!sessionChecked) {
     return (
       <AppShell activeLabel="Wochenplan">
-        <div style={{ padding: 14 }}>
+    <div
+      style={{
+        padding: 14,
+        width: "100%",
+        minWidth: 0,
+      }}
+    >
           <div style={{ color: UI.muted }}>lädt…</div>
         </div>
       </AppShell>
@@ -1080,7 +1086,13 @@ export default function AdminWochenplanPage() {
 
   return (
     <AppShell activeLabel="Wochenplan">
-    <div style={{ padding: 14 }}>
+    <div
+      style={{
+        padding: 14,
+        width: "100%",
+        minWidth: 0,
+      }}
+    >
             {pageError ? (
                 <div
                   style={{
@@ -1103,6 +1115,8 @@ export default function AdminWochenplanPage() {
           gap: 12,
           marginBottom: 14,
           color: UI.text,
+          width: "100%",
+          minWidth: 0,
         }}
       >
         <div
@@ -1486,11 +1500,13 @@ export default function AdminWochenplanPage() {
         <div
           style={{
             display: isDesktop ? "block" : "none",
+            width: "100%",
+            minWidth: 0,
             overflow: "auto",
             maxHeight: "calc(100vh - 220px)",
             border: `1px solid ${UI.cellBorder}`,
             borderRadius: 14,
-            background: UI.tableBg,
+            background: "rgba(11,15,12,0.96)",
             backdropFilter: "blur(8px)",
             position: "relative",
           }}
@@ -1499,7 +1515,7 @@ export default function AdminWochenplanPage() {
             style={{
               borderCollapse: "separate",
               borderSpacing: 0,
-              minWidth: 1200,
+              minWidth: "100%",
               width: "max-content",
             }}
           >
@@ -1519,7 +1535,8 @@ export default function AdminWochenplanPage() {
                     left: 0,
                     top: 0,
                     zIndex: 5,
-                    background: UI.headerBg,
+                    background: "rgba(15,20,17,0.98)",
+                    boxShadow: "1px 0 0 rgba(255,255,255,0.08), 0 1px 0 rgba(255,255,255,0.08)",
                   }}
                 />
                 {users.map((u) => (
@@ -1535,10 +1552,11 @@ export default function AdminWochenplanPage() {
                       fontWeight: 900,
                       color: UI.text,
                       whiteSpace: "nowrap",
-                      background: UI.headerBg,
+                      background: "rgba(15,20,17,0.98)",
                       position: "sticky",
                       top: 0,
                       zIndex: 4,
+                      boxShadow: "0 1px 0 rgba(255,255,255,0.08)",
                     }}
                   >
                     {u.fullName}
@@ -1567,7 +1585,7 @@ export default function AdminWochenplanPage() {
                         borderBottom: `1px solid ${UI.cellBorder}`,
                         borderLeft: "none",
                         padding: 12,
-                        background: UI.leftBg,
+                        background: "rgba(15,20,17,0.98)",
                         fontWeight: 900,
                         color: UI.text,
                         verticalAlign: "top",
@@ -1577,6 +1595,7 @@ export default function AdminWochenplanPage() {
                         position: "sticky",
                         left: 0,
                         zIndex: 2,
+                        boxShadow: "1px 0 0 rgba(255,255,255,0.08)",
                       }}
                     >
                       {row.label}
