@@ -1891,7 +1891,14 @@ function KalenderPageInner({
               <div className="calendar-main-title">{title}</div>
 
               {isAdmin ? (
-                <div style={{ marginTop: 8, width: "100%" }}>
+                <div
+                  style={{
+                    marginTop: 8,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
                   <select
                     value={selectedUserId}
                     onChange={(e) => {
@@ -1909,11 +1916,13 @@ function KalenderPageInner({
                     }}
                     className="input calendar-user-select"
                     style={{
+                      width: "fit-content",
+                      minWidth: 280,
                       maxWidth: 320,
-                      width: "100%",
-                      margin: "0 auto",
                       textAlign: "center",
                       textAlignLast: "center",
+                      paddingLeft: 20,
+                      paddingRight: 20,
                     }}
                   >
                     <option value="">Meine Admin-Termine</option>
@@ -1925,7 +1934,16 @@ function KalenderPageInner({
                   </select>
 
                   {isAdminViewingEmployee ? (
-                    <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)", textAlign: "center" }}>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: 12,
+                        color: "var(--muted)",
+                        textAlign: "center",
+                        maxWidth: 420,
+                        marginInline: "auto",
+                      }}
+                    >
                       Mitarbeiteransicht (read-only): Kalender zeigt Plan/Urlaub/Krank des Mitarbeiters.
                     </div>
                   ) : null}
