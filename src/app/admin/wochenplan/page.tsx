@@ -1513,9 +1513,12 @@ export default function AdminWochenplanPage() {
             maxHeight: "calc(100vh - 220px)",
             border: `1px solid ${UI.cellBorder}`,
             borderRadius: 14,
-            background: "rgba(11,15,12,0.96)",
+            background: "rgba(11,15,12,0.98)",
             backdropFilter: "blur(8px)",
             position: "relative",
+            paddingBottom: 6,
+            paddingRight: 6,
+            boxSizing: "border-box",
           }}
         >
           <table
