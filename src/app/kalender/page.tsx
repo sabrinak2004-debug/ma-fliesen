@@ -1917,7 +1917,7 @@ function KalenderPageInner({
                     className="input calendar-user-select"
                     style={{
                       width: "fit-content",
-                      minWidth: 280,
+                      minWidth: 240,
                       maxWidth: 320,
                       textAlign: "center",
                       textAlignLast: "center",
