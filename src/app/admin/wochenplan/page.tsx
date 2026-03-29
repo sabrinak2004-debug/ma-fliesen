@@ -1487,26 +1487,58 @@ export default function AdminWochenplanPage() {
           style={{
             display: isDesktop ? "block" : "none",
             overflow: "auto",
+            maxHeight: "calc(100vh - 220px)",
             border: `1px solid ${UI.cellBorder}`,
             borderRadius: 14,
             background: UI.tableBg,
             backdropFilter: "blur(8px)",
+            position: "relative",
           }}
         >
-          <table style={{ borderCollapse: "collapse", minWidth: 1200, width: "100%" }}>
+          <table
+            style={{
+              borderCollapse: "separate",
+              borderSpacing: 0,
+              minWidth: 1200,
+              width: "max-content",
+            }}
+          >
             <thead>
               <tr style={{ background: UI.headerBg }}>
-                <th style={{ border: `1px solid ${UI.cellBorder}`, padding: 12, width: 180, textAlign: "left" }} />
+                <th
+                  style={{
+                    borderTop: `1px solid ${UI.cellBorder}`,
+                    borderRight: `1px solid ${UI.cellBorder}`,
+                    borderBottom: `1px solid ${UI.cellBorder}`,
+                    borderLeft: "none",
+                    padding: 12,
+                    width: 180,
+                    minWidth: 180,
+                    textAlign: "left",
+                    position: "sticky",
+                    left: 0,
+                    top: 0,
+                    zIndex: 5,
+                    background: UI.headerBg,
+                  }}
+                />
                 {users.map((u) => (
                   <th
                     key={u.id}
                     style={{
-                      border: `1px solid ${UI.cellBorder}`,
+                      borderTop: `1px solid ${UI.cellBorder}`,
+                      borderRight: `1px solid ${UI.cellBorder}`,
+                      borderBottom: `1px solid ${UI.cellBorder}`,
+                      borderLeft: "none",
                       padding: 12,
                       textAlign: "left",
                       fontWeight: 900,
                       color: UI.text,
                       whiteSpace: "nowrap",
+                      background: UI.headerBg,
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 4,
                     }}
                   >
                     {u.fullName}
@@ -1530,14 +1562,21 @@ export default function AdminWochenplanPage() {
                   <tr key={row.label}>
                     <td
                       style={{
-                        border: `1px solid ${UI.cellBorder}`,
+                        borderTop: `1px solid ${UI.cellBorder}`,
+                        borderRight: `1px solid ${UI.cellBorder}`,
+                        borderBottom: `1px solid ${UI.cellBorder}`,
+                        borderLeft: "none",
                         padding: 12,
                         background: UI.leftBg,
                         fontWeight: 900,
                         color: UI.text,
                         verticalAlign: "top",
                         width: 180,
+                        minWidth: 180,
                         whiteSpace: "nowrap",
+                        position: "sticky",
+                        left: 0,
+                        zIndex: 2,
                       }}
                     >
                       {row.label}
