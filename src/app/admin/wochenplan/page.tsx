@@ -1554,14 +1554,14 @@ export default function AdminWochenplanPage() {
             className="wochenplan-scroll"
             onScroll={handleDesktopPlanScroll}
             style={{
-              width: "calc(100% + 18px)",
-              height: "calc(100% + 18px)",
+              width: "100%",
+              height: "100%",
               minWidth: 0,
               overflow: "auto",
               maxHeight: "calc(100vh - 220px)",
-              paddingRight: 18,
+              paddingRight: 28,
               paddingBottom: 18,
-              boxSizing: "content-box",
+              boxSizing: "border-box",
               scrollBehavior: "smooth",
             }}
           >
