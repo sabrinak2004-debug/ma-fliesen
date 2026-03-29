@@ -1908,7 +1908,13 @@ function KalenderPageInner({
                       }
                     }}
                     className="input calendar-user-select"
-                    style={{ maxWidth: 320 }}
+                    style={{
+                      maxWidth: 320,
+                      width: "100%",
+                      margin: "0 auto",
+                      textAlign: "center",
+                      textAlignLast: "center",
+                    }}
                   >
                     <option value="">Meine Admin-Termine</option>
                     {users.map((u) => (
