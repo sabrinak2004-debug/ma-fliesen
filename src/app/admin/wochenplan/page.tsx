@@ -388,18 +388,19 @@ function Modal({
       }}
     >
       <div
+        className="app-modal-panel"
         style={{
           width: "100%",
           maxWidth,
           maxHeight: "85vh",
-          background: "rgba(0,0,0,0.55)",
+          background: "rgba(12,12,12,0.96)",
           border: `1px solid ${UI.cellBorder}`,
           borderRadius: 16,
-          backdropFilter: "blur(10px)",
           color: UI.text,
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
+          boxShadow: "0 18px 70px rgba(0,0,0,0.55)",
         }}
       >
         <div
@@ -418,17 +419,31 @@ function Modal({
           </button>
         </div>
 
-        <div style={{ padding: 16, overflowY: "auto", overscrollBehavior: "contain" }}>{children}</div>
+        <div
+          className="app-modal-body"
+          style={{
+            padding: 16,
+            paddingRight: 10,
+            overflowY: "auto",
+            overflowX: "hidden",
+            overscrollBehavior: "contain",
+          }}
+        >
+          {children}
+        </div>
 
         {footer ? (
           <div
+            className="app-modal-footer"
             style={{
               padding: 16,
+              paddingRight: 10,
               borderTop: `1px solid ${UI.cellBorder}`,
               display: "flex",
               justifyContent: "space-between",
               gap: 8,
               flexWrap: "wrap",
+              background: "rgba(12,12,12,0.96)",
             }}
           >
             {footer}
