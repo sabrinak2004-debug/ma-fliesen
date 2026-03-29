@@ -451,6 +451,11 @@ export default function AdminWochenplanPage() {
   const [session, setSession] = useState<AdminSessionDTO | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [pageError, setPageError] = useState<string>("");
+  const [desktopScrollState, setDesktopScrollState] = useState({
+    left: false,
+    right: false,
+    top: false,
+  });
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -552,6 +557,26 @@ export default function AdminWochenplanPage() {
     const kw = getISOWeek(weekStart);
     return { kw, dateRange: `${fmtDEshort(weekStart)} – ${fmtDE(end)}` };
   }, [weekStart]);
+
+  function handleDesktopPlanScroll(event: React.UIEvent<HTMLDivElement>): void {
+    const el = event.currentTarget;
+
+    const hasLeft = el.scrollLeft > 8;
+    const hasRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 8;
+    const hasTop = el.scrollTop > 8;
+
+    setDesktopScrollState((prev) => {
+      if (prev.left === hasLeft && prev.right === hasRight && prev.top === hasTop) {
+        return prev;
+      }
+
+      return {
+        left: hasLeft,
+        right: hasRight,
+        top: hasTop,
+      };
+    });
+  }
 
   const desktopTableWidth = useMemo(() => {
     const firstColumnWidth = 180;
@@ -1504,31 +1529,50 @@ export default function AdminWochenplanPage() {
         </div>
 
         <div
-          className="wochenplan-scroll"
+          className={[
+            "wochenplan-shell",
+            desktopScrollState.left ? "is-scrolled-left" : "",
+            desktopScrollState.right ? "is-scrolled-right" : "",
+            desktopScrollState.top ? "is-scrolled-top" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
           style={{
             display: isDesktop ? "block" : "none",
             width: "100%",
             minWidth: 0,
-            overflow: "auto",
             maxHeight: "calc(100vh - 220px)",
             border: `1px solid ${UI.cellBorder}`,
             borderRadius: 14,
             background: "rgba(11,15,12,0.98)",
             backdropFilter: "blur(8px)",
             position: "relative",
-            paddingBottom: 6,
-            paddingRight: 6,
-            boxSizing: "border-box",
+            overflow: "hidden",
           }}
         >
-          <table
+          <div
+            className="wochenplan-scroll"
+            onScroll={handleDesktopPlanScroll}
             style={{
-              borderCollapse: "separate",
-              borderSpacing: 0,
-              minWidth: "100%",
-              width: desktopTableWidth,
+              width: "calc(100% + 18px)",
+              height: "calc(100% + 18px)",
+              minWidth: 0,
+              overflow: "auto",
+              maxHeight: "calc(100vh - 220px)",
+              paddingRight: 18,
+              paddingBottom: 18,
+              boxSizing: "content-box",
+              scrollBehavior: "smooth",
             }}
           >
+            <table
+              style={{
+                borderCollapse: "separate",
+                borderSpacing: 0,
+                minWidth: "100%",
+                width: desktopTableWidth,
+              }}
+            >
             <thead>
               <tr style={{ background: UI.headerBg }}>
                 <th
@@ -1545,8 +1589,9 @@ export default function AdminWochenplanPage() {
                     left: 0,
                     top: 0,
                     zIndex: 5,
-                    background: "rgba(15,20,17,0.98)",
+                    background: "rgba(15,20,17,0.995)",
                     boxShadow: "1px 0 0 rgba(255,255,255,0.08), 0 1px 0 rgba(255,255,255,0.08)",
+                    backdropFilter: "blur(10px)",
                   }}
                 />
                 {users.map((u) => (
@@ -1562,12 +1607,13 @@ export default function AdminWochenplanPage() {
                       fontWeight: 900,
                       color: UI.text,
                       whiteSpace: "nowrap",
-                      background: "rgba(15,20,17,0.98)",
+                      background: "rgba(15,20,17,0.995)",
                       position: "sticky",
                       top: 0,
                       zIndex: 4,
                       boxShadow: "0 1px 0 rgba(255,255,255,0.08)",
                       minWidth: 220,
+                      backdropFilter: "blur(10px)",
                     }}
                   >
                     {u.fullName}
@@ -1596,7 +1642,7 @@ export default function AdminWochenplanPage() {
                         borderBottom: `1px solid ${UI.cellBorder}`,
                         borderLeft: "none",
                         padding: 12,
-                        background: "rgba(15,20,17,0.98)",
+                        background: "rgba(15,20,17,0.995)",
                         fontWeight: 900,
                         color: UI.text,
                         verticalAlign: "top",
@@ -1607,6 +1653,7 @@ export default function AdminWochenplanPage() {
                         left: 0,
                         zIndex: 2,
                         boxShadow: "1px 0 0 rgba(255,255,255,0.08)",
+                        backdropFilter: "blur(10px)",
                       }}
                     >
                       {row.label}
@@ -1722,7 +1769,8 @@ export default function AdminWochenplanPage() {
                 );
               })}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
         </>
       )}

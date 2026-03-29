@@ -1653,3 +1653,72 @@ li {
 .wochenplan-scroll::-webkit-scrollbar {
   display: none; /* Chrome, Safari */
 }
+
+.wochenplan-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.wochenplan-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+}
+
+.wochenplan-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+  background: transparent;
+}
+
+.wochenplan-shell::before,
+.wochenplan-shell::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 26px;
+  pointer-events: none;
+  z-index: 6;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.wochenplan-shell::before {
+  left: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(11, 15, 12, 0.98) 0%,
+    rgba(11, 15, 12, 0.82) 45%,
+    rgba(11, 15, 12, 0) 100%
+  );
+}
+
+.wochenplan-shell::after {
+  right: 0;
+  background: linear-gradient(
+    270deg,
+    rgba(11, 15, 12, 0.98) 0%,
+    rgba(11, 15, 12, 0.82) 45%,
+    rgba(11, 15, 12, 0) 100%
+  );
+}
+
+.wochenplan-shell.is-scrolled-left::before {
+  opacity: 1;
+}
+
+.wochenplan-shell.is-scrolled-right::after {
+  opacity: 1;
+}
+
+.wochenplan-shell.is-scrolled-top {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.wochenplan-shell.is-scrolled-top::marker {
+  content: "";
+}
