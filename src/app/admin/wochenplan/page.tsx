@@ -553,6 +553,12 @@ export default function AdminWochenplanPage() {
     return { kw, dateRange: `${fmtDEshort(weekStart)} – ${fmtDE(end)}` };
   }, [weekStart]);
 
+  const desktopTableWidth = useMemo(() => {
+    const firstColumnWidth = 180;
+    const userColumnWidth = 220;
+    return `max(100%, ${firstColumnWidth + users.length * userColumnWidth}px)`;
+  }, [users]);
+
   async function loadData() {
     if (!session || session.role !== "ADMIN") return;
 
@@ -1498,6 +1504,7 @@ export default function AdminWochenplanPage() {
         </div>
 
         <div
+          className="wochenplan-scroll"
           style={{
             display: isDesktop ? "block" : "none",
             width: "100%",
@@ -1516,7 +1523,7 @@ export default function AdminWochenplanPage() {
               borderCollapse: "separate",
               borderSpacing: 0,
               minWidth: "100%",
-              width: "max-content",
+              width: desktopTableWidth,
             }}
           >
             <thead>
@@ -1557,6 +1564,7 @@ export default function AdminWochenplanPage() {
                       top: 0,
                       zIndex: 4,
                       boxShadow: "0 1px 0 rgba(255,255,255,0.08)",
+                      minWidth: 220,
                     }}
                   >
                     {u.fullName}
@@ -1611,7 +1619,12 @@ export default function AdminWochenplanPage() {
                       return (
                         <td
                           key={`${row.label}_${u.id}`}
-                          style={{ border: `1px solid ${UI.cellBorder}`, padding: 10, verticalAlign: "top" }}
+                          style={{
+                            border: `1px solid ${UI.cellBorder}`,
+                            padding: 10,
+                            verticalAlign: "top",
+                            minWidth: 220,
+                          }}
                         >
                           <div style={{ minHeight: 74, display: "flex", flexDirection: "column", gap: 10 }}>
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

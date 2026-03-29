@@ -1615,3 +1615,32 @@ li {
   appearance: none;
   -webkit-appearance: none;
 }
+
+.wochenplan-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(184, 207, 58, 0.38) rgba(255, 255, 255, 0.06);
+}
+
+.wochenplan-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.wochenplan-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+}
+
+.wochenplan-scroll::-webkit-scrollbar-thumb {
+  background: rgba(184, 207, 58, 0.34);
+  border-radius: 999px;
+  border: 2px solid rgba(11, 15, 12, 0.96);
+}
+
+.wochenplan-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(184, 207, 58, 0.5);
+}
+
+.wochenplan-scroll::-webkit-scrollbar-corner {
+  background: rgba(11, 15, 12, 0.96);
+}
