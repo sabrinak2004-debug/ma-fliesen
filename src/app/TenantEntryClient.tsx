@@ -185,7 +185,7 @@ export default function TenantEntryClient() {
                   letterSpacing: -0.5,
                 }}
               >
-              Firmenzugang zu saleo
+              Willkommen bei saleo!
               </h1>
 
               <p
@@ -196,7 +196,7 @@ export default function TenantEntryClient() {
                   lineHeight: 1.5,
                 }}
               >
-                Gebe bitte deinen Firmennamen ein, damit wir dich
+                Gib bitte deinen Firmennamen ein, damit wir dich
                 zum richtigen Login weiterleiten können.
               </p>
             </div>
@@ -238,7 +238,7 @@ export default function TenantEntryClient() {
                 lineHeight: 1.5,
               }}
             >
-              Nach erfolgreicher Prüfung wirst du automatisch auf den
+              Nach erfolgreicher Prüfung wirst du automatisch zu dem
               passenden Firmen-Login weitergeleitet.
             </div>
             <div className="login-legal-links">
