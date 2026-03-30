@@ -2037,133 +2037,203 @@ function KalenderPageInner({
         </div>
 
         {viewMode === "WEEK" ? (
-          <div className="calendar-grid-scroll">
-            <div className="calendar-week-grid">
-              {weekDays.map((w) => {
-                const info = dayMap.get(w.date);
-                const inThisMonth = monthKey(ymdToDateLocal(w.date)) === ym;
+          <>
+            <div className="calendar-grid-scroll">
+              <div className="calendar-week-grid">
+                {weekDays.map((w) => {
+                  const info = dayMap.get(w.date);
+                  const inThisMonth = monthKey(ymdToDateLocal(w.date)) === ym;
 
-                const border =
-                  info?.hasSick
-                    ? "rgba(224, 75, 69, 0.65)"
-                    : info?.hasVacation
-                    ? "rgba(90, 167, 255, 0.65)"
-                    : info?.hasHoliday
-                    ? "rgba(255, 196, 0, 0.65)"
-                    : info?.hasPlan
-                    ? "rgba(184, 207, 58, 0.65)"
-                    : "var(--border)";
+                  const border =
+                    info?.hasSick
+                      ? "rgba(224, 75, 69, 0.65)"
+                      : info?.hasVacation
+                      ? "rgba(90, 167, 255, 0.65)"
+                      : info?.hasHoliday
+                      ? "rgba(255, 196, 0, 0.65)"
+                      : info?.hasPlan
+                      ? "rgba(184, 207, 58, 0.65)"
+                      : "var(--border)";
 
-                const bg =
-                  info?.hasSick
-                    ? "rgba(224, 75, 69, 0.16)"
-                    : info?.hasVacation
-                    ? "rgba(90, 167, 255, 0.12)"
-                    : info?.hasHoliday
-                    ? "rgba(255, 196, 0, 0.12)"
-                    : info?.hasPlan
-                    ? "rgba(184, 207, 58, 0.10)"
-                    : "rgba(255,255,255,0.02)";
+                  const bg =
+                    info?.hasSick
+                      ? "rgba(224, 75, 69, 0.16)"
+                      : info?.hasVacation
+                      ? "rgba(90, 167, 255, 0.12)"
+                      : info?.hasHoliday
+                      ? "rgba(255, 196, 0, 0.12)"
+                      : info?.hasPlan
+                      ? "rgba(184, 207, 58, 0.10)"
+                      : "rgba(255,255,255,0.02)";
 
-                return (
-                  <button
-                    key={w.date}
-                    className="card calendar-week-cell"
-                    onClick={() => {
-                      const dt = ymdToDateLocal(w.date);
-                      setCursor(dt);
-                      openDay(w.date);
-                    }}
-                    style={{
-                      borderColor: border,
-                      background: bg,
-                      opacity: inThisMonth ? 1 : 0.75,
-                    }}
-                    title={fmtDateTitle(w.date)}
-                  >
-                    <div className="calendar-week-cell-head">
-                      <div className="calendar-week-cell-daylabel">
-                        <span className="calendar-week-cell-weekday">{w.label}</span>
-                        <span
-                          className={
-                            w.isToday
-                              ? "calendar-week-cell-daynumber calendar-week-cell-daynumber-today"
-                              : "calendar-week-cell-daynumber"
-                          }
+                  return (
+                    <button
+                      key={w.date}
+                      className="card calendar-week-cell"
+                      onClick={() => {
+                        const dt = ymdToDateLocal(w.date);
+                        setCursor(dt);
+                        openDay(w.date);
+                      }}
+                      style={{
+                        borderColor: border,
+                        background: bg,
+                        opacity: inThisMonth ? 1 : 0.75,
+                      }}
+                      title={fmtDateTitle(w.date)}
+                    >
+                      <div className="calendar-week-cell-head">
+                        <div className="calendar-week-cell-daylabel">
+                          <span className="calendar-week-cell-weekday">{w.label}</span>
+                          <span
+                            className={
+                              w.isToday
+                                ? "calendar-week-cell-daynumber calendar-week-cell-daynumber-today"
+                                : "calendar-week-cell-daynumber"
+                            }
+                          >
+                            {w.dayNum}
+                          </span>
+                        </div>
+
+                        <span className="calendar-week-cell-datefull">
+                          {w.date}
+                        </span>
+                      </div>
+
+                      <div className="calendar-week-cell-tags">
+                        {info?.hasPlan ? (
+                          <span style={pillStyle()}>
+                            <span style={smallDot("rgba(184, 207, 58, 0.95)")} />{" "}
+                            {showEmployeeCalendarLegend ? "Arbeit" : "Termine"}
+                          </span>
+                        ) : null}
+
+                        {info?.hasHoliday ? (
+                          <span style={pillStyle()} title={info.holidayName ?? "Gesetzlicher Feiertag"}>
+                            <span style={smallDot(holidayDotColor())} /> Feiertag
+                          </span>
+                        ) : null}
+
+                        {showEmployeeCalendarLegend && info?.hasVacation ? (
+                          <span style={pillStyle()}>
+                            <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> Urlaub
+                          </span>
+                        ) : null}
+
+                        {showEmployeeCalendarLegend && info?.hasSick ? (
+                          <span style={pillStyle()}>
+                            <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> Krank
+                          </span>
+                        ) : null}
+
+                        {!info?.hasPlan && !info?.hasVacation && !info?.hasSick && !info?.hasHoliday ? (
+                          <span
+                            style={{
+                              fontSize: 12,
+                              color: "var(--muted)",
+                            }}
+                          >
+                            Keine Einträge
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {info?.hasPlan && info.planPreview ? (
+                        <div
+                          className="calendar-week-cell-preview"
+                          title={info.planPreview}
                         >
-                          {w.dayNum}
-                        </span>
-                      </div>
-
-                      <span className="calendar-week-cell-datefull">
-                        {w.date}
-                      </span>
-                    </div>
-
-                    <div className="calendar-week-cell-tags">
-                      {info?.hasPlan ? (
-                        <span style={pillStyle()}>
-                          <span style={smallDot("rgba(184, 207, 58, 0.95)")} />{" "}
-                          {showEmployeeCalendarLegend ? "Arbeit" : "Termine"}
-                        </span>
+                          {info.planPreview}
+                        </div>
                       ) : null}
 
-                      {info?.hasHoliday ? (
-                        <span style={pillStyle()} title={info.holidayName ?? "Gesetzlicher Feiertag"}>
-                          <span style={smallDot(holidayDotColor())} /> Feiertag
-                        </span>
-                      ) : null}
-
-                      {showEmployeeCalendarLegend && info?.hasVacation ? (
-                        <span style={pillStyle()}>
-                          <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> Urlaub
-                        </span>
-                      ) : null}
-
-                      {showEmployeeCalendarLegend && info?.hasSick ? (
-                        <span style={pillStyle()}>
-                          <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> Krank
-                        </span>
-                      ) : null}
-
-                      {!info?.hasPlan && !info?.hasVacation && !info?.hasSick && !info?.hasHoliday ? (
-                        <span
-                          style={{
-                            fontSize: 12,
-                            color: "var(--muted)",
-                          }}
+                      {info?.hasHoliday && info.holidayName ? (
+                        <div
+                          className="calendar-week-cell-preview"
+                          title={info.holidayName}
+                          style={{ color: "rgba(255, 196, 0, 0.95)" }}
                         >
-                          Keine Einträge
-                        </span>
+                          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            {getHolidayIcon(info.holidayName)}
+                            {info.holidayName}
+                          </span>
+                        </div>
                       ) : null}
-                    </div>
-
-                    {info?.hasPlan && info.planPreview ? (
-                      <div
-                        className="calendar-week-cell-preview"
-                        title={info.planPreview}
-                      >
-                        {info.planPreview}
-                      </div>
-                    ) : null}
-
-                    {info?.hasHoliday && info.holidayName ? (
-                      <div
-                        className="calendar-week-cell-preview"
-                        title={info.holidayName}
-                        style={{ color: "rgba(255, 196, 0, 0.95)" }}
-                      >
-                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          {getHolidayIcon(info.holidayName)}
-                          {info.holidayName}
-                        </span>
-                      </div>
-                    ) : null}
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+
+            <div
+              className="calendar-legend-row"
+              style={{
+                marginTop: 14,
+                color: "var(--muted)",
+              }}
+            >
+              <div
+                className="calendar-legend-items"
+                style={{
+                  display: "flex",
+                  gap: 14,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                {isAdminOwnCalendar ? (
+                  <>
+                    <div>
+                      <span className="badge-dot dot-work" /> Termine
+                    </div>
+                    <div>
+                      <span
+                        className="badge-dot"
+                        style={{ background: holidayDotColor(), boxShadow: "0 0 0 3px rgba(255, 196, 0, 0.16)" }}
+                      />{" "}
+                      Feiertag
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <span className="badge-dot dot-work" /> Arbeit
+                    </div>
+                    <div>
+                      <span className="badge-dot dot-vac" /> Urlaub
+                    </div>
+                    <div>
+                      <span
+                        className="badge-dot"
+                        style={{ background: holidayDotColor(), boxShadow: "0 0 0 3px rgba(255, 196, 0, 0.16)" }}
+                      />{" "}
+                      Feiertag
+                    </div>
+                    <div>
+                      <span className="badge-dot dot-sick" /> Krank
+                    </div>
+                  </>
+                )}
+
+                {!isAdminViewingEmployee && (absLoading || reqLoading) ? (
+                  <div style={{ fontSize: 12, opacity: 0.8 }}>
+                    Abwesenheiten/Anträge laden…
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="calendar-today-action-wrap">
+                <button
+                  className="btn calendar-today-action-btn"
+                  type="button"
+                  onClick={jumpToToday}
+                >
+                  Heute
+                </button>
+              </div>
+            </div>
+          </>
         ) : (
           <>
             <div className="calendar-grid-scroll">
