@@ -7,9 +7,8 @@ export default function NutzungsbedingungenPage() {
         <div className="card card-olive legal-page-card">
           <h1 className="legal-page-title">Nutzungsbedingungen</h1>
           <div className="legal-page-updated">
-            Letzte Aktualisierung: [Datum einfügen]
+            Letzte Aktualisierung: 30.03.2026
           </div>
-
           <div className="legal-page-content">
             <h2>1. Geltungsbereich</h2>
             <p>

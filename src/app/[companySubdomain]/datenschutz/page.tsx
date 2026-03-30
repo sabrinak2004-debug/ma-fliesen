@@ -24,7 +24,7 @@ export default async function TenantDatenschutzPage({
         <div className="card card-olive legal-page-card">
           <h1 className="legal-page-title">Datenschutzerklärung</h1>
           <div className="legal-page-updated">
-            Letzte Aktualisierung: [30.03.2026]
+            Letzte Aktualisierung: 30.03.2026
           </div>
 
           <div className="legal-page-content">
@@ -39,11 +39,11 @@ export default async function TenantDatenschutzPage({
             <p>
               Verantwortlich für die Datenverarbeitung ist:
               <br />
-              [Sabrina Klausmeier]
+              Sabrina Klausmeier
               <br />
-              [Stetter SWeg 11, 70794 Filderstadt]
+              Stetter Weg 11, 70794 Filderstadt
               <br />
-              [Sabrinak2004@gmail.com]
+              sabrinak2004@gmail.com
             </p>
 
             <h2>3. Verarbeitete Daten</h2>
@@ -164,7 +164,7 @@ export default async function TenantDatenschutzPage({
             <p>
               Bei Fragen zum Datenschutz:
               <br />
-              [Sabrinak2004@gmail.com]
+              sabrinak2004@gmail.com
             </p>
           </div>
 

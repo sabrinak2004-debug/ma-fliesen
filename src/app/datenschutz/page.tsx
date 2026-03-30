@@ -22,11 +22,11 @@ export default function DatenschutzPage() {
             <p>
               Verantwortlich für die Datenverarbeitung ist:
               <br />
-              [Sabrina Klausmeier]
+              Sabrina Klausmeier
               <br />
-              [Stetter Weg 11, 70794 Filderstadt]
+              Stetter Weg 11, 70794 Filderstadt
               <br />
-              [sabrinak2004@gmail.com]
+              sabrinak2004@gmail.com
             </p>
 
             <h2>3. Verarbeitete Daten</h2>
@@ -147,7 +147,7 @@ export default function DatenschutzPage() {
             <p>
               Bei Fragen zum Datenschutz:
               <br />
-              [Sabrinak2004@gmail.com]
+              Sabrinak2004@gmail.com
             </p>
           </div>
 
