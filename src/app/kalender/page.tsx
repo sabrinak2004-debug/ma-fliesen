@@ -2348,6 +2348,15 @@ function KalenderPageInner({
                   <div>
                     <span className="badge-dot dot-sick" /> Krank
                   </div>
+                  <div className="calendar-today-action-wrap">
+                    <button
+                      className="btn calendar-today-action-btn"
+                      type="button"
+                      onClick={jumpToToday}
+                    >
+                      Heute
+                    </button>
+                  </div>
                   {!isAdminViewingEmployee && (absLoading || reqLoading) ? (
                     <div style={{ marginLeft: "auto", fontSize: 12, opacity: 0.8 }}>
                       Abwesenheiten/Anträge laden…
@@ -2358,15 +2367,6 @@ function KalenderPageInner({
             </div>
           </>
         )}
-        <div className="calendar-today-action-wrap">
-          <button
-            className="btn calendar-today-action-btn"
-            type="button"
-            onClick={jumpToToday}
-          >
-            Heute
-          </button>
-        </div>
       </div>
 
       {isAdminOwnCalendar ? (
