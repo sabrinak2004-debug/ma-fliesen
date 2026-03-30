@@ -1051,6 +1051,7 @@ function KalenderPageInner({
   const isAdmin = forceAdminOwnCalendar || session?.role === "ADMIN";
   const isAdminOwnCalendar = isAdmin && !selectedUserId;
   const isAdminViewingEmployee = isAdmin && !!selectedUserId;
+  const showEmployeeCalendarLegend = !isAdminOwnCalendar;
 
   const title = useMemo(() => {
     if (viewMode === "WEEK") {
@@ -2094,7 +2095,8 @@ function KalenderPageInner({
                     <div className="calendar-week-cell-tags">
                       {info?.hasPlan ? (
                         <span style={pillStyle()}>
-                          <span style={smallDot("rgba(184, 207, 58, 0.95)")} /> Termine
+                          <span style={smallDot("rgba(184, 207, 58, 0.95)")} />{" "}
+                          {showEmployeeCalendarLegend ? "Arbeit" : "Termine"}
                         </span>
                       ) : null}
 
@@ -2104,13 +2106,13 @@ function KalenderPageInner({
                         </span>
                       ) : null}
 
-                      {!isAdmin && info?.hasVacation ? (
+                      {showEmployeeCalendarLegend && info?.hasVacation ? (
                         <span style={pillStyle()}>
                           <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> Urlaub
                         </span>
                       ) : null}
 
-                      {!isAdmin && info?.hasSick ? (
+                      {showEmployeeCalendarLegend && info?.hasSick ? (
                         <span style={pillStyle()}>
                           <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> Krank
                         </span>
@@ -2233,8 +2235,12 @@ function KalenderPageInner({
                         <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                           {info?.hasPlan ? <span style={smallDot("rgba(184, 207, 58, 0.95)")} /> : null}
                           {info?.hasHoliday ? <span style={smallDot(holidayDotColor())} /> : null}
-                          {!isAdmin && info?.hasVacation ? <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> : null}
-                          {!isAdmin && info?.hasSick ? <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> : null}
+                          {showEmployeeCalendarLegend && info?.hasVacation ? (
+                            <span style={smallDot("rgba(90, 167, 255, 0.95)")} />
+                          ) : null}
+                          {showEmployeeCalendarLegend && info?.hasSick ? (
+                            <span style={smallDot("rgba(224, 75, 69, 0.95)")} />
+                          ) : null}
                         </div>
 
                         {info?.hasPlan && info.planPreview ? (
@@ -2303,7 +2309,7 @@ function KalenderPageInner({
                 flexWrap: "wrap",
               }}
             >
-              {isAdmin ? (
+              {isAdminOwnCalendar ? (
                 <>
                   <div>
                     <span className="badge-dot dot-work" /> Termine
@@ -2334,7 +2340,7 @@ function KalenderPageInner({
                   <div>
                     <span className="badge-dot dot-sick" /> Krank
                   </div>
-                  {absLoading || reqLoading ? (
+                  {!isAdminViewingEmployee && (absLoading || reqLoading) ? (
                     <div style={{ marginLeft: "auto", fontSize: 12, opacity: 0.8 }}>
                       Abwesenheiten/Anträge laden…
                     </div>
