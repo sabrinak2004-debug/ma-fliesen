@@ -2375,6 +2375,15 @@ function KalenderPageInner({
             </div>
           </>
         )}
+        <div className="calendar-today-action-wrap">
+          <button
+            className="btn calendar-today-action-btn"
+            type="button"
+            onClick={jumpToToday}
+          >
+            Heute
+          </button>
+        </div>
       </div>
 
       {isAdminOwnCalendar ? (

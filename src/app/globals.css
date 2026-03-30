@@ -1189,6 +1189,16 @@ li {
   border-radius: 9px;
 }
 
+.calendar-today-action-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.calendar-today-action-btn {
+  min-width: 110px;
+}
+
 /* ===== Nur Mobile ===== */
 
 @media (max-width: 767px) {
@@ -1349,6 +1359,16 @@ li {
 
   .calendar-appt-card {
     gap: 10px;
+  }
+
+  .calendar-today-action-wrap {
+    justify-content: center;
+    margin-top: 14px;
+  }
+
+  .calendar-today-action-btn {
+    width: 100%;
+    max-width: 220px;
   }
 
   .calendar-form-grid-2.absence-date-grid-mobile-fix,
