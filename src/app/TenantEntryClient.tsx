@@ -185,7 +185,7 @@ export default function TenantEntryClient() {
                   letterSpacing: -0.5,
                 }}
               >
-                Willkommen im Mitarbeiterportal
+              Firmenzugang zu saleo
               </h1>
 
               <p
@@ -225,7 +225,7 @@ export default function TenantEntryClient() {
                     fontWeight: 900,
                   }}
                 >
-                  {isSubmitting ? "Firma wird geprüft..." : "Weiter zum Login"}
+                  {isSubmitting ? "Firma wird geprüft..." : "Weiter zum Firmen-Login"}
                 </button>
               </div>
             </form>
