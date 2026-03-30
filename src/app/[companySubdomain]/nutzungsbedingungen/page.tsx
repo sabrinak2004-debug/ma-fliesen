@@ -1,4 +1,4 @@
-import Link from "next/link";
+import LegalBackButton from "@/components/LegalBackButton";
 import { notFound } from "next/navigation";
 import { normalizeTenantSubdomain } from "@/lib/tenantBranding";
 
@@ -118,19 +118,11 @@ export default async function TenantNutzungsbedingungenPage({
           </div>
 
           <div className="legal-page-actions">
-            <Link
-              href={`/${normalizedSubdomain}/login`}
-              className="btn"
-              style={{
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              Zurück zum Login
-            </Link>
-          </div>
+            <LegalBackButton
+                fallbackHref={`/${normalizedSubdomain}/login`}
+                label="Zurück"
+            />
+            </div>
         </div>
       </div>
     </div>

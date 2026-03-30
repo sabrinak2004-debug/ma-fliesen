@@ -1,4 +1,4 @@
-import Link from "next/link";
+import LegalBackButton from "@/components/LegalBackButton";
 
 export default function NutzungsbedingungenPage() {
   return (
@@ -100,19 +100,8 @@ export default function NutzungsbedingungenPage() {
           </div>
 
           <div className="legal-page-actions">
-            <Link
-              href="/login"
-              className="btn"
-              style={{
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              Zurück zum Login
-            </Link>
-          </div>
+            <LegalBackButton fallbackHref="/" label="Zurück" />
+            </div>
         </div>
       </div>
     </div>
