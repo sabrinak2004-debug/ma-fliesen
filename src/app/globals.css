@@ -1208,6 +1208,28 @@ li {
   border-radius: 9px;
 }
 
+.calendar-legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.calendar-legend-items {
+  min-width: 0;
+  flex: 1;
+}
+
+.calendar-today-action-wrap {
+  display: flex;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+
+.calendar-today-action-btn {
+  min-width: 110px;
+}
+
 .calendar-today-action-wrap {
   display: flex;
   justify-content: flex-end;
@@ -1263,6 +1285,22 @@ li {
     width: 100%;
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .calendar-legend-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .calendar-today-action-wrap {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .calendar-today-action-btn {
+    width: 100%;
+    max-width: 220px;
   }
 
   .calendar-week-cell {
