@@ -9,6 +9,7 @@ import {
   normalizeThemeColor,
   resetAccentColorOnDocument,
 } from "@/lib/tenantBranding";
+import Link from "next/link";
 
 type Role = "ADMIN" | "EMPLOYEE";
 
@@ -137,6 +138,15 @@ export default function LoginClient({
     brand.logoUrl,
     companySubdomainOverride ?? companySubdomain ?? ""
   );
+
+  const legalBasePath = companySubdomain
+    ? `/${companySubdomain}`
+    : companySubdomainOverride
+      ? `/${companySubdomainOverride}`
+      : "";
+
+  const privacyHref = `${legalBasePath}/datenschutz`;
+  const termsHref = `${legalBasePath}/nutzungsbedingungen`;
 
   const reqIdRef = useRef(0);
 
@@ -580,6 +590,18 @@ export default function LoginClient({
             >
               {busy ? "Bitte warten..." : needsSetup ? "Passwort speichern & Login" : "Login"}
             </button>
+
+            <div className="login-legal-links">
+              <Link href={privacyHref} className="login-legal-link">
+                Datenschutz
+              </Link>
+
+              <span className="login-legal-separator">•</span>
+
+              <Link href={termsHref} className="login-legal-link">
+                Nutzungsbedingungen
+              </Link>
+            </div>
 
             <div style={{ color: "var(--muted-2)", marginTop: 10, fontSize: 12 }}>
               Nur hinterlegte Mitarbeiter können sich anmelden. Beim ersten Login wird ein
