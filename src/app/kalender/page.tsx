@@ -2165,73 +2165,20 @@ function KalenderPageInner({
                 })}
               </div>
             </div>
-
             <div
-              className="calendar-legend-row"
               style={{
+                display: "flex",
+                justifyContent: "flex-end",
                 marginTop: 14,
-                color: "var(--muted)",
               }}
             >
-              <div
-                className="calendar-legend-items"
-                style={{
-                  display: "flex",
-                  gap: 14,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
+              <button
+                className="btn calendar-today-action-btn"
+                type="button"
+                onClick={jumpToToday}
               >
-                {isAdminOwnCalendar ? (
-                  <>
-                    <div>
-                      <span className="badge-dot dot-work" /> Termine
-                    </div>
-                    <div>
-                      <span
-                        className="badge-dot"
-                        style={{ background: holidayDotColor(), boxShadow: "0 0 0 3px rgba(255, 196, 0, 0.16)" }}
-                      />{" "}
-                      Feiertag
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <span className="badge-dot dot-work" /> Arbeit
-                    </div>
-                    <div>
-                      <span className="badge-dot dot-vac" /> Urlaub
-                    </div>
-                    <div>
-                      <span
-                        className="badge-dot"
-                        style={{ background: holidayDotColor(), boxShadow: "0 0 0 3px rgba(255, 196, 0, 0.16)" }}
-                      />{" "}
-                      Feiertag
-                    </div>
-                    <div>
-                      <span className="badge-dot dot-sick" /> Krank
-                    </div>
-                  </>
-                )}
-
-                {!isAdminViewingEmployee && (absLoading || reqLoading) ? (
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>
-                    Abwesenheiten/Anträge laden…
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="calendar-today-action-wrap">
-                <button
-                  className="btn calendar-today-action-btn"
-                  type="button"
-                  onClick={jumpToToday}
-                >
-                  Heute
-                </button>
-              </div>
+                Heute
+              </button>
             </div>
           </>
         ) : (
