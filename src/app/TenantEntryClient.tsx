@@ -3,6 +3,7 @@
 import React, { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
+import Link from "next/link";
 
 type PublicCompany = {
   name: string;
@@ -239,6 +240,17 @@ export default function TenantEntryClient() {
             >
               Nach erfolgreicher Prüfung wirst du automatisch auf den
               passenden Firmen-Login weitergeleitet.
+            </div>
+            <div className="login-legal-links">
+              <Link href="/datenschutz" className="login-legal-link">
+                Datenschutz
+              </Link>
+
+              <span className="login-legal-separator">•</span>
+
+              <Link href="/nutzungsbedingungen" className="login-legal-link">
+                Nutzungsbedingungen
+              </Link>
             </div>
           </div>
         </div>

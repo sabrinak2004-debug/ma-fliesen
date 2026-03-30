@@ -1839,3 +1839,28 @@ li {
   justify-content: flex-start;
   margin-top: 24px;
 }
+.login-legal-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.login-legal-link {
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.12s ease;
+}
+
+.login-legal-link:hover {
+  color: var(--text);
+}
+
+.login-legal-separator {
+  color: var(--muted-2);
+  font-size: 12px;
+}
