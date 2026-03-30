@@ -535,6 +535,25 @@ body {
   margin-right: 6px;
 }
 
+.calendar-legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.calendar-today-action-btn {
+  flex: 0 0 auto;
+  min-width: 110px;
+}
+
 .dot-work {
   background: var(--accent);
 }
