@@ -967,6 +967,10 @@ li {
   flex: 0 0 auto;
 }
 
+.calendar-mobile-header .btn {
+  white-space: nowrap;
+}
+
 .calendar-google-mobile {
   display: none;
 }

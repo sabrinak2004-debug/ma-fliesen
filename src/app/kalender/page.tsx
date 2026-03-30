@@ -1091,6 +1091,14 @@ function KalenderPageInner({
   }, [cursor, viewMode]);
 
   const todayYMD = useMemo(() => toYMDLocal(new Date()), []);
+  function jumpToToday(): void {
+    const now = new Date();
+    setCursor(now);
+
+    if (open) {
+      setSelectedDate(toYMDLocal(now));
+    }
+  }
 
   useEffect(() => {
     let alive = true;
@@ -1872,20 +1880,37 @@ function KalenderPageInner({
     <AppShell activeLabel="#wirkönnendas">
       <div className="card card-olive" style={{ padding: 18, position: "relative" }}>
         <div className="calendar-mobile-header">
-          <button
-            className="btn calendar-nav-btn"
-            onClick={() => {
-              if (viewMode === "WEEK") {
-                const x = new Date(cursor);
-                x.setDate(x.getDate() - 7);
-                setCursor(x);
-              } else {
-                setCursor((d) => addMonths(d, -1));
-              }
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              flex: "0 0 auto",
             }}
           >
-            ‹
-          </button>
+            <button
+              className="btn calendar-nav-btn"
+              onClick={() => {
+                if (viewMode === "WEEK") {
+                  const x = new Date(cursor);
+                  x.setDate(x.getDate() - 7);
+                  setCursor(x);
+                } else {
+                  setCursor((d) => addMonths(d, -1));
+                }
+              }}
+            >
+              ‹
+            </button>
+
+            <button
+              className="btn"
+              type="button"
+              onClick={jumpToToday}
+            >
+              Heute
+            </button>
+          </div>
 
           <div className="calendar-title-column">
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
