@@ -206,6 +206,28 @@ export async function GET(req: Request) {
     },
   });
 
+  const yearVacationRequests = await prisma.absenceRequest.findMany({
+    where: {
+      ...(isAdmin
+        ? {
+            user: {
+              companyId: session.companyId,
+              role: Role.EMPLOYEE,
+              isActive: true,
+            },
+          }
+        : { userId: session.userId }),
+      type: AbsenceType.VACATION,
+      status: "APPROVED",
+      startDate: { lt: new Date(Date.UTC(year + 1, 0, 1)) },
+      endDate: { gte: yearFrom },
+    },
+    select: {
+      userId: true,
+      paidVacationUnits: true,
+    },
+  });
+
   const dayBreakMap = new Map<string, number>();
 
   for (const row of dayBreaks) {
@@ -291,7 +313,11 @@ export async function GET(req: Request) {
       .filter((row) => row.compensation === AbsenceCompensation.PAID)
       .reduce((sum, row) => sum + absencePortionValue(row.dayPortion), 0);
 
-    const remainingVacationDays = Math.max(0, accruedVacationDays - usedVacationDaysYtd);
+    const reservedPaidVacationDays = yearVacationRequests
+      .filter((row) => row.userId === user.id)
+      .reduce((sum, row) => sum + row.paidVacationUnits / 2, 0);
+
+    const remainingVacationDays = accruedVacationDays - reservedPaidVacationDays;
 
     const paidHolidayMinutes = countHolidayWeekdays(holidaySet) * DAILY_TARGET_MINUTES;
 
@@ -331,6 +357,7 @@ export async function GET(req: Request) {
       unpaidAbsenceMinutes,
       accruedVacationDays,
       usedVacationDaysYtd,
+      reservedPaidVacationDays,
       remainingVacationDays,
       baseTargetMinutes,
       targetMinutes,
@@ -365,6 +392,10 @@ export async function GET(req: Request) {
       ),
       usedVacationDaysYtd: byUser.reduce(
         (sum, user) => sum + user.usedVacationDaysYtd,
+        0
+      ),
+      reservedPaidVacationDays: byUser.reduce(
+        (sum, user) => sum + user.reservedPaidVacationDays,
         0
       ),
       remainingVacationDays: byUser.reduce(

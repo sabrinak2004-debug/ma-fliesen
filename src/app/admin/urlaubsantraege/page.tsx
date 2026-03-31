@@ -45,6 +45,7 @@ type OverviewUserItem = {
   fullName: string;
   accruedVacationDays: number;
   usedVacationDaysYtd: number;
+  reservedPaidVacationDays: number;
   remainingVacationDays: number;
 };
 
@@ -60,6 +61,7 @@ type OverviewResponse =
       totals: {
         accruedVacationDays: number;
         usedVacationDaysYtd: number;
+        reservedPaidVacationDays: number;
         remainingVacationDays: number;
       };
     }
@@ -254,12 +256,14 @@ function isOverviewUserItem(v: unknown): v is OverviewUserItem {
   const accruedVacationDays = getNumberField(v, "accruedVacationDays");
   const usedVacationDaysYtd = getNumberField(v, "usedVacationDaysYtd");
   const remainingVacationDays = getNumberField(v, "remainingVacationDays");
+  const reservedPaidVacationDays = getNumberField(v, "reservedPaidVacationDays");
 
   return (
     !!userId &&
     !!fullName &&
     accruedVacationDays !== null &&
     usedVacationDaysYtd !== null &&
+    reservedPaidVacationDays !== null &&
     remainingVacationDays !== null
   );
 }
@@ -300,9 +304,15 @@ function parseOverviewResponse(v: unknown): OverviewResponse {
   const totalsUsedVacationDaysYtd = getNumberField(totalsRaw, "usedVacationDaysYtd");
   const totalsRemainingVacationDays = getNumberField(totalsRaw, "remainingVacationDays");
 
+  const totalsReservedPaidVacationDays = getNumberField(
+    totalsRaw,
+    "reservedPaidVacationDays"
+  );
+
   if (
     totalsAccruedVacationDays === null ||
     totalsUsedVacationDaysYtd === null ||
+    totalsReservedPaidVacationDays === null ||
     totalsRemainingVacationDays === null
   ) {
     return { error: "Unerwartete Antwort." };
@@ -321,6 +331,7 @@ function parseOverviewResponse(v: unknown): OverviewResponse {
     totals: {
       accruedVacationDays: totalsAccruedVacationDays,
       usedVacationDaysYtd: totalsUsedVacationDaysYtd,
+      reservedPaidVacationDays: totalsReservedPaidVacationDays,
       remainingVacationDays: totalsRemainingVacationDays,
     },
   };
@@ -335,6 +346,14 @@ function formatVacationDays(value: number): string {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });
+}
+
+function formatVacationSignedDays(value: number): string {
+  if (value < 0) {
+    return `−${formatVacationDays(Math.abs(value))}`;
+  }
+
+  return formatVacationDays(value);
 }
 
 function formatDateDE(ymd: string): string {
@@ -617,6 +636,7 @@ export default function UrlaubsantraegePage() {
   const [remainingVacationDays, setRemainingVacationDays] = useState<number>(0);
   const [accruedVacationDays, setAccruedVacationDays] = useState<number>(0);
   const [usedVacationDaysYtd, setUsedVacationDaysYtd] = useState<number>(0);
+  const [reservedPaidVacationDays, setReservedPaidVacationDays] = useState<number>(0);
   const [resturlaubLoading, setResturlaubLoading] = useState<boolean>(true);
   const [resturlaubError, setResturlaubError] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -703,16 +723,19 @@ async function loadRemainingVacationKpi() {
 
       setAccruedVacationDays(selectedUser?.accruedVacationDays ?? 0);
       setUsedVacationDaysYtd(selectedUser?.usedVacationDaysYtd ?? 0);
+      setReservedPaidVacationDays(selectedUser?.reservedPaidVacationDays ?? 0);
       setRemainingVacationDays(selectedUser?.remainingVacationDays ?? 0);
       return;
     }
 
     setAccruedVacationDays(parsed.totals.accruedVacationDays);
     setUsedVacationDaysYtd(parsed.totals.usedVacationDaysYtd);
+    setReservedPaidVacationDays(parsed.totals.reservedPaidVacationDays);
     setRemainingVacationDays(parsed.totals.remainingVacationDays);
   } catch {
     setAccruedVacationDays(0);
     setUsedVacationDaysYtd(0);
+    setReservedPaidVacationDays(0);
     setRemainingVacationDays(0);
     setResturlaubError("Netzwerkfehler beim Laden des Resturlaubs.");
   } finally {
@@ -1105,6 +1128,8 @@ useEffect(() => {
       "Ausgewählter Mitarbeiter"
     );
   }, [users, selectedResturlaubUserId]);
+
+  const showFilteredEmployeeResturlaub = selectedResturlaubUserId !== "";
 
   function renderRequestCard(item: AbsenceRequestItem) {
     const isDeleting = busyAction?.id === item.id && busyAction.action === "delete";
@@ -1564,7 +1589,11 @@ useEffect(() => {
           <div style={{ width: "100%" }}>
             <div className="small">Resturlaub</div>
             <div className="big">
-              {resturlaubLoading ? "…" : formatVacationDays(remainingVacationDays)}
+              {resturlaubLoading
+                ? "…"
+                : showFilteredEmployeeResturlaub
+                  ? formatVacationSignedDays(remainingVacationDays)
+                  : formatVacationDays(remainingVacationDays)}
             </div>
 
             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
@@ -1574,8 +1603,15 @@ useEffect(() => {
             <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
               {resturlaubLoading
                 ? "Urlaubskonto wird geladen…"
-                : `${formatVacationDays(usedVacationDaysYtd)} von ${formatVacationDays(accruedVacationDays)} Tagen verbraucht`}
+                : showFilteredEmployeeResturlaub
+                  ? `${formatVacationDays(reservedPaidVacationDays)} von ${formatVacationDays(accruedVacationDays)} Tagen genehmigt bezahlt`
+                  : `${formatVacationDays(usedVacationDaysYtd)} von ${formatVacationDays(accruedVacationDays)} Tagen verbraucht`}
             </div>
+            {showFilteredEmployeeResturlaub ? (
+              <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
+                Bereits genommen: {formatVacationDays(usedVacationDaysYtd)} Tage
+              </div>
+            ) : null}
 
             <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
               Stand {formatMonthLabel(`${selectedResturlaubYear}-${selectedResturlaubMonth}`)}
