@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
+import { rebalanceAutoUnpaidVacationRequestsForYear } from "@/app/api/absence-requests/route";
 
 function isAbsenceType(v: string): v is AbsenceType {
   return v === "VACATION" || v === "SICK";
@@ -147,6 +148,31 @@ export async function GET(req: Request) {
 
     where.startDate = { lt: nextMonthStart };
     where.endDate = { gte: monthStart };
+  }
+
+  const rebalanceYear = new Date().getUTCFullYear();
+
+  const usersToRebalance = await prisma.appUser.findMany({
+    where: {
+      companyId: admin.companyId,
+      role: "EMPLOYEE",
+      isActive: true,
+      ...(userIdParam ? { id: userIdParam } : {}),
+    },
+    select: {
+      id: true,
+    },
+    orderBy: {
+      id: "asc",
+    },
+  });
+
+  for (const user of usersToRebalance) {
+    await rebalanceAutoUnpaidVacationRequestsForYear(
+      user.id,
+      rebalanceYear,
+      new Date()
+    );
   }
 
   const requests = await prisma.absenceRequest.findMany({

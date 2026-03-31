@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { computeDayBreakFromGross } from "@/lib/breaks";
 import { berlinTodayYMD, getMissingRequiredWorkDates } from "@/lib/timesheetLock";
+import { rebalanceAutoUnpaidVacationRequestsForYear } from "@/app/api/absence-requests/route";
 
 function isoDayUTC(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -144,6 +145,16 @@ export async function GET(req: Request) {
         },
     orderBy: { fullName: "asc" },
   });
+
+  const rebalanceYear = new Date().getUTCFullYear();
+
+  for (const user of users) {
+    await rebalanceAutoUnpaidVacationRequestsForYear(
+      user.id,
+      rebalanceYear,
+      new Date()
+    );
+  }
 
   const entries = await prisma.workEntry.findMany({
     where: {
