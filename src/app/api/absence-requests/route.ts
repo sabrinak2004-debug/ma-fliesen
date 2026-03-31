@@ -226,9 +226,26 @@ function startOfNextUtcYear(year: number): Date {
   return new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
 }
 
-function getAccruedVacationDaysUntilDate(date: Date): number {
-  const monthOneBased = date.getUTCMonth() + 1;
-  return Math.min(ANNUAL_VACATION_DAYS, monthOneBased * MONTHLY_VACATION_ACCRUAL_DAYS);
+function getAccruedVacationDaysForYearAtEffectiveDate(
+  year: number,
+  effectiveDate: Date
+): number {
+  const effectiveYear = effectiveDate.getUTCFullYear();
+
+  if (effectiveYear < year) {
+    return 0;
+  }
+
+  if (effectiveYear > year) {
+    return ANNUAL_VACATION_DAYS;
+  }
+
+  const monthOneBased = effectiveDate.getUTCMonth() + 1;
+
+  return Math.min(
+    ANNUAL_VACATION_DAYS,
+    monthOneBased * MONTHLY_VACATION_ACCRUAL_DAYS
+  );
 }
 
 function getRequestVacationUnits(
@@ -308,10 +325,6 @@ export async function rebalanceAutoUnpaidVacationRequestsForYear(
   const yearStart = startOfUtcYear(year);
   const nextYearStart = startOfNextUtcYear(year);
 
-  if (effectiveDate.getUTCFullYear() !== year) {
-    return;
-  }
-
   const effectiveDateUtc = new Date(
     Date.UTC(
       effectiveDate.getUTCFullYear(),
@@ -324,21 +337,22 @@ export async function rebalanceAutoUnpaidVacationRequestsForYear(
     )
   );
 
-  const accruedUnits = Math.round(getAccruedVacationDaysUntilDate(effectiveDateUtc) * 2);
+  const accruedUnits = Math.round(
+    getAccruedVacationDaysForYearAtEffectiveDate(year, effectiveDateUtc) * 2
+  );
 
   const requests = await prisma.absenceRequest.findMany({
     where: {
       userId,
       type: AbsenceType.VACATION,
       status: {
-        in: [AbsenceRequestStatus.APPROVED, AbsenceRequestStatus.PENDING],
+        in: [AbsenceRequestStatus.PENDING, AbsenceRequestStatus.APPROVED],
       },
       startDate: {
         lt: nextYearStart,
       },
       endDate: {
         gte: yearStart,
-        lte: effectiveDateUtc,
       },
     },
     select: {
@@ -356,10 +370,10 @@ export async function rebalanceAutoUnpaidVacationRequestsForYear(
       createdAt: true,
     },
     orderBy: [
-      { status: "asc" },
-      { endDate: "asc" },
-      { startDate: "asc" },
       { createdAt: "asc" },
+      { startDate: "asc" },
+      { endDate: "asc" },
+      { id: "asc" },
     ],
   });
 
@@ -384,7 +398,10 @@ export async function rebalanceAutoUnpaidVacationRequestsForYear(
       const nextPaidUnits = Math.min(remainingAccruedUnits, requestedUnits);
       const nextUnpaidUnits = Math.max(0, requestedUnits - nextPaidUnits);
 
-      remainingAccruedUnits = Math.max(0, remainingAccruedUnits - nextPaidUnits);
+      remainingAccruedUnits = Math.max(
+        0,
+        remainingAccruedUnits - nextPaidUnits
+      );
 
       const currentPaidUnits = getStoredPaidVacationUnits(request);
       const currentUnpaidUnits = getStoredUnpaidVacationUnits(request);
@@ -498,7 +515,8 @@ async function getVacationRequestDecisionForNewRequest(
   userId: string,
   startDate: Date,
   endDate: Date,
-  dayPortion: AbsenceDayPortion
+  dayPortion: AbsenceDayPortion,
+  effectiveDate: Date = new Date()
 ): Promise<{
   compensation: AbsenceCompensation;
   autoUnpaidBecauseNoBalance: boolean;
@@ -506,31 +524,17 @@ async function getVacationRequestDecisionForNewRequest(
   paidVacationUnits: number;
   unpaidVacationUnits: number;
 }> {
-  const year = endDate.getUTCFullYear();
-  const yearStart = startOfUtcYear(year);
-  const nextYearStart = startOfNextUtcYear(year);
+  const balanceYear = endDate.getUTCFullYear();
+  const yearStart = startOfUtcYear(balanceYear);
+  const nextYearStart = startOfNextUtcYear(balanceYear);
 
-  const approvedPaidVacationAbsences = await prisma.absence.findMany({
+  const existingRequests = await prisma.absenceRequest.findMany({
     where: {
       userId,
       type: AbsenceType.VACATION,
-      compensation: AbsenceCompensation.PAID,
-      absenceDate: {
-        gte: yearStart,
-        lt: nextYearStart,
+      status: {
+        in: [AbsenceRequestStatus.PENDING, AbsenceRequestStatus.APPROVED],
       },
-    },
-    select: {
-      absenceDate: true,
-      dayPortion: true,
-    },
-  });
-
-  const pendingVacationRequests = await prisma.absenceRequest.findMany({
-    where: {
-      userId,
-      type: AbsenceType.VACATION,
-      status: AbsenceRequestStatus.PENDING,
       startDate: {
         lt: nextYearStart,
       },
@@ -539,31 +543,32 @@ async function getVacationRequestDecisionForNewRequest(
       },
     },
     select: {
-      endDate: true,
+      compensation: true,
       paidVacationUnits: true,
+      unpaidVacationUnits: true,
+      autoUnpaidBecauseNoBalance: true,
     },
   });
 
-  const reservedPendingPaid = pendingVacationRequests.map((request) => ({
-    endDate: request.endDate,
-    units: request.paidVacationUnits,
-  }));
+  const accruedUnits = Math.round(
+    getAccruedVacationDaysForYearAtEffectiveDate(balanceYear, effectiveDate) * 2
+  );
 
-  const accruedUnits = Math.round(getAccruedVacationDaysUntilDate(endDate) * 2);
-  const approvedPaidUnits = sumApprovedPaidVacationUnitsUntil(
-    approvedPaidVacationAbsences,
-    endDate
-  );
-  const reservedPendingUnits = sumReservedPendingPaidVacationUnitsUntil(
-    reservedPendingPaid,
-    endDate
-  );
+  const reservedPaidUnits = existingRequests.reduce((sum, request) => {
+    const isManualUnpaid =
+      request.compensation === AbsenceCompensation.UNPAID &&
+      !request.autoUnpaidBecauseNoBalance;
+
+    if (isManualUnpaid) {
+      return sum;
+    }
+
+    return sum + request.paidVacationUnits;
+  }, 0);
+
   const requestedUnits = getRequestVacationUnits(startDate, endDate, dayPortion);
 
-  const availableUnits = Math.max(
-    0,
-    accruedUnits - approvedPaidUnits - reservedPendingUnits
-  );
+  const availableUnits = Math.max(0, accruedUnits - reservedPaidUnits);
 
   const paidVacationUnits = Math.min(availableUnits, requestedUnits);
   const unpaidVacationUnits = Math.max(0, requestedUnits - paidVacationUnits);
@@ -743,11 +748,11 @@ export async function GET(req: Request) {
   const now = new Date();
 
   if (balanceYear === now.getUTCFullYear()) {
-    await rebalanceAutoUnpaidVacationRequestsForYear(
-      session.userId,
-      balanceYear,
-      now
-    );
+  await rebalanceAutoUnpaidVacationRequestsForYear(
+    session.userId,
+    balanceYear,
+    new Date()
+  );
   }
 
   const remainingPaidVacationDaysForMonth = await getRemainingPaidVacationDaysForMonth(
@@ -914,7 +919,8 @@ export async function POST(req: Request) {
         session.userId,
         start,
         end,
-        dayPortion
+        dayPortion,
+        new Date()
       );
 
       finalCompensation = decision.compensation;

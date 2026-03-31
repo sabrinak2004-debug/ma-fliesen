@@ -116,9 +116,26 @@ function startOfNextUtcYear(year: number): Date {
   return new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
 }
 
-function getAccruedVacationDaysUntilDate(date: Date): number {
-  const monthOneBased = date.getUTCMonth() + 1;
-  return Math.min(ANNUAL_VACATION_DAYS, monthOneBased * MONTHLY_VACATION_ACCRUAL_DAYS);
+function getAccruedVacationDaysForYearAtEffectiveDate(
+  year: number,
+  effectiveDate: Date
+): number {
+  const effectiveYear = effectiveDate.getUTCFullYear();
+
+  if (effectiveYear < year) {
+    return 0;
+  }
+
+  if (effectiveYear > year) {
+    return ANNUAL_VACATION_DAYS;
+  }
+
+  const monthOneBased = effectiveDate.getUTCMonth() + 1;
+
+  return Math.min(
+    ANNUAL_VACATION_DAYS,
+    monthOneBased * MONTHLY_VACATION_ACCRUAL_DAYS
+  );
 }
 
 function getVacationDaysForRange(
@@ -419,27 +436,13 @@ export async function POST(req: Request, context: RouteContext) {
     const yearStart = startOfUtcYear(balanceYear);
     const nextYearStart = startOfNextUtcYear(balanceYear);
 
-    const approvedPaidVacationAbsences = await prisma.absence.findMany({
+    const otherVacationRequests = await prisma.absenceRequest.findMany({
       where: {
         userId: existing.userId,
         type: AbsenceType.VACATION,
-        compensation: AbsenceCompensation.PAID,
-        absenceDate: {
-          gte: yearStart,
-          lt: nextYearStart,
+        status: {
+          in: [AbsenceRequestStatus.PENDING, AbsenceRequestStatus.APPROVED],
         },
-      },
-      select: {
-        absenceDate: true,
-        dayPortion: true,
-      },
-    });
-
-    const pendingVacationRequests = await prisma.absenceRequest.findMany({
-      where: {
-        userId: existing.userId,
-        type: AbsenceType.VACATION,
-        status: AbsenceRequestStatus.PENDING,
         id: {
           not: existing.id,
         },
@@ -448,26 +451,14 @@ export async function POST(req: Request, context: RouteContext) {
         },
         endDate: {
           gte: yearStart,
-          lte: finalEndDate,
         },
       },
       select: {
-        endDate: true,
+        compensation: true,
         paidVacationUnits: true,
+        autoUnpaidBecauseNoBalance: true,
       },
     });
-
-    const accruedUnits = Math.round(getAccruedVacationDaysUntilDate(finalEndDate) * 2);
-
-    const approvedPaidUnits = approvedPaidVacationAbsences.reduce((sum, row) => {
-      if (row.absenceDate > finalEndDate) return sum;
-      return sum + getDayPortionUnits(row.dayPortion);
-    }, 0);
-
-    const pendingPaidUnits = pendingVacationRequests.reduce((sum, row) => {
-      if (row.endDate > finalEndDate) return sum;
-      return sum + row.paidVacationUnits;
-    }, 0);
 
     const requestedUnits =
       finalDayPortion === AbsenceDayPortion.HALF_DAY
@@ -479,13 +470,29 @@ export async function POST(req: Request, context: RouteContext) {
             finalDayPortion
           ).length * 2;
 
-    const availablePaidUnits = Math.max(
-      0,
-      accruedUnits - approvedPaidUnits - pendingPaidUnits
+    const accruedUnits = Math.round(
+      getAccruedVacationDaysForYearAtEffectiveDate(balanceYear, new Date()) * 2
     );
 
+    const reservedPaidUnits = otherVacationRequests.reduce((sum, request) => {
+      const isManualUnpaid =
+        request.compensation === AbsenceCompensation.UNPAID &&
+        !request.autoUnpaidBecauseNoBalance;
+
+      if (isManualUnpaid) {
+        return sum;
+      }
+
+      return sum + request.paidVacationUnits;
+    }, 0);
+
+    const availablePaidUnits = Math.max(0, accruedUnits - reservedPaidUnits);
+
     finalPaidVacationUnits = Math.min(availablePaidUnits, requestedUnits);
-    finalUnpaidVacationUnits = Math.max(0, requestedUnits - finalPaidVacationUnits);
+    finalUnpaidVacationUnits = Math.max(
+      0,
+      requestedUnits - finalPaidVacationUnits
+    );
 
     finalCompensation =
       finalPaidVacationUnits > 0
