@@ -68,13 +68,13 @@ async function main() {
     where: { subdomain: "beispielbetrieb" },
     update: {
       name: "Beispielbetrieb",
-      primaryColor: "#6b7280",
+      primaryColor: "#CCC6BC",
       isDemo: true,
     },
     create: {
       name: "Beispielbetrieb",
       subdomain: "beispielbetrieb",
-      primaryColor: "#6b7280",
+      primaryColor: "#CCC6BC",
       isDemo: true,
     },
   });
