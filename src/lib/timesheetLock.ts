@@ -40,7 +40,7 @@ const MISSING_ENTRIES_RULES_BY_COMPANY_SUBDOMAIN: Readonly<
   Record<string, MissingEntriesRule>
 > = {
   "ma-fliesen": {
-    activationStartYMD: "2026-04-01",
+    activationStartYMD: "2026-05-01",
     useFirstBusinessDayOfMonth: true,
     overridesByNormalizedFullName: {
       "max mustermann": "2026-03-01",
