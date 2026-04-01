@@ -31,6 +31,7 @@ model AppUser {
   passwordHash          String?
   passwordUpdatedAt     DateTime?
   missingEntriesStartAt DateTime?
+  employmentStartDate   DateTime? @db.Date
 
   companyId String
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)

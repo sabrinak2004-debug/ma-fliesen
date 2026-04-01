@@ -275,6 +275,7 @@ export async function getMissingRequiredWorkDates(
     select: {
       isActive: true,
       fullName: true,
+      employmentStartDate: true,
       company: {
         select: {
           subdomain: true,
@@ -293,7 +294,16 @@ export async function getMissingRequiredWorkDates(
     user.fullName,
     companySubdomain
   );
-  const effectiveRangeStartDate = parseIsoDateToUtc(activationStartYMD);
+
+  const employmentStartYMD = user.employmentStartDate
+    ? isoDayUTC(user.employmentStartDate)
+    : null;
+
+  const effectiveStartYMD = employmentStartYMD
+    ? maxYmd(activationStartYMD, employmentStartYMD)
+    : activationStartYMD;
+
+  const effectiveRangeStartDate = parseIsoDateToUtc(effectiveStartYMD);
 
   if (effectiveRangeStartDate >= untilDate) {
     return [];
@@ -358,6 +368,10 @@ export async function getMissingRequiredWorkDates(
         companySubdomain,
       })
     ) {
+      continue;
+    }
+
+    if (employmentStartYMD && currentYMD < employmentStartYMD) {
       continue;
     }
 

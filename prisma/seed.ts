@@ -14,24 +14,29 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg(pool as unknown as PrismaPgPool),
 });
 
+type SeedEmployee = {
+  fullName: string;
+  employmentStartDate: string | null;
+};
+
 // ✅ Mitarbeiter der echten Firma
-const MA_FLIESEN_EMPLOYEES: string[] = [
-  "Max Mustermann",
-  "Ilija Nikic",
-  "Cosmin Alexandroae",
-  "Francesco Cascania",
-  "Elvis Sulejmani",
-  "Leon Meinhold",
-  "Behar Mehmeti",
-  "Kerim Balci",
-  "Kay Bode",
+const MA_FLIESEN_EMPLOYEES: SeedEmployee[] = [
+  { fullName: "Max Mustermann", employmentStartDate: "2026-03-01" },
+  { fullName: "Ilija Nikic", employmentStartDate: "2026-05-01" },
+  { fullName: "Cosmin Alexandroae", employmentStartDate: "2026-05-01" },
+  { fullName: "Francesco Cascania", employmentStartDate: "2026-05-01" },
+  { fullName: "Elvis Sulejmani", employmentStartDate: "2026-05-01" },
+  { fullName: "Leon Meinhold", employmentStartDate: "2026-05-01" },
+  { fullName: "Behar Mehmeti", employmentStartDate: "2026-05-01" },
+  { fullName: "Kerim Balci", employmentStartDate: "2026-05-01" },
+  { fullName: "Kay Bode", employmentStartDate: "2026-05-01" },
 ];
 
 // ✅ Demo-Firma für neue Kunden
-const DEMO_EMPLOYEES: string[] = [
-  "Mia Becker",
-  "Jonas Wolf",
-  "Leonie Hartmann",
+const DEMO_EMPLOYEES: SeedEmployee[] = [
+  { fullName: "Mia Becker", employmentStartDate: "2026-03-01" },
+  { fullName: "Jonas Wolf", employmentStartDate: "2026-03-01" },
+  { fullName: "Leonie Hartmann", employmentStartDate: "2026-03-01" },
 ];
 
 async function main() {
@@ -123,23 +128,29 @@ async function main() {
   });
 
   // ✅ Mitarbeiter MA-Fliesen
-  for (const fullName of MA_FLIESEN_EMPLOYEES) {
+  for (const employee of MA_FLIESEN_EMPLOYEES) {
     await prisma.appUser.upsert({
       where: {
         companyId_fullName: {
           companyId: maFliesenCompany.id,
-          fullName,
+          fullName: employee.fullName,
         },
       },
       update: {
         role: Role.EMPLOYEE,
         isActive: true,
+        employmentStartDate: employee.employmentStartDate
+          ? new Date(`${employee.employmentStartDate}T00:00:00.000Z`)
+          : null,
       },
       create: {
         companyId: maFliesenCompany.id,
-        fullName,
+        fullName: employee.fullName,
         role: Role.EMPLOYEE,
         isActive: true,
+        employmentStartDate: employee.employmentStartDate
+          ? new Date(`${employee.employmentStartDate}T00:00:00.000Z`)
+          : null,
       },
     });
   }
@@ -167,23 +178,29 @@ async function main() {
   });
 
   // ✅ Demo-Mitarbeiter
-  for (const fullName of DEMO_EMPLOYEES) {
+  for (const employee of DEMO_EMPLOYEES) {
     await prisma.appUser.upsert({
       where: {
         companyId_fullName: {
           companyId: demoCompany.id,
-          fullName,
+          fullName: employee.fullName,
         },
       },
       update: {
         role: Role.EMPLOYEE,
         isActive: true,
+        employmentStartDate: employee.employmentStartDate
+          ? new Date(`${employee.employmentStartDate}T00:00:00.000Z`)
+          : null,
       },
       create: {
         companyId: demoCompany.id,
-        fullName,
+        fullName: employee.fullName,
         role: Role.EMPLOYEE,
         isActive: true,
+        employmentStartDate: employee.employmentStartDate
+          ? new Date(`${employee.employmentStartDate}T00:00:00.000Z`)
+          : null,
       },
     });
   }
