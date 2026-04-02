@@ -6,6 +6,10 @@
   --bg: #0b0f0c;
   --panel: #111613;
   --panel-2: #0f1411;
+  --surface: rgba(255, 255, 255, 0.03);
+  --surface-strong: rgba(255, 255, 255, 0.06);
+  --input-bg: rgba(0, 0, 0, 0.25);
+  --overlay-bg: rgba(17, 22, 19, 0.82);
   --border: rgba(255, 255, 255, 0.08);
   --border-2: rgba(206, 231, 72, 0.25);
   --text: rgba(255, 255, 255, 0.92);
@@ -16,6 +20,15 @@
   --accent-soft: rgba(184, 207, 58, 0.14);
   --accent-border: rgba(184, 207, 58, 0.35);
   --accent-2: #9db02f;
+  --brand-panel-soft: rgba(184, 207, 58, 0.08);
+  --brand-panel-strong: rgba(184, 207, 58, 0.18);
+  --brand-on-accent: #111613;
+  --brand-sidebar-stripe: #b8cf3a;
+  --brand-badge-bg: #b8cf3a;
+  --brand-badge-text: #111613;
+  --brand-role-pill-bg: rgba(184, 207, 58, 0.14);
+  --brand-calendar-today-bg: rgba(184, 207, 58, 0.22);
+  --brand-calendar-today-border: rgba(184, 207, 58, 0.55);
   --danger: #e04b45;
   --danger-2: #c63b36;
   --radius: 18px;
@@ -105,7 +118,7 @@ body {
   padding: 10px 14px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface);
   color: var(--muted);
   transition:
     transform 0.12s ease,
@@ -117,7 +130,7 @@ body {
 
 .pill:hover {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-strong);
 }
 
 .pill-active {
@@ -129,16 +142,16 @@ body {
 .card {
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.04),
-    rgba(255, 255, 255, 0.02)
+    var(--surface-strong),
+    var(--surface)
   );
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
 .card-olive {
-  border-color: var(--border-2);
-  box-shadow: 0 0 0 3px rgba(184, 207, 58, 0.06);
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--brand-panel-soft);
 }
 
 .section-title {
@@ -158,7 +171,7 @@ body {
   width: 100%;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: rgba(10, 14, 11, 0.65);
+  background: var(--input-bg);
   padding: 12px 12px;
   color: var(--text);
   outline: none;
@@ -278,7 +291,7 @@ body {
   padding: 14px 14px;
   border-radius: 16px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface);
 }
 
 .modal-backdrop {
@@ -297,7 +310,7 @@ body {
   width: min(520px, 100%);
   border-radius: 18px;
   border: 1px solid var(--border);
-  background: rgba(17, 22, 19, 0.92);
+  background: var(--overlay-bg);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
 }
 
@@ -650,8 +663,8 @@ body {
   gap: 4px;
   padding: 8px 10px;
   border-radius: 999px;
-  background: rgba(184, 207, 58, 0.14);
-  border: 1px solid rgba(184, 207, 58, 0.28);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
   color: var(--text);
   white-space: nowrap;
 }
@@ -673,7 +686,7 @@ body {
   height: 38px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface);
   color: var(--text);
   display: grid;
   place-items: center;
@@ -685,7 +698,7 @@ body {
 
 .icon-btn:hover {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--surface-strong);
 }
 
 .icon-btn.danger {
@@ -737,7 +750,7 @@ body {
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--surface);
   color: rgba(255, 255, 255, 0.7);
   font-size: 12px;
 }
@@ -799,8 +812,8 @@ li {
   );
   border-color: var(--accent-border);
   box-shadow:
-    inset 4px 0 0 var(--accent),
-    0 0 0 1px rgba(184, 207, 58, 0.04);
+    inset 4px 0 0 var(--brand-sidebar-stripe),
+    0 0 0 1px var(--brand-panel-soft);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -842,7 +855,7 @@ li {
   padding: 12px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-strong);
 }
 
 .appshell-logout-btn {
@@ -855,7 +868,7 @@ li {
     rgba(var(--accent-rgb), 0.84),
     rgba(var(--accent-rgb), 0.72)
   );
-  color: #111613;
+  color: var(--brand-on-accent);
   font-weight: 900;
   cursor: pointer;
   transition:
@@ -889,8 +902,8 @@ li {
     border-radius: 22px;
     padding: 16px 14px;
     box-shadow:
-      inset 4px 0 0 var(--accent),
-      0 0 0 1px rgba(var(--accent-rgb), 0.04);
+      inset 4px 0 0 var(--brand-sidebar-stripe),
+      0 0 0 1px var(--brand-panel-soft);
   }
 }
 
@@ -917,7 +930,7 @@ li {
       rgba(var(--accent-rgb), 0.08),
       transparent 32%
     ),
-    rgba(17, 22, 19, 0.78);
+    color-mix(in srgb, var(--panel) 78%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
@@ -1051,8 +1064,8 @@ li {
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  background: rgb(127, 142, 42);
-  border: 1px solid hsla(151, 76%, 25%, 0.18);
+  background: var(--brand-calendar-today-bg);
+  border: 1px solid var(--brand-calendar-today-border);
   flex: 0 0 auto;
 }
 
@@ -1389,9 +1402,9 @@ li {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(184, 207, 58, 0.22);
-    border: 1px solid rgba(184, 207, 58, 0.55);
-    box-shadow: 0 0 0 3px rgba(184, 207, 58, 0.08);
+    background: var(--brand-calendar-today-bg);
+    border: 1px solid var(--brand-calendar-today-border);
+    box-shadow: 0 0 0 3px var(--brand-panel-soft);
   }
 
   .calendar-today-dot-desktop {
@@ -1645,8 +1658,8 @@ li {
   padding: 10px 14px;
   font-weight: 1000;
   border-radius: 12px;
-  border: 1px solid rgba(184, 207, 58, 0.35);
-  background: rgba(184, 207, 58, 0.12);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
   color: var(--accent);
   box-sizing: border-box;
 }

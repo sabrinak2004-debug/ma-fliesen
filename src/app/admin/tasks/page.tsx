@@ -482,7 +482,7 @@ export default function AdminTasksPage() {
                   padding: "10px 12px",
                   borderRadius: 12,
                   border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(0,0,0,0.25)",
+                  background: "var(--input-bg)",
                   color: "rgba(255,255,255,0.92)",
                   outline: "none",
                 }}
@@ -510,7 +510,7 @@ export default function AdminTasksPage() {
                   padding: "10px 12px",
                   borderRadius: 12,
                   border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(0,0,0,0.25)",
+                  background: "var(--input-bg)",
                   color: "rgba(255,255,255,0.92)",
                   outline: "none",
                 }}
@@ -528,7 +528,7 @@ export default function AdminTasksPage() {
                   padding: "10px 12px",
                   borderRadius: 12,
                   border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(0,0,0,0.25)",
+                  background: "var(--input-bg)",
                   color: "rgba(255,255,255,0.92)",
                   outline: "none",
                   resize: "vertical",
@@ -547,7 +547,7 @@ export default function AdminTasksPage() {
                     padding: "10px 12px",
                     borderRadius: 12,
                     border: "1px solid rgba(255,255,255,0.18)",
-                    background: "rgba(0,0,0,0.25)",
+                    background: "var(--input-bg)",
                     color: "rgba(255,255,255,0.92)",
                     outline: "none",
                   }}
@@ -569,7 +569,7 @@ export default function AdminTasksPage() {
                     padding: "10px 12px",
                     borderRadius: 12,
                     border: "1px solid rgba(255,255,255,0.18)",
-                    background: "rgba(255,255,255,0.06)",
+                    background: "var(--surface-strong)",
                     color: "rgba(255,255,255,0.72)",
                     outline: "none",
                   }}
@@ -592,7 +592,7 @@ export default function AdminTasksPage() {
                     padding: "10px 12px",
                     borderRadius: 12,
                     border: "1px solid rgba(255,255,255,0.18)",
-                    background: "rgba(0,0,0,0.25)",
+                    background: "var(--input-bg)",
                     color: "rgba(255,255,255,0.92)",
                     outline: "none",
                   }}
@@ -610,7 +610,7 @@ export default function AdminTasksPage() {
                     padding: "10px 12px",
                     borderRadius: 12,
                     border: "1px solid rgba(255,255,255,0.18)",
-                    background: "rgba(0,0,0,0.25)",
+                    background: "var(--input-bg)",
                     color: "rgba(255,255,255,0.92)",
                     outline: "none",
                   }}
@@ -668,7 +668,7 @@ export default function AdminTasksPage() {
                 padding: "10px 12px",
                 borderRadius: 12,
                 border: "1px solid rgba(255,255,255,0.18)",
-                background: "rgba(0,0,0,0.25)",
+                background: "var(--input-bg)",
                 color: "rgba(255,255,255,0.92)",
                 outline: "none",
               }}
@@ -684,7 +684,7 @@ export default function AdminTasksPage() {
                 padding: "10px 12px",
                 borderRadius: 12,
                 border: "1px solid rgba(255,255,255,0.18)",
-                background: "rgba(0,0,0,0.25)",
+                background: "var(--input-bg)",
                 color: "rgba(255,255,255,0.92)",
                 outline: "none",
               }}
@@ -724,7 +724,7 @@ export default function AdminTasksPage() {
                     padding: "12px 14px",
                     borderRadius: 12,
                     border: "1px solid rgba(255,255,255,0.08)",
-                    background: "rgba(255,255,255,0.03)",
+                    background: "var(--surface)",
                     display: "grid",
                     gap: 6,
                   }}
@@ -771,7 +771,7 @@ export default function AdminTasksPage() {
                         padding: "8px 12px",
                         borderRadius: 10,
                         border: "1px solid rgba(255,255,255,0.14)",
-                        background: "rgba(255,255,255,0.06)",
+                        background: "var(--surface-strong)",
                         color: "rgba(255,255,255,0.92)",
                         textDecoration: "none",
                         fontWeight: 900,
@@ -802,7 +802,7 @@ export default function AdminTasksPage() {
                     padding: "12px 14px",
                     borderRadius: 12,
                     border: "1px solid rgba(184,207,58,0.18)",
-                    background: "rgba(184,207,58,0.06)",
+                    background: "var(--brand-panel-soft)",
                     display: "grid",
                     gap: 6,
                   }}

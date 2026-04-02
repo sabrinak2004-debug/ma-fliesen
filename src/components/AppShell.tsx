@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  applyAccentColorToDocument,
   applyTenantHeadBranding,
+  applyTenantThemeToDocument,
   getTenantAppleTouchIconHref,
   getTenantManifestHref,
-  normalizeThemeColor,
-  resetAccentColorOnDocument,
+  resetTenantThemeOnDocument,
+  resolveTenantTheme,
+  TenantTheme,
 } from "@/lib/tenantBranding";
 import PushOnboarding from "@/components/PushOnboarding";
 
@@ -99,7 +100,7 @@ type BrandConfig = {
   displayName: string;
   slogan: string;
   logoUrl: string | null;
-  accent: string;
+  theme: TenantTheme;
   companySubdomain: string;
 };
 
@@ -109,7 +110,7 @@ function buildBrandConfig(session: SessionData | null): BrandConfig {
     displayName: "Mitarbeiterportal",
     slogan: "#firmenportal",
     logoUrl: null,
-    accent: "#b8cf3a",
+    theme: resolveTenantTheme(""),
     companySubdomain: "",
   };
 
@@ -118,14 +119,13 @@ function buildBrandConfig(session: SessionData | null): BrandConfig {
   }
 
   const companyName = session.companyName.trim();
-  const accent = normalizeThemeColor(session.primaryColor);
 
   return {
     appTitle: `${companyName} Mitarbeiterportal`,
     displayName: companyName,
     slogan: "#einsatzplanung",
     logoUrl: session.companyLogoUrl,
-    accent,
+    theme: resolveTenantTheme(session.companySubdomain, session.primaryColor),
     companySubdomain: session.companySubdomain,
   };
 }
@@ -439,24 +439,24 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
   useEffect(() => {
     if (!brand) return;
 
-    applyAccentColorToDocument(brand.accent);
+    applyTenantThemeToDocument(brand.theme);
 
     return () => {
-      resetAccentColorOnDocument();
+      resetTenantThemeOnDocument();
     };
-  }, [brand?.accent]);
+  }, [brand]);
 
   useEffect(() => {
     if (!brand) return;
 
     applyTenantHeadBranding({
       title: brand.appTitle,
-      themeColor: "#0b0f0c",
+      themeColor: brand.theme.accent,
       appName: brand.displayName,
       manifestHref: getTenantManifestHref(brand.companySubdomain),
       appleTouchIconHref: getTenantAppleTouchIconHref(brand.companySubdomain),
     });
-  }, [brand?.appTitle, brand?.displayName, brand?.companySubdomain]);
+  }, [brand]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -521,7 +521,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
             padding: 12,
             paddingTop: "calc(12px + env(safe-area-inset-top))",
             marginBottom: 12,
-            background: "rgba(14,16,14,0.92)",
+            background: "color-mix(in srgb, var(--panel) 92%, transparent)",
             backdropFilter: "blur(10px)",
             border: "1px solid rgba(255,255,255,0.10)",
             borderRadius: 18,
@@ -670,7 +670,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                 height: "100%",
                 width: 320,
                 maxWidth: "86vw",
-                background: "#161916",
+                background: "var(--panel)",
                 color: "rgba(255,255,255,0.92)",
                 boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
                 padding: 16,
@@ -716,7 +716,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       height: 4,
                       width: 54,
                       borderRadius: 99,
-                      background: "#A9C23F",
+                      background: "var(--brand-sidebar-stripe)",
                     }}
                   />
                 </div>
@@ -730,7 +730,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     height: 44,
                     borderRadius: 14,
                     border: "1px solid rgba(255,255,255,0.14)",
-                    background: "rgba(255,255,255,0.06)",
+                    background: "var(--surface-strong)",
                     color: "rgba(255,255,255,0.95)",
                     cursor: "pointer",
                     fontWeight: 900,
@@ -790,8 +790,8 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                               display: "inline-flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              background: "var(--accent)",
-                              color: "#111",
+                              background: "var(--brand-badge-bg)",
+                              color: "var(--brand-badge-text)",
                               fontSize: 15,
                               fontWeight: 1000,
                               lineHeight: 1,
@@ -892,7 +892,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                   height: 4,
                   width: 80,
                   borderRadius: 999,
-                  background: "var(--accent)",
+                  background: "var(--brand-sidebar-stripe)",
                 }}
               />
             </div>
@@ -956,8 +956,8 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                             display: "inline-flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            background: "var(--accent)",
-                            color: "#111",
+                            background: "var(--brand-badge-bg)",
+                            color: "var(--brand-badge-text)",
                             fontSize: 12,
                             fontWeight: 1000,
                             lineHeight: 1,
@@ -1045,7 +1045,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       justifyContent: "center",
                       fontWeight: 900,
                       letterSpacing: 0.5,
-                      background: "rgba(255,255,255,0.14)",
+                      background: "var(--surface-strong)",
                     }}
                     aria-hidden="true"
                   >
@@ -1081,9 +1081,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                           fontWeight: 800,
                           padding: "3px 8px",
                           borderRadius: 999,
-                          background: isAdmin
-                            ? "rgba(0,200,255,0.14)"
-                            : "rgba(255,255,255,0.06)",
+                          background: "var(--brand-role-pill-bg)",
                           border: "1px solid rgba(255,255,255,0.10)",
                           color: "rgba(255,255,255,0.92)",
                         }}

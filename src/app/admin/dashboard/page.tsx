@@ -1037,7 +1037,7 @@ export default function AdminDashboardPage() {
           fontWeight: 900,
           borderRadius: 12,
           border: "1px solid rgba(255,255,255,0.12)",
-          background: "rgba(255,255,255,0.06)",
+          background: "var(--surface-strong)",
           color: "rgba(255,255,255,0.9)",
           opacity: exportBusy ? 0.7 : 1,
         }}
@@ -1055,7 +1055,7 @@ export default function AdminDashboardPage() {
           fontWeight: 1000,
           borderRadius: 12,
           border: "1px solid rgba(184,207,58,0.35)",
-          background: "rgba(184,207,58,0.12)",
+          background: "var(--accent-soft)",
           color: "var(--accent)",
           opacity: rangeError || exportTargetError || exportBusy ? 0.7 : 1,
         }}
@@ -1192,7 +1192,7 @@ export default function AdminDashboardPage() {
               padding: "10px 12px",
               borderRadius: 12,
               border: "1px solid rgba(255,255,255,0.18)",
-              background: "rgba(0,0,0,0.25)",
+              background: "var(--input-bg)",
               color: "rgba(255,255,255,0.92)",
               outline: "none",
             }}
@@ -1209,7 +1209,7 @@ export default function AdminDashboardPage() {
               fontWeight: 900,
               borderRadius: 12,
               border: "1px solid rgba(255,255,255,0.14)",
-              background: "rgba(255,255,255,0.06)",
+              background: "var(--surface-strong)",
               color: "rgba(255,255,255,0.92)",
               textDecoration: "none",
             }}
@@ -1227,7 +1227,7 @@ export default function AdminDashboardPage() {
               fontWeight: 900,
               borderRadius: 12,
               border: "1px solid rgba(184,207,58,0.35)",
-              background: "rgba(184,207,58,0.12)",
+              background: "var(--accent-soft)",
               color: "var(--accent)",
             }}
             title="Export (Admin)"
@@ -1272,7 +1272,7 @@ export default function AdminDashboardPage() {
                       borderRadius: 999,
                       padding: "8px 12px",
                       border: "1px solid rgba(255,255,255,0.14)",
-                      background: exportMode === m.key ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
+                      background: exportMode === m.key ? "var(--surface-strong)" : "var(--input-bg)",
                       color: "rgba(255,255,255,0.92)",
                       cursor: "pointer",
                       fontSize: 13,
@@ -1298,7 +1298,7 @@ export default function AdminDashboardPage() {
                       borderRadius: 999,
                       padding: "8px 12px",
                       border: "1px solid rgba(255,255,255,0.14)",
-                      background: exportTarget === "ALL" ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
+                      background: exportTarget === "ALL" ? "var(--surface-strong)" : "var(--input-bg)",
                       color: "rgba(255,255,255,0.92)",
                       cursor: "pointer",
                       fontSize: 13,
@@ -1315,7 +1315,7 @@ export default function AdminDashboardPage() {
                       borderRadius: 999,
                       padding: "8px 12px",
                       border: "1px solid rgba(255,255,255,0.14)",
-                      background: exportTarget === "SINGLE_EMPLOYEE" ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
+                      background: exportTarget === "SINGLE_EMPLOYEE" ? "var(--surface-strong)" : "var(--input-bg)",
                       color: "rgba(255,255,255,0.92)",
                       cursor: "pointer",
                       fontSize: 13,
@@ -1338,7 +1338,7 @@ export default function AdminDashboardPage() {
                       padding: "10px 12px",
                       borderRadius: 12,
                       border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(0,0,0,0.25)",
+                      background: "var(--input-bg)",
                       color: "rgba(255,255,255,0.92)",
                       outline: "none",
                     }}
@@ -1373,7 +1373,7 @@ export default function AdminDashboardPage() {
                       padding: "10px 12px",
                       borderRadius: 12,
                       border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(0,0,0,0.25)",
+                      background: "var(--input-bg)",
                       color: "rgba(255,255,255,0.92)",
                     }}
                   />
@@ -1391,7 +1391,7 @@ export default function AdminDashboardPage() {
                       padding: "10px 12px",
                       borderRadius: 12,
                       border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(0,0,0,0.25)",
+                      background: "var(--input-bg)",
                       color: "rgba(255,255,255,0.92)",
                     }}
                   >
@@ -1418,7 +1418,7 @@ export default function AdminDashboardPage() {
                         padding: "10px 12px",
                         borderRadius: 12,
                         border: "1px solid rgba(255,255,255,0.18)",
-                        background: "rgba(0,0,0,0.25)",
+                        background: "var(--input-bg)",
                         color: "rgba(255,255,255,0.92)",
                       }}
                     />
@@ -1431,7 +1431,7 @@ export default function AdminDashboardPage() {
                         padding: "10px 12px",
                         borderRadius: 12,
                         border: "1px solid rgba(255,255,255,0.18)",
-                        background: "rgba(0,0,0,0.25)",
+                        background: "var(--input-bg)",
                         color: "rgba(255,255,255,0.92)",
                       }}
                     />
@@ -1473,7 +1473,7 @@ export default function AdminDashboardPage() {
               fontWeight: 900,
               borderRadius: 12,
               border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.06)",
+              background: "var(--surface-strong)",
               color: "rgba(255,255,255,0.9)",
             }}
           >
@@ -1504,7 +1504,7 @@ export default function AdminDashboardPage() {
                 padding: "10px 12px",
                 borderRadius: 12,
                 border: "1px solid rgba(184,207,58,0.28)",
-                background: "rgba(184,207,58,0.10)",
+                background: "var(--accent-soft)",
                 color: "var(--accent)",
                 fontWeight: 900,
               }}
@@ -1527,7 +1527,7 @@ export default function AdminDashboardPage() {
                       padding: "10px 12px",
                       borderRadius: 12,
                       border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(255,255,255,0.03)",
+                      background: "var(--surface)",
                       fontWeight: 900,
                     }}
                   >
@@ -1555,7 +1555,7 @@ export default function AdminDashboardPage() {
                       padding: "10px 12px",
                       borderRadius: 12,
                       border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(255,255,255,0.03)",
+                      background: "var(--surface)",
                     }}
                   >
                     <div style={{ fontWeight: 900 }}>{person.fullName}</div>
@@ -1584,7 +1584,7 @@ export default function AdminDashboardPage() {
                       padding: "10px 12px",
                       borderRadius: 12,
                       border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(255,255,255,0.03)",
+                      background: "var(--surface)",
                     }}
                   >
                     <div style={{ fontWeight: 900 }}>{person.fullName}</div>
@@ -1612,7 +1612,7 @@ export default function AdminDashboardPage() {
                       padding: "10px 12px",
                       borderRadius: 12,
                       border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(255,255,255,0.03)",
+                      background: "var(--surface)",
                     }}
                   >
                     <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
@@ -1630,7 +1630,7 @@ export default function AdminDashboardPage() {
                         padding: "8px 12px",
                         borderRadius: 10,
                         border: "1px solid rgba(184,207,58,0.35)",
-                        background: "rgba(184,207,58,0.12)",
+                        background: "var(--accent-soft)",
                         color: "var(--accent)",
                         cursor: remindLoadingUserId === person.userId ? "not-allowed" : "pointer",
                         fontWeight: 1000,
@@ -1664,7 +1664,7 @@ export default function AdminDashboardPage() {
               fontWeight: 900,
               borderRadius: 12,
               border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.06)",
+              background: "var(--surface-strong)",
               color: "rgba(255,255,255,0.9)",
             }}
           >
@@ -1722,7 +1722,7 @@ export default function AdminDashboardPage() {
               fontWeight: 900,
               borderRadius: 12,
               border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.06)",
+              background: "var(--surface-strong)",
               color: "rgba(255,255,255,0.9)",
             }}
           >
@@ -1786,7 +1786,7 @@ export default function AdminDashboardPage() {
               fontWeight: 900,
               borderRadius: 12,
               border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.06)",
+              background: "var(--surface-strong)",
               color: "rgba(255,255,255,0.9)",
             }}
           >
@@ -1816,7 +1816,7 @@ export default function AdminDashboardPage() {
                 padding: "12px 14px",
                 borderRadius: 12,
                 border: "1px solid rgba(255,255,255,0.10)",
-                background: "rgba(0,0,0,0.22)",
+                background: "var(--input-bg)",
                 color: "rgba(255,255,255,0.92)",
                 minHeight: 90,
               }}
@@ -1843,7 +1843,7 @@ export default function AdminDashboardPage() {
                 fontWeight: 900,
                 borderRadius: 12,
                 border: "1px solid rgba(255,255,255,0.12)",
-                background: "rgba(255,255,255,0.06)",
+                background: "var(--surface-strong)",
                 color: "rgba(255,255,255,0.9)",
                 opacity: editSaving ? 0.7 : 1,
               }}
@@ -1861,7 +1861,7 @@ export default function AdminDashboardPage() {
                 fontWeight: 1000,
                 borderRadius: 12,
                 border: "1px solid rgba(184,207,58,0.35)",
-                background: "rgba(184,207,58,0.12)",
+                background: "var(--accent-soft)",
                 color: "var(--accent)",
                 opacity: editSaving ? 0.7 : 1,
               }}
@@ -1895,7 +1895,7 @@ export default function AdminDashboardPage() {
                 padding: "10px 12px",
                 borderRadius: 12,
                 border: "1px solid rgba(255,255,255,0.18)",
-                background: "rgba(0,0,0,0.25)",
+                background: "var(--input-bg)",
                 color: "rgba(255,255,255,0.92)",
                 outline: "none",
               }}
@@ -1912,7 +1912,7 @@ export default function AdminDashboardPage() {
                 padding: "10px 12px",
                 borderRadius: 12,
                 border: "1px solid rgba(255,255,255,0.18)",
-                background: "rgba(0,0,0,0.25)",
+                background: "var(--input-bg)",
                 color: "rgba(255,255,255,0.92)",
                 outline: "none",
               }}
@@ -1931,7 +1931,7 @@ export default function AdminDashboardPage() {
                   padding: "10px 12px",
                   borderRadius: 12,
                   border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(0,0,0,0.25)",
+                  background: "var(--input-bg)",
                   color: "rgba(255,255,255,0.92)",
                   outline: "none",
                 }}
@@ -2227,7 +2227,7 @@ export default function AdminDashboardPage() {
                                 cursor: "pointer",
                                 padding: "8px 10px",
                                 borderRadius: 10,
-                                background: "rgba(255,255,255,0.03)",
+                                background: "var(--surface)",
                                 fontWeight: 1000,
                               }}
                               title="Ein-/Ausklappen"
@@ -2264,7 +2264,7 @@ export default function AdminDashboardPage() {
                                             gap: 6,
                                             padding: "10px 12px",
                                             borderRadius: 12,
-                                            background: "rgba(255,255,255,0.02)",
+                                            background: "color-mix(in srgb, var(--surface) 70%, transparent)",
                                             border: "1px solid rgba(255,255,255,0.06)",
                                           }}
                                         >
@@ -2278,7 +2278,7 @@ export default function AdminDashboardPage() {
                                               cursor: "pointer",
                                               padding: "8px 10px",
                                               borderRadius: 10,
-                                              background: "rgba(255,255,255,0.03)",
+                                              background: "var(--surface)",
                                               border: "1px solid rgba(255,255,255,0.06)",
                                               fontWeight: 1000,
                                             }}
@@ -2328,7 +2328,7 @@ export default function AdminDashboardPage() {
                                                     gap: 10,
                                                     padding: "8px 10px",
                                                     borderRadius: 10,
-                                                    background: "rgba(255,255,255,0.02)",
+                                                    background: "color-mix(in srgb, var(--surface) 70%, transparent)",
                                                     border: "1px solid rgba(255,255,255,0.06)",
                                                   }}
                                                 >
@@ -2406,7 +2406,7 @@ export default function AdminDashboardPage() {
                                                         padding: "6px 10px",
                                                         borderRadius: 10,
                                                         border: "1px solid rgba(255,255,255,0.14)",
-                                                        background: "rgba(255,255,255,0.06)",
+                                                        background: "var(--surface-strong)",
                                                         color: "rgba(255,255,255,0.9)",
                                                         cursor: "pointer",
                                                         fontWeight: 900,
@@ -2469,7 +2469,7 @@ export default function AdminDashboardPage() {
                                             padding: "8px 10px",
                                             borderRadius: 10,
                                             fontWeight: 1100,
-                                            background: "rgba(224,75,69,0.08)",
+                                            background: "color-mix(in srgb, var(--danger) 10%, transparent)",
                                             border: "1px solid rgba(224,75,69,0.14)",
                                           }}
                                         >
@@ -2504,7 +2504,7 @@ export default function AdminDashboardPage() {
                                             padding: "8px 10px",
                                             borderRadius: 10,
                                             fontWeight: 1100,
-                                            background: "rgba(90,167,255,0.08)",
+                                            background: "color-mix(in srgb, var(--accent) 10%, transparent)",
                                             border: "1px solid rgba(90,167,255,0.14)",
                                           }}
                                         >
@@ -2555,7 +2555,7 @@ export default function AdminDashboardPage() {
             gap: 12px;
             padding: 10px 12px;
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--surface);
             border: 1px solid rgba(255, 255, 255, 0.06);
           }
 
