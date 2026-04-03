@@ -1290,7 +1290,7 @@ useEffect(() => {
   if (!meResolved) {
     return (
       <AppShell activeLabel="#wirkönnendas">
-        <div className="card" style={{ padding: 14 }}>
+        <div className="card tenant-status-card tenant-status-card-neutral" style={{ padding: 14 }}>
           <div style={{ color: "var(--muted)" }}>Lade...</div>
         </div>
       </AppShell>
@@ -1307,8 +1307,13 @@ useEffect(() => {
         </div>
 
         {error && (
-          <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
-            <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
+          <div
+            className="card tenant-status-card tenant-status-card-danger"
+            style={{ padding: 12, marginBottom: 12 }}
+          >
+            <span className="tenant-status-text-danger" style={{ fontWeight: 700 }}>
+              {error}
+            </span>
           </div>
         )}
 
@@ -1316,10 +1321,8 @@ useEffect(() => {
         <div style={{ marginBottom: 12 }}>
           <div className="label">Mitarbeiter</div>
           <div
-            className="input"
+            className="input tenant-readonly-input"
             style={{
-              display: "flex",
-              alignItems: "center",
               opacity: meName ? 1 : 0.7,
             }}
           >
@@ -1357,38 +1360,32 @@ useEffect(() => {
 
         {canCreateCorrectionRequest ? (
           <div
-            className="card"
+            className={`card tenant-status-card ${
+              hasActiveUnlockForSelectedDate
+                ? "tenant-status-card-success"
+                : pendingCorrectionRequestForSelectedDate
+                ? "tenant-status-card-info"
+                : latestDecisionRequestForSelectedDate?.status === "REJECTED"
+                ? "tenant-status-card-danger"
+                : "tenant-status-card-warning"
+            }`}
             style={{
               padding: 12,
               marginBottom: 12,
-              borderColor: hasActiveUnlockForSelectedDate
-                ? "rgba(184, 207, 58, 0.30)"
-                : pendingCorrectionRequestForSelectedDate
-                ? "rgba(90, 167, 255, 0.28)"
-                : latestDecisionRequestForSelectedDate?.status === "REJECTED"
-                ? "rgba(224, 75, 69, 0.30)"
-                : "rgba(255, 196, 0, 0.30)",
-              background: hasActiveUnlockForSelectedDate
-                ? "rgba(184, 207, 58, 0.08)"
-                : pendingCorrectionRequestForSelectedDate
-                ? "rgba(90, 167, 255, 0.08)"
-                : latestDecisionRequestForSelectedDate?.status === "REJECTED"
-                ? "rgba(224, 75, 69, 0.08)"
-                : "rgba(255, 196, 0, 0.08)",
             }}
           >
             <div style={{ display: "grid", gap: 8 }}>
               <div
-                style={{
-                  fontWeight: 800,
-                  color: hasActiveUnlockForSelectedDate
-                    ? "var(--accent)"
+                className={
+                  hasActiveUnlockForSelectedDate
+                    ? "tenant-status-text-success"
                     : pendingCorrectionRequestForSelectedDate
-                    ? "rgba(90, 167, 255, 0.95)"
+                    ? "tenant-status-text-info"
                     : latestDecisionRequestForSelectedDate?.status === "REJECTED"
-                    ? "rgba(224, 75, 69, 0.95)"
-                    : "rgba(255, 214, 102, 0.95)",
-                }}
+                    ? "tenant-status-text-danger"
+                    : "tenant-status-text-warning"
+                }
+                style={{ fontWeight: 800 }}
               >
                 Vergangener Tag ausgewählt
               </div>
@@ -1533,11 +1530,11 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
+        <div className="tenant-computation-card" style={{ marginBottom: 12 }}>
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+            <div className="tenant-computation-head">
               <div style={{ color: "var(--muted)" }}>Arbeitszeit (Tag berechnet)</div>
-              <div style={{ fontWeight: 900, color: "var(--accent)" }}>
+              <div className="tenant-computation-value">
                 {dayPreview ? formatHM(dayPreview.netDay) : ""}
               </div>
             </div>
@@ -1677,11 +1674,11 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className="card" style={{ padding: 12, marginBottom: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
+        <div className="tenant-computation-card" style={{ marginBottom: 12 }}>
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+            <div className="tenant-computation-head">
               <div style={{ color: "var(--muted)" }}>Pausenberechnung</div>
-              <div style={{ fontWeight: 900, color: "var(--accent)" }}>
+              <div className="tenant-computation-value">
                 {breakPreviewText.rightValue}
               </div>
             </div>
@@ -1783,12 +1780,7 @@ useEffect(() => {
             <details
               key={m.key}
               open={m.key === currentMonthKey}
-              style={{
-                borderRadius: 16,
-                border: "1px solid rgba(255,255,255,0.08)",
-                background: "rgba(0,0,0,0.20)",
-                overflow: "hidden",
-              }}
+              className="tenant-list-shell"
             >
               <summary
                 style={{
@@ -1821,12 +1813,9 @@ useEffect(() => {
                   return (
                     <details
                       key={`${m.key}-${d.date}`}
+                      className="tenant-list-shell-inner"
                       style={{
                         margin: "0 12px",
-                        borderRadius: 14,
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        background: "rgba(0,0,0,0.16)",
-                        overflow: "hidden",
                       }}
                     >
                       <summary
@@ -1896,16 +1885,7 @@ useEffect(() => {
                           return (
                             <div
                               key={e.id}
-                              style={{
-                                margin: "0 12px",
-                                display: "flex",
-                                justifyContent: "space-between",
-                                gap: 10,
-                                padding: "10px 12px",
-                                borderRadius: 12,
-                                background: "rgba(255,255,255,0.02)",
-                                border: "1px solid rgba(255,255,255,0.06)",
-                              }}
+                              className="tenant-entry-row"
                             >
                               <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
                                 <div style={{ fontWeight: 1100, color: "var(--accent)" }}>
@@ -1945,15 +1925,7 @@ useEffect(() => {
                                   type="button"
                                   onClick={() => openDetailsModal(e)}
                                   title="Details anzeigen"
-                                  style={{
-                                    padding: "6px 10px",
-                                    borderRadius: 10,
-                                    border: "1px solid rgba(184,207,58,0.28)",
-                                    background: "rgba(184,207,58,0.10)",
-                                    color: "var(--accent)",
-                                    cursor: "pointer",
-                                    fontWeight: 900,
-                                  }}
+                                  className="tenant-icon-button tenant-icon-button-success"
                                 >
                                   ℹ️ Details
                                 </button>
@@ -1963,15 +1935,7 @@ useEffect(() => {
                                     type="button"
                                     onClick={() => openNoteModal(e)}
                                     title="Notiz anzeigen"
-                                    style={{
-                                      padding: "6px 10px",
-                                      borderRadius: 10,
-                                      border: "1px solid rgba(90,167,255,0.28)",
-                                      background: "rgba(90,167,255,0.10)",
-                                      color: "rgba(90,167,255,0.95)",
-                                      cursor: "pointer",
-                                      fontWeight: 900,
-                                    }}
+                                    className="tenant-icon-button tenant-icon-button-info"
                                   >
                                     📝 Notiz
                                   </button>
@@ -1981,15 +1945,7 @@ useEffect(() => {
                                   type="button"
                                   onClick={() => openEditModal(e)}
                                   title="Bearbeiten"
-                                  style={{
-                                    padding: "6px 10px",
-                                    borderRadius: 10,
-                                    border: "1px solid rgba(255,255,255,0.14)",
-                                    background: "rgba(255,255,255,0.06)",
-                                    color: "rgba(255,255,255,0.9)",
-                                    cursor: "pointer",
-                                    fontWeight: 900,
-                                  }}
+                                  className="tenant-icon-button tenant-icon-button-neutral"
                                 >
                                   ✏️
                                 </button>
@@ -1998,15 +1954,7 @@ useEffect(() => {
                                   type="button"
                                   onClick={() => deleteEntry(e.id)}
                                   title="Löschen"
-                                  style={{
-                                    padding: "6px 10px",
-                                    borderRadius: 10,
-                                    border: "1px solid rgba(224,75,69,0.35)",
-                                    background: "rgba(224,75,69,0.10)",
-                                    color: "rgba(224,75,69,0.95)",
-                                    cursor: "pointer",
-                                    fontWeight: 1000,
-                                  }}
+                                  className="tenant-icon-button tenant-icon-button-danger"
                                 >
                                   🗑️
                                 </button>
@@ -2072,14 +2020,7 @@ useEffect(() => {
             <div>
               <div className="label">Ausgeführte Tätigkeit</div>
               <div
-                className="input"
-                style={{
-                  minHeight: 90,
-                  display: "block",
-                  whiteSpace: "pre-wrap",
-                  paddingTop: 12,
-                  lineHeight: 1.45,
-                }}
+                className="input tenant-note-surface"
               >
                 {detailsEntry.activity?.trim() ? detailsEntry.activity : "—"}
               </div>
@@ -2187,14 +2128,7 @@ useEffect(() => {
             <div>
               <div className="label">Notiz</div>
               <div
-                className="input"
-                style={{
-                  minHeight: 110,
-                  display: "block",
-                  whiteSpace: "pre-wrap",
-                  paddingTop: 12,
-                  lineHeight: 1.45,
-                }}
+                className="input tenant-note-surface-tall"
               >
                 {noteEntry.noteEmployee.trim() || "Keine Notiz vorhanden."}
               </div>
@@ -2237,16 +2171,16 @@ useEffect(() => {
       >
         <div style={{ display: "grid", gap: 12 }}>
           {correctionError ? (
-            <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
-              <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>
+        <div className="card tenant-status-card tenant-status-card-danger" style={{ padding: 12 }}>
+          <span className="tenant-status-text-danger" style={{ fontWeight: 700 }}>
                 {correctionError}
               </span>
             </div>
           ) : null}
 
           {correctionSuccess ? (
-            <div className="card" style={{ padding: 12, borderColor: "rgba(184, 207, 58, 0.28)" }}>
-              <span style={{ color: "var(--accent)", fontWeight: 700 }}>
+          <div className="card tenant-status-card tenant-status-card-success" style={{ padding: 12 }}>
+            <span className="tenant-status-text-success" style={{ fontWeight: 700 }}>
                 {correctionSuccess}
               </span>
             </div>
@@ -2328,10 +2262,12 @@ useEffect(() => {
         {!edit ? null : (
           <div style={{ display: "grid", gap: 12 }}>
             {editError ? (
-              <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
-                <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{editError}</span>
-              </div>
-            ) : null}
+          <div className="card tenant-status-card tenant-status-card-danger" style={{ padding: 12 }}>
+            <span className="tenant-status-text-danger" style={{ fontWeight: 700 }}>
+              {editError}
+            </span>
+          </div>
+        ) : null}
 
             <div>
               <div className="label">Mitarbeiter</div>
@@ -2407,7 +2343,7 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="card" style={{ padding: 12, borderColor: "rgba(184, 207, 58, 0.20)" }}>
+            <div className="tenant-computation-card">
               <div style={{ display: "grid", gap: 6 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
                   <div style={{ color: "var(--muted)" }}>Arbeitszeit (Tag berechnet)</div>

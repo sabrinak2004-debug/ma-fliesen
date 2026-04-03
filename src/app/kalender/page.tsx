@@ -1969,7 +1969,7 @@ function KalenderPageInner({
                       <div className="calendar-week-cell-tags">
                         {info?.hasPlan ? (
                           <span className={pillClassName()}>
-                            <span style={smallDot("rgba(184, 207, 58, 0.95)")} />{" "}
+                            <span style={smallDot("var(--tenant-work-accent)")} />{" "}
                             {showEmployeeCalendarLegend ? "Arbeit" : "Termine"}
                           </span>
                         ) : null}
@@ -1982,13 +1982,13 @@ function KalenderPageInner({
 
                         {showEmployeeCalendarLegend && info?.hasVacation ? (
                           <span className={pillClassName()}>
-                            <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> Urlaub
+                            <span style={smallDot("var(--tenant-vacation-accent)")} /> Urlaub
                           </span>
                         ) : null}
 
                         {showEmployeeCalendarLegend && info?.hasSick ? (
                           <span className={pillClassName()}>
-                            <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> Krank
+                            <span style={smallDot("var(--tenant-sick-accent)")} /> Krank
                           </span>
                         ) : null}
 
@@ -2093,7 +2093,7 @@ function KalenderPageInner({
                         disabled={!c.inMonth}
                         onClick={() => c.inMonth && c.date && openDay(c.date)}
                         style={{
-                          borderColor: isToday ? "rgba(255,255,255,0.22)" : border,
+                          borderColor: isToday ? "var(--brand-calendar-today-border)" : border,
                           background: bg,
                           opacity: c.inMonth ? 1 : 0.25,
                           cursor: c.inMonth ? "pointer" : "default",
@@ -2123,13 +2123,13 @@ function KalenderPageInner({
                         </div>
 
                         <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                          {info?.hasPlan ? <span style={smallDot("rgba(184, 207, 58, 0.95)")} /> : null}
+                          {info?.hasPlan ? <span style={smallDot("var(--tenant-work-accent)")} /> : null}
                           {info?.hasHoliday ? <span style={smallDot(holidayDotColor())} /> : null}
                           {showEmployeeCalendarLegend && info?.hasVacation ? (
-                            <span style={smallDot("rgba(90, 167, 255, 0.95)")} />
+                            <span style={smallDot("var(--tenant-vacation-accent)")} />
                           ) : null}
                           {showEmployeeCalendarLegend && info?.hasSick ? (
-                            <span style={smallDot("rgba(224, 75, 69, 0.95)")} />
+                            <span style={smallDot("var(--tenant-sick-accent)")} />
                           ) : null}
                         </div>
 
@@ -2384,14 +2384,7 @@ function KalenderPageInner({
                               onClick={() => editAppointment(a)}
                               disabled={saving}
                               title="Bearbeiten"
-                              style={{
-                                border: "1px solid rgba(255,255,255,0.12)",
-                                background: "var(--surface)",
-                                color: "var(--text)",
-                                borderRadius: 12,
-                                padding: "8px 10px",
-                                cursor: "pointer",
-                              }}
+                              className="tenant-icon-button tenant-icon-button-neutral"
                             >
                               ✏️
                             </button>
@@ -2400,14 +2393,7 @@ function KalenderPageInner({
                               onClick={() => void deleteAppointment(a.id)}
                               disabled={saving}
                               title="Löschen"
-                              style={{
-                                border: "1px solid rgba(224, 75, 69, 0.35)",
-                                background: "rgba(224, 75, 69, 0.10)",
-                                color: "rgba(224, 75, 69, 0.95)",
-                                borderRadius: 12,
-                                padding: "8px 10px",
-                                cursor: "pointer",
-                              }}
+                              className="tenant-icon-button tenant-icon-button-danger"
                             >
                               🗑️
                             </button>
@@ -2446,7 +2432,7 @@ function KalenderPageInner({
               </div>
             )}
 
-            <div style={{ height: 1, background: "var(--border)", opacity: 0.7, margin: "12px 0" }} />
+            <div className="tenant-divider" />
 
             <div className="calendar-modal-form-head">
               <div style={{ fontWeight: 900 }}>
@@ -2879,7 +2865,7 @@ function KalenderPageInner({
                 )}
               </div>
 
-              <div style={{ height: 1, background: "var(--border)", marginTop: 14, opacity: 0.7 }} />
+              <div className="tenant-divider" style={{ marginTop: 14 }} />
             </div>
 
             {error && (
@@ -3010,14 +2996,11 @@ function KalenderPageInner({
 
                 {selectedRequestBlock ? (
                   <div
-                    className="card"
+                    className="tenant-soft-panel-strong"
                     style={{
-                      padding: 10,
-                      borderColor: "rgba(255,255,255,0.10)",
-                      background: "var(--surface)",
-                      color: "rgba(255,255,255,0.92)",
                       fontSize: 13,
                       lineHeight: 1.45,
+                      color: "var(--text)",
                     }}
                   >
                     <div>

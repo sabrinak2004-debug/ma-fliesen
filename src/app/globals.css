@@ -2636,3 +2636,287 @@ li {
     width: 100%;
   }
 }
+
+/* ===== Block 3B: semantische Tenant-UI-Variablen ===== */
+
+:root {
+  --tenant-work-accent: var(--brand-work-border);
+  --tenant-work-bg-soft: var(--brand-work-bg);
+
+  --tenant-vacation-accent: var(--brand-vacation-border);
+  --tenant-vacation-bg-soft: var(--brand-vacation-bg);
+
+  --tenant-sick-accent: var(--brand-sick-border);
+  --tenant-sick-bg-soft: var(--brand-sick-bg);
+
+  --tenant-holiday-accent: var(--brand-holiday-border);
+  --tenant-holiday-bg-soft: var(--brand-holiday-bg);
+
+  --tenant-neutral-accent: var(--text);
+  --tenant-neutral-bg-soft: var(--brand-neutral-card-bg-strong);
+
+  --tenant-info-accent: var(--brand-vacation-border);
+  --tenant-info-bg-soft: var(--brand-vacation-bg);
+  --tenant-info-border: var(--brand-vacation-border);
+
+  --tenant-success-accent: var(--accent);
+  --tenant-success-bg-soft: var(--accent-soft);
+  --tenant-success-border: var(--accent-border);
+
+  --tenant-danger-accent: var(--brand-sick-border);
+  --tenant-danger-bg-soft: var(--brand-sick-bg);
+  --tenant-danger-border: var(--brand-sick-border);
+
+  --tenant-warning-accent: var(--brand-holiday-text);
+  --tenant-warning-bg-soft: var(--brand-holiday-bg);
+  --tenant-warning-border: var(--brand-holiday-border);
+
+  --tenant-soft-border: var(--border);
+  --tenant-soft-border-strong: var(--border);
+  --tenant-soft-bg: var(--surface);
+  --tenant-soft-bg-strong: var(--surface-strong);
+  --tenant-soft-bg-stronger: var(--brand-neutral-card-bg-strong);
+  --tenant-overlay: var(--overlay-bg);
+  --tenant-modal-panel: var(--panel);
+}
+
+.tenant-status-card {
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--tenant-soft-border);
+  background: var(--tenant-soft-bg);
+}
+
+.tenant-status-card-neutral {
+  border-color: var(--tenant-soft-border);
+  background: var(--brand-neutral-card-bg);
+}
+
+.tenant-status-card-danger {
+  border-color: var(--tenant-danger-border);
+  background: var(--tenant-danger-bg-soft);
+}
+
+.tenant-status-card-success {
+  border-color: var(--tenant-success-border);
+  background: var(--tenant-success-bg-soft);
+}
+
+.tenant-status-card-warning {
+  border-color: var(--tenant-warning-border);
+  background: var(--tenant-warning-bg-soft);
+}
+
+.tenant-status-card-info {
+  border-color: var(--tenant-info-border);
+  background: var(--tenant-info-bg-soft);
+}
+
+.tenant-status-text-danger {
+  color: var(--tenant-danger-accent);
+  font-weight: 800;
+}
+
+.tenant-status-text-success {
+  color: var(--tenant-success-accent);
+  font-weight: 800;
+}
+
+.tenant-status-text-warning {
+  color: var(--tenant-warning-accent);
+  font-weight: 800;
+}
+
+.tenant-status-text-info {
+  color: var(--tenant-info-accent);
+  font-weight: 800;
+}
+
+.tenant-soft-panel {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--tenant-soft-border);
+  background: var(--tenant-soft-bg);
+}
+
+.tenant-soft-panel-strong {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--tenant-soft-border);
+  background: var(--tenant-soft-bg-strong);
+}
+
+.tenant-category-label {
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.tenant-category-label-work {
+  color: var(--tenant-work-accent);
+}
+
+.tenant-category-label-vacation {
+  color: var(--tenant-vacation-accent);
+}
+
+.tenant-category-label-sick {
+  color: var(--tenant-sick-accent);
+}
+
+.tenant-category-label-neutral {
+  color: var(--tenant-neutral-accent);
+}
+
+.tenant-action-link,
+.tenant-action-button {
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.tenant-action-link {
+  border: 1px solid var(--tenant-soft-border);
+  background: var(--tenant-soft-bg-stronger);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tenant-action-button {
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.tenant-action-button[disabled] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.tenant-icon-button {
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tenant-icon-button-neutral {
+  border: 1px solid var(--tenant-soft-border);
+  background: var(--tenant-soft-bg-stronger);
+  color: var(--text);
+}
+
+.tenant-icon-button-info {
+  border: 1px solid var(--tenant-info-border);
+  background: var(--tenant-info-bg-soft);
+  color: var(--tenant-info-accent);
+}
+
+.tenant-icon-button-success {
+  border: 1px solid var(--tenant-success-border);
+  background: var(--tenant-success-bg-soft);
+  color: var(--tenant-success-accent);
+}
+
+.tenant-icon-button-danger {
+  border: 1px solid var(--tenant-danger-border);
+  background: var(--tenant-danger-bg-soft);
+  color: var(--tenant-danger-accent);
+}
+
+.tenant-list-shell {
+  border-radius: 16px;
+  border: 1px solid var(--tenant-soft-border);
+  background: var(--panel-soft);
+  overflow: hidden;
+}
+
+.tenant-list-shell-inner {
+  border-radius: 14px;
+  border: 1px solid var(--tenant-soft-border);
+  background: var(--brand-neutral-card-bg);
+  overflow: hidden;
+}
+
+.tenant-entry-row {
+  margin: 0 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--brand-neutral-card-bg);
+  border: 1px solid var(--tenant-soft-border);
+}
+
+.tenant-note-surface {
+  min-height: 90px;
+  display: block;
+  white-space: pre-wrap;
+  padding-top: 12px;
+  line-height: 1.45;
+}
+
+.tenant-note-surface-tall {
+  min-height: 110px;
+  display: block;
+  white-space: pre-wrap;
+  padding-top: 12px;
+  line-height: 1.45;
+}
+
+.tenant-readonly-input {
+  display: flex;
+  align-items: center;
+  opacity: 0.85;
+}
+
+.tenant-computation-card {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--accent-border);
+  background: var(--surface);
+}
+
+.tenant-computation-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.tenant-computation-value {
+  font-weight: 900;
+  color: var(--accent);
+}
+
+.tenant-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--tenant-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.tenant-modal-panel {
+  width: 100%;
+  max-width: 460px;
+  border-radius: 18px;
+  border: 1px solid var(--tenant-danger-border);
+  background: var(--tenant-modal-panel);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.tenant-divider {
+  height: 1px;
+  background: var(--border);
+  opacity: 0.7;
+  margin: 12px 0;
+}

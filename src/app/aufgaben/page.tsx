@@ -286,16 +286,16 @@ function taskActionText(task: TaskRow): string {
   }
 }
 
-function categoryAccent(category: TaskCategory): string {
+function categoryAccentClassName(category: TaskCategory): string {
   switch (category) {
     case "WORK_TIME":
-      return "rgba(184,207,58,0.95)";
+      return "tenant-category-label tenant-category-label-work";
     case "VACATION":
-      return "rgba(90,167,255,0.95)";
+      return "tenant-category-label tenant-category-label-vacation";
     case "SICKNESS":
-      return "rgba(224,75,69,0.95)";
+      return "tenant-category-label tenant-category-label-sick";
     case "GENERAL":
-      return "rgba(255,255,255,0.92)";
+      return "tenant-category-label tenant-category-label-neutral";
   }
 }
 
@@ -461,24 +461,15 @@ export default function AufgabenPage() {
     return (
       <div
         key={task.id}
+        className="tenant-soft-panel"
         style={{
-          padding: "12px 14px",
-          borderRadius: 12,
-          border: "1px solid rgba(255,255,255,0.08)",
-          background: "rgba(255,255,255,0.03)",
           display: "grid",
           gap: 8,
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ fontWeight: 1000 }}>{task.title}</div>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 900,
-              color: categoryAccent(task.category),
-            }}
-          >
+          <div className={categoryAccentClassName(task.category)}>
             {categoryLabel(task.category)}
           </div>
         </div>
@@ -501,12 +492,9 @@ export default function AufgabenPage() {
 
         {allowComplete ? (
           <div
+            className="tenant-soft-panel-strong"
             style={{
-              padding: "10px 12px",
-              borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.10)",
-              background: "rgba(255,255,255,0.04)",
-              color: "rgba(255,255,255,0.86)",
+              color: "var(--text-soft)",
               fontSize: 13,
               lineHeight: 1.45,
             }}
@@ -522,7 +510,7 @@ export default function AufgabenPage() {
         ) : null}
 
         {task.description ? (
-          <div style={{ whiteSpace: "pre-wrap", color: "rgba(255,255,255,0.92)" }}>
+          <div style={{ whiteSpace: "pre-wrap", color: "var(--text)" }}>
             {task.description}
           </div>
         ) : null}
@@ -539,15 +527,7 @@ export default function AufgabenPage() {
           >
             <Link
               href={taskActionHref(task)}
-              style={{
-                padding: "9px 12px",
-                borderRadius: 10,
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "rgba(255,255,255,0.06)",
-                color: "rgba(255,255,255,0.92)",
-                textDecoration: "none",
-                fontWeight: 900,
-              }}
+              className="tenant-action-link"
             >
               {task.category === "WORK_TIME"
                 ? "Zur Erfassung"
@@ -562,16 +542,7 @@ export default function AufgabenPage() {
               type="button"
               onClick={() => void completeTask(task.id)}
               disabled={actionTaskId === task.id}
-              style={{
-                padding: "9px 12px",
-                borderRadius: 10,
-                border: "1px solid rgba(184,207,58,0.35)",
-                background: "rgba(184,207,58,0.12)",
-                color: "var(--accent)",
-                cursor: actionTaskId === task.id ? "not-allowed" : "pointer",
-                fontWeight: 1000,
-                opacity: actionTaskId === task.id ? 0.7 : 1,
-              }}
+              className="tenant-action-button"
             >
               {actionTaskId === task.id ? "Prüfe..." : "Erledigt"}
             </button>
@@ -588,14 +559,11 @@ export default function AufgabenPage() {
           <button
             type="button"
             onClick={() => setShowMissingWorkEntryModal(true)}
+            className="tenant-status-card tenant-status-card-danger"
             style={{
               width: "100%",
               textAlign: "left",
-              padding: "14px 16px",
-              borderRadius: 14,
-              border: "1px solid rgba(224, 75, 69, 0.45)",
-              background: "rgba(224, 75, 69, 0.14)",
-              color: "rgba(255,255,255,0.96)",
+              color: "var(--text)",
               cursor: "pointer",
               display: "grid",
               gap: 6,
@@ -611,14 +579,8 @@ export default function AufgabenPage() {
           </button>
         ) : null}
         {error ? (
-          <div
-            className="card"
-            style={{
-              padding: 14,
-              borderColor: "rgba(224, 75, 69, 0.35)",
-            }}
-          >
-            <div style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>
+          <div className="card tenant-status-card tenant-status-card-danger" style={{ padding: 14 }}>
+            <div className="tenant-status-text-danger" style={{ fontWeight: 900 }}>
               {error}
             </div>
           </div>
@@ -673,11 +635,8 @@ export default function AufgabenPage() {
                 return (
                   <div key={groupKey} style={{ display: "grid", gap: 10 }}>
                     <div
-                      style={{
-                        fontWeight: 1000,
-                        color: categoryAccent(groupKey),
-                        fontSize: 16,
-                      }}
+                      className={categoryAccentClassName(groupKey)}
+                      style={{ fontSize: 16, fontWeight: 1000 }}
                     >
                       {label}
                     </div>
@@ -719,30 +678,11 @@ export default function AufgabenPage() {
             role="dialog"
             aria-modal="true"
             onClick={() => setShowMissingWorkEntryModal(false)}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.55)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 16,
-              zIndex: 1000,
-            }}
+            className="tenant-modal-overlay"
           >
             <div
               onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
-              style={{
-                width: "100%",
-                maxWidth: 460,
-                borderRadius: 18,
-                border: "1px solid rgba(224, 75, 69, 0.35)",
-                background: "rgb(24,24,24)",
-                boxShadow: "0 18px 50px rgba(0,0,0,0.35)",
-                padding: 18,
-                display: "grid",
-                gap: 14,
-              }}
+              className="tenant-modal-panel"
             >
               <div style={{ display: "grid", gap: 6 }}>
                 <div
