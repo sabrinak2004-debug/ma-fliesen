@@ -15,6 +15,8 @@
   --text: rgba(255, 255, 255, 0.92);
   --muted: rgba(255, 255, 255, 0.62);
   --muted-2: rgba(255, 255, 255, 0.45);
+  --text-soft: rgba(255, 255, 255, 0.84);
+  --text-faint: rgba(255, 255, 255, 0.72);
   --accent: #b8cf3a;
   --accent-rgb: 184, 207, 58;
   --accent-soft: rgba(184, 207, 58, 0.14);
@@ -90,7 +92,7 @@ body {
 }
 
 .topbar {
-  background: rgba(17, 22, 19, 0.75);
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   backdrop-filter: blur(12px);
@@ -229,7 +231,7 @@ body {
   border-radius: 14px;
   padding: 11px 14px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-strong);
   color: var(--text);
   transition:
     transform 0.12s ease,
@@ -240,7 +242,7 @@ body {
 
 .btn:hover {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--surface-strong) 88%, var(--text) 12%);
 }
 
 .btn:disabled {
@@ -605,7 +607,7 @@ body {
   grid-template-columns: 10px 1fr;
   border-radius: 18px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface);
   overflow: hidden;
   transition:
     transform 0.14s ease,
@@ -617,8 +619,8 @@ body {
 .entry-card:hover {
   transform: translateY(-2px);
   border-color: rgba(var(--accent-rgb), 0.28);
-  background: rgba(255, 255, 255, 0.045);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+  background: var(--surface-strong);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
 }
 
 .entry-accent {
@@ -744,7 +746,7 @@ body {
 }
 
 .entry-text {
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--text-soft);
   line-height: 1.35;
   word-break: break-word;
 }
@@ -762,9 +764,9 @@ body {
   gap: 6px;
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
   background: var(--surface);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-faint);
   font-size: 12px;
 }
 
@@ -805,7 +807,7 @@ li {
   font-weight: 900;
   font-size: 15px;
   line-height: 1.15;
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--text);
   background: transparent;
   border: 1px solid transparent;
   transition:
@@ -817,7 +819,7 @@ li {
 }
 
 .appshell-nav-item.is-active {
-  color: rgba(255, 255, 255, 0.98);
+  color: var(--text);
   background: linear-gradient(
     90deg,
     rgba(var(--accent-rgb), 0.18) 0%,
@@ -831,7 +833,7 @@ li {
 
 @media (hover: hover) and (pointer: fine) {
   .appshell-nav-item:hover {
-    color: rgba(255, 255, 255, 0.96);
+    color: var(--text);
     background: rgba(var(--accent-rgb), 0.08);
     border-color: rgba(var(--accent-rgb), 0.18);
     box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.05) inset;
@@ -1064,8 +1066,8 @@ li {
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(109, 144, 110, 0.02);
+  border: 1px solid var(--border);
+  background: var(--brand-neutral-card-bg);
   flex: 0 0 auto;
 }
 
@@ -1599,19 +1601,19 @@ li {
     display: flex !important;
   }
 
-  .date-display-input {
-    position: relative;
-    width: 100%;
-    min-width: 0;
-    min-height: 56px;
-    border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(0, 0, 0, 0.35);
-    align-items: center;
-    padding: 0 20px;
-    box-sizing: border-box;
-    overflow: hidden;
-  }
+.date-display-input {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  align-items: center;
+  padding: 0 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
 
   .date-display-value {
     width: 100%;
@@ -1926,7 +1928,7 @@ li {
 
 .legal-page-content p {
   margin: 0 0 12px;
-  color: rgba(255, 255, 255, 0.84);
+  color: var(--text-soft);
 }
 
 .legal-page-content ul {
@@ -1938,7 +1940,7 @@ li {
 .legal-page-content li {
   list-style: disc;
   margin: 0 0 6px;
-  color: rgba(255, 255, 255, 0.84);
+  color: var(--text-soft);
 }
 
 .legal-page-actions {
