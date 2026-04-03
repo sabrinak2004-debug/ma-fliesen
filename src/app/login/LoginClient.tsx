@@ -438,7 +438,16 @@ export default function LoginClient({
                   }}
                 />
               ) : (
-                <span>{brand.displayName}</span>
+                <div
+                  className="brand-logo-fallback"
+                  style={{
+                    width: 140,
+                    height: 40,
+                    fontSize: 12,
+                  }}
+                >
+                  {brand.displayName}
+                </div>
               )}
             </div>
           </div>
@@ -477,7 +486,7 @@ export default function LoginClient({
                     <input
                       className="input"
                       type={showNewPassword ? "text" : "password"}
-                      placeholder="Neues Passwort (mind. 6 Zeichen)"
+                      placeholder="Neues Passwort (mind. 8 Zeichen)"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       autoComplete="new-password"

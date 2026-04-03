@@ -1,4 +1,3 @@
-// src/app/uebersicht/page.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -107,16 +106,6 @@ function isAbsencesApiResponse(x: unknown): x is AbsencesApiResponse {
   return typeof x === "object" && x !== null;
 }
 
-function monthKey(d: Date): string {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  return `${yyyy}-${mm}`;
-}
-
-function toHours(min: number): number {
-  return min / 60;
-}
-
 function formatMinutesAsHM(minutes: number): string {
   const safeMinutes = Number.isFinite(minutes) ? Math.max(0, Math.round(minutes)) : 0;
   const hours = Math.floor(safeMinutes / 60);
@@ -187,43 +176,6 @@ function badgeStyle(t: "VACATION" | "SICK"): React.CSSProperties {
   };
 }
 
-function chipStyle(bg: string, border: string): React.CSSProperties {
-  return {
-    fontSize: 12,
-    fontWeight: 900,
-    padding: "6px 10px",
-    borderRadius: 999,
-    border: `1px solid ${border}`,
-    background: bg,
-    color: "rgba(255,255,255,0.92)",
-    whiteSpace: "nowrap",
-  };
-}
-
-function inputStyle(): React.CSSProperties {
-  return {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(0,0,0,0.25)",
-    color: "rgba(255,255,255,0.92)",
-    outline: "none",
-  };
-}
-
-function selectStyle(): React.CSSProperties {
-  return {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(0,0,0,0.25)",
-    color: "rgba(255,255,255,0.92)",
-    outline: "none",
-  };
-}
-
 type AbsFilterType = "ALL" | "SICK" | "VACATION";
 type MonthOption =
   | "01"
@@ -239,7 +191,6 @@ type MonthOption =
   | "11"
   | "12";
 
-
 function toUTCDateFromISO(ymd: string): Date {
   return new Date(`${ymd}T00:00:00.000Z`);
 }
@@ -254,13 +205,6 @@ type AbsenceBlock = {
   dayPortion: AbsenceDayPortion;
 };
 
-function daysInclusive(from: string, to: string): number {
-  const a = toUTCDateFromISO(from);
-  const b = toUTCDateFromISO(to);
-  const diff = Math.floor((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
-  return diff + 1;
-}
-
 function absenceDayValue(dayPortion: AbsenceDayPortion): number {
   return dayPortion === "HALF_DAY" ? 0.5 : 1;
 }
@@ -269,10 +213,6 @@ function formatDayCountDE(days: number): string {
   if (days === 0.5) return "0,5 Tag";
   if (Number.isInteger(days)) return `${days} ${days === 1 ? "Tag" : "Tage"}`;
   return `${String(days).replace(".", ",")} Tage`;
-}
-
-function formatHoursInfo(minutes: number): string {
-  return `${String((minutes / 60).toFixed(1)).replace(".", ",")} Stunden`;
 }
 
 function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
@@ -289,7 +229,7 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
   let curDays = absenceDayValue(sortedAbsences[0].dayPortion);
 
   const isNextDay = (prev: string, next: string) => {
-    const p = toUTCDateFromISO(prev);
+  const p = toUTCDateFromISO(prev);
     p.setUTCDate(p.getUTCDate() + 1);
 
     const y = p.getUTCFullYear();
@@ -388,7 +328,6 @@ export default function UebersichtPage() {
   const [unpaidAbsenceDays, setUnpaidAbsenceDays] = useState<number>(0);
   const [unpaidAbsenceMinutes, setUnpaidAbsenceMinutes] = useState<number>(0);
 
-  const initialYm = useMemo(() => monthKey(new Date()), []);
   const [selectedYear, setSelectedYear] = useState<string>(currentYear());
   const [selectedMonth, setSelectedMonth] = useState<MonthOption>(currentMonth());
 
@@ -733,15 +672,7 @@ export default function UebersichtPage() {
       <button
         type="button"
         onClick={() => setExportOpen(false)}
-        style={{
-          padding: "10px 14px",
-          cursor: "pointer",
-          fontWeight: 900,
-          borderRadius: 12,
-          border: "1px solid rgba(255,255,255,0.12)",
-          background: "rgba(255,255,255,0.06)",
-          color: "rgba(255,255,255,0.9)",
-        }}
+        className="app-action-card-button app-action-card-button-neutral"
       >
         Abbrechen
       </button>
@@ -750,14 +681,9 @@ export default function UebersichtPage() {
         type="button"
         onClick={doExport}
         disabled={exportMode === "RANGE" && Boolean(rangeError)}
+        className="app-action-card-button app-action-card-button-accent"
         style={{
-          padding: "10px 14px",
           cursor: exportMode === "RANGE" && rangeError ? "not-allowed" : "pointer",
-          fontWeight: 1000,
-          borderRadius: 12,
-          border: "1px solid rgba(184,207,58,0.35)",
-          background: exportMode === "RANGE" && rangeError ? "rgba(184,207,58,0.06)" : "rgba(184,207,58,0.12)",
-          color: "var(--accent)",
           opacity: exportMode === "RANGE" && rangeError ? 0.7 : 1,
         }}
         title="Download starten"
@@ -828,17 +754,7 @@ const resetAbsFilters = (): void => {
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
           <Link
             href="/aufgaben"
-            className="card"
-            style={{
-              padding: "10px 14px",
-              cursor: "pointer",
-              fontWeight: 900,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.14)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.92)",
-              textDecoration: "none",
-            }}
+            className="card app-action-card-button app-action-card-button-neutral"
             title="Meine Aufgaben"
           >
             📋 Aufgaben
@@ -851,16 +767,7 @@ const resetAbsFilters = (): void => {
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
           <button
             onClick={openExportModal}
-            className="card"
-            style={{
-              padding: "10px 14px",
-              cursor: "pointer",
-              fontWeight: 900,
-              borderRadius: 12,
-              border: "1px solid rgba(184,207,58,0.35)",
-              background: "rgba(184,207,58,0.12)",
-              color: "var(--accent)",
-            }}
+            className="card app-action-card-button app-action-card-button-accent"
             title="Export (Admin)"
           >
             ⬇️ Export
@@ -1007,15 +914,7 @@ const resetAbsFilters = (): void => {
           <button
             type="button"
             onClick={() => setWorkDetailsOpen(false)}
-            style={{
-              padding: "10px 14px",
-              cursor: "pointer",
-              fontWeight: 900,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.9)",
-            }}
+            className="app-action-card-button app-action-card-button-neutral"
           >
             Schließen
           </button>
@@ -1050,15 +949,7 @@ const resetAbsFilters = (): void => {
           <button
             type="button"
             onClick={() => setProgressDetailsOpen(false)}
-            style={{
-              padding: "10px 14px",
-              cursor: "pointer",
-              fontWeight: 900,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.9)",
-            }}
+            className="app-action-card-button app-action-card-button-neutral"
           >
             Schließen
           </button>
@@ -1075,6 +966,12 @@ const resetAbsFilters = (): void => {
           <div className="small">Krankheit angerechnet: {formatMinutesAsHM(sickMinutesInfo)}</div>
           <div className="small">Feiertage angerechnet: {formatMinutesAsHM(holidayMinutes)}</div>
           <div className="small">Feiertage im Monat: {holidayCountInMonth}</div>
+          <div className="small">
+            Unbezahlte Abwesenheit: {String(unpaidAbsenceDays).replace(".", ",")} Tage
+          </div>
+          <div className="small">
+            Unbezahlte Abwesenheit (Minuten): {formatMinutesAsHM(unpaidAbsenceMinutes)}
+          </div>
         </div>
       </Modal>
 
@@ -1112,7 +1009,7 @@ const resetAbsFilters = (): void => {
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                style={selectStyle()}
+                className="app-filter-select"
               >
                 {years.map((y) => (
                   <option key={y} value={y} style={{ color: "black" }}>
@@ -1127,7 +1024,7 @@ const resetAbsFilters = (): void => {
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value as MonthOption)}
-                style={selectStyle()}
+                className="app-filter-select"
               >
                 {MONTH_OPTIONS.map((m) => (
                   <option key={m.value} value={m.value} style={{ color: "black" }}>
@@ -1161,23 +1058,14 @@ const resetAbsFilters = (): void => {
               <button
                 type="button"
                 onClick={() => setWorkDetailsOpen(true)}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: "none",
-                  background: "transparent",
-                  color: "var(--muted-2)",
-                  cursor: "pointer",
-                  padding: 0,
-                }}
+                className="app-info-icon-button"
                 title="Details zu Arbeitsstunden anzeigen"
               >
                 <Info size={15} />
               </button>
             </div>
           </div>
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>⏱</div>
+          <div className="app-kpi-icon">⏱</div>
         </div>
 
 
@@ -1193,7 +1081,7 @@ const resetAbsFilters = (): void => {
               </div>
             ) : null}
           </div>
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌴</div>
+          <div className="app-kpi-icon">🌴</div>
         </div>
 
         <div className="card kpi">
@@ -1203,8 +1091,11 @@ const resetAbsFilters = (): void => {
             <div className="small">
               {String(usedVacationDaysYtd).replace(".", ",")} von {String(accruedVacationDays).replace(".", ",")} Tagen verbraucht
             </div>
+            <div className="small">
+              Jahresanspruch: {String(annualVacationDays).replace(".", ",")} Tage
+            </div>
           </div>
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🗓</div>
+          <div className="app-kpi-icon">🗓</div>
         </div>
 
         <div className="card kpi">
@@ -1212,7 +1103,7 @@ const resetAbsFilters = (): void => {
             <div className="small">Krankheitstage</div>
             <div className="big">{sickDays}</div>
           </div>
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌡</div>
+          <div className="app-kpi-icon">🌡</div>
         </div>
       </div>
 
@@ -1246,16 +1137,7 @@ const resetAbsFilters = (): void => {
               <button
                 type="button"
                 onClick={() => setProgressDetailsOpen(true)}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: "none",
-                  background: "transparent",
-                  color: "var(--muted-2)",
-                  cursor: "pointer",
-                  padding: 0,
-                }}
+                className="app-info-icon-button"
                 title="Details zum Monatsfortschritt anzeigen"
               >
                 <Info size={15} />
@@ -1265,12 +1147,11 @@ const resetAbsFilters = (): void => {
         </div>
 
         <div className="card" style={{ padding: 10 }}>
-          <div style={{ height: 10, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+          <div className="app-progress-track">
             <div
+              className="app-progress-bar"
               style={{
                 width: `${progress * 100}%`,
-                height: "100%",
-                background: "linear-gradient(90deg, rgba(184,207,58,0.95), rgba(157,176,47,0.95))",
               }}
             />
           </div>
@@ -1285,16 +1166,16 @@ const resetAbsFilters = (): void => {
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={chipStyle("rgba(255,255,255,0.06)", "rgba(255,255,255,0.12)")}>
+            <span className="app-chip-neutral">
               Gefiltert: {filteredAbsenceCounts.total}
             </span>
-            <span style={chipStyle("rgba(224, 75, 69, 0.10)", "rgba(224, 75, 69, 0.35)")}>
+            <span className="app-chip-sick">
               🌡 {filteredAbsenceCounts.sick}
             </span>
-            <span style={chipStyle("rgba(90, 167, 255, 0.10)", "rgba(90, 167, 255, 0.35)")}>
+            <span className="app-chip-vacation">
               🌴 {filteredAbsenceCounts.vac}
             </span>
-            <span style={chipStyle("rgba(255, 184, 77, 0.10)", "rgba(255, 184, 77, 0.35)")}>
+            <span className="app-chip-warning">
               💸 {filteredAbsenceCounts.unpaidVac}
             </span>
           </div>
@@ -1314,11 +1195,15 @@ const resetAbsFilters = (): void => {
               value={absQuery}
               onChange={(e) => setAbsQuery(e.target.value)}
               placeholder="Name suchen…"
-              style={inputStyle()}
+              className="app-filter-input"
             />
           ) : null}
 
-          <select value={absType} onChange={(e) => setAbsType(e.target.value as AbsFilterType)} style={selectStyle()}>
+          <select
+            value={absType}
+            onChange={(e) => setAbsType(e.target.value as AbsFilterType)}
+            className="app-filter-select"
+          >
             <option value="ALL">Alle Typen</option>
             <option value="SICK">Krank</option>
             <option value="VACATION">Urlaub</option>
@@ -1327,16 +1212,7 @@ const resetAbsFilters = (): void => {
           <button
             type="button"
             onClick={resetAbsFilters}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.18)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.92)",
-              cursor: "pointer",
-              fontWeight: 900,
-              whiteSpace: "nowrap",
-            }}
+            className="app-filter-reset-button"
             title="Filter zurücksetzen"
           >
             ↺ Reset
@@ -1411,20 +1287,7 @@ const resetAbsFilters = (): void => {
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 999,
-                            background: "rgba(184,207,58,0.14)",
-                            border: "1px solid rgba(184,207,58,0.35)",
-                            display: "grid",
-                            placeItems: "center",
-                            fontWeight: 900,
-                            color: "var(--accent)",
-                            textTransform: "uppercase",
-                          }}
-                        >
+                        <div className="app-user-initial-badge">
                           {p.name.trim().slice(0, 1)}
                         </div>
                         <div style={{ fontWeight: 900 }}>{p.name}</div>

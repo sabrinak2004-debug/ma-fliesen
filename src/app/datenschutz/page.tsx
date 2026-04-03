@@ -2,7 +2,7 @@ import LegalBackButton from "@/components/LegalBackButton";
 
 export default function DatenschutzPage() {
   return (
-    <div style={{ padding: "40px 0" }}>
+    <div className="page-section">
       <div className="container-app">
         <div className="card card-olive legal-page-card">
           <h1 className="legal-page-title">Datenschutzerklärung</h1>
@@ -153,7 +153,7 @@ export default function DatenschutzPage() {
 
           <div className="legal-page-actions">
             <LegalBackButton fallbackHref="/" label="Zurück" />
-            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -304,81 +304,81 @@ export default function AppShell({
     };
   }, []);
 
-const loadOpenTaskCount = useCallback(async (): Promise<void> => {
-  if (!session || session.role !== "EMPLOYEE") {
-    setOpenTaskCount(0);
-    return;
-  }
-
-  try {
-    const res = await fetch("/api/tasks?status=OPEN", {
-      method: "GET",
-      cache: "no-store",
-      credentials: "include",
-      headers: {
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-      },
-    });
-
-    const json: unknown = await res.json().catch(() => ({}));
-
-    if (!res.ok || !isOpenTasksApiResponse(json)) {
+  const loadOpenTaskCount = useCallback(async (): Promise<void> => {
+    if (!session || session.role !== "EMPLOYEE") {
       setOpenTaskCount(0);
       return;
     }
 
-    setOpenTaskCount(json.tasks.length);
-  } catch {
-    setOpenTaskCount(0);
-  }
-}, [session]);
-
-const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
-  if (!session || session.role !== "ADMIN") {
-    setOpenVacationRequests(0);
-    setOpenSickRequests(0);
-    setOpenCorrectionRequests(0);
-    return;
-  }
-
-  try {
-    const [vacRes, sickRes, corrRes] = await Promise.all([
-      fetch("/api/admin/absence-requests?type=VACATION&status=PENDING", {
+    try {
+      const res = await fetch("/api/tasks?status=OPEN", {
+        method: "GET",
         cache: "no-store",
         credentials: "include",
-      }),
-      fetch("/api/admin/absence-requests?type=SICK&status=PENDING", {
-        cache: "no-store",
-        credentials: "include",
-      }),
-      fetch("/api/admin/time-entry-correction-requests?status=PENDING", {
-        cache: "no-store",
-        credentials: "include",
-      }),
-    ]);
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      });
 
-    const vacJson: unknown = await vacRes.json().catch(() => ({}));
-    const sickJson: unknown = await sickRes.json().catch(() => ({}));
-    const corrJson: unknown = await corrRes.json().catch(() => ({}));
+      const json: unknown = await res.json().catch(() => ({}));
 
-    if (vacRes.ok && isAdminRequestsApiResponse(vacJson)) {
-      setOpenVacationRequests(vacJson.requests.length);
+      if (!res.ok || !isOpenTasksApiResponse(json)) {
+        setOpenTaskCount(0);
+        return;
+      }
+
+      setOpenTaskCount(json.tasks.length);
+    } catch {
+      setOpenTaskCount(0);
+    }
+  }, [session]);
+
+  const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
+    if (!session || session.role !== "ADMIN") {
+      setOpenVacationRequests(0);
+      setOpenSickRequests(0);
+      setOpenCorrectionRequests(0);
+      return;
     }
 
-    if (sickRes.ok && isAdminRequestsApiResponse(sickJson)) {
-      setOpenSickRequests(sickJson.requests.length);
-    }
+    try {
+      const [vacRes, sickRes, corrRes] = await Promise.all([
+        fetch("/api/admin/absence-requests?type=VACATION&status=PENDING", {
+          cache: "no-store",
+          credentials: "include",
+        }),
+        fetch("/api/admin/absence-requests?type=SICK&status=PENDING", {
+          cache: "no-store",
+          credentials: "include",
+        }),
+        fetch("/api/admin/time-entry-correction-requests?status=PENDING", {
+          cache: "no-store",
+          credentials: "include",
+        }),
+      ]);
 
-    if (corrRes.ok && isAdminRequestsApiResponse(corrJson)) {
-      setOpenCorrectionRequests(corrJson.requests.length);
+      const vacJson: unknown = await vacRes.json().catch(() => ({}));
+      const sickJson: unknown = await sickRes.json().catch(() => ({}));
+      const corrJson: unknown = await corrRes.json().catch(() => ({}));
+
+      if (vacRes.ok && isAdminRequestsApiResponse(vacJson)) {
+        setOpenVacationRequests(vacJson.requests.length);
+      }
+
+      if (sickRes.ok && isAdminRequestsApiResponse(sickJson)) {
+        setOpenSickRequests(sickJson.requests.length);
+      }
+
+      if (corrRes.ok && isAdminRequestsApiResponse(corrJson)) {
+        setOpenCorrectionRequests(corrJson.requests.length);
+      }
+    } catch {
+      setOpenVacationRequests(0);
+      setOpenSickRequests(0);
+      setOpenCorrectionRequests(0);
     }
-  } catch {
-    setOpenVacationRequests(0);
-    setOpenSickRequests(0);
-    setOpenCorrectionRequests(0);
-  }
-}, [session]);
+  }, [session]);
 
   const pathnameSuggestsAdmin = pathname.startsWith("/admin");
   const resolvedRole: "ADMIN" | "EMPLOYEE" =
@@ -417,22 +417,22 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
   }, [loadOpenTaskCount, loadAdminRequestCounts, pathname]);
 
   useEffect(() => {
-  function onTasksChanged() {
-    void loadOpenTaskCount();
-  }
+    function onTasksChanged() {
+      void loadOpenTaskCount();
+    }
 
-  function onAdminRequestsChanged() {
-    void loadAdminRequestCounts();
-  }
+    function onAdminRequestsChanged() {
+      void loadAdminRequestCounts();
+    }
 
-  window.addEventListener("tasks-changed", onTasksChanged);
-  window.addEventListener("admin-requests-changed", onAdminRequestsChanged);
+    window.addEventListener("tasks-changed", onTasksChanged);
+    window.addEventListener("admin-requests-changed", onAdminRequestsChanged);
 
-  return () => {
-    window.removeEventListener("tasks-changed", onTasksChanged);
-    window.removeEventListener("admin-requests-changed", onAdminRequestsChanged);
-  };
-}, [loadOpenTaskCount, loadAdminRequestCounts]);
+    return () => {
+      window.removeEventListener("tasks-changed", onTasksChanged);
+      window.removeEventListener("admin-requests-changed", onAdminRequestsChanged);
+    };
+  }, [loadOpenTaskCount, loadAdminRequestCounts]);
 
   useEffect(() => {
     if (!brand) return;
@@ -587,7 +587,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       marginTop: 6,
                     }}
                   >
-                  {brand?.displayName ?? ""}
+                    {brand?.displayName ?? ""}
                   </div>
                   <div
                     style={{
@@ -756,7 +756,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
 
                         {showTaskBadge || showVacationBadge || showSickBadge || showCorrectionBadge ? (
                           <span
-                            aria-label={`${openTaskCount} offene Aufgaben`}
+                            aria-label="Offene Elemente"
                             style={{
                               minWidth: 22,
                               height: 22,

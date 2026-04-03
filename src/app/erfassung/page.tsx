@@ -515,7 +515,6 @@ function ErfassungPageInner() {
   const [location, setLocation] = useState("");
   const [travelMinutes, setTravelMinutes] = useState<string>("0");
   const [noteEmployee, setNoteEmployee] = useState("");
-  const [prefillApplied, setPrefillApplied] = useState(false);
   const [showSyncToast, setShowSyncToast] = useState(false);
 
   const [dayBreaks, setDayBreaks] = useState<DayBreak[]>([]);
@@ -669,7 +668,6 @@ function ErfassungPageInner() {
       sourceTaskId !== "";
 
     if (!hasSyncValues) {
-      setPrefillApplied(true);
       return;
     }
 
@@ -688,12 +686,7 @@ function ErfassungPageInner() {
     setStartTime("");
     setEndTime("");
     setShowSyncToast(true);
-    setPrefillApplied(true);
   }, [searchParams, sourceTaskId, syncDateParam]);
-
-  useEffect(() => {
-    setPrefillApplied(false);
-  }, [sourceTaskId, syncDateParam]);
 
 useEffect(() => {
   let alive = true;
@@ -1250,9 +1243,6 @@ useEffect(() => {
 
   const currentMissingWorkdaysCount =
     selectedCorrectionStatus?.currentMissingWorkdaysCount ?? 0;
-
-  const lockedMissingWorkdaysCount =
-    selectedCorrectionStatus?.lockedMissingWorkdaysCount ?? 0;
 
   const graceWorkdaysLimit =
     selectedCorrectionStatus?.graceWorkdaysLimit ?? 5;

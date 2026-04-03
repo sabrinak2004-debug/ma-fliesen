@@ -318,11 +318,8 @@ export default function KalenderDokumentePage() {
         {loading ? (
           <div style={{ color: "var(--muted)" }}>Lade Dokumente...</div>
         ) : err ? (
-          <div
-            className="card"
-            style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}
-          >
-            <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{err}</span>
+          <div className="card app-danger-card">
+            <span className="app-danger-text">{err}</span>
           </div>
         ) : docs.length === 0 ? (
           <div style={{ color: "var(--muted)" }}>Keine Dokumente vorhanden.</div>
@@ -363,37 +360,9 @@ export default function KalenderDokumentePage() {
       </div>
 
       {previewOpen ? (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 90,
-            background: "rgba(0,0,0,0.72)",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div
-            style={{
-              padding: 12,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-              borderBottom: "1px solid rgba(255,255,255,0.10)",
-              background: "rgba(20,20,20,0.85)",
-            }}
-          >
-            <div
-              style={{
-                color: "white",
-                fontWeight: 900,
-                fontSize: 14,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
+        <div className="app-document-preview-overlay">
+          <div className="app-document-preview-header">
+            <div className="app-document-preview-title">
               {previewTitle}
             </div>
 
@@ -402,14 +371,7 @@ export default function KalenderDokumentePage() {
             </button>
           </div>
 
-          <div
-            style={{
-              flex: 1,
-              background: "rgba(255,255,255,0.02)",
-              overflow: "auto",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
+          <div className="app-document-preview-body">
             {previewLoading ? (
               <div
                 style={{

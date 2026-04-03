@@ -128,7 +128,7 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     neutralCardBg: "rgba(255,255,255,0.02)",
     neutralCardBgStrong: "rgba(255,255,255,0.04)",
   }),
-    beispielbetrieb: buildThemeFromBase({
+  beispielbetrieb: buildThemeFromBase({
     bg: "#f4f2ee",
     panel: "#ffffff",
     panel2: "#ebe6df",
@@ -515,13 +515,6 @@ export function applyTenantThemeToDocument(theme: TenantTheme): void {
   root.style.setProperty("--brand-floating-btn-text", theme.floatingButtonText);
   root.style.setProperty("--brand-neutral-card-bg", theme.neutralCardBg);
   root.style.setProperty("--brand-neutral-card-bg-strong", theme.neutralCardBgStrong);
-  root.style.setProperty("--text", theme.text);
-  root.style.setProperty("--muted", theme.muted);
-  root.style.setProperty("--muted-2", theme.muted2);
-  root.style.setProperty("--text-soft", theme.textSoft);
-  root.style.setProperty("--text-faint", theme.textFaint);
-  root.style.setProperty("--border", theme.border);
-  root.style.setProperty("--border-2", theme.border2);
 
   if (rgb) {
     root.style.setProperty("--accent-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);

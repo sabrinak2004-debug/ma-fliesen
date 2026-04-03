@@ -128,74 +128,19 @@ export default function TenantEntryClient() {
 
   return (
     <>
-      <div
-        style={{
-            minHeight: "100dvh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "24px 0",
-            }}
-      >
+      <div className="tenant-entry-shell">
         <div className="container-app">
-          <div
-            className="card"
-            style={{
-              maxWidth: 560,
-              margin: "0 auto",
-              padding: 24,
-              borderRadius: 24,
-              background: "rgba(17, 22, 19, 0.82)",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              boxShadow: "0 24px 80px rgba(0, 0, 0, 0.35)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-                marginBottom: 22,
-              }}
-            >
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  alignSelf: "flex-start",
-                  padding: "8px 12px",
-                  borderRadius: 999,
-                  background: "var(--accent-soft)",
-                  border: "1px solid var(--accent-border)",
-                  fontWeight: 800,
-                  fontSize: 12,
-                  color: "var(--text)",
-                }}
-              >
+          <div className="card tenant-entry-card">
+            <div className="tenant-entry-header">
+              <div className="tenant-entry-badge">
                 Firmenzugang
               </div>
 
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: 30,
-                  lineHeight: 1.05,
-                  fontWeight: 900,
-                  letterSpacing: -0.5,
-                }}
-              >
-              Willkommen bei saleo!
+              <h1 className="tenant-entry-title">
+                Willkommen bei saleo!
               </h1>
 
-              <p
-                style={{
-                  margin: 0,
-                  color: "var(--muted)",
-                  fontSize: 15,
-                  lineHeight: 1.5,
-                }}
-              >
+              <p className="tenant-entry-text">
                 Gib bitte deinen Firmennamen ein, damit wir dich
                 zum richtigen Login weiterleiten können.
               </p>
@@ -230,14 +175,7 @@ export default function TenantEntryClient() {
               </div>
             </form>
 
-            <div
-              style={{
-                marginTop: 18,
-                color: "var(--muted-2)",
-                fontSize: 12,
-                lineHeight: 1.5,
-              }}
-            >
+            <div className="tenant-entry-footnote">
               Nach erfolgreicher Prüfung wirst du automatisch zu dem
               passenden Firmen-Login weitergeleitet.
             </div>

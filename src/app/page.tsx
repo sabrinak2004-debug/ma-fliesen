@@ -16,7 +16,7 @@ export default async function HomePage() {
   }
 
   return (
-    <div style={{ padding: "40px 0" }}>
+    <div className="page-section">
       <div className="container-app">
         <div className="landing-hero-card card card-olive">
           <div className="landing-badge">saleo</div>
@@ -61,13 +61,7 @@ export default async function HomePage() {
           <div className="landing-action-row">
             <Link
               href="/firmenzugang"
-              className="btn btn-accent"
-              style={{
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              className="btn btn-accent link-button-inline"
             >
               Zum Firmen-Login
             </Link>

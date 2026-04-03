@@ -25,13 +25,8 @@ export default function LegalBackButton({
   return (
     <button
       type="button"
-      className="btn"
+      className="btn link-button-inline"
       onClick={handleClick}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
     >
       {label}
     </button>

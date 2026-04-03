@@ -19,7 +19,13 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Mitarbeiterportal" />
       </head>
       <body>
-        <div style={{ position: "relative", zIndex: 1 }}>
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            minHeight: "100vh",
+          }}
+        >
           <PushBootstrap />
           {children}
         </div>

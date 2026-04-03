@@ -58,14 +58,6 @@ type PlanEntry = {
   } | null;
 };
 
-type AbsenceBlock = {
-  type: AbsenceType;
-  dayPortion: AbsenceDayPortion;
-  start: string;
-  end: string;
-  idsByDate: Record<string, string>;
-};
-
 type AbsenceRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 type AbsenceRequestDTO = {
@@ -592,83 +584,6 @@ function getISOWeek(date: Date): number {
   return weekNo;
 }
 
-function buildBlocks(absences: AbsenceDTO[]): AbsenceBlock[] {
-  const rows = absences
-    .slice()
-    .sort((x, y) => (x.absenceDate < y.absenceDate ? -1 : x.absenceDate > y.absenceDate ? 1 : 0));
-
-  const blocks: AbsenceBlock[] = [];
-  const byKey = new Map<string, AbsenceDTO[]>();
-
-  for (const row of rows) {
-    const key = `${row.type}__${row.dayPortion}`;
-    const list = byKey.get(key) ?? [];
-    list.push(row);
-    byKey.set(key, list);
-  }
-
-  for (const [key, list] of byKey.entries()) {
-    const [typeRaw, dayPortionRaw] = key.split("__");
-    const type: AbsenceType = typeRaw === "SICK" ? "SICK" : "VACATION";
-    const dayPortion: AbsenceDayPortion = dayPortionRaw === "HALF_DAY" ? "HALF_DAY" : "FULL_DAY";
-
-    if (list.length === 0) continue;
-
-    let curStart = list[0].absenceDate;
-    let curEnd = list[0].absenceDate;
-    let idsByDate: Record<string, string> = { [list[0].absenceDate]: list[0].id };
-
-    for (let i = 1; i < list.length; i += 1) {
-      const d = list[i].absenceDate;
-      const expectedNext = addDaysYMD(curEnd, 1);
-
-      if (d === expectedNext && dayPortion === "FULL_DAY") {
-        idsByDate[d] = list[i].id;
-        curEnd = d;
-      } else {
-        blocks.push({
-          type,
-          dayPortion,
-          start: curStart,
-          end: curEnd,
-          idsByDate,
-        });
-        curStart = d;
-        curEnd = d;
-        idsByDate = { [d]: list[i].id };
-      }
-    }
-
-    blocks.push({
-      type,
-      dayPortion,
-      start: curStart,
-      end: curEnd,
-      idsByDate,
-    });
-  }
-
-  blocks.sort((a, b) => {
-    if (a.start !== b.start) return a.start < b.start ? -1 : 1;
-    if (a.type !== b.type) return a.type.localeCompare(b.type);
-    return a.dayPortion.localeCompare(b.dayPortion);
-  });
-
-  return blocks;
-}
-
-function blockLabel(b: AbsenceBlock): string {
-  const icon = b.type === "VACATION" ? "🌴" : "🤒";
-  const name = b.type === "VACATION" ? "Urlaub" : "Krank";
-
-  if (b.dayPortion === "HALF_DAY") {
-    return `${icon} Halber ${name.toLowerCase()} (${b.start})`;
-  }
-
-  const span = b.start === b.end ? b.start : `${b.start}–${b.end}`;
-  return `${icon} ${name} (${span})`;
-}
-
 function buildRequestBlocks(requests: AbsenceRequestDTO[]): AbsenceRequestBlock[] {
   return requests
     .map((r) => ({
@@ -865,19 +780,8 @@ function categoryDotStyle(c: EventCategory): React.CSSProperties {
   return { ...base, background: "var(--brand-sick-border)" };
 }
 
-function pillStyle(): React.CSSProperties {
-  return {
-    fontSize: 12,
-    padding: "4px 10px",
-    borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "var(--surface-strong)",
-    color: "var(--muted)",
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 8,
-    lineHeight: "16px",
-  };
+function pillClassName(): string {
+  return "calendar-pill";
 }
 
 function getHolidayIcon(name: string | null): React.ReactNode {
@@ -1305,17 +1209,10 @@ function KalenderPageInner({
   ]);
 
   const dayMap = useMemo(() => new Map(data.map((d) => [d.date, d])), [data]);
-  const blocks = useMemo(() => (isAdmin ? [] : buildBlocks(monthAbsences)), [monthAbsences, isAdmin]);
-
   const requestBlocks = useMemo(
     () => (isAdmin ? [] : buildRequestBlocks(monthRequests)),
     [monthRequests, isAdmin]
   );
-
-  const blocksForSelectedDay = useMemo(() => {
-    if (!selectedDate || isAdmin) return [];
-    return blocks.filter((b) => dateInRange(selectedDate, b.start, b.end));
-  }, [blocks, selectedDate, isAdmin]);
 
   const requestBlocksForSelectedDay = useMemo(() => {
     if (!selectedDate || isAdmin) return [];
@@ -1836,46 +1733,6 @@ function KalenderPageInner({
     setCategoryMap((prev) => ({ ...prev, [apptEditingId]: apptCategory }));
   }, [apptCategory, apptEditingId, isAdmin]);
 
-  const floatingStyle: React.CSSProperties = {
-    position: "fixed",
-    right: 22,
-    bottom: 22,
-    width: 56,
-    height: 56,
-    borderRadius: 18,
-    border: "1px solid var(--accent-border)",
-    background: "var(--brand-floating-btn-bg)",
-    color: "var(--brand-floating-btn-text)",
-    fontWeight: 900,
-    fontSize: 26,
-    boxShadow: "0 14px 40px rgba(0,0,0,0.35)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    zIndex: 60,
-  };
-
-  const segmentedWrap: React.CSSProperties = {
-    display: "inline-flex",
-    borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "var(--surface-strong)",
-    padding: 4,
-    gap: 4,
-  };
-
-  const segBtn = (active: boolean): React.CSSProperties => ({
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: active ? "var(--surface-strong)" : "transparent",
-    color: "var(--text)",
-    borderRadius: 12,
-    padding: "8px 14px",
-    cursor: "pointer",
-    fontWeight: 800,
-    fontSize: 13,
-  });
-
   return (
     <AppShell activeLabel="#wirkönnendas">
       <div className="card card-olive" style={{ padding: 18, position: "relative" }}>
@@ -1966,11 +1823,19 @@ function KalenderPageInner({
               ) : null}
             </div>
 
-            <div style={segmentedWrap}>
-              <button type="button" style={segBtn(viewMode === "MONTH")} onClick={() => setViewMode("MONTH")}>
+            <div className="calendar-segmented-wrap">
+              <button
+                type="button"
+                className={`calendar-segmented-button ${viewMode === "MONTH" ? "is-active" : ""}`}
+                onClick={() => setViewMode("MONTH")}
+              >
                 Monat
               </button>
-              <button type="button" style={segBtn(viewMode === "WEEK")} onClick={() => setViewMode("WEEK")}>
+              <button
+                type="button"
+                className={`calendar-segmented-button ${viewMode === "WEEK" ? "is-active" : ""}`}
+                onClick={() => setViewMode("WEEK")}
+              >
                 Woche
               </button>
             </div>
@@ -2103,26 +1968,26 @@ function KalenderPageInner({
 
                       <div className="calendar-week-cell-tags">
                         {info?.hasPlan ? (
-                          <span style={pillStyle()}>
+                          <span className={pillClassName()}>
                             <span style={smallDot("rgba(184, 207, 58, 0.95)")} />{" "}
                             {showEmployeeCalendarLegend ? "Arbeit" : "Termine"}
                           </span>
                         ) : null}
 
                         {info?.hasHoliday ? (
-                          <span style={pillStyle()} title={info.holidayName ?? "Gesetzlicher Feiertag"}>
+                          <span className={pillClassName()} title={info.holidayName ?? "Gesetzlicher Feiertag"}>
                             <span style={smallDot(holidayDotColor())} /> Feiertag
                           </span>
                         ) : null}
 
                         {showEmployeeCalendarLegend && info?.hasVacation ? (
-                          <span style={pillStyle()}>
+                          <span className={pillClassName()}>
                             <span style={smallDot("rgba(90, 167, 255, 0.95)")} /> Urlaub
                           </span>
                         ) : null}
 
                         {showEmployeeCalendarLegend && info?.hasSick ? (
-                          <span style={pillStyle()}>
+                          <span className={pillClassName()}>
                             <span style={smallDot("rgba(224, 75, 69, 0.95)")} /> Krank
                           </span>
                         ) : null}
@@ -2396,7 +2261,13 @@ function KalenderPageInner({
       </div>
 
       {isAdminOwnCalendar ? (
-        <button type="button" aria-label="Neuer Termin" title="Neuer Termin" onClick={openNewEventGlobal} style={floatingStyle}>
+        <button
+          type="button"
+          aria-label="Neuer Termin"
+          title="Neuer Termin"
+          onClick={openNewEventGlobal}
+          className="calendar-floating-button"
+        >
           +
         </button>
       ) : null}
@@ -2416,8 +2287,11 @@ function KalenderPageInner({
         {isAdminOwnCalendar ? (
           <>
             {apptError && (
-              <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
-                <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{apptError}</span>
+              <div
+                className="card calendar-status-card calendar-status-card-danger"
+                style={{ marginBottom: 12 }}
+              >
+                <span className="calendar-status-text-danger">{apptError}</span>
               </div>
             )}
 
@@ -2461,11 +2335,11 @@ function KalenderPageInner({
             </div>
 
             {apptLoading ? (
-              <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+              <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
                 Lädt Termine...
               </div>
             ) : dayAppointments.length === 0 ? (
-              <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+              <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
                 Keine Termine für diesen Tag.
               </div>
             ) : (
@@ -2541,7 +2415,7 @@ function KalenderPageInner({
                         </div>
 
                         <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
-                          <span style={pillStyle()}>{categoryLabel(cat)}</span>
+                          <span className={pillClassName()}>{categoryLabel(cat)}</span>
 
                           {a.location ? (
                             <span
@@ -2557,7 +2431,7 @@ function KalenderPageInner({
                             </span>
                           ) : null}
 
-                          <span style={pillStyle()}>{a.date}</span>
+                          <span className={pillClassName()}>{a.date}</span>
                         </div>
 
                         {a.notes ? (
@@ -2616,7 +2490,7 @@ function KalenderPageInner({
                   style={{
                     padding: "10px 12px",
                     borderRadius: 12,
-                    border: "1px solid rgba(255,255,255,0.10)",
+                    border: "1px solid var(--glass-border)",
                     background: "var(--surface)",
                     color: "var(--muted)",
                   }}
@@ -2720,7 +2594,7 @@ function KalenderPageInner({
           </>
         ) : isAdminViewingEmployee ? (
           <>
-            <div className="card" style={{ padding: 12, opacity: 0.9 }}>
+            <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.9 }}>
               Du siehst gerade den Kalender eines Mitarbeiters.
               Bearbeitung und eigene Admin-Termine sind in dieser Ansicht deaktiviert.
             </div>
@@ -2743,12 +2617,12 @@ function KalenderPageInner({
               <div className="label">Einsatzplan des Mitarbeiters</div>
 
               {adminEmployeePlansLoading ? (
-                <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
                   Lädt Plan...
                 </div>
               ) : adminEmployeePlansError ? (
-                <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
-                  <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>
+                <div className="card calendar-status-card calendar-status-card-danger">
+                  <span className="calendar-status-text-danger">
                     {adminEmployeePlansError}
                   </span>
                 </div>
@@ -2785,14 +2659,14 @@ function KalenderPageInner({
                 <div style={{ fontWeight: 900, marginBottom: 6 }}>Tagesstatus</div>
 
                 <div style={{ marginTop: 8, display: "flex", gap: 10, flexWrap: "wrap", color: "var(--muted)" }}>
-                  {dayMap.get(selectedDate)?.hasPlan ? <span style={pillStyle()}>Plan vorhanden</span> : null}
+                  {dayMap.get(selectedDate)?.hasPlan ? <span className={pillClassName()}>Plan vorhanden</span> : null}
                   {dayMap.get(selectedDate)?.hasHoliday ? (
-                    <span style={pillStyle()} title={dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}>
+                    <span className={pillClassName()} title={dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}>
                       Feiertag
                     </span>
                   ) : null}
                   {dayMap.get(selectedDate)?.hasVacation ? (
-                    <span style={pillStyle()}>
+                    <span className={pillClassName()}>
                       {getAbsenceCompensationSummary(
                         monthAbsences.filter(
                           (a) => a.absenceDate === selectedDate && a.type === "VACATION"
@@ -2802,7 +2676,7 @@ function KalenderPageInner({
                         : "Urlaub"}
                     </span>
                   ) : null}
-                  {dayMap.get(selectedDate)?.hasSick ? <span style={pillStyle()}>Krank</span> : null}
+                  {dayMap.get(selectedDate)?.hasSick ? <span className={pillClassName()}>Krank</span> : null}
                 </div>
 
                 {!dayMap.get(selectedDate)?.hasPlan &&
@@ -2822,15 +2696,15 @@ function KalenderPageInner({
               <div className="label">Dein Einsatzplan</div>
 
               {plansLoading ? (
-                <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
                   Lädt Plan...
                 </div>
               ) : plansError ? (
-                <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)" }}>
-                  <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{plansError}</span>
+                <div className="card calendar-status-card calendar-status-card-danger">
+                  <span className="calendar-status-text-danger">{plansError}</span>
                 </div>
               ) : dayPlans.length === 0 ? (
-                <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
                   Kein Einsatz für diesen Tag geplant.
                 </div>
               ) : (
@@ -2908,7 +2782,7 @@ function KalenderPageInner({
                 <div className="label">Bestätigte Abwesenheit</div>
 
                 {confirmedAbsencesForSelectedDay.length === 0 ? (
-                  <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                  <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
                     Keine bestätigte Abwesenheit eingetragen.
                   </div>
                 ) : (
@@ -2948,7 +2822,7 @@ function KalenderPageInner({
                 <div className="label">Meine Anträge</div>
 
                 {requestBlocksForSelectedDay.length === 0 ? (
-                  <div className="card" style={{ padding: 12, opacity: 0.85 }}>
+                  <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
                     Kein Antrag für diesen Tag vorhanden.
                   </div>
                 ) : (
@@ -3009,8 +2883,11 @@ function KalenderPageInner({
             </div>
 
             {error && (
-              <div className="card" style={{ padding: 12, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
-                <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
+              <div
+                className="card calendar-status-card calendar-status-card-danger"
+                style={{ marginBottom: 12 }}
+              >
+                <span className="calendar-status-text-danger">{error}</span>
               </div>
             )}
 
@@ -3114,17 +2991,13 @@ function KalenderPageInner({
 
                 {!selectedRequestBlock ? (
                   <div
-                    className="card"
+                    className={`card calendar-status-card ${
+                      compensationLockedBySystem
+                        ? "calendar-status-card-warning"
+                        : "calendar-status-card-neutral"
+                    }`}
                     style={{
-                      padding: 10,
                       marginBottom: 10,
-                      borderColor: compensationLockedBySystem
-                        ? "rgba(255, 184, 77, 0.35)"
-                        : "rgba(255,255,255,0.10)",
-                      background: compensationLockedBySystem
-                        ? "rgba(255, 184, 77, 0.08)"
-                        : "rgba(255,255,255,0.03)",
-                      color: "rgba(255,255,255,0.92)",
                       fontSize: 13,
                       lineHeight: 1.45,
                     }}
