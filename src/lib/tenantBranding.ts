@@ -15,6 +15,13 @@ type TenantThemeBase = {
   surfaceStrong: string;
   inputBg: string;
   overlayBg: string;
+  border: string;
+  border2: string;
+  text: string;
+  muted: string;
+  muted2: string;
+  textSoft: string;
+  textFaint: string;
   accent: string;
   accent2: string;
   accentSoft: string;
@@ -51,6 +58,13 @@ const DEFAULT_TENANT_THEME: TenantTheme = buildThemeFromBase({
   surfaceStrong: "rgba(255, 255, 255, 0.06)",
   inputBg: "rgba(0, 0, 0, 0.25)",
   overlayBg: "rgba(17, 22, 19, 0.82)",
+  border: "rgba(255, 255, 255, 0.08)",
+  border2: "rgba(206, 231, 72, 0.25)",
+  text: "rgba(255, 255, 255, 0.92)",
+  muted: "rgba(255, 255, 255, 0.62)",
+  muted2: "rgba(255, 255, 255, 0.45)",
+  textSoft: "rgba(255, 255, 255, 0.84)",
+  textFaint: "rgba(255, 255, 255, 0.72)",
   accent: DEFAULT_BRAND_ACCENT,
   accent2: "#9db02f",
   onAccent: "#111613",
@@ -84,6 +98,13 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     surfaceStrong: "rgba(255, 255, 255, 0.06)",
     inputBg: "rgba(0, 0, 0, 0.25)",
     overlayBg: "rgba(17, 22, 19, 0.82)",
+    border: "rgba(255, 255, 255, 0.08)",
+    border2: "rgba(206, 231, 72, 0.25)",
+    text: "rgba(255, 255, 255, 0.92)",
+    muted: "rgba(255, 255, 255, 0.62)",
+    muted2: "rgba(255, 255, 255, 0.45)",
+    textSoft: "rgba(255, 255, 255, 0.84)",
+    textFaint: "rgba(255, 255, 255, 0.72)",
     accent: "#b8cf3a",
     accent2: "#9db02f",
     onAccent: "#111613",
@@ -115,6 +136,13 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     surfaceStrong: "rgba(0, 0, 0, 0.06)",
     inputBg: "rgba(0, 0, 0, 0.06)",
     overlayBg: "rgba(255, 255, 255, 0.96)",
+    border: "rgba(63, 59, 61, 0.14)",
+    border2: "rgba(63, 59, 61, 0.18)",
+    text: "#2f2b2c",
+    muted: "#6f6963",
+    muted2: "#918a83",
+    textSoft: "#4c4748",
+    textFaint: "#6a6460",
     accent: "#3f3b3d",
     accent2: "#575152",
     onAccent: "#ffffff",
@@ -149,6 +177,13 @@ export function createTenantTheme(
     surfaceStrong: string;
     inputBg: string;
     overlayBg: string;
+    border: string;
+    border2: string;
+    text: string;
+    muted: string;
+    muted2: string;
+    textSoft: string;
+    textFaint: string;
     accent: string;
     accent2?: string;
     onAccent?: string;
@@ -230,6 +265,13 @@ function buildThemeFromBase(
     surfaceStrong: string;
     inputBg: string;
     overlayBg: string;
+    border: string;
+    border2: string;
+    text: string;
+    muted: string;
+    muted2: string;
+    textSoft: string;
+    textFaint: string;
     accent: string;
     accent2?: string;
     onAccent: string;
@@ -268,6 +310,13 @@ function buildThemeFromBase(
     surfaceStrong: base.surfaceStrong,
     inputBg: base.inputBg,
     overlayBg: base.overlayBg,
+    border: base.border,
+    border2: base.border2,
+    text: base.text,
+    muted: base.muted,
+    muted2: base.muted2,
+    textSoft: base.textSoft,
+    textFaint: base.textFaint,
     accent,
     accent2,
     accentSoft: rgbaFromHex(accent, 0.14, "rgba(184, 207, 58, 0.14)"),
@@ -322,6 +371,13 @@ export function resolveTenantTheme(
       surfaceStrong: DEFAULT_TENANT_THEME.surfaceStrong,
       inputBg: DEFAULT_TENANT_THEME.inputBg,
       overlayBg: DEFAULT_TENANT_THEME.overlayBg,
+      border: DEFAULT_TENANT_THEME.border,
+      border2: DEFAULT_TENANT_THEME.border2,
+      text: DEFAULT_TENANT_THEME.text,
+      muted: DEFAULT_TENANT_THEME.muted,
+      muted2: DEFAULT_TENANT_THEME.muted2,
+      textSoft: DEFAULT_TENANT_THEME.textSoft,
+      textFaint: DEFAULT_TENANT_THEME.textFaint,
       accent: primaryColor,
       accent2: primaryColor,
       onAccent: DEFAULT_TENANT_THEME.onAccent,
@@ -426,6 +482,13 @@ export function applyTenantThemeToDocument(theme: TenantTheme): void {
   root.style.setProperty("--surface-strong", theme.surfaceStrong);
   root.style.setProperty("--input-bg", theme.inputBg);
   root.style.setProperty("--overlay-bg", theme.overlayBg);
+  root.style.setProperty("--border", theme.border);
+  root.style.setProperty("--border-2", theme.border2);
+  root.style.setProperty("--text", theme.text);
+  root.style.setProperty("--muted", theme.muted);
+  root.style.setProperty("--muted-2", theme.muted2);
+  root.style.setProperty("--text-soft", theme.textSoft);
+  root.style.setProperty("--text-faint", theme.textFaint);
   root.style.setProperty("--accent", theme.accent);
   root.style.setProperty("--accent-2", theme.accent2);
   root.style.setProperty("--accent-soft", theme.accentSoft);
@@ -452,6 +515,13 @@ export function applyTenantThemeToDocument(theme: TenantTheme): void {
   root.style.setProperty("--brand-floating-btn-text", theme.floatingButtonText);
   root.style.setProperty("--brand-neutral-card-bg", theme.neutralCardBg);
   root.style.setProperty("--brand-neutral-card-bg-strong", theme.neutralCardBgStrong);
+  root.style.setProperty("--text", theme.text);
+  root.style.setProperty("--muted", theme.muted);
+  root.style.setProperty("--muted-2", theme.muted2);
+  root.style.setProperty("--text-soft", theme.textSoft);
+  root.style.setProperty("--text-faint", theme.textFaint);
+  root.style.setProperty("--border", theme.border);
+  root.style.setProperty("--border-2", theme.border2);
 
   if (rgb) {
     root.style.setProperty("--accent-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);
@@ -467,6 +537,13 @@ export function resetTenantThemeOnDocument(): void {
   root.style.removeProperty("--surface-strong");
   root.style.removeProperty("--input-bg");
   root.style.removeProperty("--overlay-bg");
+  root.style.removeProperty("--border");
+  root.style.removeProperty("--border-2");
+  root.style.removeProperty("--text");
+  root.style.removeProperty("--muted");
+  root.style.removeProperty("--muted-2");
+  root.style.removeProperty("--text-soft");
+  root.style.removeProperty("--text-faint");
   root.style.removeProperty("--accent");
   root.style.removeProperty("--accent-2");
   root.style.removeProperty("--accent-rgb");
