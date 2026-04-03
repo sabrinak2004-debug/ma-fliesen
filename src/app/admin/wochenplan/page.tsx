@@ -175,17 +175,6 @@ const ROWS = [
   { label: "Subunternehmer", offset: null, type: "SPECIAL" as const, tag: "SUB" },
 ];
 
-const UI = {
-  tableBg: "rgba(0,0,0,0.22)",
-  headerBg: "rgba(0,0,0,0.38)",
-  leftBg: "rgba(0,0,0,0.45)",
-  cellBorder: "rgba(255,255,255,0.10)",
-  cardBg: "rgba(255,255,255,0.06)",
-  cardBorder: "rgba(255,255,255,0.14)",
-  addBg: "rgba(255,255,255,0.05)",
-  text: "rgba(255,255,255,0.92)",
-  muted: "rgba(255,255,255,0.68)",
-};
 
 function startOfWeek(d: Date) {
   const date = new Date(d);
@@ -379,7 +368,7 @@ function Modal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.55)",
+        background: "var(--overlay-bg)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -388,15 +377,13 @@ function Modal({
       }}
     >
       <div
-        className="app-modal-panel"
+        className="app-modal-panel app-modal-panel-surface"
         style={{
           width: "100%",
           maxWidth,
           maxHeight: "85vh",
-          background: "rgba(12,12,12,0.96)",
-          border: `1px solid ${UI.cellBorder}`,
           borderRadius: 16,
-          color: UI.text,
+          color: "var(--text)",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
@@ -404,9 +391,9 @@ function Modal({
         }}
       >
         <div
+          className="app-modal-header-surface"
           style={{
             padding: 16,
-            borderBottom: `1px solid ${UI.cellBorder}`,
             display: "flex",
             justifyContent: "space-between",
             gap: 12,
@@ -414,7 +401,12 @@ function Modal({
           }}
         >
           <div style={{ fontSize: 18, fontWeight: 900 }}>{title}</div>
-          <button className="pill" onClick={onClose} type="button" aria-label="Schließen">
+          <button
+            className="btn"
+            onClick={onClose}
+            type="button"
+            aria-label="Schließen"
+          >
             ✕
           </button>
         </div>
@@ -434,16 +426,14 @@ function Modal({
 
         {footer ? (
           <div
-            className="app-modal-footer"
+            className="app-modal-footer app-modal-footer-surface"
             style={{
               padding: 16,
               paddingRight: 10,
-              borderTop: `1px solid ${UI.cellBorder}`,
               display: "flex",
               justifyContent: "space-between",
               gap: 8,
               flexWrap: "wrap",
-              background: "rgba(12,12,12,0.96)",
             }}
           >
             {footer}
@@ -1117,14 +1107,14 @@ export default function AdminWochenplanPage() {
   if (!sessionChecked) {
     return (
       <AppShell activeLabel="Wochenplan">
-    <div
-      style={{
-        padding: 14,
-        width: "100%",
-        minWidth: 0,
-      }}
-    >
-          <div style={{ color: UI.muted }}>lädt…</div>
+        <div
+          style={{
+            padding: 14,
+            width: "100%",
+            minWidth: 0,
+          }}
+        >
+          <div style={{ color: "var(--muted)" }}>lädt…</div>
         </div>
       </AppShell>
     );
@@ -1139,28 +1129,21 @@ export default function AdminWochenplanPage() {
         minWidth: 0,
       }}
     >
-            {pageError ? (
-                <div
-                  style={{
-                    marginBottom: 12,
-                    padding: "12px 14px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(224,75,69,0.35)",
-                    background: "rgba(224,75,69,0.10)",
-                    color: "rgba(224,75,69,0.95)",
-                    fontWeight: 900,
-                  }}
-                >
-                  {pageError}
-                </div>
-              ) : null}
+      {pageError ? (
+        <div
+          className="tenant-status-card tenant-status-card-danger"
+          style={{ marginBottom: 12 }}
+        >
+          <div className="tenant-status-text-danger">{pageError}</div>
+        </div>
+      ) : null}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           gap: 12,
           marginBottom: 14,
-          color: UI.text,
+          color: "var(--text)",
           width: "100%",
           minWidth: 0,
         }}
@@ -1173,11 +1156,15 @@ export default function AdminWochenplanPage() {
             gap: 14,
           }}
         >
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 22, fontWeight: 900 }}>Wochenplanung</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: "var(--text)" }}>
+                Wochenplanung
+              </div>
             <div style={{ marginTop: 4 }}>
               <div style={{ fontSize: 18, fontWeight: 800 }}>KW {weekLabel.kw}</div>
-              <div style={{ color: UI.muted, fontSize: 13 }}>{weekLabel.dateRange}</div>
+              <div style={{ color: "var(--muted)", fontSize: 13 }}>
+                {weekLabel.dateRange}
+              </div>
             </div>
 
             {!isDesktop ? (
@@ -1214,6 +1201,7 @@ export default function AdminWochenplanPage() {
                   type="date"
                   value={fmtYMD(weekStart)}
                   onChange={(e) => setWeekStart(startOfWeek(new Date(e.target.value)))}
+                  className="input"
                   style={{
                     flex: "0 0 136px",
                     width: 136,
@@ -1221,10 +1209,6 @@ export default function AdminWochenplanPage() {
                     maxWidth: 136,
                     boxSizing: "border-box",
                     padding: "8px 10px",
-                    border: `1px solid ${UI.cellBorder}`,
-                    borderRadius: 10,
-                    background: "rgba(0,0,0,0.25)",
-                    color: UI.text,
                     appearance: "none",
                     WebkitAppearance: "none",
                   }}
@@ -1289,12 +1273,9 @@ export default function AdminWochenplanPage() {
                   type="date"
                   value={fmtYMD(weekStart)}
                   onChange={(e) => setWeekStart(startOfWeek(new Date(e.target.value)))}
+                  className="input"
                   style={{
                     padding: "8px 10px",
-                    border: `1px solid ${UI.cellBorder}`,
-                    borderRadius: 10,
-                    background: "rgba(0,0,0,0.25)",
-                    color: UI.text,
                     maxWidth: 180,
                   }}
                 />
@@ -1318,7 +1299,7 @@ export default function AdminWochenplanPage() {
       </div>
 
       {loading ? (
-        <div style={{ color: UI.muted }}>lädt…</div>
+        <div style={{ color: "var(--muted)" }}>lädt…</div>
       ) : (
         <>
         <div style={{ display: isDesktop ? "none" : "grid", gap: 12 }}>
@@ -1331,18 +1312,27 @@ export default function AdminWochenplanPage() {
             return (
               <details
                 key={row.label}
+                className="card"
                 style={{
-                  border: `1px solid ${UI.cellBorder}`,
-                  borderRadius: 14,
-                  background: UI.tableBg,
                   padding: 12,
                 }}
               >
                 <summary style={{ listStyle: "none", cursor: "pointer" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "baseline" }}>
-                    <div style={{ fontWeight: 1000, fontSize: 16, color: UI.text }}>{row.label}</div>
-                    <div style={{ fontSize: 12, color: UI.muted }}>{fmtDE(new Date(dayYMD))}</div>
-                  </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        alignItems: "baseline",
+                      }}
+                    >
+                      <div style={{ fontWeight: 1000, fontSize: 16, color: "var(--text)" }}>
+                        {row.label}
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                        {fmtDE(new Date(dayYMD))}
+                      </div>
+                    </div>
                 </summary>
 
                 <div style={{ height: 10 }} />
@@ -1356,15 +1346,13 @@ export default function AdminWochenplanPage() {
                     return (
                       <div
                         key={`${dayYMD}_${u.id}`}
+                        className="tenant-soft-panel"
                         style={{
-                          border: `1px solid ${UI.cardBorder}`,
-                          borderRadius: 12,
                           padding: 10,
-                          background: "rgba(255,255,255,0.04)",
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                          <div style={{ fontWeight: 1000, color: UI.text }}>{u.fullName}</div>
+                          <div style={{ fontWeight: 1000, color: "var(--text)" }}>{u.fullName}</div>
                           <button
                             type="button"
                             className="pill"
@@ -1381,22 +1369,20 @@ export default function AdminWochenplanPage() {
                               <div
                                 key={e.id}
                                 onClick={() => openEditEntry(e, row)}
+                                className="tenant-soft-panel-strong"
                                 style={{
-                                  border: `1px solid ${UI.cardBorder}`,
-                                  borderRadius: 10,
                                   padding: "10px 12px",
-                                  background: UI.cardBg,
-                                  color: UI.text,
+                                  color: "var(--text)",
                                   cursor: "pointer",
                                 }}
                               >
                                 <div style={{ fontWeight: 1000, fontSize: 13 }}>{e.activity}</div>
-                                <div style={{ fontSize: 12, color: UI.muted, marginTop: 4 }}>
+                                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
                                   {e.startHHMM}–{e.endHHMM}
                                   {e.location ? ` · ${e.location}` : ""}
                                 </div>
                                 {e.noteEmployee ? (
-                                  <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
+                                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
                                     📝 MA: {e.noteEmployee}
                                   </div>
                                 ) : null}
@@ -1404,7 +1390,7 @@ export default function AdminWochenplanPage() {
                             ))}
                           </div>
                         ) : (
-                          <div style={{ marginTop: 10, fontSize: 12, color: UI.muted }}>
+                          <div style={{ marginTop: 10, fontSize: 12, color: "var(--muted)" }}>
                             Keine Einträge.
                           </div>
                         )}
@@ -1414,19 +1400,17 @@ export default function AdminWochenplanPage() {
                             <div
                               key={n.id}
                               onClick={() => openEditNote(n, row.label)}
+                              className="tenant-soft-panel-strong"
                               style={{
-                                border: `1px solid rgba(255,255,255,0.12)`,
-                                borderRadius: 10,
                                 padding: "10px 12px",
                                 cursor: "pointer",
-                                background: "rgba(255,255,255,0.03)",
-                                color: "rgba(255,255,255,0.85)",
+                                color: "var(--text-soft)",
                               }}
                             >
-                              <div style={{ fontWeight: 1000, fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
+                              <div style={{ fontWeight: 1000, fontSize: 12, color: "var(--muted)" }}>
                                 🔒 Admin-Notiz
                               </div>
-                              <div style={{ fontSize: 12, marginTop: 6, color: "rgba(255,255,255,0.70)" }}>
+                              <div style={{ fontSize: 12, marginTop: 6, color: "var(--muted)" }}>
                                 {n.note.trim() ? n.note : "(leer)"}
                               </div>
                             </div>
@@ -1435,15 +1419,10 @@ export default function AdminWochenplanPage() {
                           <button
                             type="button"
                             onClick={() => openCreateNote(u.id, dayYMD, row.label)}
+                            className="tenant-action-link"
                             style={{
                               width: "100%",
-                              border: `1px dashed rgba(255,255,255,0.18)`,
-                              borderRadius: 10,
-                              padding: "10px 12px",
-                              background: "rgba(255,255,255,0.03)",
-                              cursor: "pointer",
                               textAlign: "left",
-                              color: "rgba(255,255,255,0.75)",
                               fontWeight: 900,
                             }}
                           >
@@ -1465,18 +1444,25 @@ export default function AdminWochenplanPage() {
             return (
               <details
                 key={row.label}
+                className="card"
                 style={{
-                  border: `1px solid ${UI.cellBorder}`,
-                  borderRadius: 14,
-                  background: UI.tableBg,
                   padding: 12,
                 }}
               >
                 <summary style={{ listStyle: "none", cursor: "pointer" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-                    <div style={{ fontWeight: 1000, fontSize: 16, color: UI.text }}>{row.label}</div>
-                    <div style={{ color: UI.muted, fontWeight: 900 }}>▾</div>
-                  </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ fontWeight: 1000, fontSize: 16, color: "var(--text)" }}>
+                        {row.label}
+                      </div>
+                      <div style={{ color: "var(--muted)", fontWeight: 900 }}>▾</div>
+                    </div>
                 </summary>
 
 <div style={{ height: 10 }} />
@@ -1489,15 +1475,13 @@ export default function AdminWochenplanPage() {
                     return (
                       <div
                         key={`${rowKey}_${u.id}`}
+                        className="tenant-soft-panel"
                         style={{
-                          border: `1px solid ${UI.cardBorder}`,
-                          borderRadius: 12,
                           padding: 10,
-                          background: "rgba(255,255,255,0.04)",
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                          <div style={{ fontWeight: 1000, color: UI.text }}>{u.fullName}</div>
+                          <div style={{ fontWeight: 1000, color: "var(--text)" }}>{u.fullName}</div>
                           <button
                             type="button"
                             className="pill"
@@ -1514,17 +1498,15 @@ export default function AdminWochenplanPage() {
                               <div
                                 key={e.id}
                                 onClick={() => openEditEntry(e, row)}
+                                className="tenant-soft-panel-strong"
                                 style={{
-                                  border: `1px solid ${UI.cardBorder}`,
-                                  borderRadius: 10,
                                   padding: "10px 12px",
-                                  background: UI.cardBg,
-                                  color: UI.text,
+                                  color: "var(--text)",
                                   cursor: "pointer",
                                 }}
                               >
                                 <div style={{ fontWeight: 1000, fontSize: 13 }}>{e.activity}</div>
-                                <div style={{ fontSize: 12, color: UI.muted, marginTop: 4 }}>
+                                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
                                   {e.startHHMM}–{e.endHHMM}
                                   {e.location ? ` · ${e.location}` : ""}
                                 </div>
@@ -1532,7 +1514,9 @@ export default function AdminWochenplanPage() {
                             ))}
                           </div>
                         ) : (
-                          <div style={{ marginTop: 10, fontSize: 12, color: UI.muted }}>Keine Einträge.</div>
+                          <div style={{ marginTop: 10, fontSize: 12, color: "var(--muted)" }}>
+                            Keine Einträge.
+                          </div>
                         )}
                       </div>
                     );
@@ -1546,6 +1530,7 @@ export default function AdminWochenplanPage() {
         <div
           className={[
             "wochenplan-shell",
+            "card",
             desktopScrollState.left ? "is-scrolled-left" : "",
             desktopScrollState.right ? "is-scrolled-right" : "",
             desktopScrollState.top ? "is-scrolled-top" : "",
@@ -1557,12 +1542,9 @@ export default function AdminWochenplanPage() {
             width: "100%",
             minWidth: 0,
             maxHeight: "calc(100vh - 220px)",
-            border: `1px solid ${UI.cellBorder}`,
-            borderRadius: 14,
-            background: "rgba(11,15,12,0.98)",
-            backdropFilter: "blur(8px)",
             position: "relative",
             overflow: "hidden",
+            backdropFilter: "blur(8px)",
           }}
         >
           <div
@@ -1589,12 +1571,12 @@ export default function AdminWochenplanPage() {
               }}
             >
             <thead>
-              <tr style={{ background: UI.headerBg }}>
+              <tr style={{ background: "color-mix(in srgb, var(--panel) 96%, transparent)" }}>
                 <th
                   style={{
-                    borderTop: `1px solid ${UI.cellBorder}`,
-                    borderRight: `1px solid ${UI.cellBorder}`,
-                    borderBottom: `1px solid ${UI.cellBorder}`,
+                    borderTop: "1px solid var(--border)",
+                    borderRight: "1px solid var(--border)",
+                    borderBottom: "1px solid var(--border)",
                     borderLeft: "none",
                     padding: 12,
                     width: 180,
@@ -1604,8 +1586,8 @@ export default function AdminWochenplanPage() {
                     left: 0,
                     top: 0,
                     zIndex: 5,
-                    background: "rgba(15,20,17,0.995)",
-                    boxShadow: "1px 0 0 rgba(255,255,255,0.08), 0 1px 0 rgba(255,255,255,0.08)",
+                    background: "color-mix(in srgb, var(--panel) 96%, transparent)",
+                    boxShadow: "1px 0 0 var(--border), 0 1px 0 var(--border)",
                     backdropFilter: "blur(10px)",
                   }}
                 />
@@ -1613,20 +1595,20 @@ export default function AdminWochenplanPage() {
                   <th
                     key={u.id}
                     style={{
-                      borderTop: `1px solid ${UI.cellBorder}`,
-                      borderRight: `1px solid ${UI.cellBorder}`,
-                      borderBottom: `1px solid ${UI.cellBorder}`,
+                      borderTop: "1px solid var(--border)",
+                      borderRight: "1px solid var(--border)",
+                      borderBottom: "1px solid var(--border)",
                       borderLeft: "none",
                       padding: 12,
                       textAlign: "left",
                       fontWeight: 900,
-                      color: UI.text,
+                      color: "var(--text)",
                       whiteSpace: "nowrap",
-                      background: "rgba(15,20,17,0.995)",
+                      background: "color-mix(in srgb, var(--panel) 96%, transparent)",
                       position: "sticky",
                       top: 0,
                       zIndex: 4,
-                      boxShadow: "0 1px 0 rgba(255,255,255,0.08)",
+                      boxShadow: "0 1px 0 var(--border)",
                       minWidth: 220,
                       backdropFilter: "blur(10px)",
                     }}
@@ -1652,14 +1634,14 @@ export default function AdminWochenplanPage() {
                   <tr key={row.label}>
                     <td
                       style={{
-                        borderTop: `1px solid ${UI.cellBorder}`,
-                        borderRight: `1px solid ${UI.cellBorder}`,
-                        borderBottom: `1px solid ${UI.cellBorder}`,
+                        borderTop: "1px solid var(--border)",
+                        borderRight: "1px solid var(--border)",
+                        borderBottom: "1px solid var(--border)",
                         borderLeft: "none",
                         padding: 12,
-                        background: "rgba(15,20,17,0.995)",
+                        background: "color-mix(in srgb, var(--panel) 96%, transparent)",
                         fontWeight: 900,
-                        color: UI.text,
+                        color: "var(--text)",
                         verticalAlign: "top",
                         width: 180,
                         minWidth: 180,
@@ -1667,7 +1649,7 @@ export default function AdminWochenplanPage() {
                         position: "sticky",
                         left: 0,
                         zIndex: 2,
-                        boxShadow: "1px 0 0 rgba(255,255,255,0.08)",
+                        boxShadow: "1px 0 0 var(--border)",
                         backdropFilter: "blur(10px)",
                       }}
                     >
@@ -1685,7 +1667,7 @@ export default function AdminWochenplanPage() {
                         <td
                           key={`${row.label}_${u.id}`}
                           style={{
-                            border: `1px solid ${UI.cellBorder}`,
+                            border: "1px solid var(--border)",
                             padding: 10,
                             verticalAlign: "top",
                             minWidth: 220,
@@ -1697,38 +1679,34 @@ export default function AdminWochenplanPage() {
                                 <div
                                   key={e.id}
                                   onClick={() => openEditEntry(e, row)}
+                                  className="tenant-soft-panel-strong"
                                   style={{
-                                    border: `1px solid ${UI.cardBorder}`,
-                                    borderRadius: 10,
                                     padding: "10px 12px",
                                     cursor: "pointer",
-                                    background: UI.cardBg,
-                                    color: UI.text,
+                                    color: "var(--text)",
                                   }}
                                   title="Plan-Eintrag bearbeiten"
                                 >
                                   <div style={{ fontWeight: 900, fontSize: 13 }}>{e.activity}</div>
-                                  <div style={{ fontSize: 12, color: UI.muted, marginTop: 4 }}>
+                                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
                                     {e.startHHMM}–{e.endHHMM}
                                     {e.location ? ` · ${e.location}` : ""}
                                   </div>
 
                                   {e.noteEmployee ? (
-                                    <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>📝 MA: {e.noteEmployee}</div>
+                                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+                                      📝 MA: {e.noteEmployee}
+                                    </div>
                                   ) : null}
                                 </div>
                               ))}
 
                               <button
                                 onClick={() => openCreateEntry(u.id, row)}
+                                className="tenant-action-link"
                                 style={{
-                                  border: `1px dashed ${UI.cardBorder}`,
-                                  borderRadius: 10,
-                                  padding: "8px 12px",
-                                  background: UI.addBg,
-                                  cursor: "pointer",
                                   textAlign: "left",
-                                  color: UI.muted,
+                                  color: "var(--muted)",
                                 }}
                               >
                                 + Eintrag (Plan)
@@ -1741,20 +1719,18 @@ export default function AdminWochenplanPage() {
                                   <div
                                     key={n.id}
                                     onClick={() => openEditNote(n, row.label)}
+                                    className="tenant-soft-panel-strong"
                                     style={{
-                                      border: `1px solid rgba(255,255,255,0.12)`,
-                                      borderRadius: 10,
                                       padding: "10px 12px",
                                       cursor: "pointer",
-                                      background: "rgba(255,255,255,0.04)",
-                                      color: "rgba(255,255,255,0.85)",
+                                      color: "var(--text-soft)",
                                     }}
                                     title="Admin-Notiz bearbeiten"
                                   >
-                                    <div style={{ fontWeight: 900, fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
+                                    <div style={{ fontWeight: 900, fontSize: 12, color: "var(--muted)" }}>
                                       🔒 Admin-Notiz
                                     </div>
-                                    <div style={{ fontSize: 12, marginTop: 6, color: "rgba(255,255,255,0.70)" }}>
+                                    <div style={{ fontSize: 12, marginTop: 6, color: "var(--muted)" }}>
                                       {n.note.trim() ? n.note : "(leer)"}
                                     </div>
                                   </div>
@@ -1762,14 +1738,10 @@ export default function AdminWochenplanPage() {
 
                                 <button
                                   onClick={() => openCreateNote(u.id, rowDayYMD, row.label)}
+                                  className="tenant-action-link"
                                   style={{
-                                    border: `1px dashed rgba(255,255,255,0.18)`,
-                                    borderRadius: 10,
-                                    padding: "8px 12px",
-                                    background: "rgba(255,255,255,0.03)",
-                                    cursor: "pointer",
                                     textAlign: "left",
-                                    color: "rgba(255,255,255,0.60)",
+                                    color: "var(--muted)",
                                   }}
                                 >
                                   + Notiz (Admin)
@@ -1829,11 +1801,12 @@ export default function AdminWochenplanPage() {
           }}
         >
           <div style={{ minWidth: 0, width: "100%" }}>
-            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datum</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Datum</div>
             <input
               type="date"
               value={entryForm.dateYMD}
               onChange={(e) => setEntryForm((p) => ({ ...p, dateYMD: e.target.value }))}
+              className="input"
               style={{
                 width: "100%",
                 minWidth: 0,
@@ -1841,10 +1814,6 @@ export default function AdminWochenplanPage() {
                 boxSizing: "border-box",
                 display: "block",
                 padding: isDesktop ? "10px 12px" : "10px 10px",
-                border: `1px solid ${UI.cellBorder}`,
-                borderRadius: 10,
-                background: "rgba(0,0,0,0.25)",
-                color: UI.text,
                 appearance: "none",
                 WebkitAppearance: "none",
               }}
@@ -1852,7 +1821,7 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div style={{ minWidth: 0, width: "100%" }}>
-            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Mitarbeiter</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Mitarbeiter</div>
             <select
               value={entryForm.userId}
               onChange={(e) => setEntryForm((p) => ({ ...p, userId: e.target.value }))}
@@ -1863,10 +1832,10 @@ export default function AdminWochenplanPage() {
                 boxSizing: "border-box",
                 display: "block",
                 padding: isDesktop ? "10px 12px" : "10px 10px",
-                border: `1px solid ${UI.cellBorder}`,
+                border: `1px solid ${"var(--border)"}`,
                 borderRadius: 10,
                 background: "rgba(0,0,0,0.25)",
-                color: UI.text,
+                color: "var(--text)",
                 appearance: "none",
                 WebkitAppearance: "none",
               }}
@@ -1880,11 +1849,12 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div style={{ minWidth: 0, width: "100%" }}>
-            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Start</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Start</div>
             <input
               type="time"
               value={entryForm.startHHMM}
               onChange={(e) => setEntryForm((p) => ({ ...p, startHHMM: e.target.value }))}
+              className="input"
               style={{
                 width: "100%",
                 minWidth: 0,
@@ -1892,10 +1862,6 @@ export default function AdminWochenplanPage() {
                 boxSizing: "border-box",
                 display: "block",
                 padding: isDesktop ? "10px 12px" : "10px 8px",
-                border: `1px solid ${UI.cellBorder}`,
-                borderRadius: 10,
-                background: "rgba(0,0,0,0.25)",
-                color: UI.text,
                 appearance: "none",
                 WebkitAppearance: "none",
               }}
@@ -1903,11 +1869,12 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div style={{ minWidth: 0, width: "100%" }}>
-            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Ende</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Ende</div>
             <input
               type="time"
               value={entryForm.endHHMM}
               onChange={(e) => setEntryForm((p) => ({ ...p, endHHMM: e.target.value }))}
+              className="input"
               style={{
                 width: "100%",
                 minWidth: 0,
@@ -1915,10 +1882,6 @@ export default function AdminWochenplanPage() {
                 boxSizing: "border-box",
                 display: "block",
                 padding: isDesktop ? "10px 12px" : "10px 8px",
-                border: `1px solid ${UI.cellBorder}`,
-                borderRadius: 10,
-                background: "rgba(0,0,0,0.25)",
-                color: UI.text,
                 appearance: "none",
                 WebkitAppearance: "none",
               }}
@@ -1926,114 +1889,82 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Tätigkeit</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Tätigkeit</div>
             <input
               value={entryForm.activity}
               onChange={(e) => setEntryForm((p) => ({ ...p, activity: e.target.value }))}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                border: `1px solid ${UI.cellBorder}`,
-                borderRadius: 10,
-                background: "rgba(0,0,0,0.25)",
-                color: UI.text,
-              }}
+              className="input"
             />
             {entryForm.specialTag ? (
-              <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
                 Lass den Prefix <b>{entryForm.specialTag}:</b> stehen, sonst erscheint es nicht in der Spezial-Zeile.
               </div>
             ) : null}
           </div>
 
           <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Ort</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Ort</div>
             <input
               value={entryForm.location}
               onChange={(e) => setEntryForm((p) => ({ ...p, location: e.target.value }))}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                border: `1px solid ${UI.cellBorder}`,
-                borderRadius: 10,
-                background: "rgba(0,0,0,0.25)",
-                color: UI.text,
-              }}
+              className="input"
             />
           </div>
 
           <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Fahrzeit (Minuten)</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Fahrzeit (Minuten)</div>
             <input
               type="number"
               min={0}
               value={entryForm.travelMinutes}
               onChange={(e) => setEntryForm((p) => ({ ...p, travelMinutes: Number(e.target.value || 0) }))}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                border: `1px solid ${UI.cellBorder}`,
-                borderRadius: 10,
-                background: "rgba(0,0,0,0.25)",
-                color: UI.text,
-              }}
+              className="input"
             />
           </div>
 
           <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Notiz (für Mitarbeiter)</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Notiz (für Mitarbeiter)</div>
             <textarea
               value={entryForm.noteEmployee}
               onChange={(e) => setEntryForm((p) => ({ ...p, noteEmployee: e.target.value }))}
               rows={3}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                border: `1px solid ${UI.cellBorder}`,
-                borderRadius: 10,
-                background: "rgba(0,0,0,0.25)",
-                color: UI.text,
-                resize: "vertical",
-              }}
+              className="textarea"
             />
-            <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>Diese Notiz sehen Mitarbeiter im Kalender/Modal.</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+              Diese Notiz sehen Mitarbeiter im Kalender/Modal.
+            </div>
           </div>
 
           {/* -------------------- DOKUMENTE (Admin) -------------------- */}
           <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ height: 1, background: UI.cellBorder, margin: "10px 0", opacity: 0.9 }} />
+            <div style={{ height: 1, background: "var(--border)", margin: "10px 0", opacity: 0.9 }} />
 
             <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8 }}>📎 Dokumente (Baustellenzettel etc.)</div>
 
             {!editEntryId ? (
-              <div style={{ fontSize: 12, color: UI.muted }}>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>
                 Speichere zuerst den Plan-Eintrag – danach kannst du Dokumente hochladen.
               </div>
             ) : (
               <>
                 {docsError ? (
-                  <div style={{ fontSize: 12, color: "rgba(255,120,120,0.95)", marginBottom: 8 }}>{docsError}</div>
+                  <div className="tenant-status-text-danger" style={{ fontSize: 12, marginBottom: 8 }}>
+                    {docsError}
+                  </div>
                 ) : null}
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
-                    <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Titel</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Titel</div>
                     <input
                       value={docTitle}
                       onChange={(e) => setDocTitle(e.target.value)}
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        border: `1px solid ${UI.cellBorder}`,
-                        borderRadius: 10,
-                        background: "rgba(0,0,0,0.25)",
-                        color: UI.text,
-                      }}
+                      className="input"
                     />
                   </div>
 
                   <div>
-                    <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datei</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Datei</div>
                     <input
                       type="file"
                       accept=".pdf,image/jpeg,image/png,image/webp"
@@ -2042,14 +1973,7 @@ export default function AdminWochenplanPage() {
                         setDocsError(null);
                         setSelectedFile(f);
                       }}
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        border: `1px solid ${UI.cellBorder}`,
-                        borderRadius: 10,
-                        background: "rgba(0,0,0,0.25)",
-                        color: UI.text,
-                      }}
+                      className="input"
                     />
                   </div>
                 </div>
@@ -2058,25 +1982,23 @@ export default function AdminWochenplanPage() {
                   {uploadingDoc ? "Upload..." : "Dokument hochladen"}
                 </button>
 
-                <div style={{ fontSize: 12, color: UI.muted, marginTop: 8 }}>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
                   Erlaubt: PDF, JPG, PNG, WEBP · max. 15 MB
                 </div>
 
                 <div style={{ marginTop: 12 }}>
                   {docsLoading ? (
-                    <div style={{ fontSize: 12, color: UI.muted }}>Lade Dokumente...</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)" }}>Lade Dokumente...</div>
                   ) : docs.length === 0 ? (
-                    <div style={{ fontSize: 12, color: UI.muted }}>Noch keine Dokumente.</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)" }}>Noch keine Dokumente.</div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {docs.map((d) => (
                         <div
                           key={d.id}
+                          className="tenant-soft-panel-strong"
                           style={{
-                            border: `1px solid ${UI.cardBorder}`,
-                            borderRadius: 10,
                             padding: "10px 12px",
-                            background: "rgba(255,255,255,0.04)",
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
@@ -2098,7 +2020,7 @@ export default function AdminWochenplanPage() {
                             <div
                               style={{
                                 fontSize: 12,
-                                color: UI.muted,
+                                color: "var(--muted)",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
@@ -2147,7 +2069,7 @@ export default function AdminWochenplanPage() {
             )}
           </div>
 
-          <div style={{ gridColumn: "1 / -1", fontSize: 12, color: UI.muted }}>
+          <div style={{ gridColumn: "1 / -1", fontSize: 12, color: "var(--muted)" }}>
             ✅ Admin-Notiz wird <b>nicht</b> hier gespeichert — dafür gibt es separat “+ Notiz (Admin)” im Wochenplan.
           </div>
         </div>
@@ -2177,7 +2099,7 @@ export default function AdminWochenplanPage() {
                 height: "70vh",
                 border: "none",
                 borderRadius: 10,
-                background: "white",
+                background: "var(--panel)",
               }}
             />
           ) : (
@@ -2194,7 +2116,7 @@ export default function AdminWochenplanPage() {
             </div>
           )
         ) : (
-          <div style={{ color: UI.muted }}>Keine Vorschau verfügbar.</div>
+          <div style={{ color: "var(--muted)" }}>Keine Vorschau verfügbar.</div>
         )}
       </Modal>
 
@@ -2239,11 +2161,12 @@ export default function AdminWochenplanPage() {
             }}
           >
             <div style={{ minWidth: 0, width: "100%" }}>
-              <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Datum</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Datum</div>
               <input
                 type="date"
                 value={noteForm.dateYMD}
                 onChange={(e) => setNoteForm((p) => ({ ...p, dateYMD: e.target.value }))}
+                className="input"
                 style={{
                   width: "100%",
                   minWidth: 0,
@@ -2251,10 +2174,6 @@ export default function AdminWochenplanPage() {
                   boxSizing: "border-box",
                   display: "block",
                   padding: isDesktop ? "10px 12px" : "10px 10px",
-                  border: `1px solid ${UI.cellBorder}`,
-                  borderRadius: 10,
-                  background: "rgba(0,0,0,0.25)",
-                  color: UI.text,
                   appearance: "none",
                   WebkitAppearance: "none",
                 }}
@@ -2262,10 +2181,11 @@ export default function AdminWochenplanPage() {
             </div>
 
             <div style={{ minWidth: 0, width: "100%" }}>
-              <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>Mitarbeiter</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Mitarbeiter</div>
               <select
                 value={noteForm.userId}
                 onChange={(e) => setNoteForm((p) => ({ ...p, userId: e.target.value }))}
+                className="select"
                 style={{
                   width: "100%",
                   minWidth: 0,
@@ -2273,10 +2193,6 @@ export default function AdminWochenplanPage() {
                   boxSizing: "border-box",
                   display: "block",
                   padding: isDesktop ? "10px 12px" : "10px 10px",
-                  border: `1px solid ${UI.cellBorder}`,
-                  borderRadius: 10,
-                  background: "rgba(0,0,0,0.25)",
-                  color: UI.text,
                   appearance: "none",
                   WebkitAppearance: "none",
                 }}
@@ -2291,25 +2207,20 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div>
-            <div style={{ fontSize: 12, color: UI.muted, marginBottom: 4 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>
               Interne Admin-Notiz (nur für Admin)
             </div>
             <textarea
               value={noteForm.note}
               onChange={(e) => setNoteForm((p) => ({ ...p, note: e.target.value }))}
               rows={10}
+              className="textarea"
               style={{
                 width: "100%",
                 boxSizing: "border-box",
-                padding: "10px 12px",
-                border: `1px solid ${UI.cellBorder}`,
-                borderRadius: 10,
-                background: "rgba(0,0,0,0.25)",
-                color: UI.text,
-                resize: "vertical",
               }}
             />
-            <div style={{ fontSize: 12, color: UI.muted, marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
               Bleibt intern und wird niemals an Mitarbeiter ausgeliefert.
             </div>
           </div>

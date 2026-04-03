@@ -5,13 +5,8 @@ export default function AdminAppointmentsPage(): React.ReactElement {
   return (
     <Suspense
       fallback={
-        <div
-          style={{
-            padding: 16,
-            color: "var(--muted)",
-          }}
-        >
-          Kalender lädt...
+        <div className="card" style={{ padding: 16 }}>
+          <div style={{ color: "var(--muted)" }}>Kalender lädt...</div>
         </div>
       }
     >

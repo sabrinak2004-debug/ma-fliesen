@@ -48,6 +48,23 @@ type TenantThemeBase = {
   floatingButtonText: string;
   neutralCardBg: string;
   neutralCardBgStrong: string;
+  success: string;
+  successSoft: string;
+  successBorder: string;
+  successText: string;
+  info: string;
+  infoSoft: string;
+  infoBorder: string;
+  infoText: string;
+  warning: string;
+  warningSoft: string;
+  warningBorder: string;
+  warningText: string;
+  danger: string;
+  danger2: string;
+  dangerSoft: string;
+  dangerBorder: string;
+  dangerText: string;
 };
 
 const DEFAULT_TENANT_THEME: TenantTheme = buildThemeFromBase({
@@ -348,6 +365,23 @@ function buildThemeFromBase(
     floatingButtonText: base.floatingButtonText ?? base.onAccent,
     neutralCardBg: base.neutralCardBg ?? "rgba(255,255,255,0.02)",
     neutralCardBgStrong: base.neutralCardBgStrong ?? "rgba(255,255,255,0.04)",
+    success: accent,
+    successSoft: rgbaFromHex(accent, 0.14, "rgba(184, 207, 58, 0.14)"),
+    successBorder: rgbaFromHex(accent, 0.35, "rgba(184, 207, 58, 0.35)"),
+    successText: accent,
+    info: base.vacationBorder ?? "rgba(90, 167, 255, 0.65)",
+    infoSoft: base.vacationBg ?? "rgba(90, 167, 255, 0.14)",
+    infoBorder: base.vacationBorder ?? "rgba(90, 167, 255, 0.65)",
+    infoText: base.vacationBorder ?? "rgba(90, 167, 255, 0.65)",
+    warning: base.holidayText ?? "rgba(255, 196, 0, 0.95)",
+    warningSoft: base.holidayBg ?? "rgba(255, 196, 0, 0.12)",
+    warningBorder: base.holidayBorder ?? "rgba(255, 196, 0, 0.65)",
+    warningText: base.holidayText ?? "rgba(255, 196, 0, 0.95)",
+    danger: "#e04b45",
+    danger2: "#c63b36",
+    dangerSoft: base.sickBg ?? "rgba(224, 75, 69, 0.18)",
+    dangerBorder: base.sickBorder ?? "rgba(224, 75, 69, 0.65)",
+    dangerText: "#e04b45",
   };
 }
 
@@ -515,6 +549,23 @@ export function applyTenantThemeToDocument(theme: TenantTheme): void {
   root.style.setProperty("--brand-floating-btn-text", theme.floatingButtonText);
   root.style.setProperty("--brand-neutral-card-bg", theme.neutralCardBg);
   root.style.setProperty("--brand-neutral-card-bg-strong", theme.neutralCardBgStrong);
+  root.style.setProperty("--success", theme.success);
+  root.style.setProperty("--success-soft", theme.successSoft);
+  root.style.setProperty("--success-border", theme.successBorder);
+  root.style.setProperty("--success-text", theme.successText);
+  root.style.setProperty("--info", theme.info);
+  root.style.setProperty("--info-soft", theme.infoSoft);
+  root.style.setProperty("--info-border", theme.infoBorder);
+  root.style.setProperty("--info-text", theme.infoText);
+  root.style.setProperty("--warning", theme.warning);
+  root.style.setProperty("--warning-soft", theme.warningSoft);
+  root.style.setProperty("--warning-border", theme.warningBorder);
+  root.style.setProperty("--warning-text", theme.warningText);
+  root.style.setProperty("--danger", theme.danger);
+  root.style.setProperty("--danger-2", theme.danger2);
+  root.style.setProperty("--danger-soft", theme.dangerSoft);
+  root.style.setProperty("--danger-border", theme.dangerBorder);
+  root.style.setProperty("--danger-text", theme.dangerText);
 
   if (rgb) {
     root.style.setProperty("--accent-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);
@@ -564,6 +615,23 @@ export function resetTenantThemeOnDocument(): void {
   root.style.removeProperty("--brand-floating-btn-text");
   root.style.removeProperty("--brand-neutral-card-bg");
   root.style.removeProperty("--brand-neutral-card-bg-strong");
+  root.style.removeProperty("--success");
+  root.style.removeProperty("--success-soft");
+  root.style.removeProperty("--success-border");
+  root.style.removeProperty("--success-text");
+  root.style.removeProperty("--info");
+  root.style.removeProperty("--info-soft");
+  root.style.removeProperty("--info-border");
+  root.style.removeProperty("--info-text");
+  root.style.removeProperty("--warning");
+  root.style.removeProperty("--warning-soft");
+  root.style.removeProperty("--warning-border");
+  root.style.removeProperty("--warning-text");
+  root.style.removeProperty("--danger");
+  root.style.removeProperty("--danger-2");
+  root.style.removeProperty("--danger-soft");
+  root.style.removeProperty("--danger-border");
+  root.style.removeProperty("--danger-text");
 }
 
 export function applyAccentColorToDocument(accent: string): void {

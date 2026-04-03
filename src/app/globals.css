@@ -48,12 +48,24 @@
   --brand-scroll-thumb: color-mix(in srgb, var(--accent) 34%, transparent);
   --brand-scroll-thumb-hover: color-mix(in srgb, var(--accent) 50%, transparent);
   --brand-scroll-shell-bg: color-mix(in srgb, var(--bg) 98%, transparent);
+  --success: var(--accent);
+  --success-soft: var(--accent-soft);
+  --success-border: var(--accent-border);
+  --success-text: var(--accent);
+  --info: var(--brand-vacation-border);
+  --info-soft: var(--brand-vacation-bg);
+  --info-border: var(--brand-vacation-border);
+  --info-text: var(--brand-vacation-border);
+  --warning: var(--brand-holiday-text);
+  --warning-soft: var(--brand-holiday-bg);
+  --warning-border: var(--brand-holiday-border);
+  --warning-text: var(--brand-holiday-text);
   --danger: #e04b45;
   --glass-border: color-mix(in srgb, var(--text) 10%, transparent);
   --glass-border-strong: color-mix(in srgb, var(--text) 14%, transparent);
-  --danger-soft: color-mix(in srgb, var(--danger) 16%, transparent);
-  --danger-border: color-mix(in srgb, var(--danger) 40%, transparent);
-  --danger-text: var(--danger);
+  --danger-soft: rgba(224, 75, 69, 0.18);
+  --danger-border: rgba(224, 75, 69, 0.65);
+  --danger-text: #e04b45;
   --danger-2: #c63b36;
   --radius: 18px;
 }
@@ -508,9 +520,9 @@ body {
   font-weight: 900;
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, #ffb84d 35%, transparent);
-  background: color-mix(in srgb, #ffb84d 10%, transparent);
-  color: var(--text);
+  border: 1px solid var(--warning-border);
+  background: var(--warning-soft);
+  color: var(--warning-text);
   white-space: nowrap;
 }
 
@@ -789,13 +801,6 @@ body {
     flex: 0 0 auto;
     box-sizing: border-box;
   }
-}
-
-.modal-grid-2-compact {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-  width: 100%;
 }
 
 .modal-grid-2-compact > * {
@@ -2101,8 +2106,8 @@ li {
 }
 
 .calendar-status-card-warning {
-  border-color: color-mix(in srgb, #ffb84d 35%, transparent);
-  background: color-mix(in srgb, #ffb84d 10%, transparent);
+  border-color: var(--warning-border);
+  background: var(--warning-soft);
 }
 
 .calendar-status-card-neutral {
@@ -2121,7 +2126,7 @@ li {
 }
 
 .calendar-status-text-warning {
-  color: var(--text);
+  color: var(--warning-text);
   font-weight: 700;
 }
 
@@ -2828,7 +2833,7 @@ li {
 .tenant-list-shell {
   border-radius: 16px;
   border: 1px solid var(--tenant-soft-border);
-  background: var(--panel-soft);
+  background: var(--brand-panel-soft);
   overflow: hidden;
 }
 

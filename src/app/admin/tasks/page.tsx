@@ -470,22 +470,17 @@ export default function AdminTasksPage() {
             Neue Aufgabe erstellen
           </div>
 
-          <form onSubmit={(e) => void handleSubmit(e)} style={{ display: "grid", gap: 12 }}>
+          <form
+            onSubmit={(e) => void handleSubmit(e)}
+            style={{ display: "grid", gap: 12 }}
+          >
             <div style={{ display: "grid", gap: 6 }}>
               <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter</div>
               <select
                 value={assignedToUserId}
                 onChange={(e) => setAssignedToUserId(e.target.value)}
                 required
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "var(--input-bg)",
-                  color: "rgba(255,255,255,0.92)",
-                  outline: "none",
-                }}
+                className="select"
               >
                 <option value="" style={{ color: "black" }}>
                   — Bitte wählen —
@@ -505,15 +500,7 @@ export default function AdminTasksPage() {
                 onChange={(e) => setTitle(e.target.value)}
                 required
                 maxLength={160}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "var(--input-bg)",
-                  color: "rgba(255,255,255,0.92)",
-                  outline: "none",
-                }}
+                className="input"
               />
             </div>
 
@@ -523,16 +510,7 @@ export default function AdminTasksPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "var(--input-bg)",
-                  color: "rgba(255,255,255,0.92)",
-                  outline: "none",
-                  resize: "vertical",
-                }}
+                className="textarea"
               />
             </div>
 
@@ -542,15 +520,7 @@ export default function AdminTasksPage() {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as TaskCategory)}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    background: "var(--input-bg)",
-                    color: "rgba(255,255,255,0.92)",
-                    outline: "none",
-                  }}
+                  className="select"
                 >
                   <option value="WORK_TIME" style={{ color: "black" }}>Arbeitszeit</option>
                   <option value="VACATION" style={{ color: "black" }}>Urlaub</option>
@@ -564,14 +534,10 @@ export default function AdminTasksPage() {
                 <input
                   value={requiredActionLabel(requiredAction)}
                   readOnly
+                  className="input"
                   style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(255,255,255,0.18)",
                     background: "var(--surface-strong)",
-                    color: "rgba(255,255,255,0.72)",
-                    outline: "none",
+                    color: "var(--text-faint)",
                   }}
                 />
               </div>
@@ -587,15 +553,7 @@ export default function AdminTasksPage() {
                       setReferenceEndDate(e.target.value);
                     }
                   }}
-                  className="admin-task-date-input"
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    background: "var(--input-bg)",
-                    color: "rgba(255,255,255,0.92)",
-                    outline: "none",
-                  }}
+                  className="admin-task-date-input input"
                 />
               </div>
 
@@ -605,29 +563,17 @@ export default function AdminTasksPage() {
                   type="date"
                   value={referenceEndDate}
                   onChange={(e) => setReferenceEndDate(e.target.value)}
-                  className="admin-task-date-input"
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    background: "var(--input-bg)",
-                    color: "rgba(255,255,255,0.92)",
-                    outline: "none",
-                  }}
+                  className="admin-task-date-input input"
                 />
               </div>
             </div>
 
             {error ? (
-              <div style={{ color: "rgba(224,75,69,0.95)", fontWeight: 900 }}>
-                {error}
-              </div>
+              <div className="tenant-status-text-danger">{error}</div>
             ) : null}
 
             {success ? (
-              <div style={{ color: "var(--accent)", fontWeight: 900 }}>
-                {success}
-              </div>
+              <div className="tenant-status-text-success">{success}</div>
             ) : null}
 
             <div className="admin-task-submit-row">
@@ -663,15 +609,7 @@ export default function AdminTasksPage() {
               value={taskQuery}
               onChange={(e) => setTaskQuery(e.target.value)}
               placeholder="Titel, Beschreibung oder Mitarbeiter suchen…"
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.18)",
-                background: "var(--input-bg)",
-                color: "rgba(255,255,255,0.92)",
-                outline: "none",
-              }}
+              className="app-filter-input"
             />
 
             <select
@@ -679,15 +617,7 @@ export default function AdminTasksPage() {
               onChange={(e) =>
                 setTaskCategoryFilter(e.target.value as "ALL" | TaskCategory)
               }
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.18)",
-                background: "var(--input-bg)",
-                color: "rgba(255,255,255,0.92)",
-                outline: "none",
-              }}
+              className="app-filter-select"
             >
               <option value="ALL" style={{ color: "black" }}>
                 Alle Kategorien
@@ -720,11 +650,8 @@ export default function AdminTasksPage() {
               {openTasks.map((task) => (
                 <div
                   key={task.id}
+                  className="tenant-soft-panel"
                   style={{
-                    padding: "12px 14px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    background: "var(--surface)",
                     display: "grid",
                     gap: 6,
                   }}
@@ -753,7 +680,7 @@ export default function AdminTasksPage() {
                   </div>
 
                   {task.description ? (
-                    <div style={{ whiteSpace: "pre-wrap", color: "rgba(255,255,255,0.92)" }}>
+                    <div style={{ whiteSpace: "pre-wrap", color: "var(--text)" }}>
                       {task.description}
                     </div>
                   ) : null}
@@ -767,15 +694,7 @@ export default function AdminTasksPage() {
                           ? "/kalender"
                           : "/admin/tasks"
                       }
-                      style={{
-                        padding: "8px 12px",
-                        borderRadius: 10,
-                        border: "1px solid rgba(255,255,255,0.14)",
-                        background: "var(--surface-strong)",
-                        color: "rgba(255,255,255,0.92)",
-                        textDecoration: "none",
-                        fontWeight: 900,
-                      }}
+                      className="tenant-action-link"
                     >
                       Öffnen
                     </Link>
@@ -798,11 +717,8 @@ export default function AdminTasksPage() {
               {completedTasks.map((task) => (
                 <div
                   key={task.id}
+                  className="tenant-status-card tenant-status-card-success"
                   style={{
-                    padding: "12px 14px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(184,207,58,0.18)",
-                    background: "var(--brand-panel-soft)",
                     display: "grid",
                     gap: 6,
                   }}
@@ -827,7 +743,7 @@ export default function AdminTasksPage() {
                   </div>
 
                   {task.description ? (
-                    <div style={{ whiteSpace: "pre-wrap", color: "rgba(255,255,255,0.92)" }}>
+                    <div style={{ whiteSpace: "pre-wrap", color: "var(--text)" }}>
                       {task.description}
                     </div>
                   ) : null}

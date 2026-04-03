@@ -727,56 +727,56 @@ export default function AdminDashboardPage() {
   }
 
   async function downloadExport(url: string): Promise<void> {
-  setExportBusy(true);
-  setExportActionError("");
+    setExportBusy(true);
+    setExportActionError("");
 
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-      credentials: "include",
-      cache: "no-store",
-    });
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
 
-    if (!response.ok) {
-      let message = "Export konnte nicht heruntergeladen werden.";
+      if (!response.ok) {
+        let message = "Export konnte nicht heruntergeladen werden.";
 
-      try {
-        const data: unknown = await response.json();
-        if (isRecord(data) && isString(data["error"])) {
-          message = data["error"];
+        try {
+          const data: unknown = await response.json();
+          if (isRecord(data) && isString(data["error"])) {
+            message = data["error"];
+          }
+        } catch {
+          // ignore
         }
-      } catch {
-        // ignore
+
+        setExportActionError(message);
+        return;
       }
 
-      setExportActionError(message);
-      return;
+      const blob = await response.blob();
+      const disposition = response.headers.get("Content-Disposition");
+      const fallbackName = guessExportFallbackName(url);
+      const fileName = getFileNameFromDisposition(disposition, fallbackName);
+
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = fileName;
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setExportOpen(false);
+
+      window.setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+      }, 1000);
+    } catch {
+      setExportActionError("Export konnte nicht heruntergeladen werden.");
+    } finally {
+      setExportBusy(false);
     }
-
-    const blob = await response.blob();
-    const disposition = response.headers.get("Content-Disposition");
-    const fallbackName = guessExportFallbackName(url);
-    const fileName = getFileNameFromDisposition(disposition, fallbackName);
-
-    const objectUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = fileName;
-    link.rel = "noopener";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setExportOpen(false);
-
-    window.setTimeout(() => {
-      URL.revokeObjectURL(objectUrl);
-    }, 1000);
-  } catch {
-    setExportActionError("Export konnte nicht heruntergeladen werden.");
-  } finally {
-    setExportBusy(false);
   }
-}
 
   async function shareOrSaveExport(url: string): Promise<void> {
     setExportBusy(true);
@@ -922,48 +922,48 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-  let alive = true;
+    let alive = true;
 
-  (async () => {
-    try {
-      const response = await fetch("/api/me", {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-      });
+    (async () => {
+      try {
+        const response = await fetch("/api/me", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
 
-      const data: unknown = await response.json().catch(() => ({}));
+        const data: unknown = await response.json().catch(() => ({}));
 
-      if (!alive) return;
+        if (!alive) return;
 
-      const parsed = parseMeSession(data);
+        const parsed = parseMeSession(data);
 
-      if (!parsed) {
+        if (!parsed) {
+          setSession(null);
+          return;
+        }
+
+        if (parsed.role !== "ADMIN") {
+          router.replace("/login");
+          return;
+        }
+
+        setSession(parsed);
+      } catch {
+        if (!alive) return;
         setSession(null);
         return;
+      } finally {
+        if (alive) {
+          setSessionChecked(true);
+        }
       }
+    })();
 
-      if (parsed.role !== "ADMIN") {
-        router.replace("/login");
-        return;
-      }
-
-      setSession(parsed);
-    } catch {
-      if (!alive) return;
-      setSession(null);
-      return;
-    } finally {
-      if (alive) {
-        setSessionChecked(true);
-      }
-    }
-  })();
-
-  return () => {
-    alive = false;
-  };
-}, [router]);
+    return () => {
+      alive = false;
+    };
+  }, [router]);
 
   useEffect(() => {
     let alive = true;
@@ -1031,14 +1031,9 @@ export default function AdminDashboardPage() {
         type="button"
         onClick={() => setExportOpen(false)}
         disabled={exportBusy}
+        className="btn"
         style={{
-          padding: "10px 14px",
           cursor: exportBusy ? "not-allowed" : "pointer",
-          fontWeight: 900,
-          borderRadius: 12,
-          border: "1px solid rgba(255,255,255,0.12)",
-          background: "var(--surface-strong)",
-          color: "rgba(255,255,255,0.9)",
           opacity: exportBusy ? 0.7 : 1,
         }}
       >
@@ -1049,14 +1044,12 @@ export default function AdminDashboardPage() {
         type="button"
         onClick={() => void doExport(isMobileDevice() ? "SHARE" : "OPEN")}
         disabled={Boolean(rangeError) || Boolean(exportTargetError) || exportBusy}
+        className="btn btn-accent"
         style={{
-          padding: "10px 14px",
-          cursor: rangeError || exportTargetError || exportBusy ? "not-allowed" : "pointer",
-          fontWeight: 1000,
-          borderRadius: 12,
-          border: "1px solid rgba(184,207,58,0.35)",
-          background: "var(--accent-soft)",
-          color: "var(--accent)",
+          cursor:
+            rangeError || exportTargetError || exportBusy
+              ? "not-allowed"
+              : "pointer",
           opacity: rangeError || exportTargetError || exportBusy ? 0.7 : 1,
         }}
         title={isMobileDevice() ? "Export teilen oder sichern" : "Export herunterladen"}
@@ -1169,7 +1162,7 @@ export default function AdminDashboardPage() {
     }
   }
 
-    if (!sessionChecked) {
+  if (!sessionChecked) {
     return (
       <AppShell activeLabel="Dashboard">
         <div className="card" style={{ padding: 14 }}>
@@ -1188,30 +1181,16 @@ export default function AdminDashboardPage() {
             type="month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.18)",
-              background: "var(--input-bg)",
-              color: "rgba(255,255,255,0.92)",
-              outline: "none",
-            }}
+            className="input"
           />
         </div>
 
         <div style={{ display: "flex", alignItems: "end", gap: 10, flexWrap: "wrap" }}>
           <Link
             href="/admin/tasks"
-            className="card"
+            className="tenant-action-link"
             style={{
-              padding: "10px 14px",
-              cursor: "pointer",
               fontWeight: 900,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.14)",
-              background: "var(--surface-strong)",
-              color: "rgba(255,255,255,0.92)",
-              textDecoration: "none",
             }}
             title="Aufgaben verwalten"
           >
@@ -1220,16 +1199,9 @@ export default function AdminDashboardPage() {
 
           <button
             onClick={openExportModal}
-            className="card"
-            style={{
-              padding: "10px 14px",
-              cursor: "pointer",
-              fontWeight: 900,
-              borderRadius: 12,
-              border: "1px solid rgba(184,207,58,0.35)",
-              background: "var(--accent-soft)",
-              color: "var(--accent)",
-            }}
+            type="button"
+            className="btn btn-accent"
+            style={{ fontWeight: 900 }}
             title="Export (Admin)"
           >
             ⬇️ Export
@@ -1244,17 +1216,8 @@ export default function AdminDashboardPage() {
           >
             <div style={{ display: "grid", gap: 12 }}>
               {exportActionError ? (
-                <div
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(224,75,69,0.28)",
-                    background: "rgba(224,75,69,0.10)",
-                    color: "rgba(224,75,69,0.95)",
-                    fontWeight: 900,
-                  }}
-                >
-                  {exportActionError}
+                <div className="tenant-status-card tenant-status-card-danger">
+                  <div className="tenant-status-text-danger">{exportActionError}</div>
                 </div>
               ) : null}
 
@@ -1268,13 +1231,8 @@ export default function AdminDashboardPage() {
                     key={m.key}
                     type="button"
                     onClick={() => setExportMode(m.key)}
+                    className={exportMode === m.key ? "pill pill-active" : "pill"}
                     style={{
-                      borderRadius: 999,
-                      padding: "8px 12px",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      background: exportMode === m.key ? "var(--surface-strong)" : "var(--input-bg)",
-                      color: "rgba(255,255,255,0.92)",
-                      cursor: "pointer",
                       fontSize: 13,
                       fontWeight: 900,
                     }}
@@ -1294,13 +1252,8 @@ export default function AdminDashboardPage() {
                       setExportTarget("ALL");
                       setExportEmployeeId("");
                     }}
+                    className={exportTarget === "ALL" ? "pill pill-active" : "pill"}
                     style={{
-                      borderRadius: 999,
-                      padding: "8px 12px",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      background: exportTarget === "ALL" ? "var(--surface-strong)" : "var(--input-bg)",
-                      color: "rgba(255,255,255,0.92)",
-                      cursor: "pointer",
                       fontSize: 13,
                       fontWeight: 900,
                     }}
@@ -1311,13 +1264,8 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setExportTarget("SINGLE_EMPLOYEE")}
+                    className={exportTarget === "SINGLE_EMPLOYEE" ? "pill pill-active" : "pill"}
                     style={{
-                      borderRadius: 999,
-                      padding: "8px 12px",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      background: exportTarget === "SINGLE_EMPLOYEE" ? "var(--surface-strong)" : "var(--input-bg)",
-                      color: "rgba(255,255,255,0.92)",
-                      cursor: "pointer",
                       fontSize: 13,
                       fontWeight: 900,
                     }}
@@ -1333,15 +1281,7 @@ export default function AdminDashboardPage() {
                   <select
                     value={exportEmployeeId}
                     onChange={(e) => setExportEmployeeId(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "var(--input-bg)",
-                      color: "rgba(255,255,255,0.92)",
-                      outline: "none",
-                    }}
+                    className="select"
                   >
                     <option value="" style={{ color: "black" }}>
                       — Bitte wählen —
@@ -1354,7 +1294,7 @@ export default function AdminDashboardPage() {
                   </select>
 
                   {exportTargetError ? (
-                    <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>
+                    <div className="tenant-status-text-danger" style={{ fontSize: 12 }}>
                       {exportTargetError}
                     </div>
                   ) : null}
@@ -1368,14 +1308,7 @@ export default function AdminDashboardPage() {
                     type="month"
                     value={exportMonth}
                     onChange={(e) => setExportMonth(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "var(--input-bg)",
-                      color: "rgba(255,255,255,0.92)",
-                    }}
+                    className="input"
                   />
                 </div>
               ) : null}
@@ -1386,14 +1319,7 @@ export default function AdminDashboardPage() {
                   <select
                     value={exportYear}
                     onChange={(e) => setExportYear(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "var(--input-bg)",
-                      color: "rgba(255,255,255,0.92)",
-                    }}
+                    className="select"
                   >
                     {years.map((y) => (
                       <option key={y} value={y} style={{ color: "black" }}>
@@ -1413,32 +1339,18 @@ export default function AdminDashboardPage() {
                       type="date"
                       value={rangeFrom}
                       onChange={(e) => setRangeFrom(e.target.value)}
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        borderRadius: 12,
-                        border: "1px solid rgba(255,255,255,0.18)",
-                        background: "var(--input-bg)",
-                        color: "rgba(255,255,255,0.92)",
-                      }}
+                      className="input"
                     />
                     <input
                       type="date"
                       value={rangeTo}
                       onChange={(e) => setRangeTo(e.target.value)}
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        borderRadius: 12,
-                        border: "1px solid rgba(255,255,255,0.18)",
-                        background: "var(--input-bg)",
-                        color: "rgba(255,255,255,0.92)",
-                      }}
+                      className="input"
                     />
                   </div>
 
                   {rangeError ? (
-                    <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>
+                    <div className="tenant-status-text-danger" style={{ fontSize: 12 }}>
                       {rangeError}
                     </div>
                   ) : null}
@@ -1467,15 +1379,7 @@ export default function AdminDashboardPage() {
           <button
             type="button"
             onClick={closeKpiModal}
-            style={{
-              padding: "10px 14px",
-              cursor: "pointer",
-              fontWeight: 900,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "var(--surface-strong)",
-              color: "rgba(255,255,255,0.9)",
-            }}
+            className="btn"
           >
             Schließen
           </button>
@@ -1484,32 +1388,14 @@ export default function AdminDashboardPage() {
       >
         <div style={{ display: "grid", gap: 12 }}>
           {remindErr ? (
-            <div
-              style={{
-                padding: "10px 12px",
-                borderRadius: 12,
-                border: "1px solid rgba(224,75,69,0.28)",
-                background: "rgba(224,75,69,0.10)",
-                color: "rgba(224,75,69,0.95)",
-                fontWeight: 900,
-              }}
-            >
-              {remindErr}
+            <div className="tenant-status-card tenant-status-card-danger">
+              <div className="tenant-status-text-danger">{remindErr}</div>
             </div>
           ) : null}
 
           {remindSuccess ? (
-            <div
-              style={{
-                padding: "10px 12px",
-                borderRadius: 12,
-                border: "1px solid rgba(184,207,58,0.28)",
-                background: "var(--accent-soft)",
-                color: "var(--accent)",
-                fontWeight: 900,
-              }}
-            >
-              {remindSuccess}
+            <div className="tenant-status-card tenant-status-card-success">
+              <div className="tenant-status-text-success">{remindSuccess}</div>
             </div>
           ) : null}
 
@@ -1658,15 +1544,7 @@ export default function AdminDashboardPage() {
           <button
             type="button"
             onClick={() => setDetailsOpen(false)}
-            style={{
-              padding: "10px 14px",
-              cursor: "pointer",
-              fontWeight: 900,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "var(--surface-strong)",
-              color: "rgba(255,255,255,0.9)",
-            }}
+            className="btn"
           >
             Schließen
           </button>
@@ -1716,15 +1594,7 @@ export default function AdminDashboardPage() {
           <button
             type="button"
             onClick={() => setBreakInfoOpen(false)}
-            style={{
-              padding: "10px 14px",
-              cursor: "pointer",
-              fontWeight: 900,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "var(--surface-strong)",
-              color: "rgba(255,255,255,0.9)",
-            }}
+            className="btn"
           >
             Schließen
           </button>
@@ -1780,15 +1650,7 @@ export default function AdminDashboardPage() {
           <button
             type="button"
             onClick={() => setNoteOpen(false)}
-            style={{
-              padding: "10px 14px",
-              cursor: "pointer",
-              fontWeight: 900,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "var(--surface-strong)",
-              color: "rgba(255,255,255,0.9)",
-            }}
+            className="btn"
           >
             Schließen
           </button>
@@ -1837,14 +1699,9 @@ export default function AdminDashboardPage() {
               type="button"
               onClick={() => setEditOpen(false)}
               disabled={editSaving}
+              className="btn"
               style={{
-                padding: "10px 14px",
                 cursor: editSaving ? "not-allowed" : "pointer",
-                fontWeight: 900,
-                borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.12)",
-                background: "var(--surface-strong)",
-                color: "rgba(255,255,255,0.9)",
                 opacity: editSaving ? 0.7 : 1,
               }}
             >
@@ -1855,14 +1712,9 @@ export default function AdminDashboardPage() {
               type="button"
               onClick={saveEditWork}
               disabled={editSaving}
+              className="btn btn-accent"
               style={{
-                padding: "10px 14px",
                 cursor: editSaving ? "not-allowed" : "pointer",
-                fontWeight: 1000,
-                borderRadius: 12,
-                border: "1px solid rgba(184,207,58,0.35)",
-                background: "var(--accent-soft)",
-                color: "var(--accent)",
                 opacity: editSaving ? 0.7 : 1,
               }}
             >
@@ -1944,8 +1796,11 @@ export default function AdminDashboardPage() {
       </Modal>
 
       {err ? (
-        <div className="card" style={{ padding: 14, borderColor: "rgba(224, 75, 69, 0.35)", marginBottom: 12 }}>
-          <div style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>{err}</div>
+        <div
+          className="tenant-status-card tenant-status-card-danger"
+          style={{ marginBottom: 12 }}
+        >
+          <div className="tenant-status-text-danger">{err}</div>
         </div>
       ) : null}
 
@@ -2556,7 +2411,7 @@ export default function AdminDashboardPage() {
             padding: 10px 12px;
             border-radius: 12px;
             background: var(--surface);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
           }
 
           .admin-month-summary-item span {
