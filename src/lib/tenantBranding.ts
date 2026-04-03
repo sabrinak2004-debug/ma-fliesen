@@ -5,7 +5,9 @@ export const DEFAULT_APP_SHORT_NAME = "Portal";
 export const DEFAULT_APPLE_TOUCH_ICON = "/image_2.jpeg";
 export const DEFAULT_MANIFEST_HREF = "/manifest.json";
 
-export type TenantTheme = {
+export type TenantTheme = TenantThemeBase;
+
+type TenantThemeBase = {
   bg: string;
   panel: string;
   panel2: string;
@@ -26,9 +28,22 @@ export type TenantTheme = {
   rolePillBg: string;
   todayBg: string;
   todayBorder: string;
+  workBg: string;
+  workBorder: string;
+  vacationBg: string;
+  vacationBorder: string;
+  sickBg: string;
+  sickBorder: string;
+  holidayBg: string;
+  holidayBorder: string;
+  holidayText: string;
+  floatingButtonBg: string;
+  floatingButtonText: string;
+  neutralCardBg: string;
+  neutralCardBgStrong: string;
 };
 
-const DEFAULT_TENANT_THEME: TenantTheme = {
+const DEFAULT_TENANT_THEME: TenantTheme = buildThemeFromBase({
   bg: "#0b0f0c",
   panel: "#111613",
   panel2: "#0f1411",
@@ -38,10 +53,6 @@ const DEFAULT_TENANT_THEME: TenantTheme = {
   overlayBg: "rgba(17, 22, 19, 0.82)",
   accent: DEFAULT_BRAND_ACCENT,
   accent2: "#9db02f",
-  accentSoft: "rgba(184, 207, 58, 0.14)",
-  accentBorder: "rgba(184, 207, 58, 0.35)",
-  panelSoft: "rgba(184, 207, 58, 0.08)",
-  panelStrong: "rgba(184, 207, 58, 0.18)",
   onAccent: "#111613",
   sidebarStripe: "#b8cf3a",
   badgeBg: "#b8cf3a",
@@ -49,10 +60,23 @@ const DEFAULT_TENANT_THEME: TenantTheme = {
   rolePillBg: "rgba(184, 207, 58, 0.14)",
   todayBg: "rgba(184, 207, 58, 0.22)",
   todayBorder: "rgba(184, 207, 58, 0.55)",
-};
+  workBg: "rgba(184, 207, 58, 0.10)",
+  workBorder: "rgba(184, 207, 58, 0.65)",
+  vacationBg: "rgba(90, 167, 255, 0.14)",
+  vacationBorder: "rgba(90, 167, 255, 0.65)",
+  sickBg: "rgba(224, 75, 69, 0.18)",
+  sickBorder: "rgba(224, 75, 69, 0.65)",
+  holidayBg: "rgba(255, 196, 0, 0.12)",
+  holidayBorder: "rgba(255, 196, 0, 0.65)",
+  holidayText: "rgba(255, 196, 0, 0.95)",
+  floatingButtonBg: "rgba(184, 207, 58, 0.95)",
+  floatingButtonText: "rgba(0,0,0,0.9)",
+  neutralCardBg: "rgba(255,255,255,0.02)",
+  neutralCardBgStrong: "rgba(255,255,255,0.04)",
+});
 
-const TENANT_THEMES: Record<string, Partial<TenantTheme>> = {
-  "ma-fliesen": {
+const TENANT_THEMES: Record<string, TenantTheme> = {
+  "ma-fliesen": buildThemeFromBase({
     bg: "#0b0f0c",
     panel: "#111613",
     panel2: "#0f1411",
@@ -62,10 +86,6 @@ const TENANT_THEMES: Record<string, Partial<TenantTheme>> = {
     overlayBg: "rgba(17, 22, 19, 0.82)",
     accent: "#b8cf3a",
     accent2: "#9db02f",
-    accentSoft: "rgba(184, 207, 58, 0.14)",
-    accentBorder: "rgba(184, 207, 58, 0.35)",
-    panelSoft: "rgba(184, 207, 58, 0.08)",
-    panelStrong: "rgba(184, 207, 58, 0.18)",
     onAccent: "#111613",
     sidebarStripe: "#b8cf3a",
     badgeBg: "#b8cf3a",
@@ -73,30 +93,91 @@ const TENANT_THEMES: Record<string, Partial<TenantTheme>> = {
     rolePillBg: "rgba(184, 207, 58, 0.14)",
     todayBg: "rgba(184, 207, 58, 0.22)",
     todayBorder: "rgba(184, 207, 58, 0.55)",
-  },
-  beispielbetrieb: {
-    bg: "#0d100d",
-    panel: "#151915",
-    panel2: "#121612",
-    surface: "rgba(255, 255, 255, 0.025)",
-    surfaceStrong: "rgba(255, 255, 255, 0.055)",
-    inputBg: "rgba(8, 10, 8, 0.42)",
-    overlayBg: "rgba(21, 25, 21, 0.84)",
-    accent: "#ccc6bc",
-    accent2: "#b9b2a6",
-    accentSoft: "rgba(204, 198, 188, 0.16)",
-    accentBorder: "rgba(204, 198, 188, 0.34)",
-    panelSoft: "rgba(204, 198, 188, 0.08)",
-    panelStrong: "rgba(204, 198, 188, 0.18)",
-    onAccent: "#111613",
-    sidebarStripe: "#e7e1d7",
-    badgeBg: "#ccc6bc",
-    badgeText: "#111613",
-    rolePillBg: "rgba(204, 198, 188, 0.16)",
-    todayBg: "rgba(204, 198, 188, 0.26)",
-    todayBorder: "rgba(204, 198, 188, 0.52)",
-  },
+    workBg: "rgba(184, 207, 58, 0.10)",
+    workBorder: "rgba(184, 207, 58, 0.65)",
+    vacationBg: "rgba(90, 167, 255, 0.14)",
+    vacationBorder: "rgba(90, 167, 255, 0.65)",
+    sickBg: "rgba(224, 75, 69, 0.18)",
+    sickBorder: "rgba(224, 75, 69, 0.65)",
+    holidayBg: "rgba(255, 196, 0, 0.12)",
+    holidayBorder: "rgba(255, 196, 0, 0.65)",
+    holidayText: "rgba(255, 196, 0, 0.95)",
+    floatingButtonBg: "rgba(184, 207, 58, 0.95)",
+    floatingButtonText: "rgba(0,0,0,0.9)",
+    neutralCardBg: "rgba(255,255,255,0.02)",
+    neutralCardBgStrong: "rgba(255,255,255,0.04)",
+  }),
+    beispielbetrieb: buildThemeFromBase({
+    bg: "#f5f5f5",
+    panel: "#ffffff",
+    panel2: "#f0ece7",
+    surface: "rgba(200, 193, 184, 0.18)",
+    surfaceStrong: "rgba(200, 193, 184, 0.28)",
+    inputBg: "rgba(200, 193, 184, 0.22)",
+    overlayBg: "rgba(255, 255, 255, 0.96)",
+    accent: "#3f3b3d",
+    accent2: "#575152",
+    onAccent: "#ffffff",
+    sidebarStripe: "#3f3b3d",
+    badgeBg: "#3f3b3d",
+    badgeText: "#ffffff",
+    rolePillBg: "rgba(63, 59, 61, 0.14)",
+    todayBg: "rgba(63, 59, 61, 0.12)",
+    todayBorder: "rgba(63, 59, 61, 0.32)",
+    workBg: "rgba(63, 59, 61, 0.10)",
+    workBorder: "rgba(63, 59, 61, 0.34)",
+    vacationBg: "rgba(200, 193, 184, 0.32)",
+    vacationBorder: "rgba(200, 193, 184, 0.62)",
+    sickBg: "rgba(87, 81, 82, 0.14)",
+    sickBorder: "rgba(87, 81, 82, 0.34)",
+    holidayBg: "rgba(200, 193, 184, 0.24)",
+    holidayBorder: "rgba(200, 193, 184, 0.52)",
+    holidayText: "#575152",
+    floatingButtonBg: "#3f3b3d",
+    floatingButtonText: "#ffffff",
+    neutralCardBg: "rgba(200, 193, 184, 0.14)",
+    neutralCardBgStrong: "rgba(200, 193, 184, 0.24)",
+  }),
 };
+
+export function createTenantTheme(
+  input: {
+    bg: string;
+    panel: string;
+    panel2: string;
+    surface: string;
+    surfaceStrong: string;
+    inputBg: string;
+    overlayBg: string;
+    accent: string;
+    accent2?: string;
+    onAccent?: string;
+    sidebarStripe?: string;
+    badgeBg?: string;
+    badgeText?: string;
+    rolePillBg?: string;
+    todayBg?: string;
+    todayBorder?: string;
+    workBg?: string;
+    workBorder?: string;
+    vacationBg?: string;
+    vacationBorder?: string;
+    sickBg?: string;
+    sickBorder?: string;
+    holidayBg?: string;
+    holidayBorder?: string;
+    holidayText?: string;
+    floatingButtonBg?: string;
+    floatingButtonText?: string;
+    neutralCardBg?: string;
+    neutralCardBgStrong?: string;
+  }
+): TenantTheme {
+  return buildThemeFromBase({
+    ...input,
+    onAccent: input.onAccent ?? "#111613",
+  });
+}
 
 export function normalizeTenantSubdomain(value: string): string {
   return value.trim().toLowerCase();
@@ -140,55 +221,133 @@ function rgbaFromHex(hex: string, alpha: number, fallback: string): string {
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
 }
 
+function buildThemeFromBase(
+  base: {
+    bg: string;
+    panel: string;
+    panel2: string;
+    surface: string;
+    surfaceStrong: string;
+    inputBg: string;
+    overlayBg: string;
+    accent: string;
+    accent2?: string;
+    onAccent: string;
+    sidebarStripe?: string;
+    badgeBg?: string;
+    badgeText?: string;
+    rolePillBg?: string;
+    todayBg?: string;
+    todayBorder?: string;
+    workBg?: string;
+    workBorder?: string;
+    vacationBg?: string;
+    vacationBorder?: string;
+    sickBg?: string;
+    sickBorder?: string;
+    holidayBg?: string;
+    holidayBorder?: string;
+    holidayText?: string;
+    floatingButtonBg?: string;
+    floatingButtonText?: string;
+    neutralCardBg?: string;
+    neutralCardBgStrong?: string;
+  }
+): TenantTheme {
+  const accent = normalizeThemeColor(base.accent);
+  const accent2 =
+    typeof base.accent2 === "string" && isHexColor(base.accent2)
+      ? base.accent2
+      : accent;
+
+  return {
+    bg: base.bg,
+    panel: base.panel,
+    panel2: base.panel2,
+    surface: base.surface,
+    surfaceStrong: base.surfaceStrong,
+    inputBg: base.inputBg,
+    overlayBg: base.overlayBg,
+    accent,
+    accent2,
+    accentSoft: rgbaFromHex(accent, 0.14, "rgba(184, 207, 58, 0.14)"),
+    accentBorder: rgbaFromHex(accent, 0.35, "rgba(184, 207, 58, 0.35)"),
+    panelSoft: rgbaFromHex(accent, 0.08, "rgba(184, 207, 58, 0.08)"),
+    panelStrong: rgbaFromHex(accent, 0.18, "rgba(184, 207, 58, 0.18)"),
+    onAccent: base.onAccent,
+    sidebarStripe: base.sidebarStripe ?? accent,
+    badgeBg: base.badgeBg ?? accent,
+    badgeText: base.badgeText ?? base.onAccent,
+    rolePillBg:
+      base.rolePillBg ?? rgbaFromHex(accent, 0.14, "rgba(184, 207, 58, 0.14)"),
+    todayBg:
+      base.todayBg ?? rgbaFromHex(accent, 0.22, "rgba(184, 207, 58, 0.22)"),
+    todayBorder:
+      base.todayBorder ?? rgbaFromHex(accent, 0.55, "rgba(184, 207, 58, 0.55)"),
+    workBg:
+      base.workBg ?? rgbaFromHex(accent, 0.10, "rgba(184, 207, 58, 0.10)"),
+    workBorder:
+      base.workBorder ?? rgbaFromHex(accent, 0.65, "rgba(184, 207, 58, 0.65)"),
+    vacationBg: base.vacationBg ?? "rgba(90, 167, 255, 0.14)",
+    vacationBorder: base.vacationBorder ?? "rgba(90, 167, 255, 0.65)",
+    sickBg: base.sickBg ?? "rgba(224, 75, 69, 0.18)",
+    sickBorder: base.sickBorder ?? "rgba(224, 75, 69, 0.65)",
+    holidayBg: base.holidayBg ?? "rgba(255, 196, 0, 0.12)",
+    holidayBorder: base.holidayBorder ?? "rgba(255, 196, 0, 0.65)",
+    holidayText: base.holidayText ?? "rgba(255, 196, 0, 0.95)",
+    floatingButtonBg: base.floatingButtonBg ?? accent,
+    floatingButtonText: base.floatingButtonText ?? base.onAccent,
+    neutralCardBg: base.neutralCardBg ?? "rgba(255,255,255,0.02)",
+    neutralCardBgStrong: base.neutralCardBgStrong ?? "rgba(255,255,255,0.04)",
+  };
+}
+
 export function resolveTenantTheme(
   subdomain: string,
   primaryColor?: string | null
 ): TenantTheme {
   const normalizedSubdomain = normalizeTenantSubdomain(subdomain);
-  const override = TENANT_THEMES[normalizedSubdomain] ?? {};
-  const accent = normalizeThemeColor(override.accent ?? primaryColor);
+  const preset = TENANT_THEMES[normalizedSubdomain];
 
-  const accent2 =
-    typeof override.accent2 === "string" && isHexColor(override.accent2)
-      ? override.accent2
-      : accent;
+  if (preset) {
+    return preset;
+  }
 
-  return {
-    bg: override.bg ?? DEFAULT_TENANT_THEME.bg,
-    panel: override.panel ?? DEFAULT_TENANT_THEME.panel,
-    panel2: override.panel2 ?? DEFAULT_TENANT_THEME.panel2,
-    surface: override.surface ?? DEFAULT_TENANT_THEME.surface,
-    surfaceStrong: override.surfaceStrong ?? DEFAULT_TENANT_THEME.surfaceStrong,
-    inputBg: override.inputBg ?? DEFAULT_TENANT_THEME.inputBg,
-    overlayBg: override.overlayBg ?? DEFAULT_TENANT_THEME.overlayBg,
-    accent,
-    accent2,
-    accentSoft:
-      override.accentSoft ??
-      rgbaFromHex(accent, 0.14, DEFAULT_TENANT_THEME.accentSoft),
-    accentBorder:
-      override.accentBorder ??
-      rgbaFromHex(accent, 0.35, DEFAULT_TENANT_THEME.accentBorder),
-    panelSoft:
-      override.panelSoft ??
-      rgbaFromHex(accent, 0.08, DEFAULT_TENANT_THEME.panelSoft),
-    panelStrong:
-      override.panelStrong ??
-      rgbaFromHex(accent, 0.18, DEFAULT_TENANT_THEME.panelStrong),
-    onAccent: override.onAccent ?? DEFAULT_TENANT_THEME.onAccent,
-    sidebarStripe: override.sidebarStripe ?? accent,
-    badgeBg: override.badgeBg ?? accent,
-    badgeText: override.badgeText ?? DEFAULT_TENANT_THEME.badgeText,
-    rolePillBg:
-      override.rolePillBg ??
-      rgbaFromHex(accent, 0.14, DEFAULT_TENANT_THEME.rolePillBg),
-    todayBg:
-      override.todayBg ??
-      rgbaFromHex(accent, 0.22, DEFAULT_TENANT_THEME.todayBg),
-    todayBorder:
-      override.todayBorder ??
-      rgbaFromHex(accent, 0.55, DEFAULT_TENANT_THEME.todayBorder),
-  };
+  if (primaryColor) {
+    return createTenantTheme({
+      bg: DEFAULT_TENANT_THEME.bg,
+      panel: DEFAULT_TENANT_THEME.panel,
+      panel2: DEFAULT_TENANT_THEME.panel2,
+      surface: DEFAULT_TENANT_THEME.surface,
+      surfaceStrong: DEFAULT_TENANT_THEME.surfaceStrong,
+      inputBg: DEFAULT_TENANT_THEME.inputBg,
+      overlayBg: DEFAULT_TENANT_THEME.overlayBg,
+      accent: primaryColor,
+      accent2: primaryColor,
+      onAccent: DEFAULT_TENANT_THEME.onAccent,
+      sidebarStripe: primaryColor,
+      badgeBg: primaryColor,
+      badgeText: DEFAULT_TENANT_THEME.badgeText,
+      rolePillBg: DEFAULT_TENANT_THEME.rolePillBg,
+      todayBg: DEFAULT_TENANT_THEME.todayBg,
+      todayBorder: DEFAULT_TENANT_THEME.todayBorder,
+      workBg: DEFAULT_TENANT_THEME.workBg,
+      workBorder: DEFAULT_TENANT_THEME.workBorder,
+      vacationBg: DEFAULT_TENANT_THEME.vacationBg,
+      vacationBorder: DEFAULT_TENANT_THEME.vacationBorder,
+      sickBg: DEFAULT_TENANT_THEME.sickBg,
+      sickBorder: DEFAULT_TENANT_THEME.sickBorder,
+      holidayBg: DEFAULT_TENANT_THEME.holidayBg,
+      holidayBorder: DEFAULT_TENANT_THEME.holidayBorder,
+      holidayText: DEFAULT_TENANT_THEME.holidayText,
+      floatingButtonBg: primaryColor,
+      floatingButtonText: DEFAULT_TENANT_THEME.floatingButtonText,
+      neutralCardBg: DEFAULT_TENANT_THEME.neutralCardBg,
+      neutralCardBgStrong: DEFAULT_TENANT_THEME.neutralCardBgStrong,
+    });
+  }
+
+  return DEFAULT_TENANT_THEME;
 }
 
 export function getTenantAssetBasePath(subdomain: string): string {
@@ -280,6 +439,19 @@ export function applyTenantThemeToDocument(theme: TenantTheme): void {
   root.style.setProperty("--brand-role-pill-bg", theme.rolePillBg);
   root.style.setProperty("--brand-calendar-today-bg", theme.todayBg);
   root.style.setProperty("--brand-calendar-today-border", theme.todayBorder);
+  root.style.setProperty("--brand-work-bg", theme.workBg);
+  root.style.setProperty("--brand-work-border", theme.workBorder);
+  root.style.setProperty("--brand-vacation-bg", theme.vacationBg);
+  root.style.setProperty("--brand-vacation-border", theme.vacationBorder);
+  root.style.setProperty("--brand-sick-bg", theme.sickBg);
+  root.style.setProperty("--brand-sick-border", theme.sickBorder);
+  root.style.setProperty("--brand-holiday-bg", theme.holidayBg);
+  root.style.setProperty("--brand-holiday-border", theme.holidayBorder);
+  root.style.setProperty("--brand-holiday-text", theme.holidayText);
+  root.style.setProperty("--brand-floating-btn-bg", theme.floatingButtonBg);
+  root.style.setProperty("--brand-floating-btn-text", theme.floatingButtonText);
+  root.style.setProperty("--brand-neutral-card-bg", theme.neutralCardBg);
+  root.style.setProperty("--brand-neutral-card-bg-strong", theme.neutralCardBgStrong);
 
   if (rgb) {
     root.style.setProperty("--accent-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);
@@ -309,6 +481,19 @@ export function resetTenantThemeOnDocument(): void {
   root.style.removeProperty("--brand-role-pill-bg");
   root.style.removeProperty("--brand-calendar-today-bg");
   root.style.removeProperty("--brand-calendar-today-border");
+  root.style.removeProperty("--brand-work-bg");
+  root.style.removeProperty("--brand-work-border");
+  root.style.removeProperty("--brand-vacation-bg");
+  root.style.removeProperty("--brand-vacation-border");
+  root.style.removeProperty("--brand-sick-bg");
+  root.style.removeProperty("--brand-sick-border");
+  root.style.removeProperty("--brand-holiday-bg");
+  root.style.removeProperty("--brand-holiday-border");
+  root.style.removeProperty("--brand-holiday-text");
+  root.style.removeProperty("--brand-floating-btn-bg");
+  root.style.removeProperty("--brand-floating-btn-text");
+  root.style.removeProperty("--brand-neutral-card-bg");
+  root.style.removeProperty("--brand-neutral-card-bg-strong");
 }
 
 export function applyAccentColorToDocument(accent: string): void {

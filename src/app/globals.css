@@ -29,6 +29,19 @@
   --brand-role-pill-bg: rgba(184, 207, 58, 0.14);
   --brand-calendar-today-bg: rgba(184, 207, 58, 0.22);
   --brand-calendar-today-border: rgba(184, 207, 58, 0.55);
+  --brand-work-bg: rgba(184, 207, 58, 0.10);
+  --brand-work-border: rgba(184, 207, 58, 0.65);
+  --brand-vacation-bg: rgba(90, 167, 255, 0.14);
+  --brand-vacation-border: rgba(90, 167, 255, 0.65);
+  --brand-sick-bg: rgba(224, 75, 69, 0.18);
+  --brand-sick-border: rgba(224, 75, 69, 0.65);
+  --brand-holiday-bg: rgba(255, 196, 0, 0.12);
+  --brand-holiday-border: rgba(255, 196, 0, 0.65);
+  --brand-holiday-text: rgba(255, 196, 0, 0.95);
+  --brand-floating-btn-bg: rgba(184, 207, 58, 0.95);
+  --brand-floating-btn-text: rgba(0, 0, 0, 0.9);
+  --brand-neutral-card-bg: rgba(255,255,255,0.02);
+  --brand-neutral-card-bg-strong: rgba(255,255,255,0.04);
   --danger: #e04b45;
   --danger-2: #c63b36;
   --radius: 18px;
@@ -572,11 +585,11 @@ body {
 }
 
 .dot-vac {
-  background: #5aa7ff;
+  background: var(--brand-vacation-border);
 }
 
 .dot-sick {
-  background: var(--danger);
+  background: var(--brand-sick-border);
 }
 
 /* ===== Entry Cards (Premium UI) ===== */

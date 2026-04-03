@@ -856,13 +856,13 @@ function categoryDotStyle(c: EventCategory): React.CSSProperties {
     borderRadius: 999,
     flex: "0 0 auto",
     marginTop: 4,
-    boxShadow: "0 0 0 3px rgba(255,255,255,0.03)",
+    boxShadow: "0 0 0 3px var(--brand-neutral-card-bg)",
   };
 
-  if (c === "KUNDE") return { ...base, background: "rgba(184, 207, 58, 0.95)" };
-  if (c === "BAUSTELLE") return { ...base, background: "rgba(90, 167, 255, 0.95)" };
-  if (c === "INTERN") return { ...base, background: "rgba(255, 196, 0, 0.95)" };
-  return { ...base, background: "rgba(224, 75, 69, 0.95)" };
+  if (c === "KUNDE") return { ...base, background: "var(--brand-work-border)" };
+  if (c === "BAUSTELLE") return { ...base, background: "var(--brand-vacation-border)" };
+  if (c === "INTERN") return { ...base, background: "var(--brand-holiday-border)" };
+  return { ...base, background: "var(--brand-sick-border)" };
 }
 
 function pillStyle(): React.CSSProperties {
@@ -871,7 +871,7 @@ function pillStyle(): React.CSSProperties {
     padding: "4px 10px",
     borderRadius: 999,
     border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.04)",
+    background: "var(--surface-strong)",
     color: "var(--muted)",
     display: "inline-flex",
     alignItems: "center",
@@ -933,7 +933,7 @@ function getHolidayIcon(name: string | null): React.ReactNode {
 }
 
 function holidayDotColor(): string {
-  return "rgba(255, 196, 0, 0.95)";
+  return "var(--brand-holiday-border)";
 }
 
 function smallDot(color: string): React.CSSProperties {
@@ -942,7 +942,7 @@ function smallDot(color: string): React.CSSProperties {
     height: 8,
     borderRadius: 999,
     background: color,
-    boxShadow: "0 0 0 3px rgba(255,255,255,0.03)",
+    boxShadow: "0 0 0 3px var(--brand-neutral-card-bg)",
     flex: "0 0 auto",
   };
 }
@@ -1843,9 +1843,9 @@ function KalenderPageInner({
     width: 56,
     height: 56,
     borderRadius: 18,
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(184, 207, 58, 0.95)",
-    color: "rgba(0,0,0,0.9)",
+    border: "1px solid var(--accent-border)",
+    background: "var(--brand-floating-btn-bg)",
+    color: "var(--brand-floating-btn-text)",
     fontWeight: 900,
     fontSize: 26,
     boxShadow: "0 14px 40px rgba(0,0,0,0.35)",
@@ -1860,14 +1860,14 @@ function KalenderPageInner({
     display: "inline-flex",
     borderRadius: 14,
     border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.04)",
+    background: "var(--surface-strong)",
     padding: 4,
     gap: 4,
   };
 
   const segBtn = (active: boolean): React.CSSProperties => ({
     border: "1px solid rgba(255,255,255,0.10)",
-    background: active ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.00)",
+    background: active ? "var(--surface-strong)" : "transparent",
     color: "var(--text)",
     borderRadius: 12,
     padding: "8px 14px",
@@ -2046,25 +2046,25 @@ function KalenderPageInner({
 
                   const border =
                     info?.hasSick
-                      ? "rgba(224, 75, 69, 0.65)"
+                      ? "var(--brand-sick-border)"
                       : info?.hasVacation
-                      ? "rgba(90, 167, 255, 0.65)"
+                      ? "var(--brand-vacation-border)"
                       : info?.hasHoliday
-                      ? "rgba(255, 196, 0, 0.65)"
+                      ? "var(--brand-holiday-border)"
                       : info?.hasPlan
-                      ? "rgba(184, 207, 58, 0.65)"
+                      ? "var(--brand-work-border)"
                       : "var(--border)";
 
                   const bg =
                     info?.hasSick
-                      ? "rgba(224, 75, 69, 0.16)"
+                      ? "var(--brand-sick-bg)"
                       : info?.hasVacation
-                      ? "rgba(90, 167, 255, 0.12)"
+                      ? "var(--brand-vacation-bg)"
                       : info?.hasHoliday
-                      ? "rgba(255, 196, 0, 0.12)"
+                      ? "var(--brand-holiday-bg)"
                       : info?.hasPlan
-                      ? "rgba(184, 207, 58, 0.10)"
-                      : "rgba(255,255,255,0.02)";
+                      ? "var(--brand-work-bg)"
+                      : "var(--brand-neutral-card-bg)";
 
                   return (
                     <button
@@ -2152,7 +2152,7 @@ function KalenderPageInner({
                         <div
                           className="calendar-week-cell-preview"
                           title={info.holidayName}
-                          style={{ color: "rgba(255, 196, 0, 0.95)" }}
+                          style={{ color: "var(--brand-holiday-text)" }}
                         >
                           <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             {getHolidayIcon(info.holidayName)}
@@ -2199,25 +2199,25 @@ function KalenderPageInner({
 
                     const border =
                       info?.hasSick
-                        ? "rgba(224, 75, 69, 0.65)"
+                        ? "var(--brand-sick-border)"
                         : info?.hasVacation
-                        ? "rgba(90, 167, 255, 0.65)"
+                        ? "var(--brand-vacation-border)"
                         : info?.hasHoliday
-                        ? "rgba(255, 196, 0, 0.65)"
+                        ? "var(--brand-holiday-border)"
                         : info?.hasPlan
-                        ? "rgba(184, 207, 58, 0.65)"
+                        ? "var(--brand-work-border)"
                         : "var(--border)";
 
                     const bg =
                       info?.hasSick
-                        ? "rgba(224, 75, 69, 0.18)"
+                        ? "var(--brand-sick-bg)"
                         : info?.hasVacation
-                        ? "rgba(90, 167, 255, 0.14)"
+                        ? "var(--brand-vacation-bg)"
                         : info?.hasHoliday
-                        ? "rgba(255, 196, 0, 0.12)"
+                        ? "var(--brand-holiday-bg)"
                         : info?.hasPlan
-                        ? "rgba(184, 207, 58, 0.10)"
-                        : "rgba(255,255,255,0.02)";
+                        ? "var(--brand-work-bg)"
+                        : "var(--brand-neutral-card-bg)";
 
                     const isToday = c.date === todayYMD;
 
@@ -2249,8 +2249,8 @@ function KalenderPageInner({
                                 width: 8,
                                 height: 8,
                                 borderRadius: 999,
-                                background: "rgba(226, 255, 62, 0.95)",
-                                boxShadow: "0 0 0 3px rgba(226, 255, 62, 0.36)",
+                                background: "var(--accent)",
+                                boxShadow: "0 0 0 3px var(--accent-soft)",
                               }}
                               title="Heute"
                             />
@@ -2298,7 +2298,7 @@ function KalenderPageInner({
                               marginTop: 6,
                               fontSize: 11,
                               lineHeight: "14px",
-                              color: "rgba(255, 196, 0, 0.95)",
+                              color: "var(--brand-holiday-text)",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               display: "-webkit-box",
@@ -2348,7 +2348,7 @@ function KalenderPageInner({
                     <div>
                       <span
                         className="badge-dot"
-                        style={{ background: holidayDotColor(), boxShadow: "0 0 0 3px rgba(255, 196, 0, 0.16)" }}
+                        style={{ background: holidayDotColor(), boxShadow: "0 0 0 3px var(--brand-holiday-bg)" }}
                       />{" "}
                       Feiertag
                     </div>
@@ -2364,7 +2364,7 @@ function KalenderPageInner({
                     <div>
                       <span
                         className="badge-dot"
-                        style={{ background: holidayDotColor(), boxShadow: "0 0 0 3px rgba(255, 196, 0, 0.16)" }}
+                        style={{ background: holidayDotColor(), boxShadow: "0 0 0 3px var(--brand-holiday-bg)" }}
                       />{" "}
                       Feiertag
                     </div>
@@ -2512,7 +2512,7 @@ function KalenderPageInner({
                               title="Bearbeiten"
                               style={{
                                 border: "1px solid rgba(255,255,255,0.12)",
-                                background: "rgba(255,255,255,0.04)",
+                                background: "var(--surface)",
                                 color: "var(--text)",
                                 borderRadius: 12,
                                 padding: "8px 10px",
@@ -2617,7 +2617,7 @@ function KalenderPageInner({
                     padding: "10px 12px",
                     borderRadius: 12,
                     border: "1px solid rgba(255,255,255,0.10)",
-                    background: "rgba(255,255,255,0.03)",
+                    background: "var(--surface)",
                     color: "var(--muted)",
                   }}
                 >
@@ -3141,7 +3141,7 @@ function KalenderPageInner({
                     style={{
                       padding: 10,
                       borderColor: "rgba(255,255,255,0.10)",
-                      background: "rgba(255,255,255,0.03)",
+                      background: "var(--surface)",
                       color: "rgba(255,255,255,0.92)",
                       fontSize: 13,
                       lineHeight: 1.45,
