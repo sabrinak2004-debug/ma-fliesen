@@ -67,32 +67,30 @@ function normalizeLogoSrc(
   value: string | null,
   companySubdomain: string
 ): string | null {
+  if (value) {
+    const trimmed = value.trim();
+
+    if (trimmed !== "") {
+      if (
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("https://") ||
+        trimmed.startsWith("/") ||
+        trimmed.startsWith("data:")
+      ) {
+        return trimmed;
+      }
+
+      return `/${trimmed}`;
+    }
+  }
+
   const normalizedSubdomain = companySubdomain.trim().toLowerCase();
 
   if (normalizedSubdomain) {
     return `/tenant-assets/${normalizedSubdomain}/icon-512.jpeg`;
   }
 
-  if (!value) {
-    return null;
-  }
-
-  const trimmed = value.trim();
-
-  if (trimmed === "") {
-    return null;
-  }
-
-  if (
-    trimmed.startsWith("http://") ||
-    trimmed.startsWith("https://") ||
-    trimmed.startsWith("/") ||
-    trimmed.startsWith("data:")
-  ) {
-    return trimmed;
-  }
-
-  return `/${trimmed}`;
+  return null;
 }
 
 type BrandConfig = {
@@ -451,7 +449,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
 
     applyTenantHeadBranding({
       title: brand.appTitle,
-      themeColor: brand.theme.accent,
+      themeColor: brand.theme.bg,
       appName: brand.displayName,
       manifestHref: getTenantManifestHref(brand.companySubdomain),
       appleTouchIconHref: getTenantAppleTouchIconHref(brand.companySubdomain),
@@ -512,7 +510,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
       <div className="container-app">
         {/* MOBILE TOPBAR (nur < md) */}
         <div
-          className="md:hidden"
+          className="md:hidden appshell-glass-panel"
           style={{
             position: "relative",
             zIndex: 1,
@@ -521,11 +519,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
             padding: 12,
             paddingTop: "calc(12px + env(safe-area-inset-top))",
             marginBottom: 12,
-            background: "color-mix(in srgb, var(--panel) 92%, transparent)",
-            backdropFilter: "blur(10px)",
-            border: "1px solid rgba(255,255,255,0.10)",
             borderRadius: 18,
-            boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
           }}
         >
           <div
@@ -540,16 +534,13 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
               type="button"
               onClick={() => setMobileOpen(true)}
               aria-label="Menü öffnen"
+              className="appshell-icon-btn"
               style={{
                 width: 44,
                 height: 44,
                 borderRadius: 14,
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "rgba(255,255,255,0.06)",
-                color: "rgba(255,255,255,0.95)",
                 fontSize: 18,
                 fontWeight: 900,
-                cursor: "pointer",
               }}
             >
               ☰
@@ -578,19 +569,11 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     />
                   ) : brand ? (
                     <div
+                      className="brand-logo-fallback"
                       style={{
                         width: 110,
                         height: 34,
-                        borderRadius: 10,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        background: "var(--accent-soft, rgba(184, 207, 58, 0.14))",
-                        border: "1px solid var(--accent-border, rgba(184, 207, 58, 0.35))",
-                        color: "rgba(255,255,255,0.95)",
-                        fontWeight: 900,
                         fontSize: 12,
-                        letterSpacing: 0.3,
                       }}
                     >
                       {brand.displayName}
@@ -599,7 +582,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                   <div
                     style={{
                       fontWeight: 900,
-                      color: "rgba(255,255,255,0.95)",
+                      color: "var(--text)",
                       lineHeight: 1.05,
                       marginTop: 6,
                     }}
@@ -610,7 +593,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     style={{
                       fontSize: 12,
                       marginTop: 2,
-                      color: "rgba(255,255,255,0.65)",
+                      color: "var(--muted)",
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -625,6 +608,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
 
             <div
               aria-hidden="true"
+              className="appshell-user-avatar"
               style={{
                 width: 44,
                 height: 44,
@@ -632,10 +616,6 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "rgba(255,255,255,0.06)",
-                color: "rgba(255,255,255,0.95)",
-                fontWeight: 900,
               }}
             >
               {userInitials}
@@ -663,6 +643,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
             />
 
             <div
+              className="appshell-drawer-surface"
               style={{
                 position: "absolute",
                 left: 0,
@@ -670,14 +651,11 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                 height: "100%",
                 width: 320,
                 maxWidth: "86vw",
-                background: "var(--panel)",
-                color: "rgba(255,255,255,0.92)",
                 boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
                 padding: 16,
                 display: "flex",
                 flexDirection: "column",
                 gap: 10,
-                borderRight: "1px solid rgba(255,255,255,0.10)",
               }}
             >
               <div
@@ -693,7 +671,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                     style={{
                       fontWeight: 900,
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.65)",
+                      color: "var(--muted)",
                     }}
                   >
                     {isAdmin ? "Admin" : "Mitarbeiter"}
@@ -725,14 +703,11 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                   type="button"
                   onClick={() => setMobileOpen(false)}
                   aria-label="Schließen"
+                  className="appshell-icon-btn"
                   style={{
                     width: 44,
                     height: 44,
                     borderRadius: 14,
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    background: "var(--surface-strong)",
-                    color: "rgba(255,255,255,0.95)",
-                    cursor: "pointer",
                     fontWeight: 900,
                   }}
                 >
@@ -851,19 +826,11 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                   />
                 ) : brand ? (
                   <div
+                    className="brand-logo-fallback"
                     style={{
                       width: 120,
                       height: 40,
-                      borderRadius: 12,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "var(--accent-soft, rgba(184, 207, 58, 0.14))",
-                      border: "1px solid var(--accent-border, rgba(184, 207, 58, 0.35))",
-                      color: "rgba(255,255,255,0.95)",
-                      fontWeight: 900,
                       fontSize: 12,
-                      letterSpacing: 0.3,
                     }}
                   >
                     {brand.displayName}
@@ -1025,17 +992,17 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
 
                 <div
                   ref={menuRef}
+                  className="appshell-user-chip"
                   style={{
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
                     padding: "8px 10px",
                     borderRadius: 14,
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    background: "rgba(255,255,255,0.06)",
                   }}
                 >
                   <div
+                    className="appshell-user-avatar"
                     style={{
                       width: 34,
                       height: 34,
@@ -1043,9 +1010,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontWeight: 900,
                       letterSpacing: 0.5,
-                      background: "var(--surface-strong)",
                     }}
                     aria-hidden="true"
                   >
@@ -1075,17 +1040,7 @@ const loadAdminRequestCounts = useCallback(async (): Promise<void> => {
                         marginTop: 2,
                       }}
                     >
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 800,
-                          padding: "3px 8px",
-                          borderRadius: 999,
-                          background: "var(--brand-role-pill-bg)",
-                          border: "1px solid rgba(255,255,255,0.10)",
-                          color: "rgba(255,255,255,0.92)",
-                        }}
-                      >
+                      <span className="appshell-role-badge">
                         {isAdmin ? "ADMIN" : "MA"}
                       </span>
                     </div>

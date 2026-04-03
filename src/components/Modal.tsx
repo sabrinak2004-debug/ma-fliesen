@@ -67,7 +67,7 @@ export default function Modal({
         alignItems: "center",
         justifyContent: "center",
         padding: 12,
-        background: "rgba(0,0,0,0.55)",
+        background: "color-mix(in srgb, var(--bg) 62%, transparent)",
         backdropFilter: "blur(3px)",
         WebkitBackdropFilter: "blur(3px)",
         boxSizing: "border-box",
@@ -80,15 +80,13 @@ export default function Modal({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="app-modal-panel"
+        className="app-modal-panel app-modal-panel-surface"
         style={{
           width: `min(${maxWidth}px, calc(100vw - 24px))`,
           maxWidth: "calc(100vw - 24px)",
           maxHeight: "calc(100dvh - 24px)",
           overflow: "hidden",
           borderRadius: 16,
-          border: "1px solid rgba(255,255,255,0.08)",
-          background: "rgba(12,12,12,0.92)",
           boxShadow: "0 18px 70px rgba(0,0,0,0.55)",
           display: "flex",
           flexDirection: "column",
@@ -96,12 +94,12 @@ export default function Modal({
         }}
       >
         <div
+          className="app-modal-header-surface"
           style={{
             padding: "14px 16px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
             gap: 12,
             flex: "0 0 auto",
             minWidth: 0,
@@ -112,7 +110,7 @@ export default function Modal({
             style={{
               fontSize: 16,
               fontWeight: 700,
-              color: "rgba(255,255,255,0.92)",
+              color: "var(--text)",
               minWidth: 0,
             }}
           >
@@ -123,15 +121,12 @@ export default function Modal({
             type="button"
             onClick={() => onCloseRef.current()}
             aria-label="Schließen"
+            className="app-modal-close-button"
             style={{
               width: 34,
               height: 34,
               minWidth: 34,
               borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.10)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.9)",
-              cursor: "pointer",
               flex: "0 0 auto",
             }}
           >
@@ -165,16 +160,14 @@ export default function Modal({
 
         {footer ? (
           <div
-            className="app-modal-footer"
+            className="app-modal-footer app-modal-footer-surface"
             style={{
               padding: 16,
-              borderTop: "1px solid rgba(255,255,255,0.08)",
               display: "flex",
               justifyContent: "flex-end",
               gap: 10,
               flexWrap: "wrap",
               flex: "0 0 auto",
-              background: "rgba(12,12,12,0.92)",
               minWidth: 0,
               width: "100%",
               boxSizing: "border-box",

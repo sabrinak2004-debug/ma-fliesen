@@ -45,6 +45,11 @@
   --brand-neutral-card-bg: rgba(255,255,255,0.02);
   --brand-neutral-card-bg-strong: rgba(255,255,255,0.04);
   --danger: #e04b45;
+  --glass-border: color-mix(in srgb, var(--text) 10%, transparent);
+  --glass-border-strong: color-mix(in srgb, var(--text) 14%, transparent);
+  --danger-soft: color-mix(in srgb, var(--danger) 16%, transparent);
+  --danger-border: color-mix(in srgb, var(--danger) 40%, transparent);
+  --danger-text: var(--danger);
   --danger-2: #c63b36;
   --radius: 18px;
 }
@@ -261,9 +266,109 @@ body {
   font-weight: 700;
 }
 
+.brand-logo-fallback {
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  color: var(--brand-on-accent);
+  font-weight: 900;
+  letter-spacing: 0.3px;
+}
+
+.appshell-glass-panel {
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.appshell-drawer-surface {
+  background: var(--panel);
+  color: var(--text);
+  border-right: 1px solid var(--border);
+}
+
+.appshell-icon-btn {
+  border: 1px solid var(--glass-border-strong);
+  background: var(--surface-strong);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.appshell-user-avatar {
+  border: 1px solid var(--glass-border-strong);
+  background: var(--surface-strong);
+  color: var(--text);
+  font-weight: 900;
+}
+
+.appshell-user-chip {
+  border: 1px solid var(--glass-border);
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+.appshell-role-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--brand-role-pill-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.app-inline-alert {
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.app-inline-alert-danger {
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+}
+
+.app-inline-alert-neutral {
+  background: var(--surface);
+  border-color: var(--accent-border);
+  color: var(--muted);
+}
+
+.app-modal-panel-surface {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--overlay-bg) 94%, transparent);
+}
+
+.app-modal-header-surface {
+  border-bottom: 1px solid var(--border);
+}
+
+.app-modal-close-button {
+  border: 1px solid var(--glass-border);
+  background: var(--surface-strong);
+  color: var(--text);
+  cursor: pointer;
+}
 .btn-danger {
   background: rgba(224, 75, 69, 0.18);
   border-color: rgba(224, 75, 69, 0.45);
+}
+.app-modal-footer-surface {
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--overlay-bg) 94%, transparent);
+}
+
+.app-toast-surface {
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  border: 1px solid var(--border);
+  color: var(--text);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .kpi-grid {

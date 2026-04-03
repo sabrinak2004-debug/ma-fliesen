@@ -2,12 +2,12 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  applyAccentColorToDocument,
   applyTenantHeadBranding,
+  applyTenantThemeToDocument,
   getTenantAppleTouchIconHref,
   getTenantManifestHref,
-  normalizeThemeColor,
-  resetAccentColorOnDocument,
+  resetTenantThemeOnDocument,
+  resolveTenantTheme,
 } from "@/lib/tenantBranding";
 import Link from "next/link";
 
@@ -67,32 +67,30 @@ function normalizeLogoSrc(
   value: string | null,
   companySubdomain: string
 ): string | null {
+  if (value) {
+    const trimmed = value.trim();
+
+    if (trimmed !== "") {
+      if (
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("https://") ||
+        trimmed.startsWith("/") ||
+        trimmed.startsWith("data:")
+      ) {
+        return trimmed;
+      }
+
+      return `/${trimmed}`;
+    }
+  }
+
   const normalizedSubdomain = companySubdomain.trim().toLowerCase();
 
   if (normalizedSubdomain) {
     return `/tenant-assets/${normalizedSubdomain}/icon-512.jpeg`;
   }
 
-  if (!value) {
-    return null;
-  }
-
-  const trimmed = value.trim();
-
-  if (trimmed === "") {
-    return null;
-  }
-
-  if (
-    trimmed.startsWith("http://") ||
-    trimmed.startsWith("https://") ||
-    trimmed.startsWith("/") ||
-    trimmed.startsWith("data:")
-  ) {
-    return trimmed;
-  }
-
-  return `/${trimmed}`;
+  return null;
 }
 
 export default function LoginClient({
@@ -161,20 +159,23 @@ export default function LoginClient({
 
   useEffect(() => {
     const effectiveSubdomain = companySubdomainOverride ?? companySubdomain;
-    const effectiveThemeColor = normalizeThemeColor(brand.primaryColor);
+    const loginTheme = resolveTenantTheme(
+      effectiveSubdomain,
+      brand.primaryColor
+    );
 
-    applyAccentColorToDocument(effectiveThemeColor);
+    applyTenantThemeToDocument(loginTheme);
 
     applyTenantHeadBranding({
       title: `${brand.displayName} Mitarbeiterportal`,
-      themeColor: "#0b0f0c",
+      themeColor: loginTheme.bg,
       appName: brand.displayName,
       manifestHref: getTenantManifestHref(effectiveSubdomain),
       appleTouchIconHref: getTenantAppleTouchIconHref(effectiveSubdomain),
     });
 
     return () => {
-      resetAccentColorOnDocument();
+      resetTenantThemeOnDocument();
     };
   }, [
     brand.displayName,
@@ -564,22 +565,13 @@ export default function LoginClient({
 
             {(error || forgotInfo) && (
               <div
-                className="card"
-                style={{
-                  padding: 12,
-                  borderColor: "rgba(224, 75, 69, 0.35)",
-                  marginBottom: 12,
-                }}
+                className={`card app-inline-alert ${
+                  error ? "app-inline-alert-danger" : "app-inline-alert-neutral"
+                }`}
               >
-                {error ? (
-                  <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>
-                    {error}
-                  </span>
-                ) : (
-                  <span style={{ color: "var(--muted-2)", fontWeight: 700 }}>
-                    {forgotInfo}
-                  </span>
-                )}
+                <span style={{ fontWeight: 700 }}>
+                  {error ?? forgotInfo}
+                </span>
               </div>
             )}
 
