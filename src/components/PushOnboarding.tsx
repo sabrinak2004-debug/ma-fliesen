@@ -31,7 +31,10 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
 
-function getStringField(obj: Record<string, unknown>, key: string): string | null {
+function getStringField(
+  obj: Record<string, unknown>,
+  key: string
+): string | null {
   const value = obj[key];
   return typeof value === "string" ? value : null;
 }
@@ -154,7 +157,9 @@ async function sendSubscriptionToBackend(
 export default function PushOnboarding() {
   const [companySubdomain, setCompanySubdomain] = useState<string>("");
   const [supported, setSupported] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission | "unknown">("unknown");
+  const [permission, setPermission] = useState<
+    NotificationPermission | "unknown"
+  >("unknown");
   const [hasSubscription, setHasSubscription] = useState<boolean>(false);
   const [resolved, setResolved] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -201,11 +206,14 @@ export default function PushOnboarding() {
           return;
         }
 
-        const normalizedSubdomain = parsedMe.session.companySubdomain.trim().toLowerCase();
+        const normalizedSubdomain = parsedMe.session.companySubdomain
+          .trim()
+          .toLowerCase();
         setCompanySubdomain(normalizedSubdomain);
 
         const registration = await navigator.serviceWorker.register("/sw.js");
-        const existingSubscription = await registration.pushManager.getSubscription();
+        const existingSubscription =
+          await registration.pushManager.getSubscription();
 
         if (!alive) return;
 
@@ -237,7 +245,6 @@ export default function PushOnboarding() {
   }, [resolved, supported, permission, hasSubscription]);
 
   async function enablePush(): Promise<void> {
-
     setLoading(true);
     setMessage("");
 
@@ -263,7 +270,9 @@ export default function PushOnboarding() {
         throw new Error("Session konnte nicht geladen werden.");
       }
 
-      const normalizedSubdomain = parsedMe.session.companySubdomain.trim().toLowerCase();
+      const normalizedSubdomain = parsedMe.session.companySubdomain
+        .trim()
+        .toLowerCase();
       setCompanySubdomain(normalizedSubdomain);
 
       const publicKeyResponse = await fetch("/api/push/public-key", {
@@ -272,7 +281,9 @@ export default function PushOnboarding() {
         cache: "no-store",
       });
 
-      const publicKeyJson: unknown = await publicKeyResponse.json().catch(() => ({}));
+      const publicKeyJson: unknown = await publicKeyResponse
+        .json()
+        .catch(() => ({}));
       const parsedKey = parsePushPublicKeyResponse(publicKeyJson);
 
       if (!publicKeyResponse.ok || !parsedKey.ok) {
@@ -280,10 +291,14 @@ export default function PushOnboarding() {
       }
 
       const registration = await navigator.serviceWorker.register("/sw.js");
-      const existingSubscription = await registration.pushManager.getSubscription();
+      const existingSubscription =
+        await registration.pushManager.getSubscription();
 
       if (existingSubscription) {
-        await sendSubscriptionToBackend(existingSubscription.toJSON(), normalizedSubdomain);
+        await sendSubscriptionToBackend(
+          existingSubscription.toJSON(),
+          normalizedSubdomain
+        );
         setHasSubscription(true);
         setResolved(true);
         setMessage("Push ist jetzt aktiviert.");
@@ -297,14 +312,19 @@ export default function PushOnboarding() {
         applicationServerKey,
       });
 
-      await sendSubscriptionToBackend(subscription.toJSON(), normalizedSubdomain);
+      await sendSubscriptionToBackend(
+        subscription.toJSON(),
+        normalizedSubdomain
+      );
 
       setHasSubscription(true);
       setResolved(true);
       setMessage("Push ist jetzt aktiviert.");
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : "Push konnte nicht aktiviert werden.";
+        error instanceof Error
+          ? error.message
+          : "Push konnte nicht aktiviert werden.";
       setMessage(errorMessage);
     } finally {
       setLoading(false);
@@ -316,21 +336,17 @@ export default function PushOnboarding() {
   }
 
   return (
-    <div
-      className="card"
-      style={{
-        padding: 14,
-        marginBottom: 14,
-        borderColor: "rgba(184, 207, 58, 0.35)",
-        background: "rgba(184, 207, 58, 0.08)",
-      }}
-    >
-      <div style={{ fontWeight: 900, marginBottom: 6 }}>Push-Benachrichtigungen aktivieren</div>
-      <div style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.4 }}>
-        Aktiviere Push, damit du Erinnerungen zu fehlenden Einträgen, Anträgen und Aufgaben direkt auf diesem Gerät erhältst.
+    <div className="card push-onboarding-card">
+      <div className="push-onboarding-title">
+        Push-Benachrichtigungen aktivieren
       </div>
 
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+      <div className="push-onboarding-text">
+        Aktiviere Push, damit du Erinnerungen zu fehlenden Einträgen, Anträgen
+        und Aufgaben direkt auf diesem Gerät erhältst.
+      </div>
+
+      <div className="push-onboarding-actions">
         <button
           type="button"
           className="btn btn-accent"
@@ -341,12 +357,10 @@ export default function PushOnboarding() {
         </button>
       </div>
 
-      {message ? (
-        <div style={{ marginTop: 10, fontSize: 13, color: "var(--text)" }}>{message}</div>
-      ) : null}
+      {message ? <div className="push-onboarding-message">{message}</div> : null}
 
       {companySubdomain ? (
-        <div style={{ marginTop: 8, fontSize: 12, color: "var(--muted-2)" }}>
+        <div className="push-onboarding-company">
           Firmenname: {companySubdomain}
         </div>
       ) : null}

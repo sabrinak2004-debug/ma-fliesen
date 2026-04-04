@@ -19,10 +19,11 @@ export default async function TenantDatenschutzPage({
   }
 
   return (
-    <div style={{ padding: "40px 0" }}>
+    <div className="legal-page-shell">
       <div className="container-app">
         <div className="card card-olive legal-page-card">
           <h1 className="legal-page-title">Datenschutzerklärung</h1>
+
           <div className="legal-page-updated">
             Letzte Aktualisierung: 30.03.2026
           </div>
@@ -170,10 +171,10 @@ export default async function TenantDatenschutzPage({
 
           <div className="legal-page-actions">
             <LegalBackButton
-                fallbackHref={`/${normalizedSubdomain}/login`}
-                label="Zurück"
+              fallbackHref={`/${normalizedSubdomain}/login`}
+              label="Zurück"
             />
-            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -629,35 +629,14 @@ export default function AppShell({
             className="md:hidden"
             style={{ position: "fixed", inset: 0, zIndex: 80, overflow: "hidden" }}
           >
-            <button
-              type="button"
-              aria-label="Menü schließen"
-              onClick={() => setMobileOpen(false)}
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "rgba(0,0,0,0.45)",
-                border: "none",
-                padding: 0,
-              }}
-            />
+          <button
+            type="button"
+            aria-label="Menü schließen"
+            onClick={() => setMobileOpen(false)}
+            className="appshell-mobile-backdrop"
+          />
 
-            <div
-              className="appshell-drawer-surface"
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                height: "100%",
-                width: 320,
-                maxWidth: "86vw",
-                boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
-                padding: 16,
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-              }}
-            >
+            <div className="appshell-drawer-surface appshell-mobile-drawer">
               <div
                 style={{
                   display: "flex",
@@ -689,12 +668,11 @@ export default function AppShell({
                   </div>
 
                   <div
+                    className="appshell-section-stripe"
                     style={{
                       marginTop: 10,
                       height: 4,
                       width: 54,
-                      borderRadius: 99,
-                      background: "var(--brand-sidebar-stripe)",
                     }}
                   />
                 </div>
@@ -757,21 +735,7 @@ export default function AppShell({
                         {showTaskBadge || showVacationBadge || showSickBadge || showCorrectionBadge ? (
                           <span
                             aria-label="Offene Elemente"
-                            style={{
-                              minWidth: 22,
-                              height: 22,
-                              padding: "0 7px",
-                              borderRadius: 999,
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              background: "var(--brand-badge-bg)",
-                              color: "var(--brand-badge-text)",
-                              fontSize: 15,
-                              fontWeight: 1000,
-                              lineHeight: 1,
-                              flexShrink: 0,
-                            }}
+                            className="appshell-nav-badge appshell-nav-badge-mobile"
                           >
                             {showTaskBadge
                               ? openTaskCount
@@ -854,12 +818,11 @@ export default function AppShell({
               </div>
 
               <div
+                className="appshell-section-stripe"
                 style={{
                   marginTop: 14,
                   height: 4,
                   width: 80,
-                  borderRadius: 999,
-                  background: "var(--brand-sidebar-stripe)",
                 }}
               />
             </div>
@@ -915,21 +878,7 @@ export default function AppShell({
                       showCorrectionBadge ? (
                         <span
                           aria-label={`${openTaskCount} offene Aufgaben`}
-                          style={{
-                            minWidth: 18,
-                            height: 18,
-                            padding: "0 5px",
-                            borderRadius: 999,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: "var(--brand-badge-bg)",
-                            color: "var(--brand-badge-text)",
-                            fontSize: 12,
-                            fontWeight: 1000,
-                            lineHeight: 1,
-                            flexShrink: 0,
-                          }}
+                          className="appshell-nav-badge appshell-nav-badge-desktop"
                         >
                           {showTaskBadge
                             ? openTaskCount

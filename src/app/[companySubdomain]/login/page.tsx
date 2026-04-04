@@ -61,7 +61,7 @@ export async function generateMetadata({
     };
   }
 
-  const themeColor = "#0b0f0c";
+  const themeColor = normalizeThemeColor(company.primaryColor);
 
   return {
     title: `${company.name} Mitarbeiterportal`,
@@ -78,9 +78,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function TenantLoginPage({
-  params,
-}: LoginPageProps) {
+export default async function TenantLoginPage({ params }: LoginPageProps) {
   const { companySubdomain } = await params;
   const normalizedSubdomain = normalizeTenantSubdomain(companySubdomain);
 

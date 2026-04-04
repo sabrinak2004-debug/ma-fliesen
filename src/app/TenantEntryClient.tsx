@@ -2,8 +2,8 @@
 
 import React, { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Toast from "@/components/Toast";
 import Link from "next/link";
+import Toast from "@/components/Toast";
 
 type PublicCompany = {
   name: string;
@@ -46,7 +46,9 @@ function isPublicCompany(value: unknown): value is PublicCompany {
   );
 }
 
-function parsePublicCompanyResponse(value: unknown): PublicCompanyResponse | null {
+function parsePublicCompanyResponse(
+  value: unknown
+): PublicCompanyResponse | null {
   if (!isRecord(value)) return null;
 
   const ok = value["ok"];
@@ -86,7 +88,9 @@ export default function TenantEntryClient() {
     return isSubmitting || normalizeInput(query).length === 0;
   }, [isSubmitting, query]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ): Promise<void> {
     event.preventDefault();
 
     const normalizedQuery = normalizeInput(query);
@@ -113,14 +117,17 @@ export default function TenantEntryClient() {
 
       if (!parsed || !parsed.ok) {
         setToastMessage(
-          parsed?.error ?? "Die Firma wurde nicht gefunden. Bitte prüfe deine Eingabe."
+          parsed?.error ??
+            "Die Firma wurde nicht gefunden. Bitte prüfe deine Eingabe."
         );
         return;
       }
 
       router.push(`/${parsed.company.subdomain}/login`);
     } catch {
-      setToastMessage("Die Firma konnte gerade nicht geprüft werden. Bitte versuche es erneut.");
+      setToastMessage(
+        "Die Firma konnte gerade nicht geprüft werden. Bitte versuche es erneut."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -132,22 +139,18 @@ export default function TenantEntryClient() {
         <div className="container-app">
           <div className="card tenant-entry-card">
             <div className="tenant-entry-header">
-              <div className="tenant-entry-badge">
-                Firmenzugang
-              </div>
+              <div className="tenant-entry-badge">Firmenzugang</div>
 
-              <h1 className="tenant-entry-title">
-                Willkommen bei saleo!
-              </h1>
+              <h1 className="tenant-entry-title">Willkommen bei saleo!</h1>
 
               <p className="tenant-entry-text">
-                Gib bitte deinen Firmennamen ein, damit wir dich
-                zum richtigen Login weiterleiten können.
+                Gib bitte deinen Firmennamen ein, damit wir dich zum richtigen
+                Login weiterleiten können.
               </p>
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div style={{ display: "grid", gap: 14 }}>
+              <div className="tenant-entry-form-grid">
                 <div>
                   <div className="label">Ihr Firmenname</div>
                   <input
@@ -162,23 +165,21 @@ export default function TenantEntryClient() {
 
                 <button
                   type="submit"
-                  className="btn btn-accent"
+                  className="btn btn-accent tenant-entry-submit-btn"
                   disabled={isDisabled}
-                  style={{
-                    width: "100%",
-                    minHeight: 48,
-                    fontWeight: 900,
-                  }}
                 >
-                  {isSubmitting ? "Firma wird geprüft..." : "Weiter zum Firmen-Login"}
+                  {isSubmitting
+                    ? "Firma wird geprüft..."
+                    : "Weiter zum Firmen-Login"}
                 </button>
               </div>
             </form>
 
             <div className="tenant-entry-footnote">
-              Nach erfolgreicher Prüfung wirst du automatisch zu dem
-              passenden Firmen-Login weitergeleitet.
+              Nach erfolgreicher Prüfung wirst du automatisch zu dem passenden
+              Firmen-Login weitergeleitet.
             </div>
+
             <div className="login-legal-links">
               <Link href="/datenschutz" className="login-legal-link">
                 Datenschutz

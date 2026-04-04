@@ -19,10 +19,11 @@ export default async function TenantNutzungsbedingungenPage({
   }
 
   return (
-    <div style={{ padding: "40px 0" }}>
+    <div className="legal-page-shell">
       <div className="container-app">
         <div className="card card-olive legal-page-card">
           <h1 className="legal-page-title">Nutzungsbedingungen</h1>
+
           <div className="legal-page-updated">
             Letzte Aktualisierung: [Datum einfügen]
           </div>
@@ -119,10 +120,10 @@ export default async function TenantNutzungsbedingungenPage({
 
           <div className="legal-page-actions">
             <LegalBackButton
-                fallbackHref={`/${normalizedSubdomain}/login`}
-                label="Zurück"
+              fallbackHref={`/${normalizedSubdomain}/login`}
+              label="Zurück"
             />
-            </div>
+          </div>
         </div>
       </div>
     </div>

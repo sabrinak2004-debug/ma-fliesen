@@ -9,6 +9,26 @@ type ResetPasswordClientProps = {
   companySubdomain: string;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function parseApiResponse(value: unknown): ApiResponse | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (value["ok"] === true) {
+    return { ok: true };
+  }
+
+  if (value["ok"] === false && typeof value["error"] === "string") {
+    return { ok: false, error: value["error"] };
+  }
+
+  return null;
+}
+
 export default function ResetPasswordClient({
   token,
   companySubdomain,
@@ -19,17 +39,20 @@ export default function ResetPasswordClient({
   const [pw2, setPw2] = useState("");
   const [msg, setMsg] = useState<string>("");
   const [busy, setBusy] = useState(false);
-  async function submit() {
+
+  async function submit(): Promise<void> {
     setMsg("");
 
     if (!token) {
       setMsg("Token fehlt (Link ist ungültig).");
       return;
     }
+
     if (pw1.length < 8) {
       setMsg("Passwort muss mindestens 8 Zeichen haben.");
       return;
     }
+
     if (pw1 !== pw2) {
       setMsg("Passwörter stimmen nicht überein.");
       return;
@@ -37,7 +60,8 @@ export default function ResetPasswordClient({
 
     try {
       setBusy(true);
-      const res = await fetch("/api/auth/reset-password", {
+
+      const response = await fetch("/api/auth/reset-password", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -48,13 +72,18 @@ export default function ResetPasswordClient({
         }),
       });
 
-      const data = (await res.json()) as ApiResponse;
-      if (!res.ok || !data.ok) {
-        setMsg(!data.ok ? data.error : "Reset fehlgeschlagen");
+      const json: unknown = await response.json().catch(() => null);
+      const data = parseApiResponse(json);
+
+      if (!response.ok || !data || !data.ok) {
+        setMsg(
+          data && !data.ok ? data.error : "Reset fehlgeschlagen."
+        );
         return;
       }
 
       setMsg("Passwort wurde gesetzt. Du kannst dich jetzt einloggen.");
+
       redirectTimerRef.current = window.setTimeout(() => {
         if (companySubdomain) {
           window.location.replace(`/${companySubdomain}/login`);
@@ -79,69 +108,59 @@ export default function ResetPasswordClient({
   }, []);
 
   return (
-      <div style={{ maxWidth: 520, margin: "0 auto", padding: "24px 16px" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>Neues Passwort setzen</h1>
+    <div className="reset-password-shell">
+      <div className="card card-olive reset-password-card">
+        <h1 className="reset-password-title">Neues Passwort setzen</h1>
+
         {companySubdomain ? (
-          <div style={{ fontSize: 13, opacity: 0.75, marginBottom: 12 }}>
+          <div className="reset-password-company">
             Firmenzugang: {companySubdomain}
           </div>
         ) : null}
 
         {!token ? (
-          <div style={{ opacity: 0.85 }}>Token fehlt. Bitte den Link vom Admin erneut anfordern.</div>
+          <div className="reset-password-empty">
+            Token fehlt. Bitte den Link vom Admin erneut anfordern.
+          </div>
         ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            <div style={{ display: "grid", gap: 6 }}>
-              <div style={{ fontSize: 13, opacity: 0.8 }}>Neues Passwort</div>
+          <div className="reset-password-form">
+            <div className="reset-password-field">
+              <div className="reset-password-label">Neues Passwort</div>
               <input
                 value={pw1}
-                onChange={(e) => setPw1(e.target.value)}
+                onChange={(event) => setPw1(event.target.value)}
                 type="password"
                 autoComplete="new-password"
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(255,255,255,0.06)",
-                }}
+                className="input"
               />
             </div>
 
-            <div style={{ display: "grid", gap: 6 }}>
-              <div style={{ fontSize: 13, opacity: 0.8 }}>Passwort bestätigen</div>
+            <div className="reset-password-field">
+              <div className="reset-password-label">
+                Passwort bestätigen
+              </div>
               <input
                 value={pw2}
-                onChange={(e) => setPw2(e.target.value)}
+                onChange={(event) => setPw2(event.target.value)}
                 type="password"
                 autoComplete="new-password"
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(255,255,255,0.06)",
-                }}
+                className="input"
               />
             </div>
 
             <button
-              onClick={submit}
+              type="button"
+              onClick={() => void submit()}
               disabled={busy}
-              style={{
-                padding: "12px 12px",
-                borderRadius: 10,
-                border: "1px solid rgba(255,255,255,0.18)",
-                background: "rgba(255,255,255,0.10)",
-                cursor: busy ? "not-allowed" : "pointer",
-              }}
+              className="btn btn-accent"
             >
-              {busy ? "speichern…" : "Passwort speichern"}
+              {busy ? "Speichern..." : "Passwort speichern"}
             </button>
 
-            {msg ? <div style={{ opacity: 0.9 }}>{msg}</div> : null}
+            {msg ? <div className="reset-password-message">{msg}</div> : null}
           </div>
         )}
       </div>
+    </div>
   );
 }

@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 
-type UserRow = { id: string; fullName: string };
+type UserRow = {
+  id: string;
+  fullName: string;
+};
 
 type UsersResponse =
   | { ok: true; users: UserRow[] }
@@ -19,6 +22,65 @@ type ResetResponse =
     }
   | { ok: false; error: string };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isUserRow(value: unknown): value is UserRow {
+  return (
+    isRecord(value) &&
+    typeof value["id"] === "string" &&
+    typeof value["fullName"] === "string"
+  );
+}
+
+function parseUsersResponse(value: unknown): UsersResponse | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (value["ok"] === true && Array.isArray(value["users"])) {
+    const users = value["users"];
+    if (!users.every(isUserRow)) {
+      return null;
+    }
+
+    return { ok: true, users };
+  }
+
+  if (value["ok"] === false && typeof value["error"] === "string") {
+    return { ok: false, error: value["error"] };
+  }
+
+  return null;
+}
+
+function isResetSuccessResponse(
+  value: unknown
+): value is Extract<ResetResponse, { ok: true }> {
+  return (
+    isRecord(value) &&
+    value["ok"] === true &&
+    typeof value["resetUrl"] === "string" &&
+    typeof value["expiresAt"] === "string" &&
+    isRecord(value["user"]) &&
+    typeof value["user"]["id"] === "string" &&
+    typeof value["user"]["fullName"] === "string"
+  );
+}
+
+function parseResetResponse(value: unknown): ResetResponse | null {
+  if (isResetSuccessResponse(value)) {
+    return value;
+  }
+
+  if (isRecord(value) && value["ok"] === false && typeof value["error"] === "string") {
+    return { ok: false, error: value["error"] };
+  }
+
+  return null;
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,26 +91,44 @@ export default function AdminUsersPage() {
   const [resetInfo, setResetInfo] = useState("");
 
   useEffect(() => {
-    (async () => {
+    let alive = true;
+
+    async function loadUsers(): Promise<void> {
       try {
         setLoading(true);
         setErr("");
-        const res = await fetch("/api/admin/users", { cache: "no-store" });
-        const data = (await res.json()) as UsersResponse;
 
-        if (!res.ok || !data.ok) {
+        const response = await fetch("/api/admin/users", {
+          cache: "no-store",
+        });
+
+        const json: unknown = await response.json().catch(() => null);
+        const data = parseUsersResponse(json);
+
+        if (!alive) return;
+
+        if (!response.ok || !data || !data.ok) {
           setErr("Konnte Mitarbeiter nicht laden.");
           setUsers([]);
           return;
         }
-        setUsers(data.users ?? []);
+
+        setUsers(data.users);
       } catch {
+        if (!alive) return;
         setErr("Konnte Mitarbeiter nicht laden.");
         setUsers([]);
       } finally {
+        if (!alive) return;
         setLoading(false);
       }
-    })();
+    }
+
+    void loadUsers();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const sorted = useMemo(
@@ -56,95 +136,84 @@ export default function AdminUsersPage() {
     [users]
   );
 
-  async function createResetLink(userId: string) {
+  async function createResetLink(userId: string): Promise<void> {
     try {
       setErr("");
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/password-reset`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
 
-      const data = (await res.json()) as ResetResponse;
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(userId)}/password-reset`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
-      if (!res.ok || !data.ok) {
-        const msg = data.ok ? "Reset fehlgeschlagen" : data.error || "Reset fehlgeschlagen";
-        setErr(msg);
+      const json: unknown = await response.json().catch(() => null);
+      const data = parseResetResponse(json);
+
+      if (!response.ok || !data || !data.ok) {
+        const message =
+          data && !data.ok ? data.error : "Reset fehlgeschlagen.";
+        setErr(message);
         return;
       }
 
       setResetUrl(data.resetUrl);
-      setResetInfo(`Gültig bis: ${new Date(data.expiresAt).toLocaleString("de-DE")}`);
+      setResetInfo(
+        `Gültig bis: ${new Date(data.expiresAt).toLocaleString("de-DE")}`
+      );
       setModalOpen(true);
     } catch {
-      setErr("Reset fehlgeschlagen");
+      setErr("Reset fehlgeschlagen.");
     }
   }
 
-  async function copyLink() {
+  async function copyLink(): Promise<void> {
     try {
       await navigator.clipboard.writeText(resetUrl);
-      setResetInfo((p) => (p.includes("Kopiert") ? p : `${p} • Kopiert ✅`));
+      setResetInfo((previous) =>
+        previous.includes("Kopiert")
+          ? previous
+          : `${previous} • Kopiert ✅`
+      );
     } catch {
-      setResetInfo((p) => `${p} • Kopieren nicht möglich`);
+      setResetInfo((previous) => `${previous} • Kopieren nicht möglich`);
     }
   }
 
   return (
-    <AppShell>
-      <div style={{ maxWidth: 980, margin: "0 auto", padding: "24px 16px" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Mitarbeiter</h1>
-        <div style={{ opacity: 0.75, marginBottom: 16 }}>
-          Reset-Link erstellen und dem Mitarbeiter schicken (z.B. WhatsApp).
+    <AppShell activeLabel="Mitarbeiter">
+      <div className="admin-users-shell">
+        <h1 className="admin-users-title">Mitarbeiter</h1>
+
+        <div className="admin-users-subtitle">
+          Reset-Link erstellen und dem Mitarbeiter schicken
+          (z. B. per WhatsApp).
         </div>
 
         {err ? (
-          <div
-            style={{
-              padding: 12,
-              borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.15)",
-              marginBottom: 16,
-            }}
-          >
-            {err}
+          <div className="tenant-status-card tenant-status-card-danger admin-users-error">
+            <div className="tenant-status-text-danger">{err}</div>
           </div>
         ) : null}
 
         {loading ? (
-          <div>lädt…</div>
+          <div className="tenant-soft-panel">Lädt...</div>
         ) : (
-          <div
-            style={{
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: 12,
-              overflow: "hidden",
-            }}
-          >
+          <div className="admin-users-list">
             {sorted.length === 0 ? (
-              <div style={{ padding: 14, opacity: 0.8 }}>Keine Mitarbeiter gefunden.</div>
+              <div className="admin-users-empty">
+                Keine Mitarbeiter gefunden.
+              </div>
             ) : (
-              sorted.map((u, idx) => (
-                <div
-                  key={u.id}
-                  style={{
-                    display: "flex",
-                    gap: 12,
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "12px 14px",
-                    borderTop: idx === 0 ? "none" : "1px solid rgba(255,255,255,0.1)",
-                  }}
-                >
-                  <div style={{ fontWeight: 600 }}>{u.fullName}</div>
+              sorted.map((user) => (
+                <div key={user.id} className="admin-users-row">
+                  <div className="admin-users-name">{user.fullName}</div>
+
                   <button
-                    onClick={() => createResetLink(u.id)}
-                    style={{
-                      padding: "10px 12px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(255,255,255,0.06)",
-                      cursor: "pointer",
-                    }}
+                    type="button"
+                    onClick={() => void createResetLink(user.id)}
+                    className="btn"
                   >
                     Reset-Link erstellen
                   </button>
@@ -159,49 +228,31 @@ export default function AdminUsersPage() {
           title="Reset-Link"
           onClose={() => setModalOpen(false)}
           footer={
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <div className="modal-footer-row">
               <button
-                onClick={copyLink}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(255,255,255,0.06)",
-                  cursor: "pointer",
-                }}
+                type="button"
+                onClick={() => void copyLink()}
+                className="btn"
               >
                 Link kopieren
               </button>
+
               <button
+                type="button"
                 onClick={() => setModalOpen(false)}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(255,255,255,0.06)",
-                  cursor: "pointer",
-                }}
+                className="btn"
               >
                 Schließen
               </button>
             </div>
           }
         >
-          <div style={{ display: "grid", gap: 10 }}>
-            <div style={{ opacity: 0.8 }}>{resetInfo}</div>
-            <div
-              style={{
-                padding: 12,
-                borderRadius: 10,
-                border: "1px solid rgba(255,255,255,0.15)",
-                wordBreak: "break-all",
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                fontSize: 13,
-              }}
-            >
-              {resetUrl}
-            </div>
-            <div style={{ opacity: 0.8, fontSize: 13 }}>
+          <div className="admin-users-modal-stack">
+            <div className="admin-users-modal-meta">{resetInfo}</div>
+
+            <div className="admin-users-modal-code">{resetUrl}</div>
+
+            <div className="admin-users-modal-hint">
               Hinweis: Link ist einmalig. Danach ist er ungültig.
             </div>
           </div>

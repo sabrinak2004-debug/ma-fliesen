@@ -3234,3 +3234,263 @@ li {
     flex-direction: column;
   }
 }
+
+/* ===== Block 6: Push / Restkomponenten / letzte harte Farben ===== */
+
+:root {
+  --app-overlay-backdrop: color-mix(in srgb, var(--bg) 62%, transparent);
+  --app-drawer-backdrop: color-mix(in srgb, var(--bg) 45%, transparent);
+  --app-shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --app-shadow-strong: 0 18px 70px rgba(0, 0, 0, 0.55);
+  --app-shadow-drawer: 0 24px 70px rgba(0, 0, 0, 0.45);
+}
+
+.appshell-mobile-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--app-drawer-backdrop);
+  border: none;
+  padding: 0;
+}
+
+.appshell-mobile-drawer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 320px;
+  max-width: 86vw;
+  box-shadow: var(--app-shadow-drawer);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.appshell-section-stripe {
+  border-radius: 999px;
+  background: var(--brand-sidebar-stripe);
+}
+
+.appshell-nav-badge {
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-badge-bg);
+  color: var(--brand-badge-text);
+  line-height: 1;
+  flex-shrink: 0;
+  font-weight: 1000;
+}
+
+.appshell-nav-badge-mobile {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  font-size: 15px;
+}
+
+.appshell-nav-badge-desktop {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 12px;
+}
+
+.push-onboarding-card {
+  padding: 14px;
+  margin-bottom: 14px;
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+
+.push-onboarding-title {
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.push-onboarding-text {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.push-onboarding-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.push-onboarding-message {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.push-onboarding-company {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted-2);
+}
+
+.tenant-entry-form-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.tenant-entry-submit-btn {
+  width: 100%;
+  min-height: 48px;
+  font-weight: 900;
+}
+
+.legal-page-shell {
+  padding: 40px 0;
+}
+
+.reset-password-shell {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.reset-password-card {
+  padding: 20px;
+}
+
+.reset-password-title {
+  margin: 0 0 10px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.reset-password-company {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.reset-password-empty {
+  color: var(--text-soft);
+  opacity: 0.9;
+}
+
+.reset-password-form {
+  display: grid;
+  gap: 12px;
+}
+
+.reset-password-field {
+  display: grid;
+  gap: 6px;
+}
+
+.reset-password-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.reset-password-message {
+  color: var(--text);
+  opacity: 0.92;
+}
+
+.admin-users-shell {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.admin-users-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.admin-users-subtitle {
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.admin-users-error {
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-users-list {
+  border: 1px solid var(--tenant-soft-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--tenant-soft-bg);
+}
+
+.admin-users-empty {
+  padding: 14px;
+  opacity: 0.8;
+}
+
+.admin-users-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+}
+
+.admin-users-row + .admin-users-row {
+  border-top: 1px solid var(--tenant-soft-border);
+}
+
+.admin-users-name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.admin-users-modal-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-users-modal-meta {
+  opacity: 0.8;
+  color: var(--text);
+}
+
+.admin-users-modal-code {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--tenant-soft-border);
+  word-break: break-all;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: var(--tenant-soft-bg);
+  color: var(--text);
+}
+
+.admin-users-modal-hint {
+  opacity: 0.8;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.modal-footer-row {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .admin-users-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modal-footer-row {
+    flex-direction: column;
+  }
+}

@@ -26,6 +26,7 @@ export default function Modal({
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   const onCloseRef = useRef(onClose);
+
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
@@ -34,7 +35,9 @@ export default function Modal({
     if (!open) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCloseRef.current();
+      if (e.key === "Escape") {
+        onCloseRef.current();
+      }
     };
 
     document.addEventListener("keydown", handleKeyDown);
@@ -43,13 +46,13 @@ export default function Modal({
       panelRef.current?.focus();
     }, 0);
 
-    const prev = document.body.style.overflow;
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     return () => {
       window.clearTimeout(focusTimer);
       document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = prev;
+      document.body.style.overflow = previousOverflow;
     };
   }, [open]);
 
@@ -67,14 +70,16 @@ export default function Modal({
         alignItems: "center",
         justifyContent: "center",
         padding: 12,
-        background: "color-mix(in srgb, var(--bg) 62%, transparent)",
+        background: "var(--app-overlay-backdrop)",
         backdropFilter: "blur(3px)",
         WebkitBackdropFilter: "blur(3px)",
         boxSizing: "border-box",
       }}
       onMouseDown={(e) => {
         if (disableBackdropClose) return;
-        if (e.target === e.currentTarget) onCloseRef.current();
+        if (e.target === e.currentTarget) {
+          onCloseRef.current();
+        }
       }}
     >
       <div
@@ -87,7 +92,7 @@ export default function Modal({
           maxHeight: "calc(100dvh - 24px)",
           overflow: "hidden",
           borderRadius: 16,
-          boxShadow: "0 18px 70px rgba(0,0,0,0.55)",
+          boxShadow: "var(--app-shadow-strong)",
           display: "flex",
           flexDirection: "column",
           boxSizing: "border-box",

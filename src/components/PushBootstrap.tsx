@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { getTenantAppleTouchIconHref } from "@/lib/tenantBranding";
 
 type PushPublicKeyResponse =
   | {
@@ -18,7 +17,10 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
 
-function getStringField(obj: Record<string, unknown>, key: string): string | null {
+function getStringField(
+  obj: Record<string, unknown>,
+  key: string
+): string | null {
   const value = obj[key];
   return typeof value === "string" ? value : null;
 }
@@ -53,7 +55,10 @@ function base64UrlToArrayBuffer(base64Url: string): ArrayBuffer {
     bytes[i] = rawData.charCodeAt(i);
   }
 
-  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  return bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength
+  );
 }
 
 type SubscriptionJson = {
@@ -198,18 +203,23 @@ export default function PushBootstrap() {
           return;
         }
 
-        const companySubdomain = parsedMe.session.companySubdomain.trim().toLowerCase();
+        const companySubdomain = parsedMe.session.companySubdomain
+          .trim()
+          .toLowerCase();
 
         if (!companySubdomain) {
           return;
         }
+
         const publicKeyResponse = await fetch("/api/push/public-key", {
           method: "GET",
           credentials: "include",
           cache: "no-store",
         });
 
-        const publicKeyJson: unknown = await publicKeyResponse.json().catch(() => ({}));
+        const publicKeyJson: unknown = await publicKeyResponse
+          .json()
+          .catch(() => ({}));
         const parsed = parsePushPublicKeyResponse(publicKeyJson);
 
         if (!publicKeyResponse.ok || !parsed.ok) {
@@ -217,13 +227,13 @@ export default function PushBootstrap() {
         }
 
         const registration = await navigator.serviceWorker.register("/sw.js");
-        void getTenantAppleTouchIconHref(companySubdomain);
 
         if (Notification.permission !== "granted") {
           return;
         }
 
-        const existingSubscription = await registration.pushManager.getSubscription();
+        const existingSubscription =
+          await registration.pushManager.getSubscription();
 
         if (existingSubscription) {
           await sendSubscriptionToBackend(

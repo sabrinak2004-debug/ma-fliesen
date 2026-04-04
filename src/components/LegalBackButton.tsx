@@ -13,7 +13,7 @@ export default function LegalBackButton({
 }: LegalBackButtonProps) {
   const router = useRouter();
 
-  function handleClick() {
+  function handleClick(): void {
     if (window.history.length > 1) {
       router.back();
       return;
