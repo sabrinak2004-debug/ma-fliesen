@@ -206,7 +206,7 @@ export default async function TenantDatenschutzPage({
             </p>
           </div>
 
-            <div className="legal-page-actions">
+                        <div className="legal-page-actions">
               <LegalBackButton
                 fallbackHref={`/${normalizedSubdomain}/login`}
                 label="Zurück"
