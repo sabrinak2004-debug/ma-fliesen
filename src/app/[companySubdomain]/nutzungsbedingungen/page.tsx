@@ -164,5 +164,6 @@ export default async function TenantNutzungsbedingungenPage({
         </div>
       </div>
     </div>
+    </div>
   );
 }
