@@ -630,7 +630,7 @@ export default function LoginClient({
               Passwort festgelegt.
             </div>
           </form>
-                </div>
+        </div>
       </div>
     </div>
   );
