@@ -413,7 +413,7 @@ export default function LoginClient({
     fontSize: 16,
   };
 
-    return (
+  return (
     <div
       style={{
         ...pageThemeStyle,
@@ -630,7 +630,7 @@ export default function LoginClient({
               Passwort festgelegt.
             </div>
           </form>
-        </div>
+                </div>
       </div>
     </div>
   );
