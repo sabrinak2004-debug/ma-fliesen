@@ -1,6 +1,10 @@
 import LegalBackButton from "@/components/LegalBackButton";
 import { notFound } from "next/navigation";
-import { normalizeTenantSubdomain } from "@/lib/tenantBranding";
+import {
+  getTenantThemeStyle,
+  normalizeTenantSubdomain,
+  resolveTenantTheme,
+} from "@/lib/tenantBranding";
 
 type TenantDatenschutzPageProps = {
   params: Promise<{
