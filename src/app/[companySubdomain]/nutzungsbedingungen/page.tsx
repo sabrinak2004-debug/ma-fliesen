@@ -1,6 +1,10 @@
 import LegalBackButton from "@/components/LegalBackButton";
 import { notFound } from "next/navigation";
-import { normalizeTenantSubdomain } from "@/lib/tenantBranding";
+import {
+  getTenantThemeStyle,
+  normalizeTenantSubdomain,
+  resolveTenantTheme,
+} from "@/lib/tenantBranding";
 
 type TenantNutzungsbedingungenPageProps = {
   params: Promise<{
@@ -17,11 +21,24 @@ export default async function TenantNutzungsbedingungenPage({
   if (!normalizedSubdomain) {
     notFound();
   }
+    const theme = resolveTenantTheme(normalizedSubdomain);
 
   return (
-    <div className="legal-page-shell">
-      <div className="container-app">
-        <div className="card card-olive legal-page-card">
+    <div
+      style={{
+        ...getTenantThemeStyle(theme),
+        minHeight: "100dvh",
+        backgroundColor: "var(--bg)",
+        backgroundImage:
+          "radial-gradient(1200px 600px at 10% 10%, var(--accent-soft), transparent 55%), radial-gradient(900px 600px at 80% 20%, rgba(var(--accent-rgb), 0.06), transparent 60%)",
+        backgroundRepeat: "no-repeat, no-repeat",
+        backgroundSize: "1200px 600px, 900px 600px",
+        backgroundPosition: "0 0, 100% 0",
+      }}
+    >
+      <div className="legal-page-shell">
+        <div className="container-app">
+          <div className="card card-olive legal-page-card">
           <h1 className="legal-page-title">Nutzungsbedingungen</h1>
 
           <div className="legal-page-updated">
@@ -124,6 +141,7 @@ export default async function TenantNutzungsbedingungenPage({
               label="Zurück"
             />
           </div>
+         </div>
         </div>
       </div>
     </div>
