@@ -23,22 +23,41 @@ export default async function TenantNutzungsbedingungenPage({
   }
     const theme = resolveTenantTheme(normalizedSubdomain);
 
-  return (
+    return (
     <div
       style={{
         ...getTenantThemeStyle(theme),
+        position: "relative",
         minHeight: "100dvh",
-        backgroundColor: "var(--bg)",
-        backgroundImage:
-          "radial-gradient(1200px 600px at 10% 10%, var(--accent-soft), transparent 55%), radial-gradient(900px 600px at 80% 20%, rgba(var(--accent-rgb), 0.06), transparent 60%)",
-        backgroundRepeat: "no-repeat, no-repeat",
-        backgroundSize: "1200px 600px, 900px 600px",
-        backgroundPosition: "0 0, 100% 0",
+        color: "var(--text)",
       }}
     >
-      <div className="legal-page-shell">
-        <div className="container-app">
-          <div className="card card-olive legal-page-card">
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "var(--bg)",
+          backgroundImage:
+            "radial-gradient(1200px 600px at 10% 10%, var(--accent-soft), transparent 55%), radial-gradient(900px 600px at 80% 20%, rgba(var(--accent-rgb), 0.06), transparent 60%)",
+          backgroundRepeat: "no-repeat, no-repeat",
+          backgroundSize: "1200px 600px, 900px 600px",
+          backgroundPosition: "0 0, 100% 0",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          minHeight: "100dvh",
+        }}
+      >
+        <div className="legal-page-shell">
+          <div className="container-app">
+            <div className="card card-olive legal-page-card">
           <h1 className="legal-page-title">Nutzungsbedingungen</h1>
 
           <div className="legal-page-updated">
@@ -135,13 +154,13 @@ export default async function TenantNutzungsbedingungenPage({
             <p>Es gilt deutsches Recht.</p>
           </div>
 
-          <div className="legal-page-actions">
-            <LegalBackButton
-              fallbackHref={`/${normalizedSubdomain}/login`}
-              label="Zurück"
-            />
+            <div className="legal-page-actions">
+              <LegalBackButton
+                fallbackHref={`/${normalizedSubdomain}/login`}
+                label="Zurück"
+              />
+            </div>
           </div>
-         </div>
         </div>
       </div>
     </div>
