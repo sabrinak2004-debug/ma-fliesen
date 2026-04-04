@@ -2925,3 +2925,312 @@ li {
   opacity: 0.7;
   margin: 12px 0;
 }
+
+/* ===== Block 5: Admin-Antragsseiten / Passwort-Reset ===== */
+
+.admin-workflow-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-workflow-kpi-icon {
+  color: var(--muted-2);
+  font-size: 22px;
+  align-self: flex-start;
+}
+
+.admin-workflow-card {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--tenant-soft-border);
+  background: linear-gradient(
+    180deg,
+    var(--tenant-soft-bg-strong),
+    var(--tenant-soft-bg)
+  );
+}
+
+.admin-workflow-card-pending {
+  border-color: var(--tenant-warning-border);
+}
+
+.admin-workflow-card-approved {
+  border-color: var(--tenant-success-border);
+}
+
+.admin-workflow-card-rejected {
+  border-color: var(--tenant-danger-border);
+}
+
+.admin-workflow-status-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-workflow-status-chip-pending {
+  background: var(--tenant-warning-bg-soft);
+  border: 1px solid var(--tenant-warning-border);
+  color: var(--tenant-warning-accent);
+}
+
+.admin-workflow-status-chip-approved {
+  background: var(--tenant-success-bg-soft);
+  border: 1px solid var(--tenant-success-border);
+  color: var(--tenant-success-accent);
+}
+
+.admin-workflow-status-chip-rejected {
+  background: var(--tenant-danger-bg-soft);
+  border: 1px solid var(--tenant-danger-border);
+  color: var(--tenant-danger-accent);
+}
+
+.admin-workflow-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--tenant-soft-border);
+  background: var(--tenant-soft-bg-strong);
+  color: var(--muted);
+}
+
+.admin-workflow-mixed-hint {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--tenant-warning-border);
+  background: var(--tenant-warning-bg-soft);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.admin-workflow-readonly-input {
+  display: flex;
+  align-items: center;
+  opacity: 0.9;
+}
+
+.admin-workflow-readonly-input-muted {
+  display: flex;
+  align-items: center;
+  opacity: 0.85;
+}
+
+.admin-workflow-note-input {
+  min-height: 90px;
+  display: block;
+  padding-top: 12px;
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.admin-workflow-note-input-empty {
+  opacity: 0.7;
+}
+
+.admin-workflow-breakdown-text {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.admin-workflow-sub-label {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.admin-workflow-section {
+  border-radius: 16px;
+  border: 1px solid var(--tenant-soft-border);
+  background: var(--tenant-soft-bg);
+  overflow: hidden;
+}
+
+.admin-workflow-section-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 14px 16px;
+  font-weight: 900;
+  user-select: none;
+}
+
+.admin-workflow-section-content {
+  padding: 0 12px 12px 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.admin-workflow-empty-card {
+  padding: 14px;
+  opacity: 0.85;
+}
+
+.admin-workflow-error-card {
+  padding: 12px;
+  margin-top: 14px;
+  border-color: var(--tenant-danger-border);
+  background: var(--tenant-danger-bg-soft);
+}
+
+.admin-workflow-error-text {
+  color: var(--tenant-danger-accent);
+  font-weight: 700;
+}
+
+.admin-workflow-loading-card {
+  padding: 18px;
+}
+
+.admin-workflow-filter-shell {
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.admin-workflow-filter-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.admin-workflow-filter-icon {
+  color: var(--accent);
+}
+
+.admin-workflow-filter-text {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.admin-workflow-filter-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-workflow-filter-field {
+  min-width: 0;
+  width: 100%;
+}
+
+.admin-workflow-filter-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: block;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.admin-password-shell {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.admin-password-title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.admin-password-subtitle {
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+.admin-password-list {
+  border: 1px solid var(--tenant-soft-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--tenant-soft-bg);
+}
+
+.admin-password-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  align-items: center;
+}
+
+.admin-password-row + .admin-password-row {
+  border-top: 1px solid var(--tenant-soft-border);
+}
+
+.admin-password-row-title {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.admin-password-row-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.admin-password-empty {
+  padding: 14px;
+  opacity: 0.8;
+}
+
+.admin-password-modal-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-password-modal-info {
+  opacity: 0.8;
+  color: var(--text);
+}
+
+.admin-password-modal-code {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--tenant-soft-border);
+  word-break: break-all;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: var(--tenant-soft-bg);
+  color: var(--text);
+}
+
+.admin-password-modal-hint {
+  opacity: 0.8;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.admin-password-modal-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .admin-workflow-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-password-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-password-modal-footer {
+    flex-direction: column;
+  }
+}

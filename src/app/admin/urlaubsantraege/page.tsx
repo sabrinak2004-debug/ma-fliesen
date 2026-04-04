@@ -69,18 +69,20 @@ type OverviewResponse =
       error: string;
     };
 
-type AdminRequestsResponse = {
-  ok: true;
-  requests: AbsenceRequestItem[];
-  grouped: {
-    pending: AbsenceRequestItem[];
-    approved: AbsenceRequestItem[];
-    rejected: AbsenceRequestItem[];
-  };
-} | {
-  ok: false;
-  error: string;
-};
+type AdminRequestsResponse =
+  | {
+      ok: true;
+      requests: AbsenceRequestItem[];
+      grouped: {
+        pending: AbsenceRequestItem[];
+        approved: AbsenceRequestItem[];
+        rejected: AbsenceRequestItem[];
+      };
+    }
+  | {
+      ok: false;
+      error: string;
+    };
 
 type AdminSessionDTO = {
   userId: string;
@@ -92,7 +94,6 @@ type AdminSessionDTO = {
   companyLogoUrl: string | null;
   primaryColor: string | null;
 };
-
 
 function isAdminSessionDTO(v: unknown): v is AdminSessionDTO {
   return (
@@ -161,26 +162,26 @@ function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
   const userRaw = v["user"];
   const decidedByRaw = v["decidedBy"];
 
-if (
-  !id ||
-  !startDate ||
-  !endDate ||
-  !isAbsenceType(type) ||
-  !isAbsenceDayPortion(dayPortion) ||
-  !isAbsenceCompensation(compensation) ||
-  typeof paidVacationUnits !== "number" ||
-  !Number.isFinite(paidVacationUnits) ||
-  typeof unpaidVacationUnits !== "number" ||
-  !Number.isFinite(unpaidVacationUnits) ||
-  typeof autoUnpaidBecauseNoBalance !== "boolean" ||
-  typeof compensationLockedBySystem !== "boolean" ||
-  !isRequestStatus(status) ||
-  noteEmployee === null ||
-  !createdAt ||
-  !updatedAt
-) {
-  return false;
-}
+  if (
+    !id ||
+    !startDate ||
+    !endDate ||
+    !isAbsenceType(type) ||
+    !isAbsenceDayPortion(dayPortion) ||
+    !isAbsenceCompensation(compensation) ||
+    typeof paidVacationUnits !== "number" ||
+    !Number.isFinite(paidVacationUnits) ||
+    typeof unpaidVacationUnits !== "number" ||
+    !Number.isFinite(unpaidVacationUnits) ||
+    typeof autoUnpaidBecauseNoBalance !== "boolean" ||
+    typeof compensationLockedBySystem !== "boolean" ||
+    !isRequestStatus(status) ||
+    noteEmployee === null ||
+    !createdAt ||
+    !updatedAt
+  ) {
+    return false;
+  }
 
   if (!isRecord(userRaw)) return false;
   const userId = getStringField(userRaw, "id");
@@ -515,34 +516,28 @@ function statusLabel(status: RequestStatus): string {
   return "Abgelehnt";
 }
 
-function statusStyle(status: RequestStatus): React.CSSProperties {
+function statusClassName(status: RequestStatus): string {
   if (status === "PENDING") {
-    return {
-      background: "rgba(255, 196, 0, 0.12)",
-      border: "1px solid rgba(255, 196, 0, 0.28)",
-      color: "rgba(255, 220, 120, 0.98)",
-    };
+    return "admin-workflow-status-chip admin-workflow-status-chip-pending";
   }
 
   if (status === "APPROVED") {
-    return {
-      background: "rgba(184, 207, 58, 0.12)",
-      border: "1px solid rgba(184, 207, 58, 0.28)",
-      color: "rgba(210, 230, 120, 0.98)",
-    };
+    return "admin-workflow-status-chip admin-workflow-status-chip-approved";
   }
 
-  return {
-    background: "rgba(224, 75, 69, 0.12)",
-    border: "1px solid rgba(224, 75, 69, 0.28)",
-    color: "rgba(255, 150, 145, 0.98)",
-  };
+  return "admin-workflow-status-chip admin-workflow-status-chip-rejected";
 }
 
-function cardBorder(status: RequestStatus): string {
-  if (status === "PENDING") return "rgba(255, 196, 0, 0.24)";
-  if (status === "APPROVED") return "rgba(184, 207, 58, 0.24)";
-  return "rgba(224, 75, 69, 0.24)";
+function requestCardClassName(status: RequestStatus): string {
+  if (status === "PENDING") {
+    return "card admin-workflow-card admin-workflow-card-pending";
+  }
+
+  if (status === "APPROVED") {
+    return "card admin-workflow-card admin-workflow-card-approved";
+  }
+
+  return "card admin-workflow-card admin-workflow-card-rejected";
 }
 
 function sectionTitle(label: string, count: number): string {
@@ -691,57 +686,57 @@ export default function UrlaubsantraegePage() {
     }
   }
 
-async function loadRemainingVacationKpi() {
-  if (!session || session.role !== "ADMIN") return;
+  async function loadRemainingVacationKpi() {
+    if (!session || session.role !== "ADMIN") return;
 
-  setResturlaubLoading(true);
-  setResturlaubError(null);
+    setResturlaubLoading(true);
+    setResturlaubError(null);
 
-  try {
-    const params = new URLSearchParams();
-    params.set("month", `${selectedResturlaubYear}-${selectedResturlaubMonth}`);
+    try {
+      const params = new URLSearchParams();
+      params.set("month", `${selectedResturlaubYear}-${selectedResturlaubMonth}`);
 
-    const response = await fetch(`/api/overview?${params.toString()}`, {
-      method: "GET",
-      credentials: "include",
-      cache: "no-store",
-    });
+      const response = await fetch(`/api/overview?${params.toString()}`, {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
 
-    const json: unknown = await response.json().catch(() => ({}));
-    const parsed = parseOverviewResponse(json);
+      const json: unknown = await response.json().catch(() => ({}));
+      const parsed = parseOverviewResponse(json);
 
-    if (!response.ok || "error" in parsed) {
+      if (!response.ok || "error" in parsed) {
+        setRemainingVacationDays(0);
+        setResturlaubError("Resturlaub konnte nicht geladen werden.");
+        return;
+      }
+
+      if (selectedResturlaubUserId) {
+        const selectedUser = parsed.byUser.find(
+          (user) => user.userId === selectedResturlaubUserId
+        );
+
+        setAccruedVacationDays(selectedUser?.accruedVacationDays ?? 0);
+        setUsedVacationDaysYtd(selectedUser?.usedVacationDaysYtd ?? 0);
+        setReservedPaidVacationDays(selectedUser?.reservedPaidVacationDays ?? 0);
+        setRemainingVacationDays(selectedUser?.remainingVacationDays ?? 0);
+        return;
+      }
+
+      setAccruedVacationDays(parsed.totals.accruedVacationDays);
+      setUsedVacationDaysYtd(parsed.totals.usedVacationDaysYtd);
+      setReservedPaidVacationDays(parsed.totals.reservedPaidVacationDays);
+      setRemainingVacationDays(parsed.totals.remainingVacationDays);
+    } catch {
+      setAccruedVacationDays(0);
+      setUsedVacationDaysYtd(0);
+      setReservedPaidVacationDays(0);
       setRemainingVacationDays(0);
-      setResturlaubError("Resturlaub konnte nicht geladen werden.");
-      return;
+      setResturlaubError("Netzwerkfehler beim Laden des Resturlaubs.");
+    } finally {
+      setResturlaubLoading(false);
     }
-
-    if (selectedResturlaubUserId) {
-      const selectedUser = parsed.byUser.find(
-        (user) => user.userId === selectedResturlaubUserId
-      );
-
-      setAccruedVacationDays(selectedUser?.accruedVacationDays ?? 0);
-      setUsedVacationDaysYtd(selectedUser?.usedVacationDaysYtd ?? 0);
-      setReservedPaidVacationDays(selectedUser?.reservedPaidVacationDays ?? 0);
-      setRemainingVacationDays(selectedUser?.remainingVacationDays ?? 0);
-      return;
-    }
-
-    setAccruedVacationDays(parsed.totals.accruedVacationDays);
-    setUsedVacationDaysYtd(parsed.totals.usedVacationDaysYtd);
-    setReservedPaidVacationDays(parsed.totals.reservedPaidVacationDays);
-    setRemainingVacationDays(parsed.totals.remainingVacationDays);
-  } catch {
-    setAccruedVacationDays(0);
-    setUsedVacationDaysYtd(0);
-    setReservedPaidVacationDays(0);
-    setRemainingVacationDays(0);
-    setResturlaubError("Netzwerkfehler beim Laden des Resturlaubs.");
-  } finally {
-    setResturlaubLoading(false);
   }
-}
 
   useEffect(() => {
   let alive = true;
@@ -1149,12 +1144,7 @@ useEffect(() => {
     return (
       <div
         key={item.id}
-        className="card"
-        style={{
-          padding: 16,
-          borderColor: cardBorder(item.status),
-          background: "rgba(0,0,0,0.20)",
-        }}
+        className={requestCardClassName(item.status)}
       >
         <div
           style={{
@@ -1175,24 +1165,13 @@ useEffect(() => {
             </div>
 
             {item.type === "VACATION" ? (
-              <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13, lineHeight: 1.45 }}>
+              <div className="admin-workflow-breakdown-text">
                 {compensationBreakdownLabel(item) ?? compensationSummaryLabel(item)}
               </div>
             ) : null}            
 
             {item.type === "VACATION" && item.autoUnpaidBecauseNoBalance ? (
-              <div
-                style={{
-                  marginTop: 8,
-                  padding: "8px 10px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255, 184, 77, 0.28)",
-                  background: "rgba(255, 184, 77, 0.10)",
-                  color: "rgba(255,255,255,0.92)",
-                  fontSize: 12,
-                  lineHeight: 1.4,
-                }}
-              >
+              <div className="admin-workflow-mixed-hint">
                 {mixedCompensationHint(item)
                   ? `Für diesen Antrag ist aktuell eine gemischte Vergütung vorgesehen. ${mixedCompensationHint(item)}`
                   : "Für diesen Antrag ist aktuell unbezahler Urlaub vorgesehen, weil nicht genug bezahlter Urlaub verfügbar war."}
@@ -1200,44 +1179,16 @@ useEffect(() => {
             ) : null}
 
             <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span
-                style={{
-                  ...statusStyle(item.status),
-                  borderRadius: 999,
-                  padding: "5px 10px",
-                  fontSize: 12,
-                  fontWeight: 800,
-                }}
-              >
+              <span className={statusClassName(item.status)}>
                 {statusLabel(item.status)}
               </span>
 
-              <span
-                style={{
-                  borderRadius: 999,
-                  padding: "5px 10px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  background: "rgba(255,255,255,0.04)",
-                  color: "var(--muted)",
-                }}
-              >
+              <span className="admin-workflow-meta-chip">
                 Erstellt: {formatDateTimeDE(item.createdAt)}
               </span>
 
               {item.decidedAt ? (
-                <span
-                  style={{
-                    borderRadius: 999,
-                    padding: "5px 10px",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    background: "rgba(255,255,255,0.04)",
-                    color: "var(--muted)",
-                  }}
-                >
+                <span className="admin-workflow-meta-chip">
                   Entscheidung: {formatDateTimeDE(item.decidedAt)}
                 </span>
               ) : null}
@@ -1252,7 +1203,7 @@ useEffect(() => {
             {isEditing ? (
               <div className="modal-grid-2">
                 <div className="modal-field">
-                  <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>Start</div>
+                  <div className="label admin-workflow-sub-label">Start</div>
                   <input
                     className="input modal-date-input"
                     type="date"
@@ -1262,7 +1213,7 @@ useEffect(() => {
                 </div>
 
                 <div className="modal-field">
-                  <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>Ende</div>
+                  <div className="label admin-workflow-sub-label">Ende</div>
                   <input
                     className="input modal-date-input"
                     type="date"
@@ -1272,7 +1223,7 @@ useEffect(() => {
                 </div>
               </div>
             ) : (
-              <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+              <div className="input admin-workflow-readonly-input">
                 {item.dayPortion === "HALF_DAY"
                   ? `${formatDateDE(item.startDate)} (halber Urlaubstag)`
                   : rangeLabel(item.startDate, item.endDate)}
@@ -1302,7 +1253,7 @@ useEffect(() => {
                   <option value="SICK">Krankheit</option>
                 </select>
               ) : (
-                <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                <div className="input admin-workflow-readonly-input">
                   {item.type === "VACATION" ? "Urlaub" : "Krankheit"}
                 </div>
               )}
@@ -1329,7 +1280,7 @@ useEffect(() => {
                   <option value="HALF_DAY">Halber Tag</option>
                 </select>
               ) : (
-                <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                <div className="input admin-workflow-readonly-input">
                   {item.dayPortion === "HALF_DAY" ? "Halber Tag" : "Ganzer Tag"}
                 </div>
               )}
@@ -1355,28 +1306,13 @@ useEffect(() => {
                   <option value="UNPAID">Unbezahlt</option>
                 </select>
               ) : (
-                <div
-                  className="input"
-                  style={{
-                    display: "block",
-                    opacity: 0.9,
-                    paddingTop: 12,
-                    paddingBottom: 12,
-                  }}
-                >
+                <div className="input">
                   <div>
                     {formatVacationDays(totalRequestedVacationDays(item))} {totalRequestedVacationDays(item) === 1 ? "Tag" : "Tage"} gesamt
                   </div>
 
                   {compensationBreakdownLabel(item) ? (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: 12,
-                        color: "var(--muted)",
-                        lineHeight: 1.4,
-                      }}
-                    >
+                    <div className="admin-workflow-breakdown-text">
                       {compensationBreakdownLabel(item)}
                     </div>
                   ) : null}
@@ -1388,15 +1324,9 @@ useEffect(() => {
           <div>
             <div className="label">Mitarbeiter-Notiz</div>
             <div
-              className="input"
-              style={{
-                minHeight: 90,
-                display: "block",
-                paddingTop: 12,
-                whiteSpace: "pre-wrap",
-                lineHeight: 1.45,
-                opacity: item.noteEmployee.trim() ? 1 : 0.7,
-              }}
+              className={`input admin-workflow-note-input${
+                item.noteEmployee.trim() ? "" : " admin-workflow-note-input-empty"
+              }`}
             >
               {item.noteEmployee.trim() || "Keine Notiz vorhanden."}
             </div>
@@ -1404,7 +1334,7 @@ useEffect(() => {
 
           <div>
             <div className="label">Bearbeitet von</div>
-            <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
+            <div className="input admin-workflow-readonly-input-muted">
               {item.decidedBy ? item.decidedBy.fullName : "Noch nicht entschieden"}
             </div>
           </div>
@@ -1575,8 +1505,8 @@ useEffect(() => {
   if (!sessionChecked) {
     return (
       <AppShell activeLabel="#wirkönnendas">
-        <div className="card" style={{ padding: 18 }}>
-          <div style={{ color: "var(--muted)" }}>Lädt Urlaubsanträge...</div>
+        <div className="card admin-workflow-loading-card">
+          <div className="admin-workflow-filter-text">Lädt Urlaubsanträge...</div>
         </div>
       </AppShell>
     );
@@ -1625,19 +1555,9 @@ useEffect(() => {
               }}
             >
               <select
-                className="input"
+                className="input admin-workflow-filter-input"
                 value={selectedResturlaubUserId}
                 onChange={(e) => setSelectedResturlaubUserId(e.target.value)}
-                style={{
-                  width: "100%",
-                  minWidth: 0,
-                  boxSizing: "border-box",
-                  display: "block",
-                  maxWidth: "100%",
-                  borderRadius: 14,
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                }}
               >
                 <option value="">Alle Mitarbeiter</option>
                 {users.map((user) => (
@@ -1648,19 +1568,9 @@ useEffect(() => {
               </select>
 
               <select
-                className="input"
+                className="input admin-workflow-filter-input"
                 value={selectedResturlaubYear}
                 onChange={(e) => setSelectedResturlaubYear(e.target.value)}
-                style={{
-                  width: "100%",
-                  minWidth: 0,
-                  boxSizing: "border-box",
-                  display: "block",
-                  maxWidth: "100%",
-                  borderRadius: 14,
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                }}
               >
                 {resturlaubYearOptions.map((year) => (
                   <option key={year} value={year}>
@@ -1670,19 +1580,9 @@ useEffect(() => {
               </select>
 
               <select
-                className="input"
+                className="input admin-workflow-filter-input"
                 value={selectedResturlaubMonth}
                 onChange={(e) => setSelectedResturlaubMonth(e.target.value)}
-                style={{
-                  width: "100%",
-                  minWidth: 0,
-                  boxSizing: "border-box",
-                  display: "block",
-                  maxWidth: "100%",
-                  borderRadius: 14,
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                }}
               >
                 {resturlaubMonthOptions.map((month) => (
                   <option key={month.value} value={month.value}>
@@ -1693,13 +1593,13 @@ useEffect(() => {
             </div>
 
             {resturlaubError ? (
-              <div style={{ marginTop: 8, color: "rgba(224, 75, 69, 0.95)", fontSize: 12 }}>
+              <div className="admin-workflow-error-text" style={{ marginTop: 8, fontSize: 12 }}>
                 {resturlaubError}
               </div>
             ) : null}
           </div>
 
-          <div style={{ color: "var(--muted-2)", fontSize: 22, alignSelf: "flex-start" }}>🏖️</div>
+          <div className="admin-workflow-kpi-icon">🏖️</div>
         </div>
 
         <div className="card kpi">
@@ -1707,7 +1607,7 @@ useEffect(() => {
             <div className="small">Offene Urlaubsanträge</div>
             <div className="big">{pendingItems.length}</div>
           </div>
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌴</div>
+          <div className="admin-workflow-kpi-icon">🌴</div>
         </div>
 
         <div className="card kpi">
@@ -1715,7 +1615,7 @@ useEffect(() => {
             <div className="small">Genehmigt</div>
             <div className="big">{approvedItems.length}</div>
           </div>
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>✅</div>
+          <div className="admin-workflow-kpi-icon">✅</div>
         </div>
 
         <div className="card kpi">
@@ -1723,44 +1623,26 @@ useEffect(() => {
             <div className="small">Abgelehnt</div>
             <div className="big">{rejectedItems.length}</div>
           </div>
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>⛔</div>
+          <div className="admin-workflow-kpi-icon">⛔</div>
         </div>
       </div>
 
-      <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
-        <div
-          className="section-title"
-          style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}
-        >
-          <span style={{ color: "var(--accent)" }}>🌴</span>
+      <div className="card card-olive admin-workflow-filter-shell">
+        <div className="section-title admin-workflow-filter-title">
+          <span className="admin-workflow-filter-icon">🌴</span>
           Urlaubsanträge
         </div>
 
-        <div style={{ color: "var(--muted)", fontSize: 14 }}>
+        <div className="admin-workflow-filter-text">
           Hier siehst du alle Urlaubsanträge deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.
         </div>
-        <div
-          className="mobile-2col"
-          style={{
-            marginTop: 16,
-          }}
-        >
-          <div style={{ minWidth: 0, width: "100%" }}>
+        <div className="admin-workflow-filter-grid">
+          <div className="admin-workflow-filter-field">
             <div className="label">Mitarbeiter</div>
             <select
-              className="input"
+              className="input admin-workflow-filter-input"
               value={selectedRequestUserId}
               onChange={(e) => setSelectedRequestUserId(e.target.value)}
-              style={{
-                width: "100%",
-                minWidth: 0,
-                boxSizing: "border-box",
-                display: "block",
-                maxWidth: "100%",
-                borderRadius: 18,
-                appearance: "none",
-                WebkitAppearance: "none",
-              }}
             >
               <option value="">Alle Mitarbeiter</option>
               {users.map((user) => (
@@ -1771,72 +1653,38 @@ useEffect(() => {
             </select>
           </div>
 
-          <div style={{ minWidth: 0, width: "100%", overflow: "hidden" }}>
+          <div className="admin-workflow-filter-field">
             <div className="label">Monat</div>
             <input
-              className="input"
+              className="input admin-workflow-filter-input"
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              style={{
-                width: "100%",
-                minWidth: 0,
-                boxSizing: "border-box",
-                display: "block",
-                maxWidth: "100%",
-                borderRadius: 18,
-                appearance: "none",
-                WebkitAppearance: "none",
-                overflow: "hidden",
-              }}
             />
           </div>
         </div>
 
         {error ? (
-          <div
-            className="card"
-            style={{
-              padding: 12,
-              marginTop: 14,
-              borderColor: "rgba(224, 75, 69, 0.35)",
-            }}
-          >
-            <span style={{ color: "rgba(224, 75, 69, 0.95)", fontWeight: 700 }}>{error}</span>
+          <div className="card admin-workflow-error-card">
+            <span className="admin-workflow-error-text">{error}</span>
           </div>
         ) : null}
       </div>
 
       {loading ? (
-        <div className="card" style={{ padding: 18 }}>
+        <div className="card admin-workflow-loading-card">
           Lädt Urlaubsanträge...
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <details
-            open
-            style={{
-              borderRadius: 16,
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(0,0,0,0.16)",
-              overflow: "hidden",
-            }}
-          >
-            <summary
-              style={{
-                cursor: "pointer",
-                listStyle: "none",
-                padding: "14px 16px",
-                fontWeight: 900,
-                userSelect: "none",
-              }}
-            >
+        <div className="admin-workflow-shell">
+          <details open className="admin-workflow-section">
+            <summary className="admin-workflow-section-summary">
               {sectionTitle("Offen", pendingItems.length)}
             </summary>
 
-            <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
+            <div className="admin-workflow-section-content">
               {pendingItems.length === 0 ? (
-                <div className="card" style={{ padding: 14, opacity: 0.85 }}>
+                <div className="card admin-workflow-empty-card">
                   Keine offenen Urlaubsanträge für diesen Filter.
                 </div>
               ) : (
@@ -1845,30 +1693,15 @@ useEffect(() => {
             </div>
           </details>
 
-          <details
-            style={{
-              borderRadius: 16,
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(0,0,0,0.16)",
-              overflow: "hidden",
-            }}
-          >
-            <summary
-              style={{
-                cursor: "pointer",
-                listStyle: "none",
-                padding: "14px 16px",
-                fontWeight: 900,
-                userSelect: "none",
-              }}
-            >
+          <details className="admin-workflow-section">
+            <summary className="admin-workflow-section-summary">
               {sectionTitle(`Genehmigt – ${selectedRequestUserLabel}`, approvedItems.length)}
             </summary>
 
-            <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
+            <div className="admin-workflow-section-content">
               {approvedItems.length === 0 ? (
-                <div className="card" style={{ padding: 14, opacity: 0.85 }}>
-                  Keine genehmigten Urlaubsanträge für diesen Filter.
+                <div className="card admin-workflow-empty-card">
+                  Keine genehmigten Urlaubsanträge für diesen Filter.                
                 </div>
               ) : (
                 approvedItems.map(renderRequestCard)
@@ -1876,29 +1709,14 @@ useEffect(() => {
             </div>
           </details>
 
-          <details
-            style={{
-              borderRadius: 16,
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(0,0,0,0.16)",
-              overflow: "hidden",
-            }}
-          >
-            <summary
-              style={{
-                cursor: "pointer",
-                listStyle: "none",
-                padding: "14px 16px",
-                fontWeight: 900,
-                userSelect: "none",
-              }}
-            >
+          <details className="admin-workflow-section">
+            <summary className="admin-workflow-section-summary">
               {sectionTitle(`Abgelehnt – ${selectedRequestUserLabel}`, rejectedItems.length)}
             </summary>
 
-            <div style={{ padding: "0 12px 12px 12px", display: "grid", gap: 12 }}>
+            <div className="admin-workflow-section-content">
               {rejectedItems.length === 0 ? (
-                <div className="card" style={{ padding: 14, opacity: 0.85 }}>
+                <div className="card admin-workflow-empty-card">
                   Keine abgelehnten Urlaubsanträge für diesen Filter.
                 </div>
               ) : (
