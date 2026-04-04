@@ -1,5 +1,4 @@
 import LegalBackButton from "@/components/LegalBackButton";
-import LegalBackButton from "@/components/LegalBackButton";
 import {
   getTenantThemeStyle,
   resolveTenantTheme,
