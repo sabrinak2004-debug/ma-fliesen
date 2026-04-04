@@ -2370,6 +2370,7 @@ li {
   line-height: 1.1;
   font-weight: 900;
   letter-spacing: -0.4px;
+  color: var(--text);
 }
 
 .legal-page-updated {
@@ -2388,12 +2389,14 @@ li {
   margin: 24px 0 10px;
   font-size: 20px;
   line-height: 1.25;
+  color: var(--text);
 }
 
 .legal-page-content h3 {
   margin: 18px 0 8px;
   font-size: 16px;
   line-height: 1.3;
+  color: var(--text);
 }
 
 .legal-page-content p {
