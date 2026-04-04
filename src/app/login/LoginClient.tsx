@@ -137,14 +137,18 @@ export default function LoginClient({
     companySubdomainOverride ?? companySubdomain ?? ""
   );
 
-  const legalBasePath = companySubdomain
-    ? `/${companySubdomain}`
-    : companySubdomainOverride
-      ? `/${companySubdomainOverride}`
-      : "";
+  const effectiveCompanySubdomain =
+    companySubdomain || companySubdomainOverride || "";
 
-  const privacyHref = `${legalBasePath}/datenschutz`;
-  const termsHref = `${legalBasePath}/nutzungsbedingungen`;
+  const privacyHref = effectiveCompanySubdomain
+    ? `/datenschutz?company=${encodeURIComponent(effectiveCompanySubdomain)}`
+    : "/datenschutz";
+
+  const termsHref = effectiveCompanySubdomain
+    ? `/nutzungsbedingungen?company=${encodeURIComponent(
+        effectiveCompanySubdomain
+      )}`
+    : "/nutzungsbedingungen";
 
   const reqIdRef = useRef(0);
 

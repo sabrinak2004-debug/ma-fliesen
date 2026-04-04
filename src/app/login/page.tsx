@@ -22,7 +22,7 @@ export default async function LoginPage() {
         subtitle: "Digitale Zeiterfassung & Einsatzplanung",
         badgeText: "Portal",
         logoUrl: null,
-        primaryColor: "#b8cf3a",
+        primaryColor: "#3f3b3d",
         companySubdomain: "",
       }}
     />

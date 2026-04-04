@@ -14,7 +14,7 @@ export default function RootLayout({
   return (
     <html lang="de">
       <head>
-        <meta name="theme-color" content="#0b0f0c" />
+        <meta name="theme-color" content="#f4f2ee" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Mitarbeiterportal" />
       </head>

@@ -1,10 +1,48 @@
 import LegalBackButton from "@/components/LegalBackButton";
+import {
+  getTenantThemeStyle,
+  normalizeTenantSubdomain,
+  resolveTenantTheme,
+} from "@/lib/tenantBranding";
 
-export default function DatenschutzPage() {
+type DatenschutzPageProps = {
+  searchParams: Promise<{
+    company?: string;
+  }>;
+};
+
+export default async function DatenschutzPage({
+  searchParams,
+}: DatenschutzPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const companySubdomain = normalizeTenantSubdomain(
+    resolvedSearchParams.company ?? ""
+  );
+
+  const theme = companySubdomain
+    ? resolveTenantTheme(companySubdomain)
+    : resolveTenantTheme("beispielbetrieb");
+
+  const fallbackHref = companySubdomain
+    ? `/${companySubdomain}/login`
+    : "/";
+
   return (
-    <div className="page-section">
-      <div className="container-app">
-        <div className="card card-olive legal-page-card">
+    <div
+      style={{
+        ...getTenantThemeStyle(theme),
+        minHeight: "100dvh",
+        backgroundColor: "var(--bg)",
+        backgroundImage:
+          "radial-gradient(1200px 600px at 10% 10%, var(--accent-soft), transparent 55%), radial-gradient(900px 600px at 80% 20%, rgba(var(--accent-rgb), 0.06), transparent 60%)",
+        backgroundRepeat: "no-repeat, no-repeat",
+        backgroundSize: "1200px 600px, 900px 600px",
+        backgroundPosition: "0 0, 100% 0",
+      }}
+    >
+      <div className="page-section">
+        <div className="container-app">
+          <div className="card card-olive legal-page-card">
           <h1 className="legal-page-title">Datenschutzerklärung</h1>
           <div className="legal-page-updated">
             Letzte Aktualisierung: [Datum einfügen]
@@ -152,7 +190,8 @@ export default function DatenschutzPage() {
           </div>
 
           <div className="legal-page-actions">
-            <LegalBackButton fallbackHref="/" label="Zurück" />
+            <LegalBackButton fallbackHref={fallbackHref} label="Zurück" />
+          </div>
           </div>
         </div>
       </div>

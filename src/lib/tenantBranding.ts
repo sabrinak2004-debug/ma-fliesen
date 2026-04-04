@@ -1,5 +1,7 @@
-export const DEFAULT_THEME_COLOR = "#0b0f0c";
-export const DEFAULT_BRAND_ACCENT = "#b8cf3a";
+import type React from "react";
+
+export const DEFAULT_THEME_COLOR = "#f4f2ee";
+export const DEFAULT_BRAND_ACCENT = "#3f3b3d";
 export const DEFAULT_APP_NAME = "Mitarbeiterportal";
 export const DEFAULT_APP_SHORT_NAME = "Portal";
 export const DEFAULT_APPLE_TOUCH_ICON = "/image_2.jpeg";
@@ -68,42 +70,42 @@ type TenantThemeBase = {
 };
 
 const DEFAULT_TENANT_THEME: TenantTheme = buildThemeFromBase({
-  bg: "#0b0f0c",
-  panel: "#111613",
-  panel2: "#0f1411",
-  surface: "rgba(255, 255, 255, 0.03)",
-  surfaceStrong: "rgba(255, 255, 255, 0.06)",
-  inputBg: "rgba(0, 0, 0, 0.25)",
-  overlayBg: "rgba(17, 22, 19, 0.82)",
-  border: "rgba(255, 255, 255, 0.08)",
-  border2: "rgba(206, 231, 72, 0.25)",
-  text: "rgba(255, 255, 255, 0.92)",
-  muted: "rgba(255, 255, 255, 0.62)",
-  muted2: "rgba(255, 255, 255, 0.45)",
-  textSoft: "rgba(255, 255, 255, 0.84)",
-  textFaint: "rgba(255, 255, 255, 0.72)",
+  bg: "#f4f2ee",
+  panel: "#ffffff",
+  panel2: "#ebe6df",
+  surface: "rgba(0, 0, 0, 0.04)",
+  surfaceStrong: "rgba(0, 0, 0, 0.06)",
+  inputBg: "rgba(0, 0, 0, 0.06)",
+  overlayBg: "rgba(255, 255, 255, 0.96)",
+  border: "rgba(63, 59, 61, 0.14)",
+  border2: "rgba(63, 59, 61, 0.18)",
+  text: "#2f2b2c",
+  muted: "#6f6963",
+  muted2: "#918a83",
+  textSoft: "#4c4748",
+  textFaint: "#6a6460",
   accent: DEFAULT_BRAND_ACCENT,
-  accent2: "#9db02f",
-  onAccent: "#111613",
-  sidebarStripe: "#b8cf3a",
-  badgeBg: "#b8cf3a",
-  badgeText: "#111613",
-  rolePillBg: "rgba(184, 207, 58, 0.14)",
-  todayBg: "rgba(184, 207, 58, 0.22)",
-  todayBorder: "rgba(184, 207, 58, 0.55)",
-  workBg: "rgba(184, 207, 58, 0.10)",
-  workBorder: "rgba(184, 207, 58, 0.65)",
-  vacationBg: "rgba(90, 167, 255, 0.14)",
-  vacationBorder: "rgba(90, 167, 255, 0.65)",
-  sickBg: "rgba(224, 75, 69, 0.18)",
-  sickBorder: "rgba(224, 75, 69, 0.65)",
-  holidayBg: "rgba(255, 196, 0, 0.12)",
-  holidayBorder: "rgba(255, 196, 0, 0.65)",
-  holidayText: "rgba(255, 196, 0, 0.95)",
-  floatingButtonBg: "rgba(184, 207, 58, 0.95)",
-  floatingButtonText: "rgba(0,0,0,0.9)",
-  neutralCardBg: "rgba(255,255,255,0.02)",
-  neutralCardBgStrong: "rgba(255,255,255,0.04)",
+  accent2: "#575152",
+  onAccent: "#ffffff",
+  sidebarStripe: "#3f3b3d",
+  badgeBg: "#3f3b3d",
+  badgeText: "#ffffff",
+  rolePillBg: "rgba(63, 59, 61, 0.14)",
+  todayBg: "rgba(63, 59, 61, 0.12)",
+  todayBorder: "rgba(63, 59, 61, 0.32)",
+  workBg: "rgba(63, 59, 61, 0.10)",
+  workBorder: "rgba(63, 59, 61, 0.34)",
+  vacationBg: "rgba(200, 193, 184, 0.32)",
+  vacationBorder: "rgba(200, 193, 184, 0.62)",
+  sickBg: "rgba(87, 81, 82, 0.14)",
+  sickBorder: "rgba(87, 81, 82, 0.34)",
+  holidayBg: "rgba(200, 193, 184, 0.24)",
+  holidayBorder: "rgba(200, 193, 184, 0.52)",
+  holidayText: "#575152",
+  floatingButtonBg: "#3f3b3d",
+  floatingButtonText: "#ffffff",
+  neutralCardBg: "rgba(200, 193, 184, 0.14)",
+  neutralCardBgStrong: "rgba(200, 193, 184, 0.24)",
 });
 
 const TENANT_THEMES: Record<string, TenantTheme> = {
@@ -503,6 +505,78 @@ function ensureLinkTag(
   const element = create();
   document.head.appendChild(element);
   return element;
+}
+
+export function getTenantThemeStyle(
+  theme: TenantTheme
+): React.CSSProperties {
+  const rgb = hexToRgb(theme.accent);
+
+  const style: React.CSSProperties & Record<string, string> = {
+    "--bg": theme.bg,
+    "--panel": theme.panel,
+    "--panel-2": theme.panel2,
+    "--surface": theme.surface,
+    "--surface-strong": theme.surfaceStrong,
+    "--input-bg": theme.inputBg,
+    "--overlay-bg": theme.overlayBg,
+    "--border": theme.border,
+    "--border-2": theme.border2,
+    "--text": theme.text,
+    "--muted": theme.muted,
+    "--muted-2": theme.muted2,
+    "--text-soft": theme.textSoft,
+    "--text-faint": theme.textFaint,
+    "--accent": theme.accent,
+    "--accent-2": theme.accent2,
+    "--accent-soft": theme.accentSoft,
+    "--accent-border": theme.accentBorder,
+    "--brand-panel-soft": theme.panelSoft,
+    "--brand-panel-strong": theme.panelStrong,
+    "--brand-on-accent": theme.onAccent,
+    "--brand-sidebar-stripe": theme.sidebarStripe,
+    "--brand-badge-bg": theme.badgeBg,
+    "--brand-badge-text": theme.badgeText,
+    "--brand-role-pill-bg": theme.rolePillBg,
+    "--brand-calendar-today-bg": theme.todayBg,
+    "--brand-calendar-today-border": theme.todayBorder,
+    "--brand-work-bg": theme.workBg,
+    "--brand-work-border": theme.workBorder,
+    "--brand-vacation-bg": theme.vacationBg,
+    "--brand-vacation-border": theme.vacationBorder,
+    "--brand-sick-bg": theme.sickBg,
+    "--brand-sick-border": theme.sickBorder,
+    "--brand-holiday-bg": theme.holidayBg,
+    "--brand-holiday-border": theme.holidayBorder,
+    "--brand-holiday-text": theme.holidayText,
+    "--brand-floating-btn-bg": theme.floatingButtonBg,
+    "--brand-floating-btn-text": theme.floatingButtonText,
+    "--brand-neutral-card-bg": theme.neutralCardBg,
+    "--brand-neutral-card-bg-strong": theme.neutralCardBgStrong,
+    "--success": theme.success,
+    "--success-soft": theme.successSoft,
+    "--success-border": theme.successBorder,
+    "--success-text": theme.successText,
+    "--info": theme.info,
+    "--info-soft": theme.infoSoft,
+    "--info-border": theme.infoBorder,
+    "--info-text": theme.infoText,
+    "--warning": theme.warning,
+    "--warning-soft": theme.warningSoft,
+    "--warning-border": theme.warningBorder,
+    "--warning-text": theme.warningText,
+    "--danger": theme.danger,
+    "--danger-2": theme.danger2,
+    "--danger-soft": theme.dangerSoft,
+    "--danger-border": theme.dangerBorder,
+    "--danger-text": theme.dangerText,
+  };
+
+  if (rgb) {
+    style["--accent-rgb"] = `${rgb.r}, ${rgb.g}, ${rgb.b}`;
+  }
+
+  return style;
 }
 
 export function applyTenantThemeToDocument(theme: TenantTheme): void {
