@@ -91,57 +91,52 @@ export default function AdminPasswordResetPage() {
 
   return (
     <AppShell>
-      <div style={{ maxWidth: 980, margin: "0 auto", padding: "24px 16px" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Passwort-Reset</h1>
-        <div style={{ opacity: 0.75, marginBottom: 16 }}>
-          Mitarbeiter klicken „Passwort vergessen“ → hier erscheinen Anfragen. Link erzeugen & senden (z.B. WhatsApp).
+      <div className="admin-password-shell">
+        <div>
+          <h1 className="admin-password-title">Passwort-Reset</h1>
+          <div className="admin-password-subtitle">
+            Mitarbeiter klicken „Passwort vergessen“ → hier erscheinen Anfragen. Link erzeugen & senden (z.B. WhatsApp).
+          </div>
         </div>
 
         {err ? (
-          <div style={{ padding: 12, borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", marginBottom: 16 }}>
-            {err}
+          <div
+            className="tenant-status-card tenant-status-card-danger"
+            style={{ padding: 12, marginBottom: 16 }}
+          >
+            <div className="tenant-status-text-danger">{err}</div>
           </div>
         ) : null}
 
         {loading ? (
           <div>lädt…</div>
         ) : (
-          <div style={{ border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, overflow: "hidden" }}>
+          <div className="admin-password-list">
             {rows.length === 0 ? (
-              <div style={{ padding: 14, opacity: 0.8 }}>Keine offenen Anfragen.</div>
+              <div className="admin-password-empty">Keine offenen Anfragen.</div>
             ) : (
-              rows.map((r, idx) => (
+              rows.map((r) => (
                 <div
                   key={r.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 12,
-                    padding: "12px 14px",
-                    borderTop: idx === 0 ? "none" : "1px solid rgba(255,255,255,0.1)",
-                    alignItems: "center",
-                  }}
+                  className="admin-password-row"
                 >
                   <div>
-                    <div style={{ fontWeight: 700 }}>{r.user.fullName}</div>
-                    <div style={{ fontSize: 12, opacity: 0.75 }}>
+                    <div className="admin-password-row-title">{r.user.fullName}</div>
+                    <div className="admin-password-row-meta">
                       Anfrage: {new Date(r.createdAt).toLocaleString("de-DE")}
                       {" • "}
                       Passwort gesetzt am:{" "}
-                      {r.user.passwordUpdatedAt ? new Date(r.user.passwordUpdatedAt).toLocaleString("de-DE") : "—"}
+                      {r.user.passwordUpdatedAt
+                        ? new Date(r.user.passwordUpdatedAt).toLocaleString("de-DE")
+                        : "—"}
                     </div>
                   </div>
 
                   <button
+                    type="button"
                     onClick={() => createResetLink(r.user.id)}
-                    style={{
-                      padding: "10px 12px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(255,255,255,0.06)",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
+                    className="tenant-action-button"
+                    style={{ whiteSpace: "nowrap" }}
                   >
                     Reset-Link erstellen
                   </button>
@@ -156,49 +151,30 @@ export default function AdminPasswordResetPage() {
           title="Reset-Link"
           onClose={() => setModalOpen(false)}
           footer={
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <div className="admin-password-modal-footer">
               <button
+                type="button"
                 onClick={copy}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(255,255,255,0.06)",
-                  cursor: "pointer",
-                }}
+                className="tenant-action-button"
               >
                 Link kopieren
               </button>
               <button
+                type="button"
                 onClick={() => setModalOpen(false)}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(255,255,255,0.06)",
-                  cursor: "pointer",
-                }}
+                className="tenant-action-link"
               >
                 Schließen
               </button>
             </div>
           }
         >
-          <div style={{ display: "grid", gap: 10 }}>
-            <div style={{ opacity: 0.8 }}>{resetInfo}</div>
-            <div
-              style={{
-                padding: 12,
-                borderRadius: 10,
-                border: "1px solid rgba(255,255,255,0.15)",
-                wordBreak: "break-all",
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                fontSize: 13,
-              }}
-            >
+          <div className="admin-password-modal-stack">
+            <div className="admin-password-modal-info">{resetInfo}</div>
+            <div className="admin-password-modal-code">
               {resetUrl}
             </div>
-            <div style={{ opacity: 0.8, fontSize: 13 }}>
+            <div className="admin-password-modal-hint">
               Hinweis: Der Link kann nur einmal verwendet werden und wird nach erfolgreicher Nutzung sofort ungültig. Ohne Nutzung läuft er spätestens zum angegebenen Zeitpunkt ab.
             </div>
           </div>
