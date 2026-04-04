@@ -569,11 +569,19 @@ export default function AufgabenPage() {
               gap: 6,
             }}
           >
-            <div style={{ fontWeight: 1000, color: "rgba(255, 120, 120, 0.98)" }}>
+            <div
+              className="tenant-status-text-danger"
+              style={{ fontWeight: 1000 }}
+            >
               Es fehlen Einträge für {missingWorkEntryAlert.count} Tag
               {missingWorkEntryAlert.count === 1 ? "" : "e"}
             </div>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.82)" }}>
+            <div
+              style={{
+                fontSize: 13,
+                color: "var(--text-soft)",
+              }}
+            >
               Fehlende Einträge bis heute – tippe hier für Details.
             </div>
           </button>
@@ -588,13 +596,13 @@ export default function AufgabenPage() {
 
         {success ? (
           <div
-            className="card"
-            style={{
-              padding: 14,
-              borderColor: "rgba(184,207,58,0.35)",
-            }}
+            className="card tenant-status-card tenant-status-card-success"
+            style={{ padding: 14 }}
           >
-            <div style={{ color: "var(--accent)", fontWeight: 900 }}>
+            <div
+              className="tenant-status-text-success"
+              style={{ fontWeight: 900 }}
+            >
               {success}
             </div>
           </div>
@@ -686,18 +694,29 @@ export default function AufgabenPage() {
             >
               <div style={{ display: "grid", gap: 6 }}>
                 <div
+                  className="tenant-status-text-danger"
                   style={{
                     fontWeight: 1000,
                     fontSize: 18,
-                    color: "rgba(255, 120, 120, 0.98)",
                   }}
                 >
                   Fehlende Einträge
                 </div>
-                <div style={{ color: "rgba(255,255,255,0.82)", lineHeight: 1.5 }}>
+                <div
+                  style={{
+                    color: "var(--text-soft)",
+                    lineHeight: 1.5,
+                  }}
+                >
                   Fehlende Einträge: {missingWorkEntryRangeText}
                 </div>
-                <div style={{ color: "var(--muted-2)", fontSize: 13, lineHeight: 1.5 }}>
+                <div
+                  style={{
+                    color: "var(--muted-2)",
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                  }}
+                >
                   Es werden nur vergangene bzw. aktuell bereits fehlende Tage angezeigt.
                   Zukünftige Tage werden hier nicht berücksichtigt.
                 </div>
@@ -715,15 +734,7 @@ export default function AufgabenPage() {
                     missingWorkEntryAlert.oldestMissingDate
                   )}`}
                   onClick={() => setShowMissingWorkEntryModal(false)}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(184,207,58,0.35)",
-                    background: "rgba(184,207,58,0.12)",
-                    color: "var(--accent)",
-                    textDecoration: "none",
-                    fontWeight: 900,
-                  }}
+                  className="tenant-action-button"
                 >
                   Zur Erfassung
                 </Link>
@@ -731,15 +742,7 @@ export default function AufgabenPage() {
                 <button
                   type="button"
                   onClick={() => setShowMissingWorkEntryModal(false)}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    background: "rgba(255,255,255,0.06)",
-                    color: "rgba(255,255,255,0.92)",
-                    cursor: "pointer",
-                    fontWeight: 900,
-                  }}
+                  className="tenant-action-link"
                 >
                   Schließen
                 </button>

@@ -2664,13 +2664,13 @@ li {
   --tenant-info-bg-soft: var(--brand-vacation-bg);
   --tenant-info-border: var(--brand-vacation-border);
 
-  --tenant-success-accent: var(--accent);
-  --tenant-success-bg-soft: var(--accent-soft);
-  --tenant-success-border: var(--accent-border);
+  --tenant-success-accent: var(--success-text);
+  --tenant-success-bg-soft: var(--success-soft);
+  --tenant-success-border: var(--success-border);
 
-  --tenant-danger-accent: var(--brand-sick-border);
-  --tenant-danger-bg-soft: var(--brand-sick-bg);
-  --tenant-danger-border: var(--brand-sick-border);
+  --tenant-danger-accent: var(--danger-text);
+  --tenant-danger-bg-soft: var(--danger-soft);
+  --tenant-danger-border: var(--danger-border);
 
   --tenant-warning-accent: var(--brand-holiday-text);
   --tenant-warning-bg-soft: var(--brand-holiday-bg);

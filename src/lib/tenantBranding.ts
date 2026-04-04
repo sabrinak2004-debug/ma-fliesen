@@ -377,11 +377,11 @@ function buildThemeFromBase(
     warningSoft: base.holidayBg ?? "rgba(255, 196, 0, 0.12)",
     warningBorder: base.holidayBorder ?? "rgba(255, 196, 0, 0.65)",
     warningText: base.holidayText ?? "rgba(255, 196, 0, 0.95)",
-    danger: "#e04b45",
+    danger: base.sickBorder ?? "#e04b45",
     danger2: "#c63b36",
     dangerSoft: base.sickBg ?? "rgba(224, 75, 69, 0.18)",
     dangerBorder: base.sickBorder ?? "rgba(224, 75, 69, 0.65)",
-    dangerText: "#e04b45",
+    dangerText: base.sickBorder ?? "#e04b45",
   };
 }
 
