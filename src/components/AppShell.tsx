@@ -13,6 +13,12 @@ import {
   TenantTheme,
 } from "@/lib/tenantBranding";
 import PushOnboarding from "@/components/PushOnboarding";
+import {
+  type AppUiLanguage,
+  getLanguageLabel,
+  normalizeAppUiLanguage,
+  translate,
+} from "@/lib/i18n";
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
@@ -22,6 +28,7 @@ type SessionData = {
   userId: string;
   fullName: string;
   role: "EMPLOYEE" | "ADMIN";
+  language: AppUiLanguage;
   companyId: string;
   companyName: string;
   companySubdomain: string;
@@ -38,6 +45,7 @@ function isSessionData(v: unknown): v is SessionData {
   const userId = v["userId"];
   const fullName = v["fullName"];
   const role = v["role"];
+  const language = v["language"];
   const companyId = v["companyId"];
   const companyName = v["companyName"];
   const companySubdomain = v["companySubdomain"];
@@ -48,6 +56,12 @@ function isSessionData(v: unknown): v is SessionData {
     typeof userId === "string" &&
     typeof fullName === "string" &&
     (role === "EMPLOYEE" || role === "ADMIN") &&
+    (language === "DE" ||
+      language === "EN" ||
+      language === "IT" ||
+      language === "TR" ||
+      language === "SQ" ||
+      language === "KU") &&
     typeof companyId === "string" &&
     typeof companyName === "string" &&
     typeof companySubdomain === "string" &&
@@ -140,7 +154,7 @@ function initialsFromName(fullName: string) {
 
 type NavItem = {
   href: string;
-  label: string;
+  labelKey: AppShellTextKey;
   icon: string;
 };
 
@@ -159,6 +173,222 @@ type AdminRequestsApiResponse = {
     status: "PENDING" | "APPROVED" | "REJECTED";
   }[];
 };
+
+type AppShellTextKey =
+  | "capture"
+  | "calendar"
+  | "overview"
+  | "tasks"
+  | "dashboard"
+  | "appointments"
+  | "weeklyPlan"
+  | "vacationRequests"
+  | "sickRequests"
+  | "correctionRequests"
+  | "passwordReset"
+  | "menuOpen"
+  | "menuClose"
+  | "close"
+  | "logout"
+  | "loading"
+  | "admin"
+  | "employee"
+  | "adminArea"
+  | "employeeArea"
+  | "openItems"
+  | "openTasksAria"
+  | "language";
+
+const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = {
+  capture: {
+    DE: "Erfassung",
+    EN: "Time Entry",
+    IT: "Rilevazione",
+    TR: "Zaman Girişi",
+    SQ: "Regjistrimi",
+    KU: "Tomarkirin",
+  },
+  calendar: {
+    DE: "Kalender",
+    EN: "Calendar",
+    IT: "Calendario",
+    TR: "Takvim",
+    SQ: "Kalendari",
+    KU: "Salname",
+  },
+  overview: {
+    DE: "Übersicht",
+    EN: "Overview",
+    IT: "Panoramica",
+    TR: "Genel Bakış",
+    SQ: "Përmbledhje",
+    KU: "Têgihiştin",
+  },
+  tasks: {
+    DE: "Aufgaben",
+    EN: "Tasks",
+    IT: "Attività",
+    TR: "Görevler",
+    SQ: "Detyrat",
+    KU: "Erk",
+  },
+  dashboard: {
+    DE: "Dashboard",
+    EN: "Dashboard",
+    IT: "Dashboard",
+    TR: "Panel",
+    SQ: "Paneli",
+    KU: "Dashboard",
+  },
+  appointments: {
+    DE: "Termine",
+    EN: "Appointments",
+    IT: "Appuntamenti",
+    TR: "Randevular",
+    SQ: "Takimet",
+    KU: "Civîn",
+  },
+  weeklyPlan: {
+    DE: "Wochenplan",
+    EN: "Weekly Plan",
+    IT: "Piano Settimanale",
+    TR: "Haftalık Plan",
+    SQ: "Plani Javor",
+    KU: "Plana Heftane",
+  },
+  vacationRequests: {
+    DE: "Urlaubsanträge",
+    EN: "Vacation Requests",
+    IT: "Richieste di Ferie",
+    TR: "İzin Talepleri",
+    SQ: "Kërkesat për Pushim",
+    KU: "Daxwazên Îzinê",
+  },
+  sickRequests: {
+    DE: "Krankheitsanträge",
+    EN: "Sick Leave Requests",
+    IT: "Richieste di Malattia",
+    TR: "Hastalık Talepleri",
+    SQ: "Kërkesat për Sëmundje",
+    KU: "Daxwazên Nexweşiyê",
+  },
+  correctionRequests: {
+    DE: "Nachtragsanträge",
+    EN: "Correction Requests",
+    IT: "Richieste di Correzione",
+    TR: "Düzeltme Talepleri",
+    SQ: "Kërkesat për Korrigjim",
+    KU: "Daxwazên Rastkirinê",
+  },
+  passwordReset: {
+    DE: "Passwort-Reset",
+    EN: "Password Reset",
+    IT: "Reimpostazione Password",
+    TR: "Şifre Sıfırlama",
+    SQ: "Rivendosja e Fjalëkalimit",
+    KU: "Nûkirina Şîfreyê",
+  },
+  menuOpen: {
+    DE: "Menü öffnen",
+    EN: "Open menu",
+    IT: "Apri menu",
+    TR: "Menüyü aç",
+    SQ: "Hap menunë",
+    KU: "Menuyê veke",
+  },
+  menuClose: {
+    DE: "Menü schließen",
+    EN: "Close menu",
+    IT: "Chiudi menu",
+    TR: "Menüyü kapat",
+    SQ: "Mbyll menunë",
+    KU: "Menuyê bigire",
+  },
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+  },
+  logout: {
+    DE: "Logout",
+    EN: "Log out",
+    IT: "Esci",
+    TR: "Çıkış yap",
+    SQ: "Dil",
+    KU: "Derkeve",
+  },
+  loading: {
+    DE: "Lade...",
+    EN: "Loading...",
+    IT: "Caricamento...",
+    TR: "Yükleniyor...",
+    SQ: "Duke u ngarkuar...",
+    KU: "Tê barkirin...",
+  },
+  admin: {
+    DE: "Admin",
+    EN: "Admin",
+    IT: "Admin",
+    TR: "Yönetici",
+    SQ: "Admin",
+    KU: "Rêvebir",
+  },
+  employee: {
+    DE: "Mitarbeiter",
+    EN: "Employee",
+    IT: "Dipendente",
+    TR: "Çalışan",
+    SQ: "Punonjës",
+    KU: "Karmend",
+  },
+  adminArea: {
+    DE: "Adminbereich",
+    EN: "Admin Area",
+    IT: "Area Admin",
+    TR: "Yönetici Alanı",
+    SQ: "Zona e Adminit",
+    KU: "Qada Rêvebirê",
+  },
+  employeeArea: {
+    DE: "Mitarbeiterbereich",
+    EN: "Employee Area",
+    IT: "Area Dipendenti",
+    TR: "Çalışan Alanı",
+    SQ: "Zona e Punonjësit",
+    KU: "Qada Karmendan",
+  },
+  openItems: {
+    DE: "Offene Elemente",
+    EN: "Open items",
+    IT: "Elementi aperti",
+    TR: "Açık öğeler",
+    SQ: "Elemente të hapura",
+    KU: "Hêmanên vekirî",
+  },
+  openTasksAria: {
+    DE: "offene Aufgaben",
+    EN: "open tasks",
+    IT: "attività aperte",
+    TR: "açık görev",
+    SQ: "detyra të hapura",
+    KU: "erkên vekirî",
+  },
+  language: {
+    DE: "Sprache",
+    EN: "Language",
+    IT: "Lingua",
+    TR: "Dil",
+    SQ: "Gjuha",
+    KU: "Ziman",
+  },
+};
+
+function tAppShell(language: AppUiLanguage, key: AppShellTextKey): string {
+  return translate(language, key, APP_SHELL_TEXTS);
+}
 
 function isAdminRequestsApiResponse(v: unknown): v is AdminRequestsApiResponse {
   if (!isRecord(v)) return false;
@@ -384,6 +614,7 @@ export default function AppShell({
   const resolvedRole: "ADMIN" | "EMPLOYEE" =
     session?.role ?? (pathnameSuggestsAdmin ? "ADMIN" : "EMPLOYEE");
   const isAdmin = resolvedRole === "ADMIN";
+  const currentLanguage = normalizeAppUiLanguage(session?.language);
 
   const brand = session ? buildBrandConfig(session) : null;
   const brandLogoSrc = brand
@@ -391,21 +622,21 @@ export default function AppShell({
     : null;
 
   const employeeNavItems: NavItem[] = [
-    { href: "/erfassung", label: "Erfassung", icon: "⊞" },
-    { href: "/kalender", label: "Kalender", icon: "🗓" },
-    { href: "/uebersicht", label: "Übersicht", icon: "▦" },
-    { href: "/aufgaben", label: "Aufgaben", icon: "📋" },
+    { href: "/erfassung", labelKey: "capture", icon: "⊞" },
+    { href: "/kalender", labelKey: "calendar", icon: "🗓" },
+    { href: "/uebersicht", labelKey: "overview", icon: "▦" },
+    { href: "/aufgaben", labelKey: "tasks", icon: "📋" },
   ];
 
   const adminNavItems: NavItem[] = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: "▦" },
-    { href: "/admin/appointments", label: "Termine", icon: "🗓" },
-    { href: "/admin/wochenplan", label: "Wochenplan", icon: "🧑‍💼" },
-    { href: "/admin/urlaubsantraege", label: "Urlaubsanträge", icon: "🌴" },
-    { href: "/admin/krankheitsantraege", label: "Krankheitsanträge", icon: "🤒" },
-    { href: "/admin/nachtragsanfragen", label: "Nachtragsanträge", icon: "🕘" },
-    { href: "/admin/tasks", label: "Aufgaben", icon: "📋" },
-    { href: "/admin/password-reset", label: "Passwort-Reset", icon: "🔐" },
+    { href: "/admin/dashboard", labelKey: "dashboard", icon: "▦" },
+    { href: "/admin/appointments", labelKey: "appointments", icon: "🗓" },
+    { href: "/admin/wochenplan", labelKey: "weeklyPlan", icon: "🧑‍💼" },
+    { href: "/admin/urlaubsantraege", labelKey: "vacationRequests", icon: "🌴" },
+    { href: "/admin/krankheitsantraege", labelKey: "sickRequests", icon: "🤒" },
+    { href: "/admin/nachtragsanfragen", labelKey: "correctionRequests", icon: "🕘" },
+    { href: "/admin/tasks", labelKey: "tasks", icon: "📋" },
+    { href: "/admin/password-reset", labelKey: "passwordReset", icon: "🔐" },
   ];
 
   const navItems = isAdmin ? adminNavItems : employeeNavItems;
@@ -493,8 +724,11 @@ export default function AppShell({
 
   const userName =
     sessionLoading && !session
-      ? "Lade..."
-      : session?.fullName ?? (isAdmin ? "Admin" : "Mitarbeiter");
+      ? tAppShell(currentLanguage, "loading")
+      : session?.fullName ??
+        (isAdmin
+          ? tAppShell(currentLanguage, "admin")
+          : tAppShell(currentLanguage, "employee"));
 
   const userInitials =
     sessionLoading && !session
@@ -533,7 +767,7 @@ export default function AppShell({
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
-              aria-label="Menü öffnen"
+              aria-label={tAppShell(currentLanguage, "menuOpen")}
               className="appshell-icon-btn"
               style={{
                 width: 44,
@@ -631,7 +865,7 @@ export default function AppShell({
           >
           <button
             type="button"
-            aria-label="Menü schließen"
+            aria-label={tAppShell(currentLanguage, "menuClose")}
             onClick={() => setMobileOpen(false)}
             className="appshell-mobile-backdrop"
           />
@@ -653,7 +887,9 @@ export default function AppShell({
                       color: "var(--muted)",
                     }}
                   >
-                    {isAdmin ? "Admin" : "Mitarbeiter"}
+                    {isAdmin
+                      ? tAppShell(currentLanguage, "admin")
+                      : tAppShell(currentLanguage, "employee")}
                   </div>
                   <div
                     style={{
@@ -680,7 +916,7 @@ export default function AppShell({
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}
-                  aria-label="Schließen"
+                  aria-label={tAppShell(currentLanguage, "close")}
                   className="appshell-icon-btn"
                   style={{
                     width: 44,
@@ -730,11 +966,13 @@ export default function AppShell({
                           minWidth: 0,
                         }}
                       >
-                        <span className="appshell-nav-label">{item.label}</span>
+                        <span className="appshell-nav-label">
+                          {tAppShell(currentLanguage, item.labelKey)}
+                        </span>
 
                         {showTaskBadge || showVacationBadge || showSickBadge || showCorrectionBadge ? (
                           <span
-                            aria-label="Offene Elemente"
+                            aria-label={tAppShell(currentLanguage, "openItems")}
                             className="appshell-nav-badge appshell-nav-badge-mobile"
                           >
                             {showTaskBadge
@@ -759,7 +997,7 @@ export default function AppShell({
                 onClick={handleLogout}
                 className="appshell-logout-btn"
               >
-                Logout
+                {tAppShell(currentLanguage, "logout")}
               </button>
             </div>
           </div>
@@ -869,7 +1107,7 @@ export default function AppShell({
                           flex: 1,
                         }}
                       >
-                        {item.label}
+                      {tAppShell(currentLanguage, item.labelKey)}
                       </span>
 
                       {showTaskBadge ||
@@ -877,7 +1115,10 @@ export default function AppShell({
                       showSickBadge ||
                       showCorrectionBadge ? (
                         <span
-                          aria-label={`${openTaskCount} offene Aufgaben`}
+                          aria-label={`${openTaskCount} ${tAppShell(
+                            currentLanguage,
+                            "openTasksAria"
+                          )}`}
                           className="appshell-nav-badge appshell-nav-badge-desktop"
                         >
                           {showTaskBadge
@@ -902,7 +1143,7 @@ export default function AppShell({
                   onClick={handleLogout}
                   className="appshell-logout-btn"
                 >
-                  Logout
+                  {tAppShell(currentLanguage, "logout")}
                 </button>
               </div>
             </div>
@@ -935,7 +1176,9 @@ export default function AppShell({
                       marginTop: 4,
                     }}
                   >
-                    {isAdmin ? "Adminbereich" : "Mitarbeiterbereich"}
+                    {isAdmin
+                      ? tAppShell(currentLanguage, "adminArea")
+                      : tAppShell(currentLanguage, "employeeArea")}
                   </div>
                 </div>
 
@@ -990,8 +1233,20 @@ export default function AppShell({
                       }}
                     >
                       <span className="appshell-role-badge">
-                        {isAdmin ? "ADMIN" : "MA"}
+                        {isAdmin
+                          ? tAppShell(currentLanguage, "admin")
+                          : tAppShell(currentLanguage, "employee")}
                       </span>
+                    </div>
+                    <div
+                      style={{
+                        color: "var(--muted-2)",
+                        fontSize: 11,
+                        marginTop: 4,
+                      }}
+                    >
+                      {tAppShell(currentLanguage, "language")}:{" "}
+                      {getLanguageLabel(currentLanguage)}
                     </div>
                   </div>
                 </div>

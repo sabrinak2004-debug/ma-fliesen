@@ -36,6 +36,7 @@ export async function GET(): Promise<Response> {
         userId: session.userId,
         fullName: session.fullName,
         role: session.role,
+        language: session.language,
         companyId: session.companyId,
         companyName: session.companyName,
         companySubdomain: session.companySubdomain,

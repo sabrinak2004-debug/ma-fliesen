@@ -3,13 +3,15 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { createSessionCookieValue, COOKIE_NAME } from "@/lib/auth";
-import { Role } from "@prisma/client";
+import { Role, type AppLanguage } from "@prisma/client";
+import { normalizeAppUiLanguage } from "@/lib/i18n";
 
 type LoginBody = {
   fullName?: unknown;
   password?: unknown;
   newPassword?: unknown;
   companySubdomain?: unknown;
+  language?: unknown;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -18,6 +20,21 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
+}
+
+function normalizeAppLanguage(value: AppLanguage | null | undefined): AppLanguage {
+  if (
+    value === "DE" ||
+    value === "EN" ||
+    value === "IT" ||
+    value === "TR" ||
+    value === "SQ" ||
+    value === "KU"
+  ) {
+    return value;
+  }
+
+  return "DE";
 }
 
 function normalizeHost(host: string): string {
@@ -67,6 +84,10 @@ export async function POST(req: Request): Promise<Response> {
   const companySubdomainFromBody = isRecord(raw)
     ? getString((raw as LoginBody).companySubdomain).trim().toLowerCase()
     : "";
+
+  const requestedLanguage = normalizeAppUiLanguage(
+    isRecord(raw) ? getString((raw as LoginBody).language).trim().toUpperCase() : ""
+  );
 
   const companySubdomain =
     companySubdomainFromBody || extractCompanySubdomainFromRequest(req);
@@ -185,25 +206,47 @@ export async function POST(req: Request): Promise<Response> {
     }
   }
 
+  const updatedUser =
+    user.language === requestedLanguage
+      ? user
+      : await prisma.appUser.update({
+          where: { id: user.id },
+          data: {
+            language: requestedLanguage as AppLanguage,
+          },
+          include: {
+            company: {
+              select: {
+                id: true,
+                name: true,
+                subdomain: true,
+                isDemo: true,
+              },
+            },
+          },
+        });
+
   const sessionValue = createSessionCookieValue({
-    userId: user.id,
-    fullName: user.fullName,
-    role: user.role,
-    companyId: user.company.id,
-    companyName: user.company.name,
-    companySubdomain: user.company.subdomain,
-    companyIsDemo: user.company.isDemo,
+    userId: updatedUser.id,
+    fullName: updatedUser.fullName,
+    role: updatedUser.role,
+    language: normalizeAppUiLanguage(updatedUser.language),
+    companyId: updatedUser.company.id,
+    companyName: updatedUser.company.name,
+    companySubdomain: updatedUser.company.subdomain,
+    companyIsDemo: updatedUser.company.isDemo,
   });
 
   const res = NextResponse.json(
     {
       ok: true,
-      role: user.role,
+      role: updatedUser.role,
+      language: normalizeAppUiLanguage(updatedUser.language),
       company: {
-        id: user.company.id,
-        name: user.company.name,
-        subdomain: user.company.subdomain,
-        isDemo: user.company.isDemo,
+        id: updatedUser.company.id,
+        name: updatedUser.company.name,
+        subdomain: updatedUser.company.subdomain,
+        isDemo: updatedUser.company.isDemo,
       },
     },
     { status: 200 }

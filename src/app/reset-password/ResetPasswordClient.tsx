@@ -1,6 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import PublicLanguageSelect from "@/components/PublicLanguageSelect";
+import {
+  translate,
+  type AppUiLanguage,
+} from "@/lib/i18n";
+import {
+  applyDocumentLanguage,
+  readPublicLanguage,
+  writePublicLanguage,
+} from "@/lib/publicLanguage";
 
 type ApiResponse = { ok: true } | { ok: false; error: string };
 
@@ -8,6 +18,147 @@ type ResetPasswordClientProps = {
   token: string;
   companySubdomain: string;
 };
+
+type ResetPasswordTextKey =
+  | "language"
+  | "title"
+  | "companyAccess"
+  | "missingToken"
+  | "requestLinkAgain"
+  | "newPassword"
+  | "confirmPassword"
+  | "save"
+  | "saving"
+  | "tokenMissingInvalid"
+  | "passwordTooShort"
+  | "passwordMismatch"
+  | "resetFailed"
+  | "resetSuccess";
+
+const RESET_PASSWORD_TEXTS: Record<
+  ResetPasswordTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  language: {
+    DE: "Sprache",
+    EN: "Language",
+    IT: "Lingua",
+    TR: "Dil",
+    SQ: "Gjuha",
+    KU: "Ziman",
+  },
+  title: {
+    DE: "Neues Passwort setzen",
+    EN: "Set new password",
+    IT: "Imposta una nuova password",
+    TR: "Yeni şifre belirle",
+    SQ: "Vendos fjalëkalim të ri",
+    KU: "Şîfreya nû diyar bike",
+  },
+  companyAccess: {
+    DE: "Firmenzugang",
+    EN: "Company access",
+    IT: "Accesso aziendale",
+    TR: "Şirket erişimi",
+    SQ: "Qasja e kompanisë",
+    KU: "Gihîştina şirketê",
+  },
+  missingToken: {
+    DE: "Token fehlt. Bitte den Link vom Admin erneut anfordern.",
+    EN: "Token is missing. Please request the link from the admin again.",
+    IT: "Token mancante. Richiedi di nuovo il link all'admin.",
+    TR: "Token eksik. Lütfen bağlantıyı yöneticiden tekrar isteyin.",
+    SQ: "Token mungon. Ju lutem kërkojeni sërish linkun nga administratori.",
+    KU: "Token tune. Ji kerema xwe lînkê dîsa ji rêvebir bixwaze.",
+  },
+  requestLinkAgain: {
+    DE: "Token fehlt. Bitte den Link vom Admin erneut anfordern.",
+    EN: "Token is missing. Please request the link from the admin again.",
+    IT: "Token mancante. Richiedi di nuovo il link all'admin.",
+    TR: "Token eksik. Lütfen bağlantıyı yöneticiden tekrar isteyin.",
+    SQ: "Token mungon. Ju lutem kërkojeni sërish linkun nga administratori.",
+    KU: "Token tune. Ji kerema xwe lînkê dîsa ji rêvebir bixwaze.",
+  },
+  newPassword: {
+    DE: "Neues Passwort",
+    EN: "New password",
+    IT: "Nuova password",
+    TR: "Yeni şifre",
+    SQ: "Fjalëkalim i ri",
+    KU: "Şîfreya nû",
+  },
+  confirmPassword: {
+    DE: "Passwort bestätigen",
+    EN: "Confirm password",
+    IT: "Conferma password",
+    TR: "Şifreyi onayla",
+    SQ: "Konfirmo fjalëkalimin",
+    KU: "Şîfreyê piştrast bike",
+  },
+  save: {
+    DE: "Passwort speichern",
+    EN: "Save password",
+    IT: "Salva password",
+    TR: "Şifreyi kaydet",
+    SQ: "Ruaj fjalëkalimin",
+    KU: "Şîfreyê tomar bike",
+  },
+  saving: {
+    DE: "Speichern...",
+    EN: "Saving...",
+    IT: "Salvataggio...",
+    TR: "Kaydediliyor...",
+    SQ: "Po ruhet...",
+    KU: "Tê tomarkirin...",
+  },
+  tokenMissingInvalid: {
+    DE: "Token fehlt (Link ist ungültig).",
+    EN: "Token missing (link is invalid).",
+    IT: "Token mancante (link non valido).",
+    TR: "Token eksik (bağlantı geçersiz).",
+    SQ: "Token mungon (linku është i pavlefshëm).",
+    KU: "Token tune (lînk nederbasdar e).",
+  },
+  passwordTooShort: {
+    DE: "Passwort muss mindestens 8 Zeichen haben.",
+    EN: "Password must be at least 8 characters.",
+    IT: "La password deve contenere almeno 8 caratteri.",
+    TR: "Şifre en az 8 karakter olmalıdır.",
+    SQ: "Fjalëkalimi duhet të ketë të paktën 8 karaktere.",
+    KU: "Şîfre divê herî kêm 8 tîpan hebe.",
+  },
+  passwordMismatch: {
+    DE: "Passwörter stimmen nicht überein.",
+    EN: "Passwords do not match.",
+    IT: "Le password non coincidono.",
+    TR: "Şifreler eşleşmiyor.",
+    SQ: "Fjalëkalimet nuk përputhen.",
+    KU: "Şîfre hev nagirin.",
+  },
+  resetFailed: {
+    DE: "Reset fehlgeschlagen.",
+    EN: "Reset failed.",
+    IT: "Reimpostazione non riuscita.",
+    TR: "Sıfırlama başarısız.",
+    SQ: "Rivendosja dështoi.",
+    KU: "Nûkirin têk çû.",
+  },
+  resetSuccess: {
+    DE: "Passwort wurde gesetzt. Du kannst dich jetzt einloggen.",
+    EN: "Password has been set. You can now log in.",
+    IT: "La password è stata impostata. Ora puoi accedere.",
+    TR: "Şifre ayarlandı. Artık giriş yapabilirsiniz.",
+    SQ: "Fjalëkalimi u vendos. Tani mund të hyni.",
+    KU: "Şîfre hate danîn. Niha dikarî têkevî.",
+  },
+};
+
+function tResetPassword(
+  language: AppUiLanguage,
+  key: ResetPasswordTextKey
+): string {
+  return translate(language, key, RESET_PASSWORD_TEXTS);
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -39,22 +190,30 @@ export default function ResetPasswordClient({
   const [pw2, setPw2] = useState("");
   const [msg, setMsg] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  const [language, setLanguage] = useState<AppUiLanguage>(() =>
+    readPublicLanguage()
+  );
+
+  useEffect(() => {
+    writePublicLanguage(language);
+    applyDocumentLanguage(language);
+  }, [language]);
 
   async function submit(): Promise<void> {
     setMsg("");
 
     if (!token) {
-      setMsg("Token fehlt (Link ist ungültig).");
+      setMsg(tResetPassword(language, "tokenMissingInvalid"));
       return;
     }
 
     if (pw1.length < 8) {
-      setMsg("Passwort muss mindestens 8 Zeichen haben.");
+      setMsg(tResetPassword(language, "passwordTooShort"));
       return;
     }
 
     if (pw1 !== pw2) {
-      setMsg("Passwörter stimmen nicht überein.");
+      setMsg(tResetPassword(language, "passwordMismatch"));
       return;
     }
 
@@ -77,12 +236,12 @@ export default function ResetPasswordClient({
 
       if (!response.ok || !data || !data.ok) {
         setMsg(
-          data && !data.ok ? data.error : "Reset fehlgeschlagen."
+          data && !data.ok ? data.error : tResetPassword(language, "resetFailed")
         );
         return;
       }
 
-      setMsg("Passwort wurde gesetzt. Du kannst dich jetzt einloggen.");
+      setMsg(tResetPassword(language, "resetSuccess"));
 
       redirectTimerRef.current = window.setTimeout(() => {
         if (companySubdomain) {
@@ -93,7 +252,7 @@ export default function ResetPasswordClient({
         window.location.replace("/login");
       }, 800);
     } catch {
-      setMsg("Reset fehlgeschlagen.");
+      setMsg(tResetPassword(language, "resetFailed"));
     } finally {
       setBusy(false);
     }
@@ -110,22 +269,33 @@ export default function ResetPasswordClient({
   return (
     <div className="reset-password-shell">
       <div className="card card-olive reset-password-card">
-        <h1 className="reset-password-title">Neues Passwort setzen</h1>
+        <h1 className="reset-password-title">
+          {tResetPassword(language, "title")}
+        </h1>
+        <div style={{ marginTop: 12 }}>
+          <PublicLanguageSelect
+            value={language}
+            onChange={setLanguage}
+            label={tResetPassword(language, "language")}
+          />
+        </div>
 
         {companySubdomain ? (
           <div className="reset-password-company">
-            Firmenzugang: {companySubdomain}
+            {tResetPassword(language, "companyAccess")}: {companySubdomain}
           </div>
         ) : null}
 
         {!token ? (
           <div className="reset-password-empty">
-            Token fehlt. Bitte den Link vom Admin erneut anfordern.
+            {tResetPassword(language, "requestLinkAgain")}
           </div>
         ) : (
           <div className="reset-password-form">
             <div className="reset-password-field">
-              <div className="reset-password-label">Neues Passwort</div>
+              <div className="reset-password-label">
+                {tResetPassword(language, "newPassword")}
+              </div>
               <input
                 value={pw1}
                 onChange={(event) => setPw1(event.target.value)}
@@ -137,7 +307,7 @@ export default function ResetPasswordClient({
 
             <div className="reset-password-field">
               <div className="reset-password-label">
-                Passwort bestätigen
+                {tResetPassword(language, "confirmPassword")}
               </div>
               <input
                 value={pw2}
@@ -154,7 +324,9 @@ export default function ResetPasswordClient({
               disabled={busy}
               className="btn btn-accent"
             >
-              {busy ? "Speichern..." : "Passwort speichern"}
+              {busy
+                ? tResetPassword(language, "saving")
+                : tResetPassword(language, "save")}
             </button>
 
             {msg ? <div className="reset-password-message">{msg}</div> : null}

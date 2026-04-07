@@ -25,9 +25,10 @@ model Company {
 model AppUser {
   id                    String    @id @default(uuid())
   fullName              String
-  role                  Role      @default(EMPLOYEE)
-  isActive              Boolean   @default(true)
-  createdAt             DateTime  @default(now())
+  role                  Role         @default(EMPLOYEE)
+  language              AppLanguage  @default(DE)
+  isActive              Boolean      @default(true)
+  createdAt             DateTime     @default(now())
   passwordHash          String?
   passwordUpdatedAt     DateTime?
   missingEntriesStartAt DateTime?
@@ -464,4 +465,13 @@ enum TaskRequiredAction {
   WORK_ENTRY_FOR_DATE
   VACATION_ENTRY_FOR_DATE
   SICK_ENTRY_FOR_DATE
+}
+
+enum AppLanguage {
+  DE
+  EN
+  IT
+  TR
+  SQ
+  KU
 }

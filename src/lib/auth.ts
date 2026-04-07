@@ -1,6 +1,7 @@
 // src/lib/auth.ts
 import crypto from "crypto";
 import { cookies } from "next/headers";
+import type { AppLanguage } from "@prisma/client";
 
 export const COOKIE_NAME = "mitarbeiterportal_session";
 
@@ -14,6 +15,7 @@ export type SessionData = {
   userId: string;
   fullName: string;
   role: "EMPLOYEE" | "ADMIN";
+  language: AppLanguage;
   companyId: string;
   companyName: string;
   companySubdomain: string;
@@ -21,6 +23,17 @@ export type SessionData = {
 };
 
 type SessionPayload = SessionData & { iat: number };
+
+function isAppLanguage(value: unknown): value is AppLanguage {
+  return (
+    value === "DE" ||
+    value === "EN" ||
+    value === "IT" ||
+    value === "TR" ||
+    value === "SQ" ||
+    value === "KU"
+  );
+}
 
 function isSessionPayload(v: unknown): v is SessionPayload {
   if (typeof v !== "object" || v === null) return false;
@@ -31,6 +44,7 @@ function isSessionPayload(v: unknown): v is SessionPayload {
     typeof r.userId === "string" &&
     typeof r.fullName === "string" &&
     (role === "EMPLOYEE" || role === "ADMIN") &&
+    isAppLanguage(r.language) &&
     typeof r.companyId === "string" &&
     typeof r.companyName === "string" &&
     typeof r.companySubdomain === "string" &&
@@ -103,6 +117,7 @@ export async function getSession(): Promise<SessionData | null> {
     userId: parsed.userId,
     fullName: parsed.fullName,
     role: parsed.role,
+    language: parsed.language,
     companyId: parsed.companyId,
     companyName: parsed.companyName,
     companySubdomain: parsed.companySubdomain,
