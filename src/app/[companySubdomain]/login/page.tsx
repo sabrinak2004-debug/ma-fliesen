@@ -7,7 +7,7 @@ import {
   getTenantAppleTouchIconHref,
   getTenantManifestHref,
   normalizeTenantSubdomain,
-  normalizeThemeColor,
+  resolveTenantTheme,
 } from "@/lib/tenantBranding";
 
 export const dynamic = "force-dynamic";
@@ -61,12 +61,12 @@ export async function generateMetadata({
     };
   }
 
-  const themeColor = normalizeThemeColor(company.primaryColor);
+  const theme = resolveTenantTheme(company.subdomain, company.primaryColor);
 
-  return {
+   return {
     title: `${company.name} Mitarbeiterportal`,
     manifest: getTenantManifestHref(company.subdomain),
-    themeColor,
+    themeColor: theme.bg,
     appleWebApp: {
       capable: true,
       title: company.name,

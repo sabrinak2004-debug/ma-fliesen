@@ -6,8 +6,10 @@ import {
   applyTenantThemeToDocument,
   getTenantAppleTouchIconHref,
   getTenantManifestHref,
+  getTenantThemeStyle,
   resetTenantThemeOnDocument,
   resolveTenantTheme,
+  type TenantTheme,
 } from "@/lib/tenantBranding";
 import Link from "next/link";
 import PublicLanguageSelect from "@/components/PublicLanguageSelect";
@@ -493,20 +495,23 @@ export default function LoginClient({
     companySubdomainOverride ?? companySubdomain ?? ""
   );
 
-  const effectiveCompanySubdomain =
+    const effectiveCompanySubdomain =
     companySubdomain || companySubdomainOverride || "";
 
-  const privacyHref = effectiveCompanySubdomain
-    ? `/datenschutz?company=${encodeURIComponent(effectiveCompanySubdomain)}`
-    : "/datenschutz";
+  const legalBasePath = effectiveCompanySubdomain
+    ? `/${effectiveCompanySubdomain}`
+    : "";
 
-  const termsHref = effectiveCompanySubdomain
-    ? `/nutzungsbedingungen?company=${encodeURIComponent(
-        effectiveCompanySubdomain
-      )}`
-    : "/nutzungsbedingungen";
+  const privacyHref = `${legalBasePath}/datenschutz`;
+  const termsHref = `${legalBasePath}/nutzungsbedingungen`;
 
   const reqIdRef = useRef(0);
+    const serverTheme: TenantTheme = resolveTenantTheme(
+    effectiveCompanySubdomain,
+    brand.primaryColor
+  );
+
+  const pageThemeStyle = getTenantThemeStyle(serverTheme);
 
   useEffect(() => {
     writePublicLanguage(language);
@@ -781,8 +786,20 @@ export default function LoginClient({
   };
 
   return (
-    <div style={{ padding: "40px 0" }}>
-      <div className="container-app">
+    <div
+      style={{
+        ...pageThemeStyle,
+        minHeight: "100dvh",
+        backgroundColor: "var(--bg)",
+        backgroundImage:
+          "radial-gradient(1200px 600px at 10% 10%, var(--accent-soft), transparent 55%), radial-gradient(900px 600px at 80% 20%, rgba(var(--accent-rgb), 0.06), transparent 60%)",
+        backgroundRepeat: "no-repeat, no-repeat",
+        backgroundSize: "1200px 600px, 900px 600px",
+        backgroundPosition: "0 0, 100% 0",
+      }}
+    >
+      <div style={{ padding: "40px 0" }}>
+        <div className="container-app">
         <div
           className="card card-olive"
           style={{
@@ -1012,6 +1029,7 @@ export default function LoginClient({
           </form>
         </div>
       </div>
+    </div>
     </div>
   );
 }

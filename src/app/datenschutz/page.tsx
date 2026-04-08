@@ -1,31 +1,12 @@
 import LegalBackButton from "@/components/LegalBackButton";
 import {
   getTenantThemeStyle,
-  normalizeTenantSubdomain,
   resolveTenantTheme,
 } from "@/lib/tenantBranding";
 
-type DatenschutzPageProps = {
-  searchParams: Promise<{
-    company?: string;
-  }>;
-};
-
-export default async function DatenschutzPage({
-  searchParams,
-}: DatenschutzPageProps) {
-  const resolvedSearchParams = await searchParams;
-  const companySubdomain = normalizeTenantSubdomain(
-    resolvedSearchParams.company ?? ""
-  );
-
-  const theme = companySubdomain
-    ? resolveTenantTheme(companySubdomain)
-    : resolveTenantTheme("beispielbetrieb");
-
-  const fallbackHref = companySubdomain
-    ? `/${companySubdomain}/login`
-    : "/";
+export default function DatenschutzPage() {
+  const theme = resolveTenantTheme("beispielbetrieb");
+  const fallbackHref = "/";
 
   return (
     <div

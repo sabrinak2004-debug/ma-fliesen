@@ -1,31 +1,12 @@
 import LegalBackButton from "@/components/LegalBackButton";
 import {
   getTenantThemeStyle,
-  normalizeTenantSubdomain,
   resolveTenantTheme,
 } from "@/lib/tenantBranding";
 
-type NutzungsbedingungenPageProps = {
-  searchParams: Promise<{
-    company?: string;
-  }>;
-};
-
-export default async function NutzungsbedingungenPage({
-  searchParams,
-}: NutzungsbedingungenPageProps) {
-  const resolvedSearchParams = await searchParams;
-  const companySubdomain = normalizeTenantSubdomain(
-    resolvedSearchParams.company ?? ""
-  );
-
-  const theme = companySubdomain
-    ? resolveTenantTheme(companySubdomain)
-    : resolveTenantTheme("beispielbetrieb");
-
-  const fallbackHref = companySubdomain
-    ? `/${companySubdomain}/login`
-    : "/";
+export default function NutzungsbedingungenPage() {
+  const theme = resolveTenantTheme("beispielbetrieb");
+  const fallbackHref = "/";
 
   return (
     <div
