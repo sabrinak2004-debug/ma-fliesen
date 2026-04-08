@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState, Suspense } from "reac
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
+import { translate, type AppUiLanguage } from "@/lib/i18n";
 import {
   CalendarDays,
   Sparkles,
@@ -117,6 +118,7 @@ type SessionDTO = {
   userId: string;
   fullName: string;
   role: "EMPLOYEE" | "ADMIN";
+  language: AppUiLanguage;
   companyId: string;
   companyName: string;
   companySubdomain: string;
@@ -137,6 +139,974 @@ type CalendarEventDTO = {
 type EventCategory = "KUNDE" | "BAUSTELLE" | "INTERN" | "PRIVAT";
 type AdminApptMode = "create-global" | "create-from-day" | "edit";
 type CalendarViewMode = "MONTH" | "WEEK";
+
+type KalenderTextKey =
+  | "unexpectedResponse"
+  | "statusOpen"
+  | "statusApproved"
+  | "statusRejected"
+  | "paid"
+  | "unpaid"
+  | "daysPaidDaysUnpaid"
+  | "ofWhichPaidUnpaid"
+  | "vacationRequestHalfDay"
+  | "vacationRequest"
+  | "sicknessRequest"
+  | "customer"
+  | "site"
+  | "internal"
+  | "private"
+  | "today"
+  | "month"
+  | "week"
+  | "myAdminAppointments"
+  | "employeeReadonlyCalendarHint"
+  | "connectGoogleCalendar"
+  | "appointments"
+  | "holiday"
+  | "vacation"
+  | "sick"
+  | "noEntries"
+  | "loadingCalendar"
+  | "work"
+  | "newAppointment"
+  | "day"
+  | "loadingAppointments"
+  | "noAppointmentsForDay"
+  | "edit"
+  | "delete"
+  | "editAppointment"
+  | "enterAppointment"
+  | "cancel"
+  | "date"
+  | "start"
+  | "end"
+  | "categoryUiOnly"
+  | "title"
+  | "titlePlaceholder"
+  | "locationOptional"
+  | "locationPlaceholder"
+  | "noteOptional"
+  | "notePlaceholder"
+  | "saving"
+  | "saveChanges"
+  | "save"
+  | "viewingEmployeeCalendar"
+  | "viewingEmployeeCalendarHint"
+  | "employeeSchedule"
+  | "loadingPlan"
+  | "noScheduleForDay"
+  | "noLocationGiven"
+  | "travelMinutes"
+  | "dayStatus"
+  | "scheduleExists"
+  | "paidVacation"
+  | "noEntriesForDay"
+  | "yourSchedule"
+  | "syncToEntry"
+  | "documents"
+  | "syncPlanHint"
+  | "publicHoliday"
+  | "confirmedAbsence"
+  | "noConfirmedAbsence"
+  | "alreadyConfirmedRegistered"
+  | "compensation"
+  | "myRequests"
+  | "noRequestForDay"
+  | "status"
+  | "scope"
+  | "total"
+  | "processedBy"
+  | "details"
+  | "requestDetails"
+  | "requestAbsence"
+  | "wholeDayOnlyForSick"
+  | "halfDaysOnlyVacation"
+  | "halfDaySingleDateOnly"
+  | "vacationNoWeekdays"
+  | "sickCannotBeUnpaid"
+  | "requestCouldNotBeSaved"
+  | "networkSaveError"
+  | "pleaseSelectStartEnd"
+  | "endBeforeStart"
+  | "holidayMarked"
+  | "adminHolidayMarked"
+  | "startNewRequest"
+  | "absenceTypeVacation"
+  | "absenceTypeSick"
+  | "scopeLabel"
+  | "scopeHint"
+  | "fullVacationDay"
+  | "halfVacationDay"
+  | "compensationLabel"
+  | "compensationLockedHint"
+  | "compensationFlexibleHint"
+  | "noteToAdmin"
+  | "requestNotePlaceholder"
+  | "close"
+  | "newRequest"
+  | "sendRequest"
+  | "calendarLoadingFallback";
+
+const KALENDER_DICTIONARY: Record<KalenderTextKey, Record<AppUiLanguage, string>> = {
+  unexpectedResponse: {
+    DE: "Unerwartete Antwort.",
+    EN: "Unexpected response.",
+    IT: "Risposta inattesa.",
+    TR: "Beklenmeyen yanıt.",
+    SQ: "Përgjigje e papritur.",
+    KU: "Bersiva neçaverêkirî.",
+  },
+  statusOpen: {
+    DE: "Offen",
+    EN: "Open",
+    IT: "Aperta",
+    TR: "Açık",
+    SQ: "Hapur",
+    KU: "Vekirî",
+  },
+  statusApproved: {
+    DE: "Genehmigt",
+    EN: "Approved",
+    IT: "Approvata",
+    TR: "Onaylandı",
+    SQ: "Miratuar",
+    KU: "Pejirandî",
+  },
+  statusRejected: {
+    DE: "Abgelehnt",
+    EN: "Rejected",
+    IT: "Rifiutata",
+    TR: "Reddedildi",
+    SQ: "Refuzuar",
+    KU: "Redkirî",
+  },
+  paid: {
+    DE: "Bezahlt",
+    EN: "Paid",
+    IT: "Pagato",
+    TR: "Ücretli",
+    SQ: "I paguar",
+    KU: "Bi mûçe",
+  },
+  unpaid: {
+    DE: "Unbezahlt",
+    EN: "Unpaid",
+    IT: "Non retribuito",
+    TR: "Ücretsiz",
+    SQ: "I papaguar",
+    KU: "Bê mûçe",
+  },
+  daysPaidDaysUnpaid: {
+    DE: "{paid} Tage bezahlt · {unpaid} Tage unbezahlt",
+    EN: "{paid} days paid · {unpaid} days unpaid",
+    IT: "{paid} giorni pagati · {unpaid} giorni non retribuiti",
+    TR: "{paid} gün ücretli · {unpaid} gün ücretsiz",
+    SQ: "{paid} ditë të paguara · {unpaid} ditë të papaguara",
+    KU: "{paid} roj bi mûçe · {unpaid} roj bê mûçe",
+  },
+  ofWhichPaidUnpaid: {
+    DE: "Davon {paid} Tage bezahlt und {unpaid} Tage unbezahlt.",
+    EN: "Of which {paid} days paid and {unpaid} days unpaid.",
+    IT: "Di cui {paid} giorni pagati e {unpaid} giorni non retribuiti.",
+    TR: "Bunun {paid} günü ücretli ve {unpaid} günü ücretsiz.",
+    SQ: "Prej tyre {paid} ditë të paguara dhe {unpaid} ditë të papaguara.",
+    KU: "Ji wan {paid} roj bi mûçe û {unpaid} roj bê mûçe ne.",
+  },
+  vacationRequestHalfDay: {
+    DE: "🌴 Urlaubsantrag (halber Tag · {date})",
+    EN: "🌴 Vacation request (half day · {date})",
+    IT: "🌴 Richiesta ferie (mezza giornata · {date})",
+    TR: "🌴 İzin talebi (yarım gün · {date})",
+    SQ: "🌴 Kërkesë pushimi (gjysmë dite · {date})",
+    KU: "🌴 Daxwaza bêhnvedanê (nîv roj · {date})",
+  },
+  vacationRequest: {
+    DE: "Urlaubsantrag",
+    EN: "Vacation request",
+    IT: "Richiesta ferie",
+    TR: "İzin talebi",
+    SQ: "Kërkesë pushimi",
+    KU: "Daxwaza bêhnvedanê",
+  },
+  sicknessRequest: {
+    DE: "Krankheitsantrag",
+    EN: "Sickness request",
+    IT: "Richiesta malattia",
+    TR: "Hastalık talebi",
+    SQ: "Kërkesë sëmundjeje",
+    KU: "Daxwaza nexweşiyê",
+  },
+  customer: {
+    DE: "Kunde",
+    EN: "Customer",
+    IT: "Cliente",
+    TR: "Müşteri",
+    SQ: "Klient",
+    KU: "Müşterî",
+  },
+  site: {
+    DE: "Baustelle",
+    EN: "Site",
+    IT: "Cantiere",
+    TR: "Şantiye",
+    SQ: "Kantier",
+    KU: "Şantiye",
+  },
+  internal: {
+    DE: "Intern",
+    EN: "Internal",
+    IT: "Interno",
+    TR: "Dahili",
+    SQ: "I brendshëm",
+    KU: "Navxweyî",
+  },
+  private: {
+    DE: "Privat",
+    EN: "Private",
+    IT: "Privato",
+    TR: "Özel",
+    SQ: "Privat",
+    KU: "Taybet",
+  },
+  today: {
+    DE: "Heute",
+    EN: "Today",
+    IT: "Oggi",
+    TR: "Bugün",
+    SQ: "Sot",
+    KU: "Îro",
+  },
+  month: {
+    DE: "Monat",
+    EN: "Month",
+    IT: "Mese",
+    TR: "Ay",
+    SQ: "Muaji",
+    KU: "Meh",
+  },
+  week: {
+    DE: "Woche",
+    EN: "Week",
+    IT: "Settimana",
+    TR: "Hafta",
+    SQ: "Java",
+    KU: "Hefte",
+  },
+  myAdminAppointments: {
+    DE: "Meine Admin-Termine",
+    EN: "My admin appointments",
+    IT: "I miei appuntamenti admin",
+    TR: "Yönetici randevularım",
+    SQ: "Takimet e mia si admin",
+    KU: "Hevdîtinên min yên admin",
+  },
+  employeeReadonlyCalendarHint: {
+    DE: "Mitarbeiteransicht (read-only): Kalender zeigt Plan/Urlaub/Krank des Mitarbeiters.",
+    EN: "Employee view (read-only): calendar shows the employee's schedule/vacation/sick days.",
+    IT: "Vista dipendente (sola lettura): il calendario mostra piano/ferie/malattia del dipendente.",
+    TR: "Çalışan görünümü (salt okunur): takvim çalışanın planını/iznini/hastalığını gösterir.",
+    SQ: "Pamja e punonjësit (vetëm lexim): kalendari tregon planin/pushimin/sëmundjen e punonjësit.",
+    KU: "Dîtina karmend (tenê-xwendin): salname plana/bêhnvedana/nexweşiya karmend nîşan dide.",
+  },
+  connectGoogleCalendar: {
+    DE: "Google Kalender verbinden",
+    EN: "Connect Google Calendar",
+    IT: "Collega Google Calendar",
+    TR: "Google Takvim bağla",
+    SQ: "Lidhu me Google Calendar",
+    KU: "Google Calendar girêde",
+  },
+  appointments: {
+    DE: "Termine",
+    EN: "Appointments",
+    IT: "Appuntamenti",
+    TR: "Randevular",
+    SQ: "Takime",
+    KU: "Hevdîtin",
+  },
+  holiday: {
+    DE: "Feiertag",
+    EN: "Holiday",
+    IT: "Festività",
+    TR: "Resmî tatil",
+    SQ: "Festë zyrtare",
+    KU: "Cejna fermî",
+  },
+  vacation: {
+    DE: "Urlaub",
+    EN: "Vacation",
+    IT: "Ferie",
+    TR: "İzin",
+    SQ: "Pushim",
+    KU: "Bêhnvedan",
+  },
+  sick: {
+    DE: "Krank",
+    EN: "Sick",
+    IT: "Malattia",
+    TR: "Hasta",
+    SQ: "I sëmurë",
+    KU: "Nexweş",
+  },
+  noEntries: {
+    DE: "Keine Einträge",
+    EN: "No entries",
+    IT: "Nessuna voce",
+    TR: "Kayıt yok",
+    SQ: "Nuk ka regjistrime",
+    KU: "Tomar tune ne",
+  },
+  loadingCalendar: {
+    DE: "Lade Kalender...",
+    EN: "Loading calendar...",
+    IT: "Caricamento calendario...",
+    TR: "Takvim yükleniyor...",
+    SQ: "Kalendari po ngarkohet...",
+    KU: "Salname tê barkirin...",
+  },
+  work: {
+    DE: "Arbeit",
+    EN: "Work",
+    IT: "Lavoro",
+    TR: "İş",
+    SQ: "Punë",
+    KU: "Kar",
+  },
+  newAppointment: {
+    DE: "Neuer Termin",
+    EN: "New appointment",
+    IT: "Nuovo appuntamento",
+    TR: "Yeni randevu",
+    SQ: "Takim i ri",
+    KU: "Hevdîtina nû",
+  },
+  day: {
+    DE: "Tag",
+    EN: "Day",
+    IT: "Giorno",
+    TR: "Gün",
+    SQ: "Ditë",
+    KU: "Roj",
+  },
+  loadingAppointments: {
+    DE: "Lädt Termine...",
+    EN: "Loading appointments...",
+    IT: "Caricamento appuntamenti...",
+    TR: "Randevular yükleniyor...",
+    SQ: "Takimet po ngarkohen...",
+    KU: "Hevdîtin têne barkirin...",
+  },
+  noAppointmentsForDay: {
+    DE: "Keine Termine für diesen Tag.",
+    EN: "No appointments for this day.",
+    IT: "Nessun appuntamento per questo giorno.",
+    TR: "Bu gün için randevu yok.",
+    SQ: "Nuk ka takime për këtë ditë.",
+    KU: "Ji bo vê rojê hevdîtin tune ne.",
+  },
+  edit: {
+    DE: "Bearbeiten",
+    EN: "Edit",
+    IT: "Modifica",
+    TR: "Düzenle",
+    SQ: "Ndrysho",
+    KU: "Sererast bike",
+  },
+  delete: {
+    DE: "Löschen",
+    EN: "Delete",
+    IT: "Elimina",
+    TR: "Sil",
+    SQ: "Fshij",
+    KU: "Jê bibe",
+  },
+  editAppointment: {
+    DE: "Termin bearbeiten",
+    EN: "Edit appointment",
+    IT: "Modifica appuntamento",
+    TR: "Randevuyu düzenle",
+    SQ: "Ndrysho takimin",
+    KU: "Hevdîtinê sererast bike",
+  },
+  enterAppointment: {
+    DE: "Termin eintragen",
+    EN: "Create appointment",
+    IT: "Inserisci appuntamento",
+    TR: "Randevu gir",
+    SQ: "Shto takim",
+    KU: "Hevdîtinê tomar bike",
+  },
+  cancel: {
+    DE: "Abbrechen",
+    EN: "Cancel",
+    IT: "Annulla",
+    TR: "İptal",
+    SQ: "Anulo",
+    KU: "Betal bike",
+  },
+  date: {
+    DE: "Datum",
+    EN: "Date",
+    IT: "Data",
+    TR: "Tarih",
+    SQ: "Data",
+    KU: "Dîrok",
+  },
+  start: {
+    DE: "Start",
+    EN: "Start",
+    IT: "Inizio",
+    TR: "Başlangıç",
+    SQ: "Fillimi",
+    KU: "Destpêk",
+  },
+  end: {
+    DE: "Ende",
+    EN: "End",
+    IT: "Fine",
+    TR: "Bitiş",
+    SQ: "Fundi",
+    KU: "Dawî",
+  },
+  categoryUiOnly: {
+    DE: "Kategorie (UI-only)",
+    EN: "Category (UI-only)",
+    IT: "Categoria (solo UI)",
+    TR: "Kategori (yalnızca arayüz)",
+    SQ: "Kategoria (vetëm UI)",
+    KU: "Kategorî (tenê UI)",
+  },
+  title: {
+    DE: "Titel",
+    EN: "Title",
+    IT: "Titolo",
+    TR: "Başlık",
+    SQ: "Titulli",
+    KU: "Sernav",
+  },
+  titlePlaceholder: {
+    DE: "z. B. Kundentermin",
+    EN: "e.g. customer appointment",
+    IT: "es. appuntamento cliente",
+    TR: "örn. müşteri randevusu",
+    SQ: "p.sh. takim me klientin",
+    KU: "mînak: hevdîtina müşterî",
+  },
+  locationOptional: {
+    DE: "Ort (optional)",
+    EN: "Location (optional)",
+    IT: "Luogo (opzionale)",
+    TR: "Yer (isteğe bağlı)",
+    SQ: "Vendi (opsionale)",
+    KU: "Cih (vebijarkî)",
+  },
+  locationPlaceholder: {
+    DE: "z. B. Baustelle / Adresse",
+    EN: "e.g. site / address",
+    IT: "es. cantiere / indirizzo",
+    TR: "örn. şantiye / adres",
+    SQ: "p.sh. kantier / adresë",
+    KU: "mînak: şantiye / navnîşan",
+  },
+  noteOptional: {
+    DE: "Notiz (optional)",
+    EN: "Note (optional)",
+    IT: "Nota (opzionale)",
+    TR: "Not (isteğe bağlı)",
+    SQ: "Shënim (opsionale)",
+    KU: "Nîşe (vebijarkî)",
+  },
+  notePlaceholder: {
+    DE: "z. B. Ansprechpartner, Material, …",
+    EN: "e.g. contact person, material, ...",
+    IT: "es. referente, materiale, ...",
+    TR: "örn. ilgili kişi, malzeme, ...",
+    SQ: "p.sh. person kontakti, material, ...",
+    KU: "mînak: kesê têkiliyê, materyal, ...",
+  },
+  saving: {
+    DE: "Speichert...",
+    EN: "Saving...",
+    IT: "Salvataggio...",
+    TR: "Kaydediliyor...",
+    SQ: "Duke ruajtur...",
+    KU: "Tê tomarkirin...",
+  },
+  saveChanges: {
+    DE: "Änderungen speichern",
+    EN: "Save changes",
+    IT: "Salva modifiche",
+    TR: "Değişiklikleri kaydet",
+    SQ: "Ruaj ndryshimet",
+    KU: "Guherînan tomar bike",
+  },
+  save: {
+    DE: "Eintragen",
+    EN: "Save",
+    IT: "Salva",
+    TR: "Kaydet",
+    SQ: "Ruaj",
+    KU: "Tomar bike",
+  },
+  viewingEmployeeCalendar: {
+    DE: "Du siehst gerade den Kalender eines Mitarbeiters.",
+    EN: "You are currently viewing an employee's calendar.",
+    IT: "Stai visualizzando il calendario di un dipendente.",
+    TR: "Şu anda bir çalışanın takvimini görüntülüyorsunuz.",
+    SQ: "Po shihni kalendarin e një punonjësi.",
+    KU: "Tu niha salnameya karmendekî dibînî.",
+  },
+  viewingEmployeeCalendarHint: {
+    DE: "Bearbeitung und eigene Admin-Termine sind in dieser Ansicht deaktiviert.",
+    EN: "Editing and your own admin appointments are disabled in this view.",
+    IT: "La modifica e i tuoi appuntamenti admin sono disattivati in questa vista.",
+    TR: "Bu görünümde düzenleme ve kendi yönetici randevularınız devre dışıdır.",
+    SQ: "Ndryshimi dhe takimet tuaja si admin janë çaktivizuar në këtë pamje.",
+    KU: "Li vê dîtinê de sererastkirin û hevdîtinên te yên admin neçalak in.",
+  },
+  employeeSchedule: {
+    DE: "Einsatzplan des Mitarbeiters",
+    EN: "Employee schedule",
+    IT: "Piano del dipendente",
+    TR: "Çalışan planı",
+    SQ: "Plani i punonjësit",
+    KU: "Plana karmend",
+  },
+  loadingPlan: {
+    DE: "Lädt Plan...",
+    EN: "Loading schedule...",
+    IT: "Caricamento piano...",
+    TR: "Plan yükleniyor...",
+    SQ: "Plani po ngarkohet...",
+    KU: "Plan tê barkirin...",
+  },
+  noScheduleForDay: {
+    DE: "Kein Einsatz für diesen Tag geplant.",
+    EN: "No assignment planned for this day.",
+    IT: "Nessun incarico previsto per questo giorno.",
+    TR: "Bu gün için planlanmış görev yok.",
+    SQ: "Nuk ka angazhim të planifikuar për këtë ditë.",
+    KU: "Ji bo vê rojê planek tune ye.",
+  },
+  noLocationGiven: {
+    DE: "📍 (kein Ort angegeben)",
+    EN: "📍 (no location provided)",
+    IT: "📍 (nessun luogo indicato)",
+    TR: "📍 (yer belirtilmedi)",
+    SQ: "📍 (nuk është dhënë vendi)",
+    KU: "📍 (cih nehatiye dayîn)",
+  },
+  travelMinutes: {
+    DE: "Min Fahrzeit",
+    EN: "min travel time",
+    IT: "min di viaggio",
+    TR: "dk yol süresi",
+    SQ: "min udhëtim",
+    KU: "deq rê",
+  },
+  dayStatus: {
+    DE: "Tagesstatus",
+    EN: "Day status",
+    IT: "Stato del giorno",
+    TR: "Gün durumu",
+    SQ: "Statusi i ditës",
+    KU: "Rewşa rojê",
+  },
+  scheduleExists: {
+    DE: "Plan vorhanden",
+    EN: "Schedule available",
+    IT: "Piano disponibile",
+    TR: "Plan mevcut",
+    SQ: "Plani ekziston",
+    KU: "Plan heye",
+  },
+  paidVacation: {
+    DE: "Unbezahlter Urlaub",
+    EN: "Unpaid vacation",
+    IT: "Ferie non retribuite",
+    TR: "Ücretsiz izin",
+    SQ: "Pushim i papaguar",
+    KU: "Bêhnvedana bê mûçe",
+  },
+  noEntriesForDay: {
+    DE: "Keine Einträge für diesen Tag vorhanden.",
+    EN: "No entries available for this day.",
+    IT: "Nessuna voce disponibile per questo giorno.",
+    TR: "Bu gün için kayıt yok.",
+    SQ: "Nuk ka regjistrime për këtë ditë.",
+    KU: "Ji bo vê rojê tomar tune ne.",
+  },
+  yourSchedule: {
+    DE: "Dein Einsatzplan",
+    EN: "Your schedule",
+    IT: "Il tuo piano",
+    TR: "Planın",
+    SQ: "Plani yt",
+    KU: "Plana te",
+  },
+  syncToEntry: {
+    DE: "↪️ In Eintrag syncen",
+    EN: "↪️ Sync to entry",
+    IT: "↪️ Sincronizza in registrazione",
+    TR: "↪️ Kayda aktar",
+    SQ: "↪️ Sinkronizo te regjistrimi",
+    KU: "↪️ Bi tomarê re hevrêz bike",
+  },
+  documents: {
+    DE: "📎 Dokumente",
+    EN: "📎 Documents",
+    IT: "📎 Documenti",
+    TR: "📎 Belgeler",
+    SQ: "📎 Dokumente",
+    KU: "📎 Belge",
+  },
+  syncPlanHint: {
+    DE: "Übernimmt Datum, Tätigkeit und Einsatzort. Uhrzeiten und Fahrtminuten bitte in der Erfassung ergänzen.",
+    EN: "Transfers date, activity, and location. Please complete times and travel minutes in the entry form.",
+    IT: "Trasferisce data, attività e luogo. Completa orari e minuti di viaggio nella registrazione.",
+    TR: "Tarih, faaliyet ve konumu aktarır. Saatleri ve yol dakikalarını lütfen kayıtta tamamlayın.",
+    SQ: "Merr datën, aktivitetin dhe vendin. Ju lutem plotësoni oraret dhe minutat e udhëtimit te regjistrimi.",
+    KU: "Dîrok, çalakî û cih digire. Ji kerema xwe dem û deqeyên rê di tomarê de temam bike.",
+  },
+  publicHoliday: {
+    DE: "Gesetzlicher Feiertag",
+    EN: "Public holiday",
+    IT: "Festività legale",
+    TR: "Resmî tatil",
+    SQ: "Festë zyrtare",
+    KU: "Cejna fermî",
+  },
+  confirmedAbsence: {
+    DE: "Bestätigte Abwesenheit",
+    EN: "Confirmed absence",
+    IT: "Assenza confermata",
+    TR: "Onaylanmış devamsızlık",
+    SQ: "Mungesë e konfirmuar",
+    KU: "Nebûna pejirandî",
+  },
+  noConfirmedAbsence: {
+    DE: "Keine bestätigte Abwesenheit eingetragen.",
+    EN: "No confirmed absence recorded.",
+    IT: "Nessuna assenza confermata registrata.",
+    TR: "Onaylanmış devamsızlık kaydı yok.",
+    SQ: "Nuk ka mungesë të konfirmuar të regjistruar.",
+    KU: "Nebûna pejirandî nehatiye tomar kirin.",
+  },
+  alreadyConfirmedRegistered: {
+    DE: "Bereits vom Admin bestätigt und im Kalender registriert.",
+    EN: "Already confirmed by admin and registered in the calendar.",
+    IT: "Già confermata dall'admin e registrata nel calendario.",
+    TR: "Zaten yönetici tarafından onaylandı ve takvime işlendi.",
+    SQ: "Tashmë e konfirmuar nga admini dhe e regjistruar në kalendar.",
+    KU: "Berê ji aliyê admin ve pejirandî û di salnameyê de tomar kirî ye.",
+  },
+  compensation: {
+    DE: "Vergütung:",
+    EN: "Compensation:",
+    IT: "Retribuzione:",
+    TR: "Ücretlendirme:",
+    SQ: "Kompensimi:",
+    KU: "Mûçe:",
+  },
+  myRequests: {
+    DE: "Meine Anträge",
+    EN: "My requests",
+    IT: "Le mie richieste",
+    TR: "Taleplerim",
+    SQ: "Kërkesat e mia",
+    KU: "Daxwazên min",
+  },
+  noRequestForDay: {
+    DE: "Kein Antrag für diesen Tag vorhanden.",
+    EN: "No request exists for this day.",
+    IT: "Non esiste alcuna richiesta per questo giorno.",
+    TR: "Bu gün için talep yok.",
+    SQ: "Nuk ka kërkesë për këtë ditë.",
+    KU: "Ji bo vê rojê daxwaz tune ye.",
+  },
+  status: {
+    DE: "Status:",
+    EN: "Status:",
+    IT: "Stato:",
+    TR: "Durum:",
+    SQ: "Statusi:",
+    KU: "Rewş:",
+  },
+  scope: {
+    DE: "Umfang:",
+    EN: "Scope:",
+    IT: "Entità:",
+    TR: "Kapsam:",
+    SQ: "Shtrirja:",
+    KU: "Berfirehî:",
+  },
+  total: {
+    DE: "Gesamt:",
+    EN: "Total:",
+    IT: "Totale:",
+    TR: "Toplam:",
+    SQ: "Totali:",
+    KU: "Tevahî:",
+  },
+  processedBy: {
+    DE: "Bearbeitet von:",
+    EN: "Processed by:",
+    IT: "Elaborato da:",
+    TR: "İşleyen:",
+    SQ: "Përpunuar nga:",
+    KU: "Ji aliyê vê kesê ve hate xebitandin:",
+  },
+  details: {
+    DE: "Details",
+    EN: "Details",
+    IT: "Dettagli",
+    TR: "Detaylar",
+    SQ: "Detaje",
+    KU: "Hûrgulî",
+  },
+  requestDetails: {
+    DE: "Antragsdetails",
+    EN: "Request details",
+    IT: "Dettagli richiesta",
+    TR: "Talep detayları",
+    SQ: "Detajet e kërkesës",
+    KU: "Hûrguliyên daxwazê",
+  },
+  requestAbsence: {
+    DE: "Abwesenheit beantragen",
+    EN: "Request absence",
+    IT: "Richiedi assenza",
+    TR: "Devamsızlık talep et",
+    SQ: "Kërko mungesë",
+    KU: "Nebûnê daxwaz bike",
+  },
+  wholeDayOnlyForSick: {
+    DE: "Krankheit kann nur ganztägig beantragt werden.",
+    EN: "Sickness can only be requested as a full day.",
+    IT: "La malattia può essere richiesta solo per l'intera giornata.",
+    TR: "Hastalık sadece tam gün olarak talep edilebilir.",
+    SQ: "Sëmundja mund të kërkohet vetëm për gjithë ditën.",
+    KU: "Nexweşî tenê dikare wekî rojek tam were daxwaz kirin.",
+  },
+  halfDaysOnlyVacation: {
+    DE: "Halbe Tage sind nur für Urlaub erlaubt.",
+    EN: "Half days are only allowed for vacation.",
+    IT: "I mezzi giorni sono consentiti solo per ferie.",
+    TR: "Yarım gün sadece izin için kullanılabilir.",
+    SQ: "Gjysmë ditët lejohen vetëm për pushim.",
+    KU: "Nîv roj tenê ji bo bêhnvedanê tên destûrkirin.",
+  },
+  halfDaySingleDateOnly: {
+    DE: "Ein halber Urlaubstag darf nur für genau ein Datum beantragt werden.",
+    EN: "A half vacation day may only be requested for exactly one date.",
+    IT: "Una mezza giornata di ferie può essere richiesta solo per una sola data.",
+    TR: "Yarım gün izin yalnızca tek bir tarih için talep edilebilir.",
+    SQ: "Një gjysmë dite pushimi mund të kërkohet vetëm për një datë të vetme.",
+    KU: "Nîv roj bêhnvedanê tenê ji bo tenê yek dîrokê dikare were daxwaz kirin.",
+  },
+  vacationNoWeekdays: {
+    DE: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+    EN: "There are no workdays for vacation in the selected period. Weekends are automatically excluded.",
+    IT: "Nel periodo selezionato non ci sono giorni lavorativi per ferie. I fine settimana vengono esclusi automaticamente.",
+    TR: "Seçilen aralıkta izin için iş günü yok. Hafta sonları otomatik olarak hariç tutulur.",
+    SQ: "Në periudhën e zgjedhur nuk ka ditë pune për pushim. Fundjavat përjashtohen automatikisht.",
+    KU: "Di navbera hilbijartî de rojên karê ji bo bêhnvedanê tune ne. Dawiya hefteyê bixweber nayê hesibandin.",
+  },
+  sickCannotBeUnpaid: {
+    DE: "Krankheit darf nicht als unbezahlt beantragt werden.",
+    EN: "Sickness must not be requested as unpaid.",
+    IT: "La malattia non può essere richiesta come non retribuita.",
+    TR: "Hastalık ücretsiz olarak talep edilemez.",
+    SQ: "Sëmundja nuk mund të kërkohet si e papaguar.",
+    KU: "Nexweşî nikare wekî bê mûçe were daxwaz kirin.",
+  },
+  requestCouldNotBeSaved: {
+    DE: "Antrag konnte nicht gespeichert werden.",
+    EN: "Request could not be saved.",
+    IT: "Impossibile salvare la richiesta.",
+    TR: "Talep kaydedilemedi.",
+    SQ: "Kërkesa nuk mund të ruhej.",
+    KU: "Daxwaz nehat tomarkirin.",
+  },
+  networkSaveError: {
+    DE: "Netzwerkfehler beim Speichern.",
+    EN: "Network error while saving.",
+    IT: "Errore di rete durante il salvataggio.",
+    TR: "Kaydetme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ruajtjes.",
+    KU: "Di tomarkirinê de şaşiya torê.",
+  },
+  pleaseSelectStartEnd: {
+    DE: "Bitte Start- und Enddatum auswählen.",
+    EN: "Please select start and end date.",
+    IT: "Seleziona data di inizio e fine.",
+    TR: "Lütfen başlangıç ve bitiş tarihini seçin.",
+    SQ: "Ju lutem zgjidhni datën e fillimit dhe të mbarimit.",
+    KU: "Ji kerema xwe dîroka destpêk û dawiyê hilbijêre.",
+  },
+  endBeforeStart: {
+    DE: "Ende darf nicht vor Start liegen.",
+    EN: "End must not be before start.",
+    IT: "La fine non può essere prima dell'inizio.",
+    TR: "Bitiş başlangıçtan önce olamaz.",
+    SQ: "Mbarimi nuk mund të jetë para fillimit.",
+    KU: "Dawî nikare berî destpêkê be.",
+  },
+  holidayMarked: {
+    DE: "Dieser Tag ist als gesetzlicher Feiertag im Kalender markiert.",
+    EN: "This day is marked as a public holiday in the calendar.",
+    IT: "Questo giorno è contrassegnato come festività legale nel calendario.",
+    TR: "Bu gün takvimde resmî tatil olarak işaretlenmiştir.",
+    SQ: "Kjo ditë është shënuar si festë zyrtare në kalendar.",
+    KU: "Ev roj di salnameyê de wekî cejna fermî hatiye nîşankirin.",
+  },
+  adminHolidayMarked: {
+    DE: "Dieser Tag ist als gesetzlicher Feiertag im Kalender markiert.",
+    EN: "This day is marked as a public holiday in the calendar.",
+    IT: "Questo giorno è contrassegnato come festività legale nel calendario.",
+    TR: "Bu gün takvimde resmî tatil olarak işaretlenmiştir.",
+    SQ: "Kjo ditë është shënuar si festë zyrtare në kalendar.",
+    KU: "Ev roj di salnameyê de wekî cejna fermî hatiye nîşankirin.",
+  },
+  startNewRequest: {
+    DE: "Neuer Antrag",
+    EN: "New request",
+    IT: "Nuova richiesta",
+    TR: "Yeni talep",
+    SQ: "Kërkesë e re",
+    KU: "Daxwaza nû",
+  },
+  absenceTypeVacation: {
+    DE: "🌴 Urlaub",
+    EN: "🌴 Vacation",
+    IT: "🌴 Ferie",
+    TR: "🌴 İzin",
+    SQ: "🌴 Pushim",
+    KU: "🌴 Bêhnvedan",
+  },
+  absenceTypeSick: {
+    DE: "🤒 Krank",
+    EN: "🤒 Sick",
+    IT: "🤒 Malattia",
+    TR: "🤒 Hasta",
+    SQ: "🤒 I sëmurë",
+    KU: "🤒 Nexweş",
+  },
+  scopeLabel: {
+    DE: "Umfang",
+    EN: "Scope",
+    IT: "Entità",
+    TR: "Kapsam",
+    SQ: "Shtrirja",
+    KU: "Berfirehî",
+  },
+  scopeHint: {
+    DE: "Bei mehrtägigem Urlaub werden Samstage und Sonntage automatisch nicht mitgezählt.",
+    EN: "For multi-day vacation, Saturdays and Sundays are automatically not counted.",
+    IT: "Per ferie di più giorni, sabato e domenica non vengono conteggiati automaticamente.",
+    TR: "Birden fazla günlük izinlerde cumartesi ve pazar otomatik olarak sayılmaz.",
+    SQ: "Për pushimet disa ditore, të shtunat dhe të dielat nuk llogariten automatikisht.",
+    KU: "Di bêhnvedanên pirrojan de şemî û yekşem bixweber nayên hesibandin.",
+  },
+  fullVacationDay: {
+    DE: "Ganzer Urlaubstag",
+    EN: "Full vacation day",
+    IT: "Intera giornata di ferie",
+    TR: "Tam gün izin",
+    SQ: "Ditë e plotë pushimi",
+    KU: "Rojek bêhnvedanê ya tam",
+  },
+  halfVacationDay: {
+    DE: "Halber Urlaubstag",
+    EN: "Half vacation day",
+    IT: "Mezza giornata di ferie",
+    TR: "Yarım gün izin",
+    SQ: "Gjysmë dite pushimi",
+    KU: "Nîv roj bêhnvedanê",
+  },
+  compensationLabel: {
+    DE: "Vergütung",
+    EN: "Compensation",
+    IT: "Retribuzione",
+    TR: "Ücretlendirme",
+    SQ: "Kompensimi",
+    KU: "Mûçe",
+  },
+  compensationLockedHint: {
+    DE: "Für diesen Antrag ist aktuell nicht genug bezahlter Urlaub verfügbar. Der Antrag wird deshalb vorläufig als unbezahlt eingereicht. Bei der Prüfung kann der Admin den Antrag ganz oder teilweise in bezahlten und unbezahlten Urlaub aufteilen.",
+    EN: "There is currently not enough paid vacation available for this request. Therefore, the request is submitted temporarily as unpaid. During review, the admin can split it fully or partially into paid and unpaid vacation.",
+    IT: "Al momento non c'è abbastanza ferie pagate disponibili per questa richiesta. Per questo la richiesta viene inviata temporaneamente come non retribuita. Durante la revisione, l'admin può suddividerla in ferie pagate e non retribuite.",
+    TR: "Bu talep için şu anda yeterli ücretli izin mevcut değil. Bu nedenle talep geçici olarak ücretsiz olarak gönderilir. İnceleme sırasında yönetici talebi tamamen veya kısmen ücretli ve ücretsiz izin olarak ayırabilir.",
+    SQ: "Aktualisht nuk ka mjaftueshëm pushim të paguar për këtë kërkesë. Prandaj kërkesa dërgohet përkohësisht si e papaguar. Gjatë shqyrtimit, admini mund ta ndajë plotësisht ose pjesërisht në pushim të paguar dhe të papaguar.",
+    KU: "Ji bo vê daxwazê niha bêhnvedana bi mûçe têr nîne. Ji ber vê yekê daxwaz demkî wekî bê mûçe tê şandin. Di dema vekolînê de admin dikare wê bi tevahî an beşekî bike bêhnvedana bi mûçe û bê mûçe.",
+  },
+  compensationFlexibleHint: {
+    DE: "Falls bezahlter Resturlaub nicht vollständig ausreicht, kann der Antrag bei der Prüfung ganz oder teilweise in bezahlten und unbezahlten Urlaub aufgeteilt werden.",
+    EN: "If the remaining paid vacation is not fully sufficient, the request can be split during review fully or partially into paid and unpaid vacation.",
+    IT: "Se il residuo di ferie pagate non è sufficiente, la richiesta può essere suddivisa durante la revisione in ferie pagate e non retribuite.",
+    TR: "Kalan ücretli izin tamamen yeterli değilse, talep inceleme sırasında tamamen veya kısmen ücretli ve ücretsiz izin olarak ayrılabilir.",
+    SQ: "Nëse pushimi i mbetur i paguar nuk mjafton plotësisht, kërkesa mund të ndahet gjatë shqyrtimit në pushim të paguar dhe të papaguar.",
+    KU: "Heke bêhnvedana mayî ya bi mûçe bi tevahî têr nebe, daxwaz di dema vekolînê de dikare bi tevahî an beşekî bibe bêhnvedana bi mûçe û bê mûçe.",
+  },
+  noteToAdmin: {
+    DE: "Notiz an Admin",
+    EN: "Note to admin",
+    IT: "Nota per admin",
+    TR: "Yöneticiye not",
+    SQ: "Shënim për adminin",
+    KU: "Nîşe ji bo admin",
+  },
+  requestNotePlaceholder: {
+    DE: "Optional: Hinweis zum Antrag",
+    EN: "Optional: note for the request",
+    IT: "Opzionale: nota sulla richiesta",
+    TR: "İsteğe bağlı: talep notu",
+    SQ: "Opsionale: shënim për kërkesën",
+    KU: "Vebijarkî: nîşe ji bo daxwazê",
+  },
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+  },
+  newRequest: {
+    DE: "Neuer Antrag",
+    EN: "New request",
+    IT: "Nuova richiesta",
+    TR: "Yeni talep",
+    SQ: "Kërkesë e re",
+    KU: "Daxwaza nû",
+  },
+  sendRequest: {
+    DE: "Antrag senden",
+    EN: "Send request",
+    IT: "Invia richiesta",
+    TR: "Talebi gönder",
+    SQ: "Dërgo kërkesën",
+    KU: "Daxwazê bişîne",
+  },
+  calendarLoadingFallback: {
+    DE: "Kalender lädt...",
+    EN: "Calendar is loading...",
+    IT: "Il calendario si sta caricando...",
+    TR: "Takvim yükleniyor...",
+    SQ: "Kalendari po ngarkohet...",
+    KU: "Salname tê barkirin...",
+  },
+};
+
+function replaceTemplate(
+  template: string,
+  values: Record<string, string | number>
+): string {
+  return Object.entries(values).reduce((result, [key, value]) => {
+    return result.replaceAll(`{${key}}`, String(value));
+  }, template);
+}
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -387,6 +1357,7 @@ function isSessionDTO(v: unknown): v is SessionDTO {
   const userId = getStringField(v, "userId");
   const fullName = getStringField(v, "fullName");
   const role = getStringField(v, "role");
+  const language = getStringField(v, "language");
   const companyId = getStringField(v, "companyId");
   const companyName = getStringField(v, "companyName");
   const companySubdomain = getStringField(v, "companySubdomain");
@@ -408,6 +1379,12 @@ function isSessionDTO(v: unknown): v is SessionDTO {
     typeof userId === "string" &&
     typeof fullName === "string" &&
     (role === "ADMIN" || role === "EMPLOYEE") &&
+    (language === "DE" ||
+      language === "EN" ||
+      language === "IT" ||
+      language === "TR" ||
+      language === "SQ" ||
+      language === "KU") &&
     typeof companyId === "string" &&
     typeof companyName === "string" &&
     typeof companySubdomain === "string" &&
@@ -610,10 +1587,19 @@ function buildRequestBlocks(requests: AbsenceRequestDTO[]): AbsenceRequestBlock[
     });
 }
 
-function requestStatusLabel(status: AbsenceRequestStatus): string {
-  if (status === "PENDING") return "Offen";
-  if (status === "APPROVED") return "Genehmigt";
-  return "Abgelehnt";
+function requestStatusLabel(
+  language: AppUiLanguage,
+  status: AbsenceRequestStatus
+): string {
+  if (status === "PENDING") {
+    return translate(language, "statusOpen", KALENDER_DICTIONARY);
+  }
+
+  if (status === "APPROVED") {
+    return translate(language, "statusApproved", KALENDER_DICTIONARY);
+  }
+
+  return translate(language, "statusRejected", KALENDER_DICTIONARY);
 }
 
 function formatVacationDays(value: number): string {
@@ -628,6 +1614,7 @@ function formatVacationDays(value: number): string {
 }
 
 function getRequestCompensationSummary(
+  language: AppUiLanguage,
   paidVacationUnits: number,
   unpaidVacationUnits: number,
   compensation: AbsenceCompensation
@@ -636,21 +1623,30 @@ function getRequestCompensationSummary(
   const unpaidDays = unpaidVacationUnits / 2;
 
   if (paidDays > 0 && unpaidDays > 0) {
-    return `${formatVacationDays(paidDays)} Tage bezahlt · ${formatVacationDays(unpaidDays)} Tage unbezahlt`;
+    return replaceTemplate(
+      translate(language, "daysPaidDaysUnpaid", KALENDER_DICTIONARY),
+      {
+        paid: formatVacationDays(paidDays),
+        unpaid: formatVacationDays(unpaidDays),
+      }
+    );
   }
 
   if (paidDays > 0) {
-    return "Bezahlt";
+    return translate(language, "paid", KALENDER_DICTIONARY);
   }
 
   if (unpaidDays > 0) {
-    return "Unbezahlt";
+    return translate(language, "unpaid", KALENDER_DICTIONARY);
   }
 
-  return compensation === "PAID" ? "Bezahlt" : "Unbezahlt";
+  return compensation === "PAID"
+    ? translate(language, "paid", KALENDER_DICTIONARY)
+    : translate(language, "unpaid", KALENDER_DICTIONARY);
 }
 
 function getRequestCompensationHint(
+  language: AppUiLanguage,
   paidVacationUnits: number,
   unpaidVacationUnits: number
 ): string | null {
@@ -658,13 +1654,22 @@ function getRequestCompensationHint(
   const unpaidDays = unpaidVacationUnits / 2;
 
   if (paidDays > 0 && unpaidDays > 0) {
-    return `Davon ${formatVacationDays(paidDays)} Tage bezahlt und ${formatVacationDays(unpaidDays)} Tage unbezahlt.`;
+    return replaceTemplate(
+      translate(language, "ofWhichPaidUnpaid", KALENDER_DICTIONARY),
+      {
+        paid: formatVacationDays(paidDays),
+        unpaid: formatVacationDays(unpaidDays),
+      }
+    );
   }
 
   return null;
 }
 
-function getAbsenceCompensationSummary(absences: AbsenceDTO[]): string | null {
+function getAbsenceCompensationSummary(
+  language: AppUiLanguage,
+  absences: AbsenceDTO[]
+): string | null {
   const vacationAbsences = absences.filter((a) => a.type === "VACATION");
 
   if (vacationAbsences.length === 0) {
@@ -679,10 +1684,13 @@ function getAbsenceCompensationSummary(absences: AbsenceDTO[]): string | null {
     return sum + (a.compensation === "UNPAID" ? (a.dayPortion === "HALF_DAY" ? 1 : 2) : 0);
   }, 0);
 
-  return getRequestCompensationSummary(paidUnits, unpaidUnits, "PAID");
+  return getRequestCompensationSummary(language, paidUnits, unpaidUnits, "PAID");
 }
 
-function getAbsenceCompensationBreakdown(absences: AbsenceDTO[]): string | null {
+function getAbsenceCompensationBreakdown(
+  language: AppUiLanguage,
+  absences: AbsenceDTO[]
+): string | null {
   const vacationAbsences = absences.filter((a) => a.type === "VACATION");
 
   if (vacationAbsences.length === 0) {
@@ -700,29 +1708,45 @@ function getAbsenceCompensationBreakdown(absences: AbsenceDTO[]): string | null 
   const paidDays = paidUnits / 2;
   const unpaidDays = unpaidUnits / 2;
 
-  if (paidDays > 0 && unpaidDays > 0) {
-    return `${formatVacationDays(paidDays)} Tage bezahlt · ${formatVacationDays(unpaidDays)} Tage unbezahlt`;
+    if (paidDays > 0 && unpaidDays > 0) {
+    return replaceTemplate(
+      translate(language, "daysPaidDaysUnpaid", KALENDER_DICTIONARY),
+      {
+        paid: formatVacationDays(paidDays),
+        unpaid: formatVacationDays(unpaidDays),
+      }
+    );
   }
 
   if (paidDays > 0) {
-    return `${formatVacationDays(paidDays)} Tage bezahlt`;
+    return `${formatVacationDays(paidDays)} ${translate(language, "paid", KALENDER_DICTIONARY)}`;
   }
 
   if (unpaidDays > 0) {
-    return `${formatVacationDays(unpaidDays)} Tage unbezahlt`;
+    return `${formatVacationDays(unpaidDays)} ${translate(language, "unpaid", KALENDER_DICTIONARY)}`;
   }
 
   return null;
 }
 
-function requestBlockLabel(b: AbsenceRequestBlock): string {
+function requestBlockLabel(
+  language: AppUiLanguage,
+  b: AbsenceRequestBlock
+): string {
   const icon = b.type === "VACATION" ? "🌴" : "🤒";
 
   if (b.type === "VACATION" && b.dayPortion === "HALF_DAY") {
-    return `${icon} Urlaubsantrag (halber Tag · ${b.start})`;
+    return replaceTemplate(
+      translate(language, "vacationRequestHalfDay", KALENDER_DICTIONARY),
+      { date: b.start }
+    );
   }
 
-  const name = b.type === "VACATION" ? "Urlaubsantrag" : "Krankheitsantrag";
+  const name =
+    b.type === "VACATION"
+      ? translate(language, "vacationRequest", KALENDER_DICTIONARY)
+      : translate(language, "sicknessRequest", KALENDER_DICTIONARY);
+
   const span = b.start === b.end ? b.start : `${b.start}–${b.end}`;
   return `${icon} ${name} (${span})`;
 }
@@ -757,11 +1781,11 @@ function safeWriteCategoryMap(map: Record<string, EventCategory>): void {
   }
 }
 
-function categoryLabel(c: EventCategory): string {
-  if (c === "KUNDE") return "Kunde";
-  if (c === "BAUSTELLE") return "Baustelle";
-  if (c === "INTERN") return "Intern";
-  return "Privat";
+function categoryLabel(language: AppUiLanguage, c: EventCategory): string {
+  if (c === "KUNDE") return translate(language, "customer", KALENDER_DICTIONARY);
+  if (c === "BAUSTELLE") return translate(language, "site", KALENDER_DICTIONARY);
+  if (c === "INTERN") return translate(language, "internal", KALENDER_DICTIONARY);
+  return translate(language, "private", KALENDER_DICTIONARY);
 }
 
 function categoryDotStyle(c: EventCategory): React.CSSProperties {
@@ -890,6 +1914,9 @@ type OpenDayPrefill = {
 function KalenderPageInner({
   forceAdminOwnCalendar = false,
 }: KalenderPageProps) {
+  const [language, setLanguage] = useState<AppUiLanguage>("DE");
+  const t = (key: KalenderTextKey): string =>
+    translate(language, key, KALENDER_DICTIONARY);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [cursor, setCursor] = useState<Date>(() => new Date());
@@ -1021,6 +2048,9 @@ function KalenderPageInner({
         if (!alive) return;
 
         const parsed = parseMeResponse(j);
+        if (parsed?.language) {
+          setLanguage(parsed.language);
+        }
 
         if (forceAdminOwnCalendar) {
           if (parsed && parsed.role === "ADMIN") {
@@ -1032,6 +2062,7 @@ function KalenderPageInner({
             userId: "",
             fullName: "",
             role: "ADMIN",
+            language: "DE",
             companyId: "",
             companyName: "",
             companySubdomain: "",
@@ -1051,6 +2082,7 @@ function KalenderPageInner({
             userId: "",
             fullName: "",
             role: "ADMIN",
+            language: "DE",
             companyId: "",
             companyName: "",
             companySubdomain: "",
@@ -1272,14 +2304,14 @@ function KalenderPageInner({
 
       if (!r.ok) {
         setDayPlans([]);
-        setPlansError(extractErrorMessage(j, "Plan konnte nicht geladen werden."));
+        setPlansError(extractErrorMessage(j, language === "DE" ? "Plan konnte nicht geladen werden." : t("loadingPlan")));
         return;
       }
 
       setDayPlans(parsePlanEntriesResponse(j));
     } catch {
       setDayPlans([]);
-      setPlansError("Netzwerkfehler beim Laden des Plans.");
+      setPlansError(language === "DE" ? "Netzwerkfehler beim Laden des Plans." : "Network error.");
     } finally {
       setPlansLoading(false);
     }
@@ -1309,14 +2341,21 @@ function KalenderPageInner({
 
       if (!r.ok) {
         setAdminEmployeeDayPlans([]);
-        setAdminEmployeePlansError(extractErrorMessage(j, "Plan des Mitarbeiters konnte nicht geladen werden."));
+        setAdminEmployeePlansError(
+          extractErrorMessage(
+            j,
+            language === "DE" ? "Plan des Mitarbeiters konnte nicht geladen werden." : "Employee schedule could not be loaded."
+          )
+        );
         return;
       }
 
       setAdminEmployeeDayPlans(parsePlanEntriesResponse(j));
     } catch {
       setAdminEmployeeDayPlans([]);
-      setAdminEmployeePlansError("Netzwerkfehler beim Laden des Mitarbeiter-Plans.");
+      setAdminEmployeePlansError(
+        language === "DE" ? "Netzwerkfehler beim Laden des Mitarbeiter-Plans." : "Network error."
+      );
     } finally {
       setAdminEmployeePlansLoading(false);
     }
@@ -1330,7 +2369,7 @@ function KalenderPageInner({
       const j: unknown = await r.json();
       if (!r.ok) {
         setDayAppointments([]);
-        setApptError(extractErrorMessage(j, "Termine konnten nicht geladen werden."));
+        setApptError(extractErrorMessage(j, language === "DE" ? "Termine konnten nicht geladen werden." : "Appointments could not be loaded."));
         return;
       }
       const list = parseAppointmentsResponse(j)
@@ -1339,7 +2378,7 @@ function KalenderPageInner({
       setDayAppointments(list);
     } catch {
       setDayAppointments([]);
-      setApptError("Netzwerkfehler beim Laden der Termine.");
+      setApptError(language === "DE" ? "Netzwerkfehler beim Laden der Termine." : "Network error.");
     } finally {
       setApptLoading(false);
     }
@@ -1529,26 +2568,26 @@ function KalenderPageInner({
     setError(null);
 
     if (!absenceStart || !absenceEnd) {
-      setError("Bitte Start- und Enddatum auswählen.");
+      setError(t("pleaseSelectStartEnd"));
       return;
     }
 
     if (absenceEnd < absenceStart) {
-      setError("Ende darf nicht vor Start liegen.");
+      setError(t("endBeforeStart"));
       return;
     }
     if (absenceType === "SICK" && absenceDayPortion !== "FULL_DAY") {
-      setError("Krankheit kann nur ganztägig beantragt werden.");
+      setError(t("wholeDayOnlyForSick"));
       return;
     }
 
     if (absenceDayPortion === "HALF_DAY" && absenceType !== "VACATION") {
-      setError("Halbe Tage sind nur für Urlaub erlaubt.");
+      setError(t("halfDaysOnlyVacation"));
       return;
     }
 
     if (absenceDayPortion === "HALF_DAY" && absenceStart !== absenceEnd) {
-      setError("Ein halber Urlaubstag darf nur für genau ein Datum beantragt werden.");
+      setError(t("halfDaySingleDateOnly"));
       return;
     }
 
@@ -1560,13 +2599,13 @@ function KalenderPageInner({
       );
 
       if (effectiveVacationDays <= 0) {
-        setError("Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.");
+        setError(t("vacationNoWeekdays"));
         return;
       }
     }
 
     if (absenceType === "SICK" && absenceCompensation !== "PAID") {
-      setError("Krankheit darf nicht als unbezahlt beantragt werden.");
+      setError(t("sickCannotBeUnpaid"));
       return;
     }
 
@@ -1588,7 +2627,7 @@ function KalenderPageInner({
       const j: unknown = await r.json();
 
       if (!r.ok) {
-        setError(extractErrorMessage(j, "Antrag konnte nicht gespeichert werden."));
+        setError(extractErrorMessage(j, t("requestCouldNotBeSaved")));
         return;
       }
 
@@ -1597,7 +2636,7 @@ function KalenderPageInner({
       setRequestNote("");
       await reloadMonthAll();
     } catch {
-      setError("Netzwerkfehler beim Speichern.");
+      setError(t("networkSaveError"));
     } finally {
       setSaving(false);
     }
@@ -1611,18 +2650,18 @@ function KalenderPageInner({
   async function saveAppointment(): Promise<void> {
     const date = effectiveAdminDate();
     if (!date) {
-      setApptError("Bitte Datum auswählen.");
+      setApptError(`${t("date")} auswählen.`);
       return;
     }
 
     setApptError(null);
     const titleValue = apptTitle.trim();
     if (!titleValue) {
-      setApptError("Bitte Titel eingeben.");
+      setApptError(language === "DE" ? "Bitte Titel eingeben." : "Please enter a title.");
       return;
     }
     if (!/^\d{2}:\d{2}$/.test(apptStart) || !/^\d{2}:\d{2}$/.test(apptEnd)) {
-      setApptError("Start/Ende muss HH:MM sein.");
+      setApptError(language === "DE" ? "Start/Ende muss HH:MM sein." : "Start/end must be HH:MM.");
       return;
     }
 
@@ -1643,7 +2682,7 @@ function KalenderPageInner({
         });
         const j: unknown = await r.json();
         if (!r.ok) {
-          setApptError(extractErrorMessage(j, "Speichern fehlgeschlagen."));
+          setApptError(extractErrorMessage(j, language === "DE" ? "Speichern fehlgeschlagen." : "Saving failed."));
           return;
         }
       } else {
@@ -1661,7 +2700,7 @@ function KalenderPageInner({
         });
         const j: unknown = await r.json();
         if (!r.ok) {
-          setApptError(extractErrorMessage(j, "Speichern fehlgeschlagen."));
+          setApptError(extractErrorMessage(j, language === "DE" ? "Speichern fehlgeschlagen." : "Saving failed."));
           return;
         }
 
@@ -1680,7 +2719,7 @@ function KalenderPageInner({
 
       if (adminMode === "edit") setAdminMode("create-from-day");
     } catch {
-      setApptError("Netzwerkfehler beim Speichern.");
+      setApptError(t("networkSaveError"));
     } finally {
       setSaving(false);
     }
@@ -1708,7 +2747,7 @@ function KalenderPageInner({
       const r = await fetch(`/api/admin/appointments/${encodeURIComponent(id)}`, { method: "DELETE" });
       const j: unknown = await r.json();
       if (!r.ok) {
-        setApptError(extractErrorMessage(j, "Löschen fehlgeschlagen."));
+        setApptError(extractErrorMessage(j, language === "DE" ? "Löschen fehlgeschlagen." : "Deleting failed."));
         return;
       }
 
@@ -1721,7 +2760,7 @@ function KalenderPageInner({
       if (apptEditingId === id) resetAppointmentForm();
       await Promise.all([loadAppointmentsForDay(selectedDate), reloadMonthAll()]);
     } catch {
-      setApptError("Netzwerkfehler beim Löschen.");
+      setApptError(language === "DE" ? "Netzwerkfehler beim Löschen." : "Network error.");
     } finally {
       setSaving(false);
     }
@@ -1791,7 +2830,7 @@ function KalenderPageInner({
                       paddingRight: 20,
                     }}
                   >
-                    <option value="">Meine Admin-Termine</option>
+                    <option value="">{t("myAdminAppointments")}</option>
                     {users.map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.fullName}
@@ -1810,7 +2849,7 @@ function KalenderPageInner({
                         marginInline: "auto",
                       }}
                     >
-                      Mitarbeiteransicht (read-only): Kalender zeigt Plan/Urlaub/Krank des Mitarbeiters.
+                      {t("employeeReadonlyCalendarHint")}
                     </div>
                   ) : null}
                 </div>
@@ -1829,7 +2868,7 @@ function KalenderPageInner({
                 className={`calendar-segmented-button ${viewMode === "MONTH" ? "is-active" : ""}`}
                 onClick={() => setViewMode("MONTH")}
               >
-                Monat
+                {t("month")}
               </button>
               <button
                 type="button"
@@ -1857,7 +2896,7 @@ function KalenderPageInner({
                     <path fill="#EA4335" d="M24 48c6.5 0 12-2.1 16-5.7l-7-5.5c-2 1.3-4.6 2-9 2-6.4 0-11.9-4.3-13.8-10.1l-7.4 5.7C6.6 42.5 14.6 48 24 48z"/>
                   </svg>
 
-                  Google Kalender verbinden
+                  {t("connectGoogleCalendar")}
                 </button>
               </div>
             ) : null}
@@ -1895,7 +2934,7 @@ function KalenderPageInner({
                   <path fill="#EA4335" d="M24 48c6.5 0 12-2.1 16-5.7l-7-5.5c-2 1.3-4.6 2-9 2-6.4 0-11.9-4.3-13.8-10.1l-7.4 5.7C6.6 42.5 14.6 48 24 48z"/>
                 </svg>
 
-                Google Kalender verbinden
+                {t("connectGoogleCalendar")}
               </button>
             </div>
           ) : null}
@@ -1970,25 +3009,25 @@ function KalenderPageInner({
                         {info?.hasPlan ? (
                           <span className={pillClassName()}>
                             <span style={smallDot("var(--tenant-work-accent)")} />{" "}
-                            {showEmployeeCalendarLegend ? "Arbeit" : "Termine"}
+                            {showEmployeeCalendarLegend ? t("work") : t("appointments")}
                           </span>
                         ) : null}
 
                         {info?.hasHoliday ? (
                           <span className={pillClassName()} title={info.holidayName ?? "Gesetzlicher Feiertag"}>
-                            <span style={smallDot(holidayDotColor())} /> Feiertag
+                            <span style={smallDot(holidayDotColor())} /> {t("holiday")}
                           </span>
                         ) : null}
 
                         {showEmployeeCalendarLegend && info?.hasVacation ? (
                           <span className={pillClassName()}>
-                            <span style={smallDot("var(--tenant-vacation-accent)")} /> Urlaub
+                            <span style={smallDot("var(--tenant-vacation-accent)")} /> {t("vacation")}
                           </span>
                         ) : null}
 
                         {showEmployeeCalendarLegend && info?.hasSick ? (
                           <span className={pillClassName()}>
-                            <span style={smallDot("var(--tenant-sick-accent)")} /> Krank
+                            <span style={smallDot("var(--tenant-sick-accent)")} /> {t("sick")}
                           </span>
                         ) : null}
 
@@ -1999,7 +3038,7 @@ function KalenderPageInner({
                               color: "var(--muted)",
                             }}
                           >
-                            Keine Einträge
+                            {t("noEntries")}
                           </span>
                         ) : null}
                       </div>
@@ -2042,7 +3081,7 @@ function KalenderPageInner({
                 type="button"
                 onClick={jumpToToday}
               >
-                Heute
+                {t("today")}
               </button>
             </div>
           </>
@@ -2057,7 +3096,7 @@ function KalenderPageInner({
                 ))}
 
                 {loading ? (
-                  <div style={{ gridColumn: "1 / -1", color: "var(--muted)" }}>Lade Kalender...</div>
+                  <div style={{ gridColumn: "1 / -1", color: "var(--muted)" }}>{t("loadingCalendar")}</div>
                 ) : (
                   grid.map((c, idx) => {
                     const info = c.inMonth && c.date ? dayMap.get(c.date) : undefined;
@@ -2208,40 +3247,40 @@ function KalenderPageInner({
                 {isAdminOwnCalendar ? (
                   <>
                     <div>
-                      <span className="badge-dot dot-work" /> Termine
+                      <span className="badge-dot dot-work" /> {t("appointments")}
                     </div>
                     <div>
                       <span
                         className="badge-dot"
                         style={{ background: holidayDotColor(), boxShadow: "0 0 0 3px var(--brand-holiday-bg)" }}
                       />{" "}
-                      Feiertag
+                      {t("holiday")}
                     </div>
                   </>
                 ) : (
                   <>
                     <div>
-                      <span className="badge-dot dot-work" /> Arbeit
+                      <span className="badge-dot dot-work" /> {t("work")}
                     </div>
                     <div>
-                      <span className="badge-dot dot-vac" /> Urlaub
+                      <span className="badge-dot dot-vac" /> {t("vacation")}
                     </div>
                     <div>
                       <span
                         className="badge-dot"
                         style={{ background: holidayDotColor(), boxShadow: "0 0 0 3px var(--brand-holiday-bg)" }}
                       />{" "}
-                      Feiertag
+                      {t("holiday")}
                     </div>
                     <div>
-                      <span className="badge-dot dot-sick" /> Krank
+                      <span className="badge-dot dot-sick" /> {t("sick")}
                     </div>
                   </>
                 )}
 
                 {!isAdminViewingEmployee && (absLoading || reqLoading) ? (
                   <div style={{ fontSize: 12, opacity: 0.8 }}>
-                    Abwesenheiten/Anträge laden…
+                    {language === "DE" ? "Abwesenheiten/Anträge laden…" : "Loading absences/requests..."}
                   </div>
                 ) : null}
               </div>
@@ -2252,7 +3291,7 @@ function KalenderPageInner({
                   type="button"
                   onClick={jumpToToday}
                 >
-                  Heute
+                  {t("today")}
                 </button>
               </div>
             </div>
@@ -2263,8 +3302,8 @@ function KalenderPageInner({
       {isAdminOwnCalendar ? (
         <button
           type="button"
-          aria-label="Neuer Termin"
-          title="Neuer Termin"
+          aria-label={t("newAppointment")}
+          title={t("newAppointment")}
           onClick={openNewEventGlobal}
           className="calendar-floating-button"
         >
@@ -2276,10 +3315,10 @@ function KalenderPageInner({
         open={open}
         title={
           isAdmin && adminMode === "create-global"
-            ? "Neuer Termin"
+            ? t("newAppointment")
             : selectedDate
             ? fmtDateTitle(selectedDate)
-            : "Tag"
+            : t("day")
         }
         onClose={() => setOpen(false)}
         maxWidth={980}
@@ -2311,9 +3350,11 @@ function KalenderPageInner({
 
             <div className="calendar-modal-agenda-head">
               <div>
-                <div style={{ fontWeight: 900, fontSize: 16 }}>Agenda</div>
+                <div style={{ fontWeight: 900, fontSize: 16 }}>{t("appointments")}</div>
                 <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 2 }}>
-                  {selectedDate ? `Termine für ${selectedDate}` : "Deine Termine"}
+                  {selectedDate
+                    ? `${t("appointments")} ${language === "DE" ? "für" : "for"} ${selectedDate}`
+                    : t("appointments")}
                 </div>
               </div>
 
@@ -2330,17 +3371,17 @@ function KalenderPageInner({
                   void loadAppointmentsForDay(ymd);
                 }}
               >
-                Heute
+                {t("today")}
               </button>
             </div>
 
             {apptLoading ? (
               <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
-                Lädt Termine...
+                {t("loadingAppointments")}...
               </div>
             ) : dayAppointments.length === 0 ? (
               <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
-                Keine Termine für diesen Tag.
+                {t("noAppointmentsForDay")}
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
@@ -2383,7 +3424,7 @@ function KalenderPageInner({
                               type="button"
                               onClick={() => editAppointment(a)}
                               disabled={saving}
-                              title="Bearbeiten"
+                              title={t("edit")}
                               className="tenant-icon-button tenant-icon-button-neutral"
                             >
                               ✏️
@@ -2392,7 +3433,7 @@ function KalenderPageInner({
                               type="button"
                               onClick={() => void deleteAppointment(a.id)}
                               disabled={saving}
-                              title="Löschen"
+                              title={t("delete")}
                               className="tenant-icon-button tenant-icon-button-danger"
                             >
                               🗑️
@@ -2401,7 +3442,7 @@ function KalenderPageInner({
                         </div>
 
                         <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
-                          <span className={pillClassName()}>{categoryLabel(cat)}</span>
+                          <span className={pillClassName()}>{categoryLabel(language, cat)}</span>
 
                           {a.location ? (
                             <span
@@ -2436,7 +3477,11 @@ function KalenderPageInner({
 
             <div className="calendar-modal-form-head">
               <div style={{ fontWeight: 900 }}>
-                {apptEditingId ? "Termin bearbeiten" : adminMode === "create-global" ? "Neuer Termin" : "Termin eintragen"}
+                {apptEditingId
+                  ? t("editAppointment")
+                  : adminMode === "create-global"
+                  ? t("newAppointment")
+                  : t("enterAppointment")}
               </div>
               {apptEditingId ? (
                 <button
@@ -2449,7 +3494,7 @@ function KalenderPageInner({
                   }}
                   disabled={saving}
                 >
-                  Abbrechen
+                  {t("cancel")}
                 </button>
               ) : null}
             </div>
@@ -2457,8 +3502,8 @@ function KalenderPageInner({
             {adminMode === "create-global" || adminMode === "edit" ? (
               <div className="calendar-admin-date-field calendar-admin-date-field-compact">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                  Datum
-                </div>
+                  {t("date")}
+             </div>
                 <input
                   className="input calendar-admin-date-input calendar-admin-date-input-compact"
                   type="date"
@@ -2469,8 +3514,8 @@ function KalenderPageInner({
             ) : (
               <div className="calendar-admin-date-field calendar-admin-date-field-compact">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                  Datum
-                </div>
+                  {t("date")}
+              </div>
                 <div
                   className="calendar-admin-date-display calendar-admin-date-input-compact"
                   style={{
@@ -2492,7 +3537,7 @@ function KalenderPageInner({
             >
               <div className="admin-time-grid-item">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                  Start
+                  {t("start")}
                 </div>
                 <input
                   className="input"
@@ -2503,7 +3548,7 @@ function KalenderPageInner({
               </div>
               <div className="admin-time-grid-item">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                  Ende
+                  {t("end")}
                 </div>
                 <input
                   className="input"
@@ -2516,7 +3561,7 @@ function KalenderPageInner({
             <div className="calendar-admin-meta-grid" style={{ marginBottom: 10 }}>
               <div className="calendar-admin-meta-item">
                 <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                  Kategorie (UI-only)
+                  {t("categoryUiOnly")}
                 </div>
                 <select
                   className="input calendar-admin-meta-input"
@@ -2528,41 +3573,41 @@ function KalenderPageInner({
                     }
                   }}
                 >
-                  <option value="KUNDE">Kunde</option>
-                  <option value="BAUSTELLE">Baustelle</option>
-                  <option value="INTERN">Intern</option>
-                  <option value="PRIVAT">Privat</option>
+                  <option value="KUNDE">{t("customer")}</option>
+                  <option value="BAUSTELLE">{t("site")}</option>
+                  <option value="INTERN">{t("internal")}</option>
+                  <option value="PRIVAT">{t("private")}</option>
                 </select>
               </div>
 
               <div className="calendar-admin-meta-item">
                 <div className="label" style={{ marginTop: 14, marginBottom: 10, fontSize: 12, opacity: 0.8 }}>
-                  Titel
+                  {t("title")}
                 </div>
                 <input
                   className="input calendar-admin-meta-input"
                   value={apptTitle}
                   onChange={(e) => setApptTitle(e.target.value)}
-                  placeholder="z. B. Kundentermin"
+                  placeholder={t("titlePlaceholder")}
                 />
               </div>
             </div>
 
             <div style={{ marginBottom: 10 }}>
               <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                Ort (optional)
+                {t("locationOptional")}
               </div>
               <input
                 className="input"
                 value={apptLocation}
                 onChange={(e) => setApptLocation(e.target.value)}
-                placeholder="z. B. Baustelle / Adresse"
+                placeholder={t("locationPlaceholder")}
               />
             </div>
 
             <div style={{ marginBottom: 12 }}>
               <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                Notiz (optional)
+                {t("noteOptional")}
               </div>
               <textarea
                 className="input"
@@ -2570,19 +3615,19 @@ function KalenderPageInner({
                 onChange={(e) => setApptNotes(e.target.value)}
                 rows={3}
                 style={{ resize: "vertical" }}
-                placeholder="z. B. Ansprechpartner, Material, …"
+                placeholder={t("notePlaceholder")}
               />
             </div>
 
             <button className="btn btn-accent" type="button" onClick={saveAppointment} disabled={saving} style={{ width: "100%" }}>
-              {saving ? "Speichert..." : apptEditingId ? "Änderungen speichern" : "Eintragen"}
+              {saving ? t("saving") : apptEditingId ? t("saveChanges") : t("save")}
             </button>
           </>
         ) : isAdminViewingEmployee ? (
           <>
             <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.9 }}>
-              Du siehst gerade den Kalender eines Mitarbeiters.
-              Bearbeitung und eigene Admin-Termine sind in dieser Ansicht deaktiviert.
+              {t("viewingEmployeeCalendar")}
+              {t("viewingEmployeeCalendarHint")}
             </div>
 
             {selectedDate && dayMap.get(selectedDate)?.hasHoliday ? (
@@ -2594,17 +3639,17 @@ function KalenderPageInner({
                   </span>
                 </div>
                 <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                  Dieser Tag ist als gesetzlicher Feiertag im Kalender markiert.
+                  {t("adminHolidayMarked")}
                 </div>
               </div>
             ) : null}
 
             <div style={{ marginTop: 14 }}>
-              <div className="label">Einsatzplan des Mitarbeiters</div>
+              <div className="label">{t("employeeSchedule")}</div>
 
               {adminEmployeePlansLoading ? (
                 <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
-                  Lädt Plan...
+                  {t("loadingPlan")}
                 </div>
               ) : adminEmployeePlansError ? (
                 <div className="card calendar-status-card calendar-status-card-danger">
@@ -2614,7 +3659,7 @@ function KalenderPageInner({
                 </div>
               ) : adminEmployeeDayPlans.length === 0 ? (
                 <div className="card" style={{ padding: 12, opacity: 0.85 }}>
-                  Kein Einsatz für diesen Tag geplant.
+                  {t("noScheduleForDay")}
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -2625,8 +3670,10 @@ function KalenderPageInner({
                       </div>
 
                       <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>
-                        {p.location ? `📍 ${p.location}` : "📍 (kein Ort angegeben)"}
-                        {typeof p.travelMinutes === "number" && p.travelMinutes > 0 ? ` · 🚗 ${p.travelMinutes} Min Fahrzeit` : ""}
+                        {p.location ? `📍 ${p.location}` : t("noLocationGiven")}
+                        {typeof p.travelMinutes === "number" && p.travelMinutes > 0
+                          ? ` · 🚗 ${p.travelMinutes} ${t("travelMinutes")}`
+                          : ""}
                       </div>
 
                       {p.noteEmployee ? (
@@ -2642,27 +3689,28 @@ function KalenderPageInner({
 
             {selectedDate ? (
               <div className="card" style={{ padding: 12, marginTop: 14 }}>
-                <div style={{ fontWeight: 900, marginBottom: 6 }}>Tagesstatus</div>
+                <div style={{ fontWeight: 900, marginBottom: 6 }}>{t("dayStatus")}</div>
 
                 <div style={{ marginTop: 8, display: "flex", gap: 10, flexWrap: "wrap", color: "var(--muted)" }}>
-                  {dayMap.get(selectedDate)?.hasPlan ? <span className={pillClassName()}>Plan vorhanden</span> : null}
+                  {dayMap.get(selectedDate)?.hasPlan ? <span className={pillClassName()}>{t("scheduleExists")}</span> : null}
                   {dayMap.get(selectedDate)?.hasHoliday ? (
                     <span className={pillClassName()} title={dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}>
-                      Feiertag
+                      {t("holiday")}
                     </span>
                   ) : null}
                   {dayMap.get(selectedDate)?.hasVacation ? (
                     <span className={pillClassName()}>
                       {getAbsenceCompensationSummary(
+                        language,
                         monthAbsences.filter(
                           (a) => a.absenceDate === selectedDate && a.type === "VACATION"
                         )
                       ) === "Unbezahlt"
-                        ? "Unbezahlter Urlaub"
-                        : "Urlaub"}
+                        ? t("paidVacation")
+                        : t("vacation")}
                     </span>
                   ) : null}
-                  {dayMap.get(selectedDate)?.hasSick ? <span className={pillClassName()}>Krank</span> : null}
+                  {dayMap.get(selectedDate)?.hasSick ? <span className={pillClassName()}>{t("sick")}</span> : null}
                 </div>
 
                 {!dayMap.get(selectedDate)?.hasPlan &&
@@ -2670,7 +3718,7 @@ function KalenderPageInner({
                 !dayMap.get(selectedDate)?.hasVacation &&
                 !dayMap.get(selectedDate)?.hasSick ? (
                   <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>
-                    Keine Einträge für diesen Tag vorhanden.
+                    {t("noEntriesForDay")}
                   </div>
                 ) : null}
               </div>
@@ -2679,11 +3727,11 @@ function KalenderPageInner({
         ) : (
           <>
             <div style={{ marginBottom: 14 }}>
-              <div className="label">Dein Einsatzplan</div>
+              <div className="label">{t("yourSchedule")}</div>
 
               {plansLoading ? (
                 <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
-                  Lädt Plan...
+                  {t("loadingPlan")}
                 </div>
               ) : plansError ? (
                 <div className="card calendar-status-card calendar-status-card-danger">
@@ -2691,7 +3739,7 @@ function KalenderPageInner({
                 </div>
               ) : dayPlans.length === 0 ? (
                 <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
-                  Kein Einsatz für diesen Tag geplant.
+                  {t("noScheduleForDay")}
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -2702,8 +3750,10 @@ function KalenderPageInner({
                       </div>
 
                       <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>
-                        {p.location ? `📍 ${p.location}` : "📍 (kein Ort angegeben)"}
-                        {typeof p.travelMinutes === "number" && p.travelMinutes > 0 ? ` · 🚗 ${p.travelMinutes} Min Fahrzeit` : ""}
+                        {p.location ? `📍 ${p.location}` : t("noLocationGiven")}
+                        {typeof p.travelMinutes === "number" && p.travelMinutes > 0
+                          ? ` · 🚗 ${p.travelMinutes} ${t("travelMinutes")}`
+                          : ""}
                       </div>
 
                       {p.noteEmployee ? (
@@ -2718,7 +3768,7 @@ function KalenderPageInner({
                           type="button"
                           onClick={() => syncPlanEntryToWorkEntry(p)}
                         >
-                          ↪️ In Eintrag syncen
+                          {t("syncToEntry")}
                         </button>
 
                         <button
@@ -2729,7 +3779,7 @@ function KalenderPageInner({
                             router.push(`/kalender/dokumente/${encodeURIComponent(p.id)}`);
                           }}
                         >
-                          📎 Dokumente
+                          {t("documents")}
                         </button>
                       </div>
                       <div
@@ -2740,7 +3790,7 @@ function KalenderPageInner({
                           lineHeight: 1.4,
                         }}
                       >
-                        Übernimmt Datum, Tätigkeit und Einsatzort. Uhrzeiten und Fahrtminuten ,bitte in der Erfassung ergänzen.
+                        {t("syncPlanHint")}
                       </div>
                     </div>
                   ))}
@@ -2749,27 +3799,27 @@ function KalenderPageInner({
 
               {selectedDate && dayMap.get(selectedDate)?.hasHoliday ? (
                 <div style={{ marginTop: 14 }}>
-                  <div className="label">Gesetzlicher Feiertag</div>
+                  <div className="label">{t("publicHoliday")}</div>
                   <div className="card" style={{ padding: 12 }}>
                     <div style={{ fontWeight: 900 }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         {getHolidayIcon(dayMap.get(selectedDate)?.holidayName ?? null)}
-                        {dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}
+                        {dayMap.get(selectedDate)?.holidayName ?? t("publicHoliday")}
                       </span>
                     </div>
                     <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                      Dieser Tag ist als gesetzlicher Feiertag im Kalender markiert.
+                      {t("holidayMarked")}
                     </div>
                   </div>
                 </div>
               ) : null}
 
               <div style={{ marginTop: 14 }}>
-                <div className="label">Bestätigte Abwesenheit</div>
+                <div className="label">{t("confirmedAbsence")}</div>
 
                 {confirmedAbsencesForSelectedDay.length === 0 ? (
                   <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
-                    Keine bestätigte Abwesenheit eingetragen.
+                    {t("noConfirmedAbsence")}
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -2777,12 +3827,12 @@ function KalenderPageInner({
                       <div className="card" style={{ padding: 12 }}>
                         <div style={{ fontWeight: 900 }}>🌴 Urlaub ({selectedDate})</div>
                         <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                          Bereits vom Admin bestätigt und im Kalender registriert.
+                          {t("alreadyConfirmedRegistered")}
                         </div>
 
-                        {getAbsenceCompensationBreakdown(confirmedAbsencesForSelectedDay) ? (
+                        {getAbsenceCompensationBreakdown(language, confirmedAbsencesForSelectedDay) ? (
                           <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                            Vergütung: {getAbsenceCompensationBreakdown(confirmedAbsencesForSelectedDay)}
+                            {t("compensation")} {getAbsenceCompensationBreakdown(language, confirmedAbsencesForSelectedDay)}
                           </div>
                         ) : null}
                       </div>
@@ -2796,7 +3846,7 @@ function KalenderPageInner({
                             🤒 Krank ({a.dayPortion === "HALF_DAY" ? "0,5 Tag" : "1 Tag"})
                           </div>
                           <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                            Bereits vom Admin bestätigt und im Kalender registriert.
+                            {t("alreadyConfirmedRegistered")}
                           </div>
                         </div>
                       ))}
@@ -2809,31 +3859,32 @@ function KalenderPageInner({
 
                 {requestBlocksForSelectedDay.length === 0 ? (
                   <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
-                    Kein Antrag für diesen Tag vorhanden.
+                    {t("noRequestForDay")}
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {requestBlocksForSelectedDay.map((b) => (
                       <div key={b.id} className="card" style={{ padding: 12 }}>
-                        <div style={{ fontWeight: 900 }}>{requestBlockLabel(b)}</div>
+                        <div style={{ fontWeight: 900 }}>{requestBlockLabel(language, b)}</div>
 
                         <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                          Status: {requestStatusLabel(b.status)}
+                          {t("status")} {requestStatusLabel(language, b.status)}
                         </div>
 
                         {b.type === "VACATION" ? (
                           <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                            Umfang: {b.dayPortion === "HALF_DAY" ? "Halber Urlaubstag" : "Ganzer Urlaubstag"}
+                            {t("scope")} {b.dayPortion === "HALF_DAY" ? t("halfVacationDay") : t("fullVacationDay")}
                           </div>
                         ) : null}
                         {b.type === "VACATION" ? (
                           <>
                             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                              Gesamt: {formatVacationDays((b.paidVacationUnits + b.unpaidVacationUnits) / 2)} Tage
+                              {t("total")} {formatVacationDays((b.paidVacationUnits + b.unpaidVacationUnits) / 2)} {language === "DE" ? "Tage" : language === "EN" ? "days" : language === "IT" ? "giorni" : language === "TR" ? "gün" : language === "SQ" ? "ditë" : "roj"}
                             </div>
 
                             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                              Vergütung: {getRequestCompensationSummary(
+                              {t("compensation")} {getRequestCompensationSummary(
+                                language,
                                 b.paidVacationUnits,
                                 b.unpaidVacationUnits,
                                 b.compensation
@@ -2850,13 +3901,13 @@ function KalenderPageInner({
 
                         {b.decidedBy ? (
                           <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                            Bearbeitet von: {b.decidedBy.fullName}
+                            {t("processedBy")} {b.decidedBy.fullName}
                           </div>
                         ) : null}
 
                         <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
                           <button className="btn" type="button" onClick={() => showRequestDetails(b)}>
-                            Details
+                            {t("details")}
                           </button>
                         </div>
                       </div>
@@ -2878,11 +3929,11 @@ function KalenderPageInner({
             )}
 
             <div style={{ marginBottom: 12 }}>
-              <div className="label">{selectedRequestBlock ? "Antragsdetails" : "Abwesenheit beantragen"}</div>
+              <div className="label">{selectedRequestBlock ? t("requestDetails") : t("requestAbsence")}</div>
               <div className="calendar-form-grid-2 absence-date-grid-mobile-fix">
                 <div className="absence-date-grid-item">
                   <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                    Start
+                    {t("start")}
                   </div>
                   <input
                     className="input"
@@ -2895,7 +3946,7 @@ function KalenderPageInner({
 
                 <div className="absence-date-grid-item">
                   <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
-                    Ende
+                    {t("end")}
                   </div>
                   <input
                     className="input"
@@ -2917,7 +3968,7 @@ function KalenderPageInner({
                 }}
                 disabled={!!selectedRequestBlock}
               >
-                🌴 Urlaub
+                {t("absenceTypeVacation")}
               </button>
               <button
                 className={`btn ${absenceType === "SICK" ? "btn-danger" : ""}`}
@@ -2929,13 +3980,13 @@ function KalenderPageInner({
                 }}
                 disabled={!!selectedRequestBlock}
               >
-                🤒 Krank
+                {t("absenceTypeSick")}
               </button>
             </div>
 
             {absenceType === "VACATION" ? (
               <div style={{ marginBottom: 12 }}>
-                <div className="label">Umfang</div>
+                <div className="label">{t("scopeLabel")}</div>
                 <div
                   style={{
                     marginTop: 6,
@@ -2945,7 +3996,7 @@ function KalenderPageInner({
                     lineHeight: 1.4,
                   }}
                 >
-                  Bei mehrtägigem Urlaub werden Samstage und Sonntage automatisch nicht mitgezählt.
+                  {t("scopeHint")}
                 </div>
                 <div className="calendar-form-grid-2">
                   <button
@@ -2954,7 +4005,7 @@ function KalenderPageInner({
                     onClick={() => setAbsenceDayPortion("FULL_DAY")}
                     disabled={!!selectedRequestBlock}
                   >
-                    Ganzer Urlaubstag
+                    {t("fullVacationDay")}
                   </button>
                   <button
                     className={`btn ${absenceDayPortion === "HALF_DAY" ? "btn-accent" : ""}`}
@@ -2965,7 +4016,7 @@ function KalenderPageInner({
                     }}
                     disabled={!!selectedRequestBlock || absenceDayPortion === "HALF_DAY"}
                   >
-                    Halber Urlaubstag
+                    {t("halfVacationDay")}
                   </button>
                 </div>
               </div>
@@ -2973,7 +4024,7 @@ function KalenderPageInner({
 
             {absenceType === "VACATION" ? (
               <div style={{ marginBottom: 12 }}>
-                <div className="label">Vergütung</div>
+                <div className="label">{t("compensationLabel")}</div>
 
                 {!selectedRequestBlock ? (
                   <div
@@ -2989,8 +4040,8 @@ function KalenderPageInner({
                     }}
                   >
                     {compensationLockedBySystem
-                      ? "Für diesen Antrag ist aktuell nicht genug bezahlter Urlaub verfügbar. Der Antrag wird deshalb vorläufig als unbezahlt eingereicht. Bei der Prüfung kann der Admin den Antrag ganz oder teilweise in bezahlten und unbezahlten Urlaub aufteilen."
-                      : "Falls bezahlter Resturlaub nicht vollständig ausreicht, kann der Antrag bei der Prüfung ganz oder teilweise in bezahlten und unbezahlten Urlaub aufgeteilt werden."}
+                      ? t("compensationLockedHint")
+                      : t("compensationFlexibleHint")}
                   </div>
                 ) : null}
 
@@ -3004,13 +4055,14 @@ function KalenderPageInner({
                     }}
                   >
                     <div>
-                      Gesamt: {formatVacationDays(
+                      {t("total")} {formatVacationDays(
                         (selectedRequestBlock.paidVacationUnits + selectedRequestBlock.unpaidVacationUnits) / 2
                       )} Tage
                     </div>
 
                     <div style={{ marginTop: 6, color: "var(--muted)" }}>
                       {getRequestCompensationSummary(
+                        language,
                         selectedRequestBlock.paidVacationUnits,
                         selectedRequestBlock.unpaidVacationUnits,
                         selectedRequestBlock.compensation
@@ -3025,7 +4077,7 @@ function KalenderPageInner({
                       onClick={() => setAbsenceCompensation("PAID")}
                       disabled={!!selectedRequestBlock || compensationLockedBySystem}
                     >
-                      Bezahlt
+                      {t("paid")}
                     </button>
                     <button
                       className={`btn ${absenceCompensation === "UNPAID" ? "btn-accent" : ""}`}
@@ -3033,7 +4085,7 @@ function KalenderPageInner({
                       onClick={() => setAbsenceCompensation("UNPAID")}
                       disabled={!!selectedRequestBlock || compensationLockedBySystem}
                     >
-                      Unbezahlt
+                      {t("unpaid")}
                     </button>
                   </div>
                 )}
@@ -3041,12 +4093,12 @@ function KalenderPageInner({
             ) : null}
 
             <div style={{ marginBottom: 12 }}>
-              <div className="label">Notiz an Admin</div>
+              <div className="label">{t("noteToAdmin")}</div>
               <textarea
                 className="textarea"
                 value={requestNote}
                 onChange={(e) => setRequestNote(e.target.value)}
-                placeholder="Optional: Hinweis zum Antrag"
+                placeholder={t("requestNotePlaceholder")}
                 disabled={!!selectedRequestBlock}
               />
             </div>
@@ -3054,10 +4106,10 @@ function KalenderPageInner({
             {selectedRequestBlock ? (
               <div className="calendar-form-grid-2">
                 <button className="btn" type="button" onClick={cancelRequestView} style={{ width: "100%" }}>
-                  Schließen
+                  {t("close")}
                 </button>
                 <button className="btn btn-accent" type="button" onClick={startNewRequest} style={{ width: "100%" }}>
-                  Neuer Antrag
+                  {t("newRequest")}
                 </button>
               </div>
             ) : (
@@ -3068,7 +4120,7 @@ function KalenderPageInner({
                 disabled={saving}
                 style={{ width: "100%" }}
               >
-                {saving ? "Speichert..." : "Antrag senden"}
+                {saving ? t("saving") : t("sendRequest")}
               </button>
             )}
           </>
@@ -3089,7 +4141,7 @@ export default function KalenderPage(
             color: "var(--muted)",
           }}
         >
-          Kalender lädt...
+          {translate("DE", "calendarLoadingFallback", KALENDER_DICTIONARY)}
         </div>
       }
     >
