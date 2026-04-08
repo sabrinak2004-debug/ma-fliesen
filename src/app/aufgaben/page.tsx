@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { translate, type AppUiLanguage } from "@/lib/i18n";
 
 type TaskStatus = "OPEN" | "COMPLETED";
 type TaskCategory = "WORK_TIME" | "VACATION" | "SICKNESS" | "GENERAL";
@@ -46,6 +47,442 @@ type TasksApiResponse = {
 };
 
 type CategoryGroupKey = "WORK_TIME" | "VACATION" | "SICKNESS" | "GENERAL";
+
+type MeResponse =
+  | {
+      ok: true;
+      session: {
+        userId: string;
+        fullName: string;
+        role: "ADMIN" | "EMPLOYEE";
+        language: AppUiLanguage;
+        companyId: string;
+        companyName: string;
+        companySubdomain: string;
+        companyLogoUrl: string | null;
+        primaryColor: string | null;
+      } | null;
+    }
+  | { ok: false };
+
+type AufgabenTextKey =
+  | "dashLabel"
+  | "tasksLoadFailed"
+  | "unexpectedServerResponse"
+  | "networkLoadError"
+  | "taskCompleteFailed"
+  | "taskCompletedSuccess"
+  | "networkCompleteError"
+  | "noDate"
+  | "until"
+  | "categoryWorkTime"
+  | "categoryVacation"
+  | "categorySickness"
+  | "categoryGeneral"
+  | "requiredNone"
+  | "requiredWorkTime"
+  | "requiredVacation"
+  | "requiredSickness"
+  | "taskActionWorkTime"
+  | "taskActionVacation"
+  | "taskActionSickness"
+  | "taskActionNone"
+  | "openCapture"
+  | "openVacation"
+  | "openSickness"
+  | "openGeneric"
+  | "checking"
+  | "done"
+  | "missingEntriesDays"
+  | "missingEntriesUntilToday"
+  | "tapForDetails"
+  | "todo"
+  | "todoHint"
+  | "loading"
+  | "noOpenTasks"
+  | "noOpenTasksInCategory"
+  | "completedTasks"
+  | "noCompletedTasks"
+  | "required"
+  | "referencePeriod"
+  | "createdBy"
+  | "completedOn"
+  | "missingEntries"
+  | "missingEntriesRange"
+  | "missingEntriesModalHint"
+  | "goToCapture"
+  | "close";
+
+const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>> = {
+  dashLabel: {
+    DE: "Meine Aufgaben",
+    EN: "My tasks",
+    IT: "Le mie attività",
+    TR: "Görevlerim",
+    SQ: "Detyrat e mia",
+    KU: "Erkên min",
+  },
+  tasksLoadFailed: {
+    DE: "Aufgaben konnten nicht geladen werden.",
+    EN: "Tasks could not be loaded.",
+    IT: "Impossibile caricare le attività.",
+    TR: "Görevler yüklenemedi.",
+    SQ: "Detyrat nuk mund të ngarkoheshin.",
+    KU: "Erk nehatin barkirin.",
+  },
+  unexpectedServerResponse: {
+    DE: "Unerwartete Antwort vom Server.",
+    EN: "Unexpected server response.",
+    IT: "Risposta inattesa dal server.",
+    TR: "Sunucudan beklenmeyen yanıt.",
+    SQ: "Përgjigje e papritur nga serveri.",
+    KU: "Bersiva neçaverêkirî ji serverê.",
+  },
+  networkLoadError: {
+    DE: "Netzwerkfehler beim Laden der Aufgaben.",
+    EN: "Network error while loading tasks.",
+    IT: "Errore di rete durante il caricamento delle attività.",
+    TR: "Görevler yüklenirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ngarkimit të detyrave.",
+    KU: "Di barkirina erkan de şaşiya torê.",
+  },
+  taskCompleteFailed: {
+    DE: "Aufgabe konnte nicht abgeschlossen werden.",
+    EN: "Task could not be completed.",
+    IT: "Impossibile completare l'attività.",
+    TR: "Görev tamamlanamadı.",
+    SQ: "Detyra nuk mund të përfundohej.",
+    KU: "Erk nehat temamkirin.",
+  },
+  taskCompletedSuccess: {
+    DE: "Aufgabe wurde als erledigt markiert.",
+    EN: "Task was marked as completed.",
+    IT: "L'attività è stata contrassegnata come completata.",
+    TR: "Görev tamamlandı olarak işaretlendi.",
+    SQ: "Detyra u shënua si e kryer.",
+    KU: "Erk wekî qediya hat nîşankirin.",
+  },
+  networkCompleteError: {
+    DE: "Netzwerkfehler beim Abschließen der Aufgabe.",
+    EN: "Network error while completing the task.",
+    IT: "Errore di rete durante il completamento dell'attività.",
+    TR: "Görev tamamlanırken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë përfundimit të detyrës.",
+    KU: "Di temamkirina erkê de şaşiya torê.",
+  },
+  noDate: {
+    DE: "—",
+    EN: "—",
+    IT: "—",
+    TR: "—",
+    SQ: "—",
+    KU: "—",
+  },
+  until: {
+    DE: "bis",
+    EN: "to",
+    IT: "fino a",
+    TR: "ile",
+    SQ: "deri",
+    KU: "heta",
+  },
+  categoryWorkTime: {
+    DE: "Arbeitszeit",
+    EN: "Work time",
+    IT: "Orario di lavoro",
+    TR: "Çalışma süresi",
+    SQ: "Koha e punës",
+    KU: "Dema karê",
+  },
+  categoryVacation: {
+    DE: "Urlaub",
+    EN: "Vacation",
+    IT: "Ferie",
+    TR: "İzin",
+    SQ: "Pushim",
+    KU: "Bêhnvedan",
+  },
+  categorySickness: {
+    DE: "Krankheit",
+    EN: "Sickness",
+    IT: "Malattia",
+    TR: "Hastalık",
+    SQ: "Sëmundje",
+    KU: "Nexweşî",
+  },
+  categoryGeneral: {
+    DE: "Allgemein",
+    EN: "General",
+    IT: "Generale",
+    TR: "Genel",
+    SQ: "Të përgjithshme",
+    KU: "Giştî",
+  },
+  requiredNone: {
+    DE: "Keine direkte Pflichtprüfung",
+    EN: "No direct required check",
+    IT: "Nessun controllo obbligatorio diretto",
+    TR: "Doğrudan zorunlu kontrol yok",
+    SQ: "Nuk ka kontroll të drejtpërdrejtë të detyrueshëm",
+    KU: "Kontrola rasterast ya mecbûrî tune ye",
+  },
+  requiredWorkTime: {
+    DE: "Arbeitszeit-Eintrag erforderlich",
+    EN: "Work time entry required",
+    IT: "Registrazione orario richiesta",
+    TR: "Çalışma süresi kaydı gerekli",
+    SQ: "Kërkohet regjistrim i kohës së punës",
+    KU: "Tomara dema karê pêwist e",
+  },
+  requiredVacation: {
+    DE: "Urlaubs-Eintrag erforderlich",
+    EN: "Vacation entry required",
+    IT: "Registrazione ferie richiesta",
+    TR: "İzin kaydı gerekli",
+    SQ: "Kërkohet regjistrim pushimi",
+    KU: "Tomara bêhnvedanê pêwist e",
+  },
+  requiredSickness: {
+    DE: "Krankheits-Eintrag erforderlich",
+    EN: "Sickness entry required",
+    IT: "Registrazione malattia richiesta",
+    TR: "Hastalık kaydı gerekli",
+    SQ: "Kërkohet regjistrim sëmundjeje",
+    KU: "Tomara nexweşiyê pêwist e",
+  },
+  taskActionWorkTime: {
+    DE: "Bitte trage deine Arbeitszeit für {referenceText} ein, bevor du die Aufgabe als erledigt markierst.",
+    EN: "Please enter your work time for {referenceText} before marking the task as completed.",
+    IT: "Inserisci il tuo orario di lavoro per {referenceText} prima di segnare l'attività come completata.",
+    TR: "Görevi tamamlandı olarak işaretlemeden önce lütfen {referenceText} için çalışma sürenizi girin.",
+    SQ: "Ju lutem regjistroni kohën tuaj të punës për {referenceText} përpara se ta shënoni detyrën si të kryer.",
+    KU: "Ji kerema xwe berî ku erkê wekî qediya nîşan bikî, dema karê xwe ji bo {referenceText} binivîse.",
+  },
+  taskActionVacation: {
+    DE: "Bitte erfasse für {referenceText} den Urlaub bzw. stelle den passenden Urlaubsantrag, bevor du die Aufgabe abschließt.",
+    EN: "Please record the vacation for {referenceText} or submit the matching vacation request before completing the task.",
+    IT: "Registra le ferie per {referenceText} oppure invia la richiesta corretta prima di completare l'attività.",
+    TR: "Görevi tamamlamadan önce lütfen {referenceText} için izni kaydedin veya uygun izin talebini gönderin.",
+    SQ: "Ju lutem regjistroni pushimin për {referenceText} ose dërgoni kërkesën përkatëse përpara se ta përfundoni detyrën.",
+    KU: "Ji kerema xwe berî ku erkê temam bikî, bêhnvedanê ji bo {referenceText} tomar bike an daxwaza guncaw bişîne.",
+  },
+  taskActionSickness: {
+    DE: "Bitte erfasse für {referenceText} die Krankheit bzw. stelle den passenden Krankheitsantrag, bevor du die Aufgabe abschließt.",
+    EN: "Please record the sickness for {referenceText} or submit the matching sick leave request before completing the task.",
+    IT: "Registra la malattia per {referenceText} oppure invia la richiesta corretta prima di completare l'attività.",
+    TR: "Görevi tamamlamadan önce lütfen {referenceText} için hastalığı kaydedin veya uygun hastalık talebini gönderin.",
+    SQ: "Ju lutem regjistroni sëmundjen për {referenceText} ose dërgoni kërkesën përkatëse përpara se ta përfundoni detyrën.",
+    KU: "Ji kerema xwe berî ku erkê temam bikî, nexweşiyê ji bo {referenceText} tomar bike an daxwaza guncaw bişîne.",
+  },
+  taskActionNone: {
+    DE: "Bitte prüfe die Aufgabe und markiere sie erst als erledigt, wenn du sie wirklich abgeschlossen hast.",
+    EN: "Please review the task and only mark it as completed once it is truly finished.",
+    IT: "Controlla l'attività e segnala come completata solo quando è davvero conclusa.",
+    TR: "Lütfen görevi kontrol edin ve gerçekten tamamlandığında tamamlandı olarak işaretleyin.",
+    SQ: "Ju lutem kontrolloni detyrën dhe shënojeni si të kryer vetëm kur të jetë përfunduar vërtet.",
+    KU: "Ji kerema xwe erkê kontrol bike û tenê dema ku bi rastî qediya bû wekî qediya nîşan bike.",
+  },
+  openCapture: {
+    DE: "Zur Erfassung",
+    EN: "Go to time entry",
+    IT: "Vai alla registrazione",
+    TR: "Kayda git",
+    SQ: "Te regjistrimi",
+    KU: "Biçe tomarê",
+  },
+  openVacation: {
+    DE: "Zum Urlaub",
+    EN: "Go to vacation",
+    IT: "Vai alle ferie",
+    TR: "İzne git",
+    SQ: "Te pushimi",
+    KU: "Biçe bêhnvedanê",
+  },
+  openSickness: {
+    DE: "Zur Krankheit",
+    EN: "Go to sickness",
+    IT: "Vai alla malattia",
+    TR: "Hastalığa git",
+    SQ: "Te sëmundja",
+    KU: "Biçe nexweşiyê",
+  },
+  openGeneric: {
+    DE: "Öffnen",
+    EN: "Open",
+    IT: "Apri",
+    TR: "Aç",
+    SQ: "Hape",
+    KU: "Veke",
+  },
+  checking: {
+    DE: "Prüfe...",
+    EN: "Checking...",
+    IT: "Verifica...",
+    TR: "Kontrol ediliyor...",
+    SQ: "Po kontrollohet...",
+    KU: "Tê kontrolkirin...",
+  },
+  done: {
+    DE: "Erledigt",
+    EN: "Done",
+    IT: "Completata",
+    TR: "Tamamlandı",
+    SQ: "E kryer",
+    KU: "Qediya",
+  },
+  missingEntriesDays: {
+    DE: "Es fehlen Einträge für {count} {dayWord}",
+    EN: "Entries are missing for {count} {dayWord}",
+    IT: "Mancano registrazioni per {count} {dayWord}",
+    TR: "{count} {dayWord} için kayıt eksik",
+    SQ: "Mungojnë regjistrime për {count} {dayWord}",
+    KU: "Tomar ji bo {count} {dayWord} wenda ne",
+  },
+  missingEntriesUntilToday: {
+    DE: "Fehlende Einträge bis heute – tippe hier für Details.",
+    EN: "Missing entries up to today – tap here for details.",
+    IT: "Registrazioni mancanti fino a oggi – tocca qui per i dettagli.",
+    TR: "Bugüne kadar eksik kayıtlar – detaylar için buraya dokunun.",
+    SQ: "Regjistrime të mungesës deri sot – prekni këtu për detaje.",
+    KU: "Tomarên wenda heta îro – ji bo hûrguliyan li vir bitikîne.",
+  },
+  tapForDetails: {
+    DE: "tippe hier für Details.",
+    EN: "tap here for details.",
+    IT: "tocca qui per i dettagli.",
+    TR: "detaylar için buraya dokunun.",
+    SQ: "prekni këtu për detaje.",
+    KU: "ji bo hûrguliyan li vir bitikîne.",
+  },
+  todo: {
+    DE: "Zu erledigen",
+    EN: "To do",
+    IT: "Da fare",
+    TR: "Yapılacaklar",
+    SQ: "Për t'u bërë",
+    KU: "Yên ku divê bên kirin",
+  },
+  todoHint: {
+    DE: "Öffne die jeweilige Aufgabe über den passenden Button und markiere sie erst danach als erledigt. Bei datumsbezogenen Aufgaben prüft die App automatisch, ob der erforderliche Eintrag wirklich vorhanden ist.",
+    EN: "Open the relevant task using the matching button and only mark it as done afterwards. For date-based tasks, the app automatically checks whether the required entry actually exists.",
+    IT: "Apri l'attività tramite il pulsante corretto e segnala come completata solo dopo. Per le attività legate a una data, l'app verifica automaticamente se la registrazione richiesta esiste davvero.",
+    TR: "İlgili görevi uygun düğmeyle açın ve ancak sonra tamamlandı olarak işaretleyin. Tarihe bağlı görevlerde uygulama gerekli kaydın gerçekten mevcut olup olmadığını otomatik kontrol eder.",
+    SQ: "Hapni detyrën përkatëse me butonin e duhur dhe shënojeni si të kryer vetëm më pas. Për detyrat sipas datës, aplikacioni kontrollon automatikisht nëse regjistrimi i kërkuar ekziston vërtet.",
+    KU: "Erka têkildar bi bişkoka guncaw veke û tenê piştî wê wekî qediya nîşan bike. Ji bo erkên bi dîrokê re têkildar, sepan bixweber kontrol dike ka tomarê pêwist bi rastî heye yan na.",
+  },
+  loading: {
+    DE: "Lade...",
+    EN: "Loading...",
+    IT: "Caricamento...",
+    TR: "Yükleniyor...",
+    SQ: "Duke u ngarkuar...",
+    KU: "Tê barkirin...",
+  },
+  noOpenTasks: {
+    DE: "Keine offenen Aufgaben vorhanden.",
+    EN: "No open tasks available.",
+    IT: "Nessuna attività aperta disponibile.",
+    TR: "Açık görev yok.",
+    SQ: "Nuk ka detyra të hapura.",
+    KU: "Erkên vekirî tune ne.",
+  },
+  noOpenTasksInCategory: {
+    DE: "Keine offenen Aufgaben.",
+    EN: "No open tasks.",
+    IT: "Nessuna attività aperta.",
+    TR: "Açık görev yok.",
+    SQ: "Nuk ka detyra të hapura.",
+    KU: "Erkên vekirî tune ne.",
+  },
+  completedTasks: {
+    DE: "Erledigte Aufgaben",
+    EN: "Completed tasks",
+    IT: "Attività completate",
+    TR: "Tamamlanan görevler",
+    SQ: "Detyrat e kryera",
+    KU: "Erkên qediya",
+  },
+  noCompletedTasks: {
+    DE: "Keine erledigten Aufgaben vorhanden.",
+    EN: "No completed tasks available.",
+    IT: "Nessuna attività completata disponibile.",
+    TR: "Tamamlanmış görev yok.",
+    SQ: "Nuk ka detyra të kryera.",
+    KU: "Erkên qediya tune ne.",
+  },
+  required: {
+    DE: "Pflicht:",
+    EN: "Required:",
+    IT: "Obbligo:",
+    TR: "Gerekli:",
+    SQ: "Detyrueshme:",
+    KU: "Pêwist:",
+  },
+  referencePeriod: {
+    DE: "Bezugszeitraum:",
+    EN: "Reference period:",
+    IT: "Periodo di riferimento:",
+    TR: "Referans dönemi:",
+    SQ: "Periudha referente:",
+    KU: "Navbera referansê:",
+  },
+  createdBy: {
+    DE: "Erstellt von:",
+    EN: "Created by:",
+    IT: "Creato da:",
+    TR: "Oluşturan:",
+    SQ: "Krijuar nga:",
+    KU: "Ji aliyê vê kesê ve hate afirandin:",
+  },
+  completedOn: {
+    DE: "Erledigt am:",
+    EN: "Completed on:",
+    IT: "Completata il:",
+    TR: "Tamamlanma tarihi:",
+    SQ: "E kryer më:",
+    KU: "Di vê dîrokê de qediya:",
+  },
+  missingEntries: {
+    DE: "Fehlende Einträge",
+    EN: "Missing entries",
+    IT: "Registrazioni mancanti",
+    TR: "Eksik kayıtlar",
+    SQ: "Regjistrime që mungojnë",
+    KU: "Tomarên wenda",
+  },
+  missingEntriesRange: {
+    DE: "Fehlende Einträge:",
+    EN: "Missing entries:",
+    IT: "Registrazioni mancanti:",
+    TR: "Eksik kayıtlar:",
+    SQ: "Regjistrime që mungojnë:",
+    KU: "Tomarên wenda:",
+  },
+  missingEntriesModalHint: {
+    DE: "Es werden nur vergangene bzw. aktuell bereits fehlende Tage angezeigt. Zukünftige Tage werden hier nicht berücksichtigt.",
+    EN: "Only past or currently already missing days are shown. Future days are not considered here.",
+    IT: "Vengono mostrati solo i giorni passati o già mancanti. I giorni futuri non vengono considerati qui.",
+    TR: "Burada yalnızca geçmiş veya şu anda eksik olan günler gösterilir. Gelecek günler dikkate alınmaz.",
+    SQ: "Këtu shfaqen vetëm ditët e kaluara ose aktualisht të munguarat. Ditët e ardhshme nuk merren parasysh.",
+    KU: "Li vir tenê rojên borî an rojên ku niha wenda ne tên nîşandan. Rojên pêşerojê li vir nayên hesibandin.",
+  },
+  goToCapture: {
+    DE: "Zur Erfassung",
+    EN: "Go to time entry",
+    IT: "Vai alla registrazione",
+    TR: "Kayda git",
+    SQ: "Te regjistrimi",
+    KU: "Biçe tomarê",
+  },
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+  },
+};
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -175,29 +612,59 @@ function formatReferenceRangeDE(
   return `${formatDateDE(start)} bis ${formatDateDE(end)}`;
 }
 
-function categoryLabel(category: TaskCategory): string {
-  switch (category) {
-    case "WORK_TIME":
-      return "Arbeitszeit";
-    case "VACATION":
-      return "Urlaub";
-    case "SICKNESS":
-      return "Krankheit";
-    case "GENERAL":
-      return "Allgemein";
+function replaceTemplate(
+  template: string,
+  values: Record<string, string | number>
+): string {
+  return Object.entries(values).reduce((result, [key, value]) => {
+    return result.replaceAll(`{${key}}`, String(value));
+  }, template);
+}
+
+function dayWordByCount(language: AppUiLanguage, count: number): string {
+  switch (language) {
+    case "EN":
+      return count === 1 ? "day" : "days";
+    case "IT":
+      return count === 1 ? "giorno" : "giorni";
+    case "TR":
+      return "gün";
+    case "SQ":
+      return "ditë";
+    case "KU":
+      return "roj";
+    case "DE":
+    default:
+      return count === 1 ? "Tag" : "Tage";
   }
 }
 
-function requiredActionLabel(requiredAction: TaskRequiredAction): string {
+function categoryLabel(language: AppUiLanguage, category: TaskCategory): string {
+  switch (category) {
+    case "WORK_TIME":
+      return translate(language, "categoryWorkTime", AUFGABEN_DICTIONARY);
+    case "VACATION":
+      return translate(language, "categoryVacation", AUFGABEN_DICTIONARY);
+    case "SICKNESS":
+      return translate(language, "categorySickness", AUFGABEN_DICTIONARY);
+    case "GENERAL":
+      return translate(language, "categoryGeneral", AUFGABEN_DICTIONARY);
+  }
+}
+
+function requiredActionLabel(
+  language: AppUiLanguage,
+  requiredAction: TaskRequiredAction
+): string {
   switch (requiredAction) {
     case "NONE":
-      return "Keine direkte Pflichtprüfung";
+      return translate(language, "requiredNone", AUFGABEN_DICTIONARY);
     case "WORK_ENTRY_FOR_DATE":
-      return "Arbeitszeit-Eintrag erforderlich";
+      return translate(language, "requiredWorkTime", AUFGABEN_DICTIONARY);
     case "VACATION_ENTRY_FOR_DATE":
-      return "Urlaubs-Eintrag erforderlich";
+      return translate(language, "requiredVacation", AUFGABEN_DICTIONARY);
     case "SICK_ENTRY_FOR_DATE":
-      return "Krankheits-Eintrag erforderlich";
+      return translate(language, "requiredSickness", AUFGABEN_DICTIONARY);
   }
 }
 
@@ -267,7 +734,7 @@ function taskActionHref(task: TaskRow): string {
   return "/aufgaben";
 }
 
-function taskActionText(task: TaskRow): string {
+function taskActionText(language: AppUiLanguage, task: TaskRow): string {
   const referenceText = formatReferenceRangeDE(
     task.referenceStartDate,
     task.referenceEndDate,
@@ -276,13 +743,22 @@ function taskActionText(task: TaskRow): string {
 
   switch (task.requiredAction) {
     case "WORK_ENTRY_FOR_DATE":
-      return `Bitte trage deine Arbeitszeit für ${referenceText} ein, bevor du die Aufgabe als erledigt markierst.`;
+      return replaceTemplate(
+        translate(language, "taskActionWorkTime", AUFGABEN_DICTIONARY),
+        { referenceText }
+      );
     case "VACATION_ENTRY_FOR_DATE":
-      return `Bitte erfasse für ${referenceText} den Urlaub bzw. stelle den passenden Urlaubsantrag, bevor du die Aufgabe abschließt.`;
+      return replaceTemplate(
+        translate(language, "taskActionVacation", AUFGABEN_DICTIONARY),
+        { referenceText }
+      );
     case "SICK_ENTRY_FOR_DATE":
-      return `Bitte erfasse für ${referenceText} die Krankheit bzw. stelle den passenden Krankheitsantrag, bevor du die Aufgabe abschließt.`;
+      return replaceTemplate(
+        translate(language, "taskActionSickness", AUFGABEN_DICTIONARY),
+        { referenceText }
+      );
     case "NONE":
-      return "Bitte prüfe die Aufgabe und markiere sie erst als erledigt, wenn du sie wirklich abgeschlossen hast.";
+      return translate(language, "taskActionNone", AUFGABEN_DICTIONARY);
   }
 }
 
@@ -325,6 +801,9 @@ function sortTasksByDateDesc(tasks: TaskRow[]): TaskRow[] {
 }
 
 export default function AufgabenPage() {
+  const [language, setLanguage] = useState<AppUiLanguage>("DE");
+  const t = (key: AufgabenTextKey): string =>
+    translate(language, key, AUFGABEN_DICTIONARY);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionTaskId, setActionTaskId] = useState("");
@@ -333,6 +812,34 @@ export default function AufgabenPage() {
   const [missingWorkEntryAlert, setMissingWorkEntryAlert] =
     useState<MissingWorkEntryAlert | null>(null);
   const [showMissingWorkEntryModal, setShowMissingWorkEntryModal] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/me", {
+          method: "GET",
+          cache: "no-store",
+          credentials: "include",
+        });
+
+        const data = (await response.json()) as MeResponse;
+
+        if (!alive) return;
+
+        if (data.ok && data.session?.language) {
+          setLanguage(data.session.language);
+        }
+      } catch {
+        if (!alive) return;
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   async function loadTasks(): Promise<void> {
     setLoading(true);
@@ -351,7 +858,7 @@ export default function AufgabenPage() {
         const message =
           isRecord(data) && isString(data["error"])
             ? data["error"]
-            : "Aufgaben konnten nicht geladen werden.";
+            : t("tasksLoadFailed");
         setError(message);
         setTasks([]);
         setMissingWorkEntryAlert(null);
@@ -362,7 +869,7 @@ export default function AufgabenPage() {
       }
 
       if (!isTasksApiResponse(data)) {
-        setError("Unerwartete Antwort vom Server.");
+        setError(t("unexpectedServerResponse"));
         setTasks([]);
         setMissingWorkEntryAlert(null);
         if (typeof window !== "undefined") {
@@ -377,7 +884,7 @@ export default function AufgabenPage() {
         window.dispatchEvent(new Event("tasks-changed"));
       }
     } catch {
-      setError("Netzwerkfehler beim Laden der Aufgaben.");
+      setError(t("networkLoadError"));
       setTasks([]);
       setMissingWorkEntryAlert(null);
       if (typeof window !== "undefined") {
@@ -443,15 +950,15 @@ export default function AufgabenPage() {
         const message =
           isRecord(data) && isString(data["error"])
             ? data["error"]
-            : "Aufgabe konnte nicht abgeschlossen werden.";
+            : t("taskCompleteFailed");
         setError(message);
         return;
       }
 
-      setSuccess("Aufgabe wurde als erledigt markiert.");
+      setSuccess(t("taskCompletedSuccess"));
       await loadTasks();
     } catch {
-      setError("Netzwerkfehler beim Abschließen der Aufgabe.");
+      setError(t("networkCompleteError"));
     } finally {
       setActionTaskId("");
     }
@@ -470,16 +977,16 @@ export default function AufgabenPage() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ fontWeight: 1000 }}>{task.title}</div>
           <div className={categoryAccentClassName(task.category)}>
-            {categoryLabel(task.category)}
+            {categoryLabel(language, task.category)}
           </div>
         </div>
 
         <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-          Pflicht: {requiredActionLabel(task.requiredAction)}
+          {t("required")} {requiredActionLabel(language, task.requiredAction)}
         </div>
 
         <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-          Bezugszeitraum: {formatReferenceRangeDE(
+          {t("referencePeriod")} {formatReferenceRangeDE(
             task.referenceStartDate,
             task.referenceEndDate,
             task.referenceDate
@@ -487,7 +994,7 @@ export default function AufgabenPage() {
         </div>
 
         <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-          Erstellt von: {task.createdByUser.fullName}
+          {t("createdBy")} {task.createdByUser.fullName}
         </div>
 
         {allowComplete ? (
@@ -499,13 +1006,13 @@ export default function AufgabenPage() {
               lineHeight: 1.45,
             }}
           >
-            {taskActionText(task)}
+            {taskActionText(language, task)}
           </div>
         ) : null}
 
         {task.completedAt ? (
           <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-            Erledigt am: {formatDateDE(task.completedAt)}
+            {t("completedOn")} {formatDateDE(task.completedAt)}
           </div>
         ) : null}
 
@@ -530,12 +1037,12 @@ export default function AufgabenPage() {
               className="tenant-action-link"
             >
               {task.category === "WORK_TIME"
-                ? "Zur Erfassung"
+                ? t("openCapture")
                 : task.category === "VACATION"
-                ? "Zum Urlaub"
+                ? t("openVacation")
                 : task.category === "SICKNESS"
-                ? "Zur Krankheit"
-                : "Öffnen"}
+                ? t("openSickness")
+                : t("openGeneric")}
             </Link>
 
             <button
@@ -544,7 +1051,7 @@ export default function AufgabenPage() {
               disabled={actionTaskId === task.id}
               className="tenant-action-button"
             >
-              {actionTaskId === task.id ? "Prüfe..." : "Erledigt"}
+              {actionTaskId === task.id ? t("checking") : t("done")}
             </button>
           </div>
         ) : null}
@@ -553,7 +1060,7 @@ export default function AufgabenPage() {
   }
 
   return (
-    <AppShell activeLabel="Meine Aufgaben">
+    <AppShell activeLabel={t("dashLabel")}>
       <div style={{ display: "grid", gap: 16 }}>
         {missingWorkEntryAlert ? (
           <button
@@ -573,8 +1080,10 @@ export default function AufgabenPage() {
               className="tenant-status-text-danger"
               style={{ fontWeight: 1000 }}
             >
-              Es fehlen Einträge für {missingWorkEntryAlert.count} Tag
-              {missingWorkEntryAlert.count === 1 ? "" : "e"}
+              {replaceTemplate(t("missingEntriesDays"), {
+                count: missingWorkEntryAlert.count,
+                dayWord: dayWordByCount(language, missingWorkEntryAlert.count),
+              })}
             </div>
             <div
               style={{
@@ -582,7 +1091,7 @@ export default function AufgabenPage() {
                 color: "var(--text-soft)",
               }}
             >
-              Fehlende Einträge bis heute – tippe hier für Details.
+              {t("missingEntriesUntilToday")}
             </div>
           </button>
         ) : null}
@@ -610,7 +1119,7 @@ export default function AufgabenPage() {
 
         <div className="card" style={{ padding: 18 }}>
           <div className="section-title" style={{ marginBottom: 12 }}>
-            Zu erledigen
+            {t("todo")}
           </div>
 
           <div
@@ -621,22 +1130,21 @@ export default function AufgabenPage() {
               lineHeight: 1.45,
             }}
           >
-            Öffne die jeweilige Aufgabe über den passenden Button und markiere sie erst danach als erledigt.
-            Bei datumsbezogenen Aufgaben prüft die App automatisch, ob der erforderliche Eintrag wirklich vorhanden ist.
+            {t("todoHint")}
           </div>
 
           {loading ? (
-            <div style={{ color: "var(--muted)" }}>Lade...</div>
+            <div style={{ color: "var(--muted)" }}>{t("loading")}</div>
           ) : openTasks.length === 0 ? (
-            <div style={{ color: "var(--muted)" }}>Keine offenen Aufgaben vorhanden.</div>
+            <div style={{ color: "var(--muted)" }}>{t("noOpenTasks")}</div>
           ) : (
             <div style={{ display: "grid", gap: 18 }}>
               {(
                 [
-                  ["WORK_TIME", "Arbeitszeit"],
-                  ["VACATION", "Urlaub"],
-                  ["SICKNESS", "Krankheit"],
-                  ["GENERAL", "Allgemein"],
+                  ["WORK_TIME", t("categoryWorkTime")],
+                  ["VACATION", t("categoryVacation")],
+                  ["SICKNESS", t("categorySickness")],
+                  ["GENERAL", t("categoryGeneral")],
                 ] as Array<[CategoryGroupKey, string]>
               ).map(([groupKey, label]) => {
                 const groupTasks = groupedOpenTasks[groupKey];
@@ -651,7 +1159,7 @@ export default function AufgabenPage() {
 
                     {groupTasks.length === 0 ? (
                       <div style={{ color: "var(--muted)", paddingLeft: 2 }}>
-                        Keine offenen Aufgaben.
+                        {t("noOpenTasksInCategory")}
                       </div>
                     ) : (
                       <div style={{ display: "grid", gap: 10 }}>
@@ -667,13 +1175,13 @@ export default function AufgabenPage() {
 
         <div className="card" style={{ padding: 18 }}>
           <div className="section-title" style={{ marginBottom: 12 }}>
-            Erledigte Aufgaben
+            {t("completedTasks")}
           </div>
 
           {loading ? (
-            <div style={{ color: "var(--muted)" }}>Lade...</div>
+            <div style={{ color: "var(--muted)" }}>{t("loading")}</div>
           ) : completedTasks.length === 0 ? (
-            <div style={{ color: "var(--muted)" }}>Keine erledigten Aufgaben vorhanden.</div>
+            <div style={{ color: "var(--muted)" }}>{t("noCompletedTasks")}</div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {completedTasks.map((task) => renderTaskCard(task, false))}
@@ -700,7 +1208,7 @@ export default function AufgabenPage() {
                     fontSize: 18,
                   }}
                 >
-                  Fehlende Einträge
+                  {t("missingEntries")}
                 </div>
                 <div
                   style={{
@@ -708,7 +1216,7 @@ export default function AufgabenPage() {
                     lineHeight: 1.5,
                   }}
                 >
-                  Fehlende Einträge: {missingWorkEntryRangeText}
+                  {t("missingEntriesRange")} {missingWorkEntryRangeText}
                 </div>
                 <div
                   style={{
@@ -717,8 +1225,7 @@ export default function AufgabenPage() {
                     lineHeight: 1.5,
                   }}
                 >
-                  Es werden nur vergangene bzw. aktuell bereits fehlende Tage angezeigt.
-                  Zukünftige Tage werden hier nicht berücksichtigt.
+                  {t("missingEntriesModalHint")}
                 </div>
               </div>
 
@@ -736,7 +1243,7 @@ export default function AufgabenPage() {
                   onClick={() => setShowMissingWorkEntryModal(false)}
                   className="tenant-action-button"
                 >
-                  Zur Erfassung
+                  {t("goToCapture")}
                 </Link>
 
                 <button
@@ -744,7 +1251,7 @@ export default function AufgabenPage() {
                   onClick={() => setShowMissingWorkEntryModal(false)}
                   className="tenant-action-link"
                 >
-                  Schließen
+                  {t("close")}
                 </button>
               </div>
             </div>
