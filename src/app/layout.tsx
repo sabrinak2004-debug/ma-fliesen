@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import PushBootstrap from "@/components/PushBootstrap";
 import { getSession } from "@/lib/auth";
 import { normalizeAppUiLanguage, toHtmlLang } from "@/lib/i18n";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Mitarbeiterportal",
