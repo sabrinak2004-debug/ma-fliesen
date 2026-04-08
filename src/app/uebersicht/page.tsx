@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
+import { translate, type AppUiLanguage } from "@/lib/i18n";
 
 type WorkEntry = {
   id: string;
@@ -98,6 +99,622 @@ type OverviewResponse = {
   isAdmin?: boolean;
 };
 
+type MeResponse =
+  | {
+      ok: true;
+      session: {
+        userId: string;
+        fullName: string;
+        role: "EMPLOYEE" | "ADMIN";
+        language: AppUiLanguage;
+        companyId: string;
+        companyName: string;
+        companySubdomain: string;
+        companyLogoUrl: string | null;
+        primaryColor: string | null;
+      } | null;
+    }
+  | { ok: false };
+
+type OverviewTextKey =
+  | "tasks"
+  | "myTasks"
+  | "adminExport"
+  | "cancel"
+  | "startDownload"
+  | "exportMonthCsv"
+  | "exportYearZip"
+  | "exportRangeCsv"
+  | "selectMonth"
+  | "downloadOneCsvFor"
+  | "selectYear"
+  | "downloadZipWith12Csvs"
+  | "selectRange"
+  | "from"
+  | "to"
+  | "pleaseSelectFromAndTo"
+  | "fromDateAfterToDate"
+  | "downloadCsvFromTo"
+  | "workDetails"
+  | "close"
+  | "targetGross"
+  | "targetNet"
+  | "overtimeGross"
+  | "overtimeNet"
+  | "grossNetExplanation"
+  | "monthProgressDetails"
+  | "currentWorkTime"
+  | "vacationCredited"
+  | "sickCredited"
+  | "holidayCredited"
+  | "holidaysInMonth"
+  | "unpaidAbsence"
+  | "unpaidAbsenceMinutes"
+  | "overview"
+  | "dataFor"
+  | "year"
+  | "month"
+  | "workHours"
+  | "details"
+  | "showWorkDetails"
+  | "vacationDays"
+  | "daysUnpaid"
+  | "remainingVacation"
+  | "usedOfConsumed"
+  | "annualEntitlement"
+  | "sickDays"
+  | "monthProgress"
+  | "stillUntilTarget"
+  | "holidaysConsidered"
+  | "showProgressDetails"
+  | "absences"
+  | "filtered"
+  | "searchName"
+  | "allTypes"
+  | "sick"
+  | "vacation"
+  | "reset"
+  | "resetFilters"
+  | "loading"
+  | "noAbsencesForFilters"
+  | "unpaid"
+  | "byEmployee"
+  | "entries"
+  | "entry"
+  | "km"
+  | "me";
+
+const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>> = {
+  tasks: {
+    DE: "Aufgaben",
+    EN: "Tasks",
+    IT: "Attività",
+    TR: "Görevler",
+    SQ: "Detyrat",
+    KU: "Erk",
+  },
+  myTasks: {
+    DE: "Meine Aufgaben",
+    EN: "My tasks",
+    IT: "Le mie attività",
+    TR: "Görevlerim",
+    SQ: "Detyrat e mia",
+    KU: "Erkên min",
+  },
+  adminExport: {
+    DE: "Export (Admin)",
+    EN: "Export (Admin)",
+    IT: "Esporta (Admin)",
+    TR: "Dışa aktar (Yönetici)",
+    SQ: "Eksporto (Admin)",
+    KU: "Derxistin (Admin)",
+  },
+  cancel: {
+    DE: "Abbrechen",
+    EN: "Cancel",
+    IT: "Annulla",
+    TR: "İptal",
+    SQ: "Anulo",
+    KU: "Betal bike",
+  },
+  startDownload: {
+    DE: "Download starten",
+    EN: "Start download",
+    IT: "Avvia download",
+    TR: "İndirmeyi başlat",
+    SQ: "Nis shkarkimin",
+    KU: "Daxistinê dest pê bike",
+  },
+  exportMonthCsv: {
+    DE: "Monat (CSV)",
+    EN: "Month (CSV)",
+    IT: "Mese (CSV)",
+    TR: "Ay (CSV)",
+    SQ: "Muaji (CSV)",
+    KU: "Meh (CSV)",
+  },
+  exportYearZip: {
+    DE: "Jahr (ZIP)",
+    EN: "Year (ZIP)",
+    IT: "Anno (ZIP)",
+    TR: "Yıl (ZIP)",
+    SQ: "Viti (ZIP)",
+    KU: "Sal (ZIP)",
+  },
+  exportRangeCsv: {
+    DE: "Zeitraum (CSV)",
+    EN: "Range (CSV)",
+    IT: "Intervallo (CSV)",
+    TR: "Aralık (CSV)",
+    SQ: "Periudha (CSV)",
+    KU: "Navbera demê (CSV)",
+  },
+  selectMonth: {
+    DE: "Monat auswählen",
+    EN: "Select month",
+    IT: "Seleziona mese",
+    TR: "Ay seçin",
+    SQ: "Zgjidh muajin",
+    KU: "Meh hilbijêre",
+  },
+  downloadOneCsvFor: {
+    DE: "Download: eine CSV für",
+    EN: "Download: one CSV for",
+    IT: "Download: un CSV per",
+    TR: "İndirme: şu ay için bir CSV",
+    SQ: "Shkarkim: një CSV për",
+    KU: "Daxistin: CSVek ji bo",
+  },
+  selectYear: {
+    DE: "Jahr auswählen",
+    EN: "Select year",
+    IT: "Seleziona anno",
+    TR: "Yıl seçin",
+    SQ: "Zgjidh vitin",
+    KU: "Sal hilbijêre",
+  },
+  downloadZipWith12Csvs: {
+    DE: "Download: ZIP mit 12 CSVs (pro Monat eine Datei)",
+    EN: "Download: ZIP with 12 CSVs (one file per month)",
+    IT: "Download: ZIP con 12 CSV (un file per mese)",
+    TR: "İndirme: 12 CSV içeren ZIP (her ay için bir dosya)",
+    SQ: "Shkarkim: ZIP me 12 CSV (nga një skedar për muaj)",
+    KU: "Daxistin: ZIP bi 12 CSV-an (her meh pelekek)",
+  },
+  selectRange: {
+    DE: "Zeitraum auswählen",
+    EN: "Select range",
+    IT: "Seleziona intervallo",
+    TR: "Aralık seçin",
+    SQ: "Zgjidh periudhën",
+    KU: "Navbera demê hilbijêre",
+  },
+  from: {
+    DE: "Von",
+    EN: "From",
+    IT: "Da",
+    TR: "Başlangıç",
+    SQ: "Nga",
+    KU: "Ji",
+  },
+  to: {
+    DE: "Bis",
+    EN: "To",
+    IT: "A",
+    TR: "Bitiş",
+    SQ: "Deri",
+    KU: "Heta",
+  },
+  pleaseSelectFromAndTo: {
+    DE: "Bitte Von und Bis auswählen.",
+    EN: "Please select both from and to.",
+    IT: "Seleziona data iniziale e finale.",
+    TR: "Lütfen başlangıç ve bitiş tarihini seçin.",
+    SQ: "Zgjidh datën nga dhe deri.",
+    KU: "Ji kerema xwe destpêk û dawiyê hilbijêre.",
+  },
+  fromDateAfterToDate: {
+    DE: "Von-Datum darf nicht nach dem Bis-Datum liegen.",
+    EN: "The start date must not be after the end date.",
+    IT: "La data iniziale non può essere dopo la data finale.",
+    TR: "Başlangıç tarihi bitiş tarihinden sonra olamaz.",
+    SQ: "Data e fillimit nuk mund të jetë pas datës së mbarimit.",
+    KU: "Dîroka destpêkê nikare piştî dîroka dawiyê be.",
+  },
+  downloadCsvFromTo: {
+    DE: "Download: CSV für",
+    EN: "Download: CSV for",
+    IT: "Download: CSV per",
+    TR: "İndirme: CSV",
+    SQ: "Shkarkim: CSV për",
+    KU: "Daxistin: CSV ji bo",
+  },
+  workDetails: {
+    DE: "Details Arbeitsstunden",
+    EN: "Work hour details",
+    IT: "Dettagli ore di lavoro",
+    TR: "Çalışma saati detayları",
+    SQ: "Detajet e orëve të punës",
+    KU: "Hûrguliyên demjimêrên karê",
+  },
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+  },
+  targetGross: {
+    DE: "Soll (Brutto):",
+    EN: "Target (gross):",
+    IT: "Obiettivo (lordo):",
+    TR: "Hedef (brüt):",
+    SQ: "Objektivi (bruto):",
+    KU: "Armanc (berî derxistin):",
+  },
+  targetNet: {
+    DE: "Soll (Netto):",
+    EN: "Target (net):",
+    IT: "Obiettivo (netto):",
+    TR: "Hedef (net):",
+    SQ: "Objektivi (neto):",
+    KU: "Armanc (safî):",
+  },
+  overtimeGross: {
+    DE: "Überstunden (Brutto):",
+    EN: "Overtime (gross):",
+    IT: "Straordinari (lordo):",
+    TR: "Fazla mesai (brüt):",
+    SQ: "Orë shtesë (bruto):",
+    KU: "Demjimarên zêde (berî derxistin):",
+  },
+  overtimeNet: {
+    DE: "Überstunden (Netto):",
+    EN: "Overtime (net):",
+    IT: "Straordinari (netto):",
+    TR: "Fazla mesai (net):",
+    SQ: "Orë shtesë (neto):",
+    KU: "Demjimarên zêde (safî):",
+  },
+  grossNetExplanation: {
+    DE: "Brutto ist das reguläre Monatssoll ohne Urlaub, Krankheit und Feiertage. Netto ist das reduzierte Monatssoll, bei dem bezahlte Urlaubstage, Krankheitstage und Feiertage vom Brutto-Soll abgezogen werden.",
+    EN: "Gross is the regular monthly target without vacation, sickness, and public holidays. Net is the reduced monthly target with paid vacation, sick days, and public holidays deducted from the gross target.",
+    IT: "Lordo è l'obiettivo mensile regolare senza ferie, malattia e festivi. Netto è l'obiettivo mensile ridotto, in cui ferie retribuite, malattia e festivi vengono sottratti dall'obiettivo lordo.",
+    TR: "Brüt, tatil, hastalık ve resmî tatiller olmadan normal aylık hedeftir. Net ise ücretli izin, hastalık günleri ve resmî tatiller düşüldükten sonraki azaltılmış aylık hedeftir.",
+    SQ: "Bruto është objektivi normal mujor pa pushime, sëmundje dhe festa zyrtare. Neto është objektivi i reduktuar mujor pasi zbriten pushimet e paguara, ditët e sëmundjes dhe festat zyrtare.",
+    KU: "Armanca berî derxistin armanca asayî ya mehanî ye bê bêhnvedan, nexweşî û cejnên fermî. Armanca safî armanca kêmkirî ya mehanî ye ku tê de bêhnvedanên bi mûçe, rojên nexweşiyê û cejnên fermî ji armanca berî derxistin tên jêbirin.",
+  },
+  monthProgressDetails: {
+    DE: "Details Monatsfortschritt",
+    EN: "Monthly progress details",
+    IT: "Dettagli avanzamento mensile",
+    TR: "Aylık ilerleme detayları",
+    SQ: "Detajet e progresit mujor",
+    KU: "Hûrguliyên pêşveçûna mehane",
+  },
+  currentWorkTime: {
+    DE: "Arbeitszeit aktuell:",
+    EN: "Current work time:",
+    IT: "Orario di lavoro attuale:",
+    TR: "Güncel çalışma süresi:",
+    SQ: "Koha aktuale e punës:",
+    KU: "Dema karê ya niha:",
+  },
+  vacationCredited: {
+    DE: "Urlaub angerechnet:",
+    EN: "Vacation credited:",
+    IT: "Ferie conteggiate:",
+    TR: "İzin hesaba katıldı:",
+    SQ: "Pushimi i llogaritur:",
+    KU: "Bêhnvedan hat hesibandin:",
+  },
+  sickCredited: {
+    DE: "Krankheit angerechnet:",
+    EN: "Sick leave credited:",
+    IT: "Malattia conteggiata:",
+    TR: "Hastalık hesaba katıldı:",
+    SQ: "Sëmundja e llogaritur:",
+    KU: "Nexweşî hat hesibandin:",
+  },
+  holidayCredited: {
+    DE: "Feiertage angerechnet:",
+    EN: "Public holidays credited:",
+    IT: "Festivi conteggiati:",
+    TR: "Resmî tatiller hesaba katıldı:",
+    SQ: "Festat zyrtare të llogaritura:",
+    KU: "Cejnên fermî hatin hesibandin:",
+  },
+  holidaysInMonth: {
+    DE: "Feiertage im Monat:",
+    EN: "Public holidays in month:",
+    IT: "Festivi nel mese:",
+    TR: "Ay içindeki resmî tatiller:",
+    SQ: "Festat zyrtare në muaj:",
+    KU: "Cejnên fermî di mehê de:",
+  },
+  unpaidAbsence: {
+    DE: "Unbezahlte Abwesenheit:",
+    EN: "Unpaid absence:",
+    IT: "Assenza non retribuita:",
+    TR: "Ücretsiz devamsızlık:",
+    SQ: "Mungesë e papaguar:",
+    KU: "Nebûna bê mûçe:",
+  },
+  unpaidAbsenceMinutes: {
+    DE: "Unbezahlte Abwesenheit (Minuten):",
+    EN: "Unpaid absence (minutes):",
+    IT: "Assenza non retribuita (minuti):",
+    TR: "Ücretsiz devamsızlık (dakika):",
+    SQ: "Mungesë e papaguar (minuta):",
+    KU: "Nebûna bê mûçe (deqîqe):",
+  },
+  overview: {
+    DE: "Übersicht",
+    EN: "Overview",
+    IT: "Panoramica",
+    TR: "Genel bakış",
+    SQ: "Përmbledhje",
+    KU: "Nêrîn",
+  },
+  dataFor: {
+    DE: "Daten für",
+    EN: "Data for",
+    IT: "Dati per",
+    TR: "Veriler:",
+    SQ: "Të dhënat për",
+    KU: "Daneyên ji bo",
+  },
+  year: {
+    DE: "Jahr",
+    EN: "Year",
+    IT: "Anno",
+    TR: "Yıl",
+    SQ: "Viti",
+    KU: "Sal",
+  },
+  month: {
+    DE: "Monat",
+    EN: "Month",
+    IT: "Mese",
+    TR: "Ay",
+    SQ: "Muaji",
+    KU: "Meh",
+  },
+  workHours: {
+    DE: "Arbeitsstunden",
+    EN: "Work hours",
+    IT: "Ore di lavoro",
+    TR: "Çalışma saatleri",
+    SQ: "Orët e punës",
+    KU: "Demjimêrên karê",
+  },
+  details: {
+    DE: "Details",
+    EN: "Details",
+    IT: "Dettagli",
+    TR: "Detaylar",
+    SQ: "Detaje",
+    KU: "Hûrgulî",
+  },
+  showWorkDetails: {
+    DE: "Details zu Arbeitsstunden anzeigen",
+    EN: "Show work hour details",
+    IT: "Mostra dettagli ore di lavoro",
+    TR: "Çalışma saati detaylarını göster",
+    SQ: "Shfaq detajet e orëve të punës",
+    KU: "Hûrguliyên demjimêrên karê nîşan bide",
+  },
+  vacationDays: {
+    DE: "Urlaubstage",
+    EN: "Vacation days",
+    IT: "Giorni di ferie",
+    TR: "İzin günleri",
+    SQ: "Ditët e pushimit",
+    KU: "Rojên bêhnvedanê",
+  },
+  daysUnpaid: {
+    DE: "Tage unbezahlt",
+    EN: "days unpaid",
+    IT: "giorni non retribuiti",
+    TR: "gün ücretsiz",
+    SQ: "ditë të papaguara",
+    KU: "roj bê mûçe",
+  },
+  remainingVacation: {
+    DE: "Resturlaub",
+    EN: "Remaining vacation",
+    IT: "Ferie residue",
+    TR: "Kalan izin",
+    SQ: "Pushimi i mbetur",
+    KU: "Bêhnvedana mayî",
+  },
+  usedOfConsumed: {
+    DE: "von",
+    EN: "of",
+    IT: "di",
+    TR: " / ",
+    SQ: "nga",
+    KU: "ji",
+  },
+  annualEntitlement: {
+    DE: "Jahresanspruch:",
+    EN: "Annual entitlement:",
+    IT: "Diritto annuale:",
+    TR: "Yıllık hak:",
+    SQ: "E drejta vjetore:",
+    KU: "Mafê salane:",
+  },
+  sickDays: {
+    DE: "Krankheitstage",
+    EN: "Sick days",
+    IT: "Giorni di malattia",
+    TR: "Hastalık günleri",
+    SQ: "Ditët e sëmundjes",
+    KU: "Rojên nexweşiyê",
+  },
+  monthProgress: {
+    DE: "Monatsfortschritt",
+    EN: "Monthly progress",
+    IT: "Avanzamento mensile",
+    TR: "Aylık ilerleme",
+    SQ: "Progresi mujor",
+    KU: "Pêşveçûna mehane",
+  },
+  stillUntilTarget: {
+    DE: "Noch",
+    EN: "Still",
+    IT: "Ancora",
+    TR: "Kalan",
+    SQ: "Edhe",
+    KU: "Hê",
+  },
+  holidaysConsidered: {
+    DE: "Feiertage berücksichtigt",
+    EN: "public holidays considered",
+    IT: "festivi considerati",
+    TR: "resmî tatiller dikkate alındı",
+    SQ: "festat zyrtare të përfshira",
+    KU: "cejnên fermî hatin hesibandin",
+  },
+  showProgressDetails: {
+    DE: "Details zum Monatsfortschritt anzeigen",
+    EN: "Show monthly progress details",
+    IT: "Mostra dettagli avanzamento mensile",
+    TR: "Aylık ilerleme detaylarını göster",
+    SQ: "Shfaq detajet e progresit mujor",
+    KU: "Hûrguliyên pêşveçûna mehane nîşan bide",
+  },
+  absences: {
+    DE: "Abwesenheiten",
+    EN: "Absences",
+    IT: "Assenze",
+    TR: "Devamsızlıklar",
+    SQ: "Mungesat",
+    KU: "Nebûn",
+  },
+  filtered: {
+    DE: "Gefiltert",
+    EN: "Filtered",
+    IT: "Filtrato",
+    TR: "Filtrelenmiş",
+    SQ: "Filtruar",
+    KU: "Parzûnkirî",
+  },
+  searchName: {
+    DE: "Name suchen…",
+    EN: "Search name…",
+    IT: "Cerca nome…",
+    TR: "İsim ara…",
+    SQ: "Kërko emrin…",
+    KU: "Nav bigere…",
+  },
+  allTypes: {
+    DE: "Alle Typen",
+    EN: "All types",
+    IT: "Tutti i tipi",
+    TR: "Tüm türler",
+    SQ: "Të gjitha llojet",
+    KU: "Hemû cure",
+  },
+  sick: {
+    DE: "Krank",
+    EN: "Sick",
+    IT: "Malattia",
+    TR: "Hasta",
+    SQ: "I sëmurë",
+    KU: "Nexweş",
+  },
+  vacation: {
+    DE: "Urlaub",
+    EN: "Vacation",
+    IT: "Ferie",
+    TR: "İzin",
+    SQ: "Pushim",
+    KU: "Bêhnvedan",
+  },
+  reset: {
+    DE: "Reset",
+    EN: "Reset",
+    IT: "Reimposta",
+    TR: "Sıfırla",
+    SQ: "Rivendos",
+    KU: "Vesaz bike",
+  },
+  resetFilters: {
+    DE: "Filter zurücksetzen",
+    EN: "Reset filters",
+    IT: "Reimposta filtri",
+    TR: "Filtreleri sıfırla",
+    SQ: "Rivendos filtrat",
+    KU: "Parzûnan vesaz bike",
+  },
+  loading: {
+    DE: "Lade...",
+    EN: "Loading...",
+    IT: "Caricamento...",
+    TR: "Yükleniyor...",
+    SQ: "Duke u ngarkuar...",
+    KU: "Tê barkirin...",
+  },
+  noAbsencesForFilters: {
+    DE: "Keine Abwesenheiten für diese Filter.",
+    EN: "No absences for these filters.",
+    IT: "Nessuna assenza per questi filtri.",
+    TR: "Bu filtreler için devamsızlık yok.",
+    SQ: "Nuk ka mungesa për këta filtra.",
+    KU: "Ji bo van parzûnan nebûn tune ne.",
+  },
+  unpaid: {
+    DE: "unbezahlt",
+    EN: "unpaid",
+    IT: "non retribuito",
+    TR: "ücretsiz",
+    SQ: "i papaguar",
+    KU: "bê mûçe",
+  },
+  byEmployee: {
+    DE: "Nach Mitarbeiter",
+    EN: "By employee",
+    IT: "Per dipendente",
+    TR: "Çalışana göre",
+    SQ: "Sipas punonjësit",
+    KU: "Li gorî karmend",
+  },
+  entries: {
+    DE: "Einträge",
+    EN: "entries",
+    IT: "voci",
+    TR: "kayıt",
+    SQ: "regjistrime",
+    KU: "tomar",
+  },
+  entry: {
+    DE: "Eintrag",
+    EN: "entry",
+    IT: "voce",
+    TR: "kayıt",
+    SQ: "regjistrim",
+    KU: "tomar",
+  },
+  km: {
+    DE: "km",
+    EN: "km",
+    IT: "km",
+    TR: "km",
+    SQ: "km",
+    KU: "km",
+  },
+  me: {
+    DE: "Ich",
+    EN: "Me",
+    IT: "Io",
+    TR: "Ben",
+    SQ: "Unë",
+    KU: "Ez",
+  },
+};
+
 function isOverviewResponse(x: unknown): x is OverviewResponse {
   return typeof x === "object" && x !== null;
 }
@@ -154,9 +771,15 @@ function formatDateDE(yyyyMmDd: string) {
   return `${d}.${m}.${y}`;
 }
 
-function typeLabel(t: "VACATION" | "SICK", compensation?: AbsenceCompensation) {
-  if (t === "SICK") return "Krank";
-  return compensation === "UNPAID" ? "Urlaub (unbezahlt)" : "Urlaub";
+function typeLabel(
+  language: AppUiLanguage,
+  t: "VACATION" | "SICK",
+  compensation?: AbsenceCompensation
+) {
+  if (t === "SICK") return translate(language, "sick", OVERVIEW_DICTIONARY);
+  return compensation === "UNPAID"
+    ? `${translate(language, "vacation", OVERVIEW_DICTIONARY)} (${translate(language, "unpaid", OVERVIEW_DICTIONARY)})`
+    : translate(language, "vacation", OVERVIEW_DICTIONARY);
 }
 
 function typeColor(t: "VACATION" | "SICK") {
@@ -209,10 +832,26 @@ function absenceDayValue(dayPortion: AbsenceDayPortion): number {
   return dayPortion === "HALF_DAY" ? 0.5 : 1;
 }
 
-function formatDayCountDE(days: number): string {
-  if (days === 0.5) return "0,5 Tag";
-  if (Number.isInteger(days)) return `${days} ${days === 1 ? "Tag" : "Tage"}`;
-  return `${String(days).replace(".", ",")} Tage`;
+function formatDayCountLocalized(language: AppUiLanguage, days: number): string {
+  const value = Number.isInteger(days) ? String(days) : String(days).replace(".", ",");
+
+  switch (language) {
+    case "EN":
+      return `${String(days).replace(",", ".")} ${days === 1 ? "day" : "days"}`;
+    case "IT":
+      return `${value} ${days === 1 ? "giorno" : "giorni"}`;
+    case "TR":
+      return `${String(days).replace(",", ".")} gün`;
+    case "SQ":
+      return `${value} ${days === 1 ? "ditë" : "ditë"}`;
+    case "KU":
+      return `${String(days).replace(",", ".")} roj`;
+    case "DE":
+    default:
+      if (days === 0.5) return "0,5 Tag";
+      if (Number.isInteger(days)) return `${days} ${days === 1 ? "Tag" : "Tage"}`;
+      return `${value} Tage`;
+  }
 }
 
 function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
@@ -308,6 +947,8 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
 
 export default function UebersichtPage() {
   const router = useRouter();
+  const [language, setLanguage] = useState<AppUiLanguage>("DE");
+  const t = (key: OverviewTextKey): string => translate(language, key, OVERVIEW_DICTIONARY);
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [absences, setAbsences] = useState<Absence[]>([]);
   const [absenceSummaryByUser, setAbsenceSummaryByUser] = useState<AbsenceUserSummary[]>([]);
@@ -354,6 +995,34 @@ export default function UebersichtPage() {
   const [absType, setAbsType] = useState<AbsFilterType>("ALL");
   const [workDetailsOpen, setWorkDetailsOpen] = useState(false);
   const [progressDetailsOpen, setProgressDetailsOpen] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/me", {
+          method: "GET",
+          cache: "no-store",
+          credentials: "include",
+        });
+
+        const data = (await response.json()) as MeResponse;
+
+        if (!alive) return;
+
+        if (data.ok && data.session?.language) {
+          setLanguage(data.session.language);
+        }
+      } catch {
+        if (!alive) return;
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -573,7 +1242,7 @@ export default function UebersichtPage() {
 
     for (const e of monthEntries) {
       const key = e.user?.id ?? "me";
-      const name = e.user?.fullName ?? "Ich";
+      const name = e.user?.fullName ?? t("me");
       const cur =
         map.get(key) ?? {
           userId: key,
@@ -608,7 +1277,7 @@ export default function UebersichtPage() {
     } else {
       for (const a of monthAbsences) {
         const key = a.user?.id ?? "me";
-        const name = a.user?.fullName ?? "Ich";
+        const name = a.user?.fullName ?? t("me");
         const cur =
         map.get(key) ?? { userId: key, name, minutes: 0, km: 0, entries: 0, vac: 0, sick: 0, unpaidVac: 0 };
 
@@ -644,10 +1313,10 @@ export default function UebersichtPage() {
 
   const rangeError = useMemo(() => {
     if (exportMode !== "RANGE") return "";
-    if (!rangeFrom || !rangeTo) return "Bitte Von und Bis auswählen.";
-    if (rangeFrom > rangeTo) return "Von-Datum darf nicht nach dem Bis-Datum liegen.";
+    if (!rangeFrom || !rangeTo) return t("pleaseSelectFromAndTo");
+    if (rangeFrom > rangeTo) return t("fromDateAfterToDate");
     return "";
-  }, [exportMode, rangeFrom, rangeTo]);
+  }, [exportMode, rangeFrom, rangeTo, language]);
 
   const doExport = () => {
     if (exportMode === "MONTH") {
@@ -674,7 +1343,7 @@ export default function UebersichtPage() {
         onClick={() => setExportOpen(false)}
         className="app-action-card-button app-action-card-button-neutral"
       >
-        Abbrechen
+        {t("cancel")}
       </button>
 
       <button
@@ -686,9 +1355,9 @@ export default function UebersichtPage() {
           cursor: exportMode === "RANGE" && rangeError ? "not-allowed" : "pointer",
           opacity: exportMode === "RANGE" && rangeError ? 0.7 : 1,
         }}
-        title="Download starten"
+        title={t("startDownload")}
       >
-        Download starten
+        {t("startDownload")}
       </button>
     </>
   );
@@ -755,9 +1424,9 @@ const resetAbsFilters = (): void => {
           <Link
             href="/aufgaben"
             className="card app-action-card-button app-action-card-button-neutral"
-            title="Meine Aufgaben"
+            title={t("myTasks")}
           >
-            📋 Aufgaben
+            📋 {t("tasks")}
           </Link>
         </div>
       ) : null}
@@ -768,15 +1437,15 @@ const resetAbsFilters = (): void => {
           <button
             onClick={openExportModal}
             className="card app-action-card-button app-action-card-button-accent"
-            title="Export (Admin)"
+            title={t("adminExport")}
           >
-            ⬇️ Export
+            ⬇️ {t("adminExport")}
           </button>
         </div>
       ) : null}
 
       {/* ✅ Export Modal */}
-      <Modal open={exportOpen} onClose={() => setExportOpen(false)} title="Export (Admin)" footer={exportFooter} maxWidth={720}>
+      <Modal open={exportOpen} onClose={() => setExportOpen(false)} title={t("adminExport")} footer={exportFooter} maxWidth={720}>
         <div style={{ display: "grid", gap: 12 }}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {([
@@ -909,7 +1578,7 @@ const resetAbsFilters = (): void => {
       <Modal
         open={workDetailsOpen}
         onClose={() => setWorkDetailsOpen(false)}
-        title="Details Arbeitsstunden"
+        title={t("workDetails")}
         footer={
           <button
             type="button"
@@ -922,10 +1591,10 @@ const resetAbsFilters = (): void => {
         maxWidth={640}
       >
         <div style={{ display: "grid", gap: 12 }}>
-          <div className="small">Soll (Brutto): {formatMinutesAsHM(targetMinutes)}</div>
-          <div className="small">Soll (Netto): {formatMinutesAsHM(netTargetMinutes)}</div>
-          <div className="small">Überstunden (Brutto): {formatMinutesAsHM(Math.max(0, overtimeGrossMinutes))}</div>
-          <div className="small">Überstunden (Netto): {formatMinutesAsHM(Math.max(0, overtimeNetMinutes))}</div>
+          <div className="small">{t("targetGross")} {formatMinutesAsHM(targetMinutes)}</div>
+          <div className="small">{t("targetNet")} {formatMinutesAsHM(netTargetMinutes)}</div>
+          <div className="small">{t("overtimeGross")} {formatMinutesAsHM(Math.max(0, overtimeGrossMinutes))}</div>
+          <div className="small">{t("overtimeNet")} {formatMinutesAsHM(Math.max(0, overtimeNetMinutes))}</div>
           <div
             className="small"
             style={{
@@ -934,9 +1603,7 @@ const resetAbsFilters = (): void => {
               color: "var(--muted)",
             }}
           >
-            Brutto ist das reguläre Monatssoll ohne Urlaub, Krankheit und Feiertage.
-            Netto ist das reduzierte Monatssoll, bei dem bezahlte Urlaubstage,
-            Krankheitstage und Feiertage vom Brutto-Soll abgezogen werden.
+            {t("grossNetExplanation")}
           </div>
         </div>
       </Modal>
@@ -951,26 +1618,26 @@ const resetAbsFilters = (): void => {
             onClick={() => setProgressDetailsOpen(false)}
             className="app-action-card-button app-action-card-button-neutral"
           >
-            Schließen
+            {t("close")}
           </button>
         }
         maxWidth={640}
       >
         <div style={{ display: "grid", gap: 12 }}>
-          <div className="small">Arbeitszeit aktuell: {formatMinutesAsHM(totalMinutes)}</div>
-          <div className="small">Monatssoll (Brutto): {formatMinutesAsHM(targetMinutes)}</div>
-          <div className="small">Monatssoll (Netto): {formatMinutesAsHM(netTargetMinutes)}</div>
-          <div className="small">Überstunden (Brutto): {formatMinutesAsHM(Math.max(0, overtimeGrossMinutes))}</div>
-          <div className="small">Überstunden (Netto): {formatMinutesAsHM(Math.max(0, overtimeNetMinutes))}</div>
-          <div className="small">Urlaub angerechnet: {formatMinutesAsHM(vacationMinutesInfo)}</div>
-          <div className="small">Krankheit angerechnet: {formatMinutesAsHM(sickMinutesInfo)}</div>
-          <div className="small">Feiertage angerechnet: {formatMinutesAsHM(holidayMinutes)}</div>
-          <div className="small">Feiertage im Monat: {holidayCountInMonth}</div>
+          <div className="small">{t("currentWorkTime")} {formatMinutesAsHM(totalMinutes)}</div>
+          <div className="small">{t("targetGross")} {formatMinutesAsHM(targetMinutes)}</div>
+          <div className="small">{t("targetNet")} {formatMinutesAsHM(netTargetMinutes)}</div>
+          <div className="small">{t("overtimeGross")} {formatMinutesAsHM(Math.max(0, overtimeGrossMinutes))}</div>
+          <div className="small">{t("overtimeNet")} {formatMinutesAsHM(Math.max(0, overtimeNetMinutes))}</div>
+          <div className="small">{t("vacationCredited")} {formatMinutesAsHM(vacationMinutesInfo)}</div>
+          <div className="small">{t("sickCredited")} {formatMinutesAsHM(sickMinutesInfo)}</div>
+          <div className="small">{t("holidayCredited")} {formatMinutesAsHM(holidayMinutes)}</div>
+          <div className="small">{t("holidaysInMonth")} {holidayCountInMonth}</div>
           <div className="small">
-            Unbezahlte Abwesenheit: {String(unpaidAbsenceDays).replace(".", ",")} Tage
+            {t("unpaidAbsence")} {String(unpaidAbsenceDays).replace(".", ",")} {language === "DE" ? "Tage" : language === "EN" ? "days" : language === "IT" ? "giorni" : language === "TR" ? "gün" : language === "SQ" ? "ditë" : "roj"}
           </div>
           <div className="small">
-            Unbezahlte Abwesenheit (Minuten): {formatMinutesAsHM(unpaidAbsenceMinutes)}
+            {t("unpaidAbsenceMinutes")} {formatMinutesAsHM(unpaidAbsenceMinutes)}
           </div>
         </div>
       </Modal>
@@ -980,7 +1647,7 @@ const resetAbsFilters = (): void => {
         <div style={{ display: "grid", gap: 14 }}>
           <div>
             <div className="section-title" style={{ marginBottom: 6 }}>
-              Übersicht
+              {t("overview")}
             </div>
             <div
               style={{
@@ -990,7 +1657,7 @@ const resetAbsFilters = (): void => {
                 wordBreak: "break-word",
               }}
             >
-              Daten für{" "}
+              {t("dataFor")}{" "}
               <span style={{ fontWeight: 900, color: "rgba(255,255,255,0.92)" }}>
                 {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
               </span>
@@ -1005,7 +1672,7 @@ const resetAbsFilters = (): void => {
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Jahr</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{t("year")}</div>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
@@ -1020,7 +1687,7 @@ const resetAbsFilters = (): void => {
             </div>
 
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Monat</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{t("month")}</div>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value as MonthOption)}
@@ -1042,7 +1709,7 @@ const resetAbsFilters = (): void => {
         <div className="card kpi">
           <div>
             <div className="small">
-              Arbeitsstunden · {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+              {t("workHours")} · {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
             </div>
             <div className="big">{formatMinutesAsHM(totalMinutes)}</div>
             <div
@@ -1054,12 +1721,12 @@ const resetAbsFilters = (): void => {
                 marginTop: 6,
               }}
             >
-              Details
+              {t("details")}
               <button
                 type="button"
                 onClick={() => setWorkDetailsOpen(true)}
                 className="app-info-icon-button"
-                title="Details zu Arbeitsstunden anzeigen"
+                title={t("showWorkDetails")}
               >
                 <Info size={15} />
               </button>
@@ -1072,12 +1739,12 @@ const resetAbsFilters = (): void => {
         <div className="card kpi">
           <div>
             <div className="small">
-              Urlaubstage · {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+              {t("vacationDays")} · {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
             </div>
               <div className="big">{String(vacDays).replace(".", ",")}</div>
               {unpaidVacationDaysValue > 0 ? (
               <div className="small">
-                {String(unpaidVacationDaysValue).replace(".", ",")} Tage unbezahlt
+                {String(unpaidVacationDaysValue).replace(".", ",")} {t("daysUnpaid")}
               </div>
             ) : null}
           </div>
@@ -1086,13 +1753,13 @@ const resetAbsFilters = (): void => {
 
         <div className="card kpi">
           <div>
-            <div className="small">Resturlaub</div>
+            <div className="small">{t("remainingVacation")}</div>
             <div className="big">{String(remainingVacationDays).replace(".", ",")}</div>
             <div className="small">
-              {String(usedVacationDaysYtd).replace(".", ",")} von {String(accruedVacationDays).replace(".", ",")} Tagen verbraucht
+              {String(usedVacationDaysYtd).replace(".", ",")} {t("usedOfConsumed")} {String(accruedVacationDays).replace(".", ",")} {language === "DE" ? "Tagen verbraucht" : language === "EN" ? "days used" : language === "IT" ? "giorni utilizzati" : language === "TR" ? "gün kullanıldı" : language === "SQ" ? "ditë të përdorura" : "roj hatine bikaranîn"}
             </div>
             <div className="small">
-              Jahresanspruch: {String(annualVacationDays).replace(".", ",")} Tage
+              {t("annualEntitlement")} {String(annualVacationDays).replace(".", ",")} {language === "DE" ? "Tage" : language === "EN" ? "days" : language === "IT" ? "giorni" : language === "TR" ? "gün" : language === "SQ" ? "ditë" : "roj"}
             </div>
           </div>
           <div className="app-kpi-icon">🗓</div>
@@ -1100,7 +1767,7 @@ const resetAbsFilters = (): void => {
 
         <div className="card kpi">
           <div>
-            <div className="small">Krankheitstage</div>
+            <div className="small">{t("sickDays")}</div>
             <div className="big">{sickDays}</div>
           </div>
           <div className="app-kpi-icon">🌡</div>
@@ -1109,13 +1776,13 @@ const resetAbsFilters = (): void => {
 
       {/* Progress */}
       <div className="card card-olive" style={{ padding: 18, marginBottom: 14 }}>
-        Monatsfortschritt – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+        {t("monthProgress")} – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ color: "var(--muted)" }}>
-            Noch {formatMinutesAsHM(Math.max(0, netTargetMinutes - totalMinutes))} bis zum Monatssoll
+            {t("stillUntilTarget")} {formatMinutesAsHM(Math.max(0, netTargetMinutes - totalMinutes))} {language === "DE" ? "bis zum Monatssoll" : language === "EN" ? "until the monthly target" : language === "IT" ? "fino all'obiettivo mensile" : language === "TR" ? "aylık hedefe kadar" : language === "SQ" ? "deri te objektivi mujor" : "heta armanca mehane"}
             {baseTargetMinutes > 0 ? (
               <span>
-                {" "}· Feiertage berücksichtigt
+                {" "}· {t("holidaysConsidered")}
                 {holidayCountInMonth > 0 ? ` (${holidayCountInMonth})` : ""}
               </span>
             ) : null}
@@ -1133,12 +1800,12 @@ const resetAbsFilters = (): void => {
                 fontWeight: 800,
               }}
             >
-              <span>Details</span>
+              <span>{t("details")}</span>
               <button
                 type="button"
                 onClick={() => setProgressDetailsOpen(true)}
                 className="app-info-icon-button"
-                title="Details zum Monatsfortschritt anzeigen"
+                title={t("showProgressDetails")}
               >
                 <Info size={15} />
               </button>
@@ -1162,12 +1829,12 @@ const resetAbsFilters = (): void => {
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
           <div className="section-title">
-            Abwesenheiten – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+            {t("absences")} – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span className="app-chip-neutral">
-              Gefiltert: {filteredAbsenceCounts.total}
+              {t("filtered")}: {filteredAbsenceCounts.total}
             </span>
             <span className="app-chip-sick">
               🌡 {filteredAbsenceCounts.sick}
@@ -1194,7 +1861,7 @@ const resetAbsFilters = (): void => {
             <input
               value={absQuery}
               onChange={(e) => setAbsQuery(e.target.value)}
-              placeholder="Name suchen…"
+              placeholder={t("searchName")}
               className="app-filter-input"
             />
           ) : null}
@@ -1204,25 +1871,25 @@ const resetAbsFilters = (): void => {
             onChange={(e) => setAbsType(e.target.value as AbsFilterType)}
             className="app-filter-select"
           >
-            <option value="ALL">Alle Typen</option>
-            <option value="SICK">Krank</option>
-            <option value="VACATION">Urlaub</option>
+            <option value="ALL">{t("allTypes")}</option>
+            <option value="SICK">{t("sick")}</option>
+            <option value="VACATION">{t("vacation")}</option>
           </select>
 
           <button
             type="button"
             onClick={resetAbsFilters}
             className="app-filter-reset-button"
-            title="Filter zurücksetzen"
+            title={t("resetFilters")}
           >
-            ↺ Reset
+            ↺ {t("reset")}
           </button>
         </div>
 
         {loading ? (
-          <div style={{ color: "var(--muted)", marginTop: 12 }}>Lade...</div>
+          <div style={{ color: "var(--muted)", marginTop: 12 }}>{t("loading")}</div>
         ) : filteredBlocks.length === 0 ? (
-          <div style={{ color: "var(--muted)", marginTop: 12 }}>Keine Abwesenheiten für diese Filter.</div>
+          <div style={{ color: "var(--muted)", marginTop: 12 }}>{t("noAbsencesForFilters")}</div>
         ) : (
           <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
             {filteredBlocks.map((b) => {
@@ -1252,13 +1919,13 @@ const resetAbsFilters = (): void => {
                       }}
                     />
                     <span style={{ fontWeight: 900 }}>{title}</span>
-                    <span style={badgeStyle(b.type)}>{typeLabel(b.type, b.compensation)}</span>
+                    <span style={badgeStyle(b.type)}>{typeLabel(language, b.type, b.compensation)}</span>
                     <span style={{ color: "var(--muted)" }}>
-                      {formatDayCountDE(b.days)}
+                      {formatDayCountLocalized(language, b.days)}
                     </span>
                     {b.type === "VACATION" && b.compensation === "UNPAID" ? (
                       <span style={{ color: "rgba(255, 184, 77, 0.95)", fontWeight: 900 }}>
-                        unbezahlt
+                        {t("unpaid")}
                       </span>
                     ) : null}
                   </div>
@@ -1275,11 +1942,11 @@ const resetAbsFilters = (): void => {
       {showByEmployee ? (
         <div className="card" style={{ padding: 18 }}>
           <div className="section-title" style={{ marginBottom: 12 }}>
-            Nach Mitarbeiter
+            {t("byEmployee")}
           </div>
 
           {loading ? (
-            <div style={{ color: "var(--muted)" }}>Lade...</div>
+            <div style={{ color: "var(--muted)" }}>{t("loading")}</div>
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
               {byEmployee.map((p) => (
@@ -1294,16 +1961,16 @@ const resetAbsFilters = (): void => {
                       </div>
 
                       <div style={{ color: "var(--muted-2)", marginTop: 8, display: "flex", gap: 18, flexWrap: "wrap" }}>
-                        <span>🧾 {p.entries} Einträge</span>
-                        <span>🚗 {p.km.toFixed(0)} km</span>
+                        <span>🧾 {p.entries} {p.entries === 1 ? t("entry") : t("entries")}</span>
+                        <span>🚗 {p.km.toFixed(0)} {t("km")}</span>
                         {p.sick > 0 ? (
                           <span style={{ color: "rgba(224, 75, 69, 0.95)" }}>
-                            🌡 {String(p.sick).replace(".", ",")} Krank
+                            🌡 {String(p.sick).replace(".", ",")} {t("sick")}
                           </span>
                         ) : null}
                         {p.unpaidVac > 0 ? (
                           <span style={{ color: "rgba(255, 184, 77, 0.95)" }}>
-                            💸 {String(p.unpaidVac).replace(".", ",")} Urlaub unbezahlt
+                            💸 {String(p.unpaidVac).replace(".", ",")} {t("vacation")} {t("unpaid")}
                           </span>
                         ) : null}
                       </div>
