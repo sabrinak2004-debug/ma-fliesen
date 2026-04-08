@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Toast from "@/components/Toast";
 import Modal from "@/components/Modal";
+import { translate, type AppUiLanguage } from "@/lib/i18n";
 
 type MeResponse =
   | {
@@ -13,6 +14,7 @@ type MeResponse =
         userId: string;
         fullName: string;
         role: "ADMIN" | "EMPLOYEE";
+        language: AppUiLanguage;
         companyId: string;
         companyName: string;
         companySubdomain: string;
@@ -447,6 +449,7 @@ type SessionData = {
   userId: string;
   fullName: string;
   role: "EMPLOYEE" | "ADMIN";
+  language: AppUiLanguage;
   companyId: string;
   companyName: string;
   companySubdomain: string;
@@ -460,6 +463,7 @@ function isSessionData(v: unknown): v is SessionData {
   const userId = v.userId;
   const fullName = v.fullName;
   const role = v.role;
+  const language = v.language;
   const companyId = v.companyId;
   const companyName = v.companyName;
   const companySubdomain = v.companySubdomain;
@@ -470,6 +474,12 @@ function isSessionData(v: unknown): v is SessionData {
     typeof userId === "string" &&
     typeof fullName === "string" &&
     (role === "EMPLOYEE" || role === "ADMIN") &&
+    (language === "DE" ||
+      language === "EN" ||
+      language === "IT" ||
+      language === "TR" ||
+      language === "SQ" ||
+      language === "KU") &&
     typeof companyId === "string" &&
     typeof companyName === "string" &&
     typeof companySubdomain === "string" &&
@@ -493,6 +503,927 @@ function formatCorrectionRange(startDate: string, endDate: string): string {
   return startDate === endDate ? startDate : `${startDate} bis ${endDate}`;
 }
 
+type ErfassungTextKey =
+  | "loading"
+  | "details"
+  | "cancel"
+  | "enterActivity"
+  | "loginAgain"
+  | "saveFailed"
+  | "networkSaveError"
+  | "unknown"
+  | "saveBreakIncomplete"
+  | "saveBreakFailed"
+  | "networkBreakSaveError"
+  | "correctionPastOnly"
+  | "correctionUnlockAlreadyExists"
+  | "correctionPendingAlreadyExists"
+  | "correctionCreateFailed"
+  | "correctionSentSuccess"
+  | "networkCorrectionError"
+  | "syncTaskTaken"
+  | "syncDateTaken"
+  | "syncPlanTaken"
+  | "createEntry"
+  | "employee"
+  | "entryAssignedAutomatically"
+  | "date"
+  | "selectDate"
+  | "selectedPastDay"
+  | "statusLoading"
+  | "noCorrectionBecauseAdminTask"
+  | "directEntryPossible"
+  | "releasedRangeFromTo"
+  | "adminReleasedDay"
+  | "approvedRange"
+  | "pendingCorrectionExists"
+  | "pendingRange"
+  | "lastCorrectionRejected"
+  | "lastDecisionFor"
+  | "sendNewCorrectionRequest"
+  | "correctionRequiredNow"
+  | "correctionNotRequiredNow"
+  | "sendCorrectionRequest"
+  | "start"
+  | "end"
+  | "workTimeCalculated"
+  | "gross"
+  | "legalBreak"
+  | "net"
+  | "activityPerformed"
+  | "activityPlaceholder"
+  | "location"
+  | "locationPlaceholder"
+  | "noteForAdmin"
+  | "notePlaceholder"
+  | "noteOptionalVisibleToAdmin"
+  | "travelMinutes"
+  | "reset"
+  | "saveEntry"
+  | "saving"
+  | "saveBreak"
+  | "breakCapture"
+  | "breakFrom"
+  | "breakTo"
+  | "breakCalculation"
+  | "breakRuleInfo"
+  | "allEntries"
+  | "year"
+  | "allYears"
+  | "loadingEntries"
+  | "noEntriesForYear"
+  | "expandCollapse"
+  | "entry"
+  | "entries"
+  | "break"
+  | "showBreakDetails"
+  | "oClock"
+  | "noActivityStored"
+  | "noLocationStored"
+  | "travelTime"
+  | "showDetails"
+  | "showNote"
+  | "edit"
+  | "delete"
+  | "workTimeDetails"
+  | "close"
+  | "dateAndTime"
+  | "netWorkTime"
+  | "siteOrAddress"
+  | "breakDetails"
+  | "manualBreak"
+  | "noManualBreak"
+  | "legallyRequired"
+  | "autoCompleted"
+  | "noAutoCompletion"
+  | "effectiveBreakTotal"
+  | "note"
+  | "noNote"
+  | "selectedDate"
+  | "serverDeterminesCorrectionRange"
+  | "existingCorrectionInfoLoading"
+  | "activeUnlockAlreadyExists"
+  | "correctionRequired"
+  | "missingDaysUntilLock"
+  | "sendRequest"
+  | "editEntry"
+  | "saveChanges"
+  | "assignmentManagedServerSide"
+  | "performedActivity"
+  | "travelTimeMin"
+  | "changesSaveFailed";
+
+const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage, string>> = {
+  loading: {
+    DE: "Lade...",
+    EN: "Loading...",
+    IT: "Caricamento...",
+    TR: "Yükleniyor...",
+    SQ: "Duke u ngarkuar...",
+    KU: "Tê barkirin...",
+  },
+  details: {
+    DE: "Details anzeigen",
+    EN: "Show details",
+    IT: "Mostra dettagli",
+    TR: "Detayları göster",
+    SQ: "Trego detajet",
+    KU: "Xalqên nîşan bide",
+  },
+  cancel: {
+    DE: "Abbrechen",
+    EN: "Cancel",
+    IT: "Annulla",
+    TR: "İptal",
+    SQ: "Anulo",
+    KU: "Betal bike",
+  },
+  enterActivity: {
+    DE: "Bitte Tätigkeit eingeben.",
+    EN: "Please enter an activity.",
+    IT: "Inserisci un'attività.",
+    TR: "Lütfen bir faaliyet girin.",
+    SQ: "Ju lutem vendosni aktivitetin.",
+    KU: "Ji kerema xwe çalakiyek binivîse.",
+  },
+  loginAgain: {
+    DE: "Bitte neu einloggen.",
+    EN: "Please log in again.",
+    IT: "Effettua nuovamente l'accesso.",
+    TR: "Lütfen tekrar giriş yapın.",
+    SQ: "Ju lutem hyni përsëri.",
+    KU: "Ji kerema xwe dîsa têkeve.",
+  },
+  saveFailed: {
+    DE: "Speichern fehlgeschlagen.",
+    EN: "Saving failed.",
+    IT: "Salvataggio non riuscito.",
+    TR: "Kaydetme başarısız oldu.",
+    SQ: "Ruajtja dështoi.",
+    KU: "Tomarkirin bi ser neket.",
+  },
+  networkSaveError: {
+    DE: "Netzwerkfehler beim Speichern.",
+    EN: "Network error while saving.",
+    IT: "Errore di rete durante il salvataggio.",
+    TR: "Kaydetme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ruajtjes.",
+    KU: "Di tomarkirinê de şaşiya torê.",
+  },
+  unknown: {
+    DE: "Unbekannt",
+    EN: "Unknown",
+    IT: "Sconosciuto",
+    TR: "Bilinmiyor",
+    SQ: "I panjohur",
+    KU: "Nenas",
+  },
+  saveBreakIncomplete: {
+    DE: "Bitte Pause von und bis vollständig eingeben.",
+    EN: "Please enter both break start and end.",
+    IT: "Inserisci in modo completo inizio e fine pausa.",
+    TR: "Lütfen mola başlangıç ve bitişini tam girin.",
+    SQ: "Ju lutem vendosni plotësisht fillimin dhe fundin e pushimit.",
+    KU: "Ji kerema xwe destpêk û dawiya navberê bi tevahî binivîse.",
+  },
+  saveBreakFailed: {
+    DE: "Pause speichern fehlgeschlagen.",
+    EN: "Saving the break failed.",
+    IT: "Salvataggio pausa non riuscito.",
+    TR: "Mola kaydedilemedi.",
+    SQ: "Ruajtja e pushimit dështoi.",
+    KU: "Tomarkirina navberê bi ser neket.",
+  },
+  networkBreakSaveError: {
+    DE: "Netzwerkfehler beim Speichern der Pause.",
+    EN: "Network error while saving the break.",
+    IT: "Errore di rete durante il salvataggio della pausa.",
+    TR: "Mola kaydedilirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ruajtjes së pushimit.",
+    KU: "Di tomarkirina navberê de şaşiya torê.",
+  },
+  correctionPastOnly: {
+    DE: "Ein Nachtragsantrag ist nur für vergangene Tage möglich.",
+    EN: "A correction request is only possible for past days.",
+    IT: "Una richiesta di integrazione è possibile solo per giorni passati.",
+    TR: "Düzeltme talebi yalnızca geçmiş günler için mümkündür.",
+    SQ: "Kërkesa për korrigjim lejohet vetëm për ditët e kaluara.",
+    KU: "Daxwaza rastkirinê tenê ji bo rojên borî gengaz e.",
+  },
+  correctionUnlockAlreadyExists: {
+    DE: "Für diesen Tag existiert bereits eine aktive Freigabe.",
+    EN: "An active approval already exists for this day.",
+    IT: "Per questo giorno esiste già un'approvazione attiva.",
+    TR: "Bu gün için zaten aktif bir onay var.",
+    SQ: "Për këtë ditë ekziston tashmë një miratim aktiv.",
+    KU: "Ji bo vê rojê berê xweşandinê çalak heye.",
+  },
+  correctionPendingAlreadyExists: {
+    DE: "Für diesen Tag existiert bereits ein offener Nachtragsantrag.",
+    EN: "There is already an open correction request for this day.",
+    IT: "Esiste già una richiesta aperta per questo giorno.",
+    TR: "Bu gün için zaten açık bir düzeltme talebi var.",
+    SQ: "Për këtë ditë ekziston tashmë një kërkesë e hapur.",
+    KU: "Ji bo vê rojê daxwazek vekirî ya rastkirinê heye.",
+  },
+  correctionCreateFailed: {
+    DE: "Nachtragsantrag konnte nicht erstellt werden.",
+    EN: "The correction request could not be created.",
+    IT: "Non è stato possibile creare la richiesta.",
+    TR: "Düzeltme talebi oluşturulamadı.",
+    SQ: "Kërkesa për korrigjim nuk mund të krijohej.",
+    KU: "Daxwaza rastkirinê nehat afirandin.",
+  },
+  correctionSentSuccess: {
+    DE: "Nachtragsantrag wurde erfolgreich gesendet.",
+    EN: "The correction request was sent successfully.",
+    IT: "La richiesta è stata inviata con successo.",
+    TR: "Düzeltme talebi başarıyla gönderildi.",
+    SQ: "Kërkesa për korrigjim u dërgua me sukses.",
+    KU: "Daxwaza rastkirinê bi serkeftî hate şandin.",
+  },
+  networkCorrectionError: {
+    DE: "Netzwerkfehler beim Senden des Nachtragsantrags.",
+    EN: "Network error while sending the correction request.",
+    IT: "Errore di rete durante l'invio della richiesta.",
+    TR: "Düzeltme talebi gönderilirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë dërgimit të kërkesës.",
+    KU: "Di şandina daxwaza rastkirinê de şaşiya torê.",
+  },
+  syncTaskTaken: {
+    DE: "Aufgabe übernommen. Bitte Start- und Endzeit ergänzen.",
+    EN: "Task imported. Please add start and end time.",
+    IT: "Attività importata. Aggiungi ora di inizio e fine.",
+    TR: "Görev aktarıldı. Lütfen başlangıç ve bitiş saatini ekleyin.",
+    SQ: "Detyra u mor. Ju lutem shtoni orën e fillimit dhe përfundimit.",
+    KU: "Erk hate standin. Ji kerema xwe dema destpêk û dawiyê zêde bike.",
+  },
+  syncDateTaken: {
+    DE: "Datum aus der Benachrichtigung übernommen. Bitte Start- und Endzeit ergänzen.",
+    EN: "Date imported from the notification. Please add start and end time.",
+    IT: "Data importata dalla notifica. Aggiungi ora di inizio e fine.",
+    TR: "Tarih bildirimden alındı. Lütfen başlangıç ve bitiş saatini ekleyin.",
+    SQ: "Data u mor nga njoftimi. Ju lutem shtoni orën e fillimit dhe përfundimit.",
+    KU: "Dîrok ji hişyariyê hate standin. Ji kerema xwe dema destpêk û dawiyê zêde bike.",
+  },
+  syncPlanTaken: {
+    DE: "Planeintrag übernommen. Bitte Start- und Endzeit ergänzen.",
+    EN: "Schedule entry imported. Please add start and end time.",
+    IT: "Voce pianificata importata. Aggiungi ora di inizio e fine.",
+    TR: "Plan kaydı aktarıldı. Lütfen başlangıç ve bitiş saatini ekleyin.",
+    SQ: "Regjistrimi i planit u mor. Ju lutem shtoni orën e fillimit dhe përfundimit.",
+    KU: "Tomara planê hate standin. Ji kerema xwe dema destpêk û dawiyê zêde bike.",
+  },
+  createEntry: {
+    DE: "Stunden erfassen",
+    EN: "Record hours",
+    IT: "Registra ore",
+    TR: "Saat gir",
+    SQ: "Regjistro orët",
+    KU: "Demjimêran tomar bike",
+  },
+  employee: {
+    DE: "Mitarbeiter",
+    EN: "Employee",
+    IT: "Dipendente",
+    TR: "Çalışan",
+    SQ: "Punonjësi",
+    KU: "Karmend",
+  },
+  entryAssignedAutomatically: {
+    DE: "Der Eintrag wird automatisch deinem Konto zugeordnet.",
+    EN: "The entry is automatically assigned to your account.",
+    IT: "La voce viene assegnata automaticamente al tuo account.",
+    TR: "Kayıt otomatik olarak hesabınıza atanır.",
+    SQ: "Regjistrimi i caktohet automatikisht llogarisë suaj.",
+    KU: "Tomar bixweber bi hesabê te ve tê girêdan.",
+  },
+  date: {
+    DE: "Datum",
+    EN: "Date",
+    IT: "Data",
+    TR: "Tarih",
+    SQ: "Data",
+    KU: "Dîrok",
+  },
+  selectDate: {
+    DE: "Datum auswählen",
+    EN: "Select date",
+    IT: "Seleziona data",
+    TR: "Tarih seçin",
+    SQ: "Zgjidh datën",
+    KU: "Dîrok hilbijêre",
+  },
+  selectedPastDay: {
+    DE: "Vergangener Tag ausgewählt",
+    EN: "Past day selected",
+    IT: "Giorno passato selezionato",
+    TR: "Geçmiş gün seçildi",
+    SQ: "U zgjodh një ditë e kaluar",
+    KU: "Rojeke borî hate hilbijartin",
+  },
+  statusLoading: {
+    DE: "Status für den ausgewählten Tag wird geladen...",
+    EN: "Loading status for the selected day...",
+    IT: "Caricamento stato per il giorno selezionato...",
+    TR: "Seçilen günün durumu yükleniyor...",
+    SQ: "Po ngarkohet statusi për ditën e zgjedhur...",
+    KU: "Rewşa roja hilbijartî tê barkirin...",
+  },
+  noCorrectionBecauseAdminTask: {
+    DE: "Für diesen Tag ist kein Nachtragsantrag erforderlich, weil du ihn über eine Admin-Aufgabe geöffnet hast.",
+    EN: "No correction request is required for this day because you opened it through an admin task.",
+    IT: "Per questo giorno non è necessaria una richiesta perché è stato aperto tramite un'attività admin.",
+    TR: "Bu gün için düzeltme talebi gerekmez çünkü günü yönetici görevi üzerinden açtınız.",
+    SQ: "Për këtë ditë nuk kërkohet kërkesë korrigjimi sepse e hapët përmes një detyre të adminit.",
+    KU: "Ji bo vê rojê daxwaza rastkirinê ne pêwist e, çimkî tu bi erkek admin ve vebûyî.",
+  },
+  directEntryPossible: {
+    DE: "Du kannst den Eintrag für",
+    EN: "You can enter the record for",
+    IT: "Puoi registrare la voce per",
+    TR: "Şu gün için kayıt yapabilirsiniz:",
+    SQ: "Mund ta regjistroni hyrjen për",
+    KU: "Tu dikarî tomara vê rojê bike ji bo",
+  },
+  releasedRangeFromTo: {
+    DE: "Der freigegebene Zeitraum reicht von",
+    EN: "The approved range goes from",
+    IT: "L'intervallo approvato va da",
+    TR: "Onaylanan aralık:",
+    SQ: "Periudha e miratuar shkon nga",
+    KU: "Navbera pejirandî ji ... heta ... ye",
+  },
+  adminReleasedDay: {
+    DE: "Dieser Tag wurde vom Admin für den Nachtrag freigegeben. Du kannst ihn jetzt bearbeiten.",
+    EN: "This day was approved by the admin for correction. You can edit it now.",
+    IT: "Questo giorno è stato approvato dall'admin per l'integrazione. Ora puoi modificarlo.",
+    TR: "Bu gün düzeltme için yönetici tarafından açıldı. Artık düzenleyebilirsiniz.",
+    SQ: "Kjo ditë u miratua nga admini për korrigjim. Tani mund ta ndryshoni.",
+    KU: "Ev roj ji aliyê admin ve ji bo rastkirinê hate vekirin. Naha tu dikarî sererast bikî.",
+  },
+  approvedRange: {
+    DE: "Genehmigter Zeitraum:",
+    EN: "Approved range:",
+    IT: "Intervallo approvato:",
+    TR: "Onaylanan aralık:",
+    SQ: "Periudha e miratuar:",
+    KU: "Navbera pejirandî:",
+  },
+  pendingCorrectionExists: {
+    DE: "Für diesen Tag existiert bereits ein offener Nachtragsantrag.",
+    EN: "There is already an open correction request for this day.",
+    IT: "Esiste già una richiesta aperta per questo giorno.",
+    TR: "Bu gün için zaten açık bir düzeltme talebi var.",
+    SQ: "Për këtë ditë ekziston tashmë një kërkesë e hapur.",
+    KU: "Ji bo vê rojê daxwazek vekirî ya rastkirinê heye.",
+  },
+  pendingRange: {
+    DE: "Offener Zeitraum:",
+    EN: "Open range:",
+    IT: "Intervallo aperto:",
+    TR: "Açık aralık:",
+    SQ: "Periudha e hapur:",
+    KU: "Navbera vekirî:",
+  },
+  lastCorrectionRejected: {
+    DE: "Der letzte Nachtragsantrag für diesen Zeitraum wurde abgelehnt.",
+    EN: "The last correction request for this period was rejected.",
+    IT: "L'ultima richiesta per questo periodo è stata rifiutata.",
+    TR: "Bu dönem için son düzeltme talebi reddedildi.",
+    SQ: "Kërkesa e fundit për këtë periudhë u refuzua.",
+    KU: "Daxwaza dawî ya rastkirinê ji bo vê navberê hat redkirin.",
+  },
+  lastDecisionFor: {
+    DE: "Letzte Entscheidung für:",
+    EN: "Last decision for:",
+    IT: "Ultima decisione per:",
+    TR: "Son karar:",
+    SQ: "Vendimi i fundit për:",
+    KU: "Biryara dawî ji bo:",
+  },
+  sendNewCorrectionRequest: {
+    DE: "Neuen Nachtragsantrag senden",
+    EN: "Send new correction request",
+    IT: "Invia nuova richiesta",
+    TR: "Yeni düzeltme talebi gönder",
+    SQ: "Dërgo kërkesë të re korrigjimi",
+    KU: "Daxwaza nû ya rastkirinê bişîne",
+  },
+  correctionRequiredNow: {
+    DE: "Für den ausgewählten Tag ist jetzt ein Nachtragsantrag erforderlich.",
+    EN: "A correction request is now required for the selected day.",
+    IT: "Per il giorno selezionato è ora richiesta una richiesta di integrazione.",
+    TR: "Seçilen gün için artık düzeltme talebi gereklidir.",
+    SQ: "Për ditën e zgjedhur tani kërkohet kërkesë korrigjimi.",
+    KU: "Ji bo roja hilbijartî niha daxwaza rastkirinê pêwist e.",
+  },
+  correctionNotRequiredNow: {
+    DE: "Für den ausgewählten Tag ist aktuell noch kein Nachtragsantrag erforderlich.",
+    EN: "No correction request is currently required for the selected day.",
+    IT: "Al momento non è richiesta una richiesta per il giorno selezionato.",
+    TR: "Seçilen gün için şu anda düzeltme talebi gerekli değil.",
+    SQ: "Aktualisht nuk kërkohet kërkesë korrigjimi për ditën e zgjedhur.",
+    KU: "Ji bo roja hilbijartî hêj daxwaza rastkirinê pêwist nîne.",
+  },
+  sendCorrectionRequest: {
+    DE: "Nachtragsantrag senden",
+    EN: "Send correction request",
+    IT: "Invia richiesta",
+    TR: "Düzeltme talebi gönder",
+    SQ: "Dërgo kërkesën për korrigjim",
+    KU: "Daxwaza rastkirinê bişîne",
+  },
+  start: { DE: "Beginn", EN: "Start", IT: "Inizio", TR: "Başlangıç", SQ: "Fillimi", KU: "Destpêk" },
+  end: { DE: "Ende", EN: "End", IT: "Fine", TR: "Bitiş", SQ: "Fundi", KU: "Dawî" },
+  workTimeCalculated: {
+    DE: "Arbeitszeit (Tag berechnet)",
+    EN: "Work time (day calculated)",
+    IT: "Orario di lavoro (giorno calcolato)",
+    TR: "Çalışma süresi (gün hesaplandı)",
+    SQ: "Koha e punës (dita e llogaritur)",
+    KU: "Dema karê (roj hate hesibandin)",
+  },
+  gross: { DE: "Brutto", EN: "Gross", IT: "Lordo", TR: "Brüt", SQ: "Bruto", KU: "Berî derxistin" },
+  legalBreak: {
+    DE: "Gesetzliche Pause",
+    EN: "Legal break",
+    IT: "Pausa legale",
+    TR: "Yasal mola",
+    SQ: "Pushimi ligjor",
+    KU: "Navbera qanûnî",
+  },
+  net: { DE: "Netto", EN: "Net", IT: "Netto", TR: "Net", SQ: "Neto", KU: "Safî" },
+  activityPerformed: {
+    DE: "Ausgeführte Tätigkeit",
+    EN: "Performed activity",
+    IT: "Attività svolta",
+    TR: "Yapılan faaliyet",
+    SQ: "Aktiviteti i kryer",
+    KU: "Çalakiya pêk hatî",
+  },
+  activityPlaceholder: {
+    DE: "z.B. Fliesen verlegen, Verfugen...",
+    EN: "e.g. laying tiles, grouting...",
+    IT: "es. posa piastrelle, stuccatura...",
+    TR: "örn. fayans döşeme, derz dolgu...",
+    SQ: "p.sh. shtrim pllakash, fugim...",
+    KU: "mînak: danîna tileyan, dagirtina derzan...",
+  },
+  location: {
+    DE: "Einsatzort",
+    EN: "Location",
+    IT: "Luogo di lavoro",
+    TR: "Çalışma yeri",
+    SQ: "Vendndodhja e punës",
+    KU: "Cihê karê",
+  },
+  locationPlaceholder: {
+    DE: "z.B. Musterstraße 5, München",
+    EN: "e.g. Musterstraße 5, Munich",
+    IT: "es. Musterstraße 5, Monaco",
+    TR: "örn. Musterstraße 5, Münih",
+    SQ: "p.sh. Musterstraße 5, Mynih",
+    KU: "mînak: Musterstraße 5, Munich",
+  },
+  noteForAdmin: {
+    DE: "Notiz für Admin",
+    EN: "Note for admin",
+    IT: "Nota per admin",
+    TR: "Yönetici için not",
+    SQ: "Shënim për adminin",
+    KU: "Nîşe ji bo admin",
+  },
+  notePlaceholder: {
+    DE: "Optional: Hinweise zum Einsatz, Material, Besonderheiten...",
+    EN: "Optional: notes about the assignment, material, special cases...",
+    IT: "Opzionale: note su incarico, materiale, particolarità...",
+    TR: "İsteğe bağlı: görev, malzeme, özel durumlarla ilgili notlar...",
+    SQ: "Opsionale: shënime për detyrën, materialin, veçoritë...",
+    KU: "Vebijarkî: têbînî li ser kar, materyal, taybetî...",
+  },
+  noteOptionalVisibleToAdmin: {
+    DE: "Diese Notiz ist optional und wird dem Admin beim Eintrag angezeigt.",
+    EN: "This note is optional and will be shown to the admin with the entry.",
+    IT: "Questa nota è facoltativa e sarà visibile all'admin.",
+    TR: "Bu not isteğe bağlıdır ve kayıtla birlikte yöneticiye gösterilir.",
+    SQ: "Ky shënim është opsional dhe do t'i shfaqet adminit te regjistrimi.",
+    KU: "Ev nîşe vebijarkî ye û bi tomarê re ji admin re tê nîşandan.",
+  },
+  travelMinutes: {
+    DE: "Fahrzeit (Min.)",
+    EN: "Travel time (min.)",
+    IT: "Tempo di viaggio (min.)",
+    TR: "Yol süresi (dk.)",
+    SQ: "Koha e udhëtimit (min.)",
+    KU: "Dema rê (deq.)",
+  },
+  reset: {
+    DE: "Zurücksetzen",
+    EN: "Reset",
+    IT: "Reimposta",
+    TR: "Sıfırla",
+    SQ: "Rivendos",
+    KU: "Vesaz bike",
+  },
+  saveEntry: {
+    DE: "Eintrag speichern",
+    EN: "Save entry",
+    IT: "Salva voce",
+    TR: "Kaydı kaydet",
+    SQ: "Ruaj regjistrimin",
+    KU: "Tomarê tomar bike",
+  },
+  saving: {
+    DE: "Speichert...",
+    EN: "Saving...",
+    IT: "Salvataggio...",
+    TR: "Kaydediliyor...",
+    SQ: "Duke ruajtur...",
+    KU: "Tê tomarkirin...",
+  },
+  saveBreak: {
+    DE: "Pause speichern",
+    EN: "Save break",
+    IT: "Salva pausa",
+    TR: "Molayı kaydet",
+    SQ: "Ruaj pushimin",
+    KU: "Navberê tomar bike",
+  },
+  breakCapture: {
+    DE: "Pause erfassen",
+    EN: "Record break",
+    IT: "Registra pausa",
+    TR: "Mola gir",
+    SQ: "Regjistro pushimin",
+    KU: "Navberê tomar bike",
+  },
+  breakFrom: {
+    DE: "Pause von",
+    EN: "Break from",
+    IT: "Pausa da",
+    TR: "Mola başlangıcı",
+    SQ: "Pushimi nga",
+    KU: "Navberê ji",
+  },
+  breakTo: {
+    DE: "Pause bis",
+    EN: "Break to",
+    IT: "Pausa fino a",
+    TR: "Mola bitişi",
+    SQ: "Pushimi deri",
+    KU: "Navberê heta",
+  },
+  breakCalculation: {
+    DE: "Pausenberechnung",
+    EN: "Break calculation",
+    IT: "Calcolo pausa",
+    TR: "Mola hesaplaması",
+    SQ: "Llogaritja e pushimit",
+    KU: "Hesabkirina navberê",
+  },
+  breakRuleInfo: {
+    DE: "Die gesetzliche Pause richtet sich nach der gesamten Arbeitszeit des Tages. Falls du zu wenig Pause einträgst, ergänzt die App die fehlende Differenz automatisch.",
+    EN: "The legal break depends on the total working time of the day. If you enter too little break time, the app automatically adds the missing difference.",
+    IT: "La pausa legale dipende dal totale delle ore lavorate nel giorno. Se inserisci una pausa troppo breve, l'app aggiunge automaticamente la differenza mancante.",
+    TR: "Yasal mola günün toplam çalışma süresine bağlıdır. Çok az mola girerseniz uygulama eksik farkı otomatik ekler.",
+    SQ: "Pushimi ligjor varet nga koha totale e punës së ditës. Nëse vendosni shumë pak pushim, aplikacioni e plotëson automatikisht diferencën që mungon.",
+    KU: "Navbera qanûnî li gorî tevahiya dema karê ya rojê ye. Heke tu navberek kêm binivîsî, sepan cudahiya mayî bixweber zêde dike.",
+  },
+  allEntries: {
+    DE: "Alle Einträge",
+    EN: "All entries",
+    IT: "Tutte le voci",
+    TR: "Tüm kayıtlar",
+    SQ: "Të gjitha regjistrimet",
+    KU: "Hemû tomar",
+  },
+  year: { DE: "Jahr", EN: "Year", IT: "Anno", TR: "Yıl", SQ: "Viti", KU: "Sal" },
+  allYears: {
+    DE: "Alle Jahre",
+    EN: "All years",
+    IT: "Tutti gli anni",
+    TR: "Tüm yıllar",
+    SQ: "Të gjitha vitet",
+    KU: "Hemû sal",
+  },
+  loadingEntries: {
+    DE: "Lade Einträge...",
+    EN: "Loading entries...",
+    IT: "Caricamento voci...",
+    TR: "Kayıtlar yükleniyor...",
+    SQ: "Po ngarkohen regjistrimet...",
+    KU: "Tomar têne barkirin...",
+  },
+  noEntriesForYear: {
+    DE: "Keine Einträge für das ausgewählte Jahr vorhanden.",
+    EN: "No entries available for the selected year.",
+    IT: "Nessuna voce disponibile per l'anno selezionato.",
+    TR: "Seçilen yıl için kayıt yok.",
+    SQ: "Nuk ka regjistrime për vitin e zgjedhur.",
+    KU: "Ji bo sala hilbijartî tomar tune ne.",
+  },
+  expandCollapse: {
+    DE: "Ein-/Ausklappen",
+    EN: "Expand/collapse",
+    IT: "Espandi/comprimi",
+    TR: "Aç/kapat",
+    SQ: "Hap/mbyll",
+    KU: "Veke/bigire",
+  },
+  entry: { DE: "Eintrag", EN: "entry", IT: "voce", TR: "kayıt", SQ: "regjistrim", KU: "tomar" },
+  entries: { DE: "Einträge", EN: "entries", IT: "voci", TR: "kayıt", SQ: "regjistrime", KU: "tomar" },
+  break: { DE: "Pause", EN: "break", IT: "pausa", TR: "mola", SQ: "pushim", KU: "navber" },
+  showBreakDetails: {
+    DE: "Pausen-Details anzeigen",
+    EN: "Show break details",
+    IT: "Mostra dettagli pausa",
+    TR: "Mola detaylarını göster",
+    SQ: "Shfaq detajet e pushimit",
+    KU: "Hûrguliyên navberê nîşan bide",
+  },
+  oClock: {
+    DE: "Uhr",
+    EN: "",
+    IT: "",
+    TR: "",
+    SQ: "",
+    KU: "",
+  },
+  noActivityStored: {
+    DE: "Keine Tätigkeit hinterlegt",
+    EN: "No activity stored",
+    IT: "Nessuna attività salvata",
+    TR: "Kayıtlı faaliyet yok",
+    SQ: "Nuk ka aktivitet të ruajtur",
+    KU: "Çalakî nehatiye tomar kirin",
+  },
+  noLocationStored: {
+    DE: "Keine Baustelle / Adresse hinterlegt",
+    EN: "No site / address stored",
+    IT: "Nessun cantiere / indirizzo salvato",
+    TR: "Kayıtlı şantiye / adres yok",
+    SQ: "Nuk ka kantier / adresë të ruajtur",
+    KU: "Cihê şantiyê / navnîşan nehatiye tomar kirin",
+  },
+  travelTime: {
+    DE: "Fahrtzeit:",
+    EN: "Travel time:",
+    IT: "Tempo di viaggio:",
+    TR: "Yol süresi:",
+    SQ: "Koha e udhëtimit:",
+    KU: "Dema rê:",
+  },
+  showDetails: {
+    DE: "Details anzeigen",
+    EN: "Show details",
+    IT: "Mostra dettagli",
+    TR: "Detayları göster",
+    SQ: "Shfaq detajet",
+    KU: "Hûrguliyan nîşan bide",
+  },
+  showNote: {
+    DE: "Notiz anzeigen",
+    EN: "Show note",
+    IT: "Mostra nota",
+    TR: "Notu göster",
+    SQ: "Shfaq shënimin",
+    KU: "Nîşeyê nîşan bide",
+  },
+  edit: {
+    DE: "Bearbeiten",
+    EN: "Edit",
+    IT: "Modifica",
+    TR: "Düzenle",
+    SQ: "Ndrysho",
+    KU: "Sererast bike",
+  },
+  delete: {
+    DE: "Löschen",
+    EN: "Delete",
+    IT: "Elimina",
+    TR: "Sil",
+    SQ: "Fshij",
+    KU: "Jê bibe",
+  },
+  workTimeDetails: {
+    DE: "Arbeitszeit-Details",
+    EN: "Work time details",
+    IT: "Dettagli orario di lavoro",
+    TR: "Çalışma süresi detayları",
+    SQ: "Detajet e kohës së punës",
+    KU: "Hûrguliyên dema karê",
+  },
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+  },
+  dateAndTime: {
+    DE: "Datum & Zeit",
+    EN: "Date & time",
+    IT: "Data e ora",
+    TR: "Tarih ve saat",
+    SQ: "Data dhe ora",
+    KU: "Dîrok û dem",
+  },
+  netWorkTime: {
+    DE: "Netto-Arbeitszeit",
+    EN: "Net work time",
+    IT: "Orario netto",
+    TR: "Net çalışma süresi",
+    SQ: "Koha neto e punës",
+    KU: "Dema safî ya karê",
+  },
+  siteOrAddress: {
+    DE: "Baustelle / Adresse",
+    EN: "Site / address",
+    IT: "Cantiere / indirizzo",
+    TR: "Şantiye / adres",
+    SQ: "Kantieri / adresa",
+    KU: "Cihê karê / navnîşan",
+  },
+  breakDetails: {
+    DE: "Pausen-Details",
+    EN: "Break details",
+    IT: "Dettagli pausa",
+    TR: "Mola detayları",
+    SQ: "Detajet e pushimit",
+    KU: "Hûrguliyên navberê",
+  },
+  manualBreak: {
+    DE: "Manuell eingetragene Pause",
+    EN: "Manually entered break",
+    IT: "Pausa inserita manualmente",
+    TR: "Elle girilen mola",
+    SQ: "Pushimi i futur manualisht",
+    KU: "Navbera bi destan hatiye nivîsîn",
+  },
+  noManualBreak: {
+    DE: "Keine manuelle Pause eingetragen",
+    EN: "No manual break entered",
+    IT: "Nessuna pausa manuale inserita",
+    TR: "Elle girilmiş mola yok",
+    SQ: "Nuk ka pushim manual të futur",
+    KU: "Navbera bi destan nehatiye nivîsîn",
+  },
+  legallyRequired: {
+    DE: "Gesetzlich erforderlich",
+    EN: "Legally required",
+    IT: "Legalmente richiesto",
+    TR: "Yasal olarak gerekli",
+    SQ: "E kërkuar ligjërisht",
+    KU: "Ji hêla qanûnê ve pêwist",
+  },
+  autoCompleted: {
+    DE: "Automatisch ergänzt",
+    EN: "Automatically added",
+    IT: "Aggiunto automaticamente",
+    TR: "Otomatik eklendi",
+    SQ: "Plotësuar automatikisht",
+    KU: "Bixweber hate zêdekirin",
+  },
+  noAutoCompletion: {
+    DE: "Keine automatische Ergänzung",
+    EN: "No automatic addition",
+    IT: "Nessuna integrazione automatica",
+    TR: "Otomatik ekleme yok",
+    SQ: "Nuk ka plotësim automatik",
+    KU: "Zêdekirina bixweber tune ye",
+  },
+  effectiveBreakTotal: {
+    DE: "Wirksame Pause gesamt",
+    EN: "Effective break total",
+    IT: "Pausa effettiva totale",
+    TR: "Toplam geçerli mola",
+    SQ: "Pushimi efektiv total",
+    KU: "Tevahiya navbera bi bandor",
+  },
+  note: {
+    DE: "Notiz",
+    EN: "Note",
+    IT: "Nota",
+    TR: "Not",
+    SQ: "Shënim",
+    KU: "Nîşe",
+  },
+  noNote: {
+    DE: "Keine Notiz vorhanden.",
+    EN: "No note available.",
+    IT: "Nessuna nota disponibile.",
+    TR: "Not yok.",
+    SQ: "Nuk ka shënim.",
+    KU: "Nîşe tune ye.",
+  },
+  selectedDate: {
+    DE: "Ausgewähltes Datum",
+    EN: "Selected date",
+    IT: "Data selezionata",
+    TR: "Seçilen tarih",
+    SQ: "Data e zgjedhur",
+    KU: "Dîroka hilbijartî",
+  },
+  serverDeterminesCorrectionRange: {
+    DE: "Der Server ermittelt automatisch den ältesten fehlenden Arbeitstag bis zu diesem Datum und erstellt daraus den passenden Nachtragszeitraum.",
+    EN: "The server automatically determines the oldest missing workday up to this date and creates the matching correction period.",
+    IT: "Il server determina automaticamente il giorno lavorativo mancante più vecchio fino a questa data e crea l'intervallo corretto.",
+    TR: "Sunucu bu tarihe kadar en eski eksik iş gününü otomatik belirler ve uygun düzeltme aralığını oluşturur.",
+    SQ: "Serveri përcakton automatikisht ditën më të vjetër të munguar të punës deri në këtë datë dhe krijon periudhën përkatëse.",
+    KU: "Server bixweber roja karê ya herî kevn a wenda heta vê dîrokê diyar dike û navbera guncaw çêdike.",
+  },
+  existingCorrectionInfoLoading: {
+    DE: "Bestehende Nachtragsinformationen werden geladen...",
+    EN: "Loading existing correction information...",
+    IT: "Caricamento informazioni esistenti...",
+    TR: "Mevcut düzeltme bilgileri yükleniyor...",
+    SQ: "Po ngarkohen informacionet ekzistuese të korrigjimit...",
+    KU: "Agahiyên rastkirinê yên heyî têne barkirin...",
+  },
+  activeUnlockAlreadyExists: {
+    DE: "Für den ausgewählten Tag existiert bereits eine aktive Freigabe. Ein neuer Antrag ist aktuell nicht nötig.",
+    EN: "An active approval already exists for the selected day. A new request is not needed right now.",
+    IT: "Per il giorno selezionato esiste già un'approvazione attiva. Una nuova richiesta non è necessaria al momento.",
+    TR: "Seçilen gün için zaten aktif bir onay var. Şu anda yeni bir talep gerekli değil.",
+    SQ: "Për ditën e zgjedhur ekziston tashmë një miratim aktiv. Një kërkesë e re nuk nevojitet tani.",
+    KU: "Ji bo roja hilbijartî berê xweşandinê çalak heye. Naha daxwazek nû ne pêwist e.",
+  },
+  correctionRequired: {
+    DE: "Ein Nachtragsantrag ist erforderlich.",
+    EN: "A correction request is required.",
+    IT: "È richiesta una richiesta di integrazione.",
+    TR: "Düzeltme talebi gereklidir.",
+    SQ: "Kërkohet një kërkesë korrigjimi.",
+    KU: "Daxwaza rastkirinê pêwist e.",
+  },
+  missingDaysUntilLock: {
+    DE: "fehlende Arbeitstage bis zur Sperrung.",
+    EN: "missing workdays until lock.",
+    IT: "giorni lavorativi mancanti fino al blocco.",
+    TR: "kilide kadar eksik iş günü.",
+    SQ: "ditë pune të munguara deri në bllokim.",
+    KU: "rojên karê yên wenda heta girtinê.",
+  },
+  sendRequest: {
+    DE: "Antrag senden",
+    EN: "Send request",
+    IT: "Invia richiesta",
+    TR: "Talep gönder",
+    SQ: "Dërgo kërkesën",
+    KU: "Daxwazê bişîne",
+  },
+  editEntry: {
+    DE: "Eintrag bearbeiten",
+    EN: "Edit entry",
+    IT: "Modifica voce",
+    TR: "Kaydı düzenle",
+    SQ: "Ndrysho regjistrimin",
+    KU: "Tomarê sererast bike",
+  },
+  saveChanges: {
+    DE: "Änderungen speichern",
+    EN: "Save changes",
+    IT: "Salva modifiche",
+    TR: "Değişiklikleri kaydet",
+    SQ: "Ruaj ndryshimet",
+    KU: "Guherînan tomar bike",
+  },
+  assignmentManagedServerSide: {
+    DE: "Zuordnung wird serverseitig automatisch verwaltet.",
+    EN: "Assignment is managed automatically on the server side.",
+    IT: "L'assegnazione è gestita automaticamente dal server.",
+    TR: "Atama sunucu tarafında otomatik yönetilir.",
+    SQ: "Caktimi menaxhohet automatikisht nga serveri.",
+    KU: "Girêdan li aliyê serverê bixweber tê rêvebirin.",
+  },
+  performedActivity: {
+    DE: "Ausgeführte Tätigkeit",
+    EN: "Performed activity",
+    IT: "Attività svolta",
+    TR: "Yapılan faaliyet",
+    SQ: "Aktiviteti i kryer",
+    KU: "Çalakiya pêk hatî",
+  },
+  travelTimeMin: {
+    DE: "Fahrzeit (Min.)",
+    EN: "Travel time (min.)",
+    IT: "Tempo di viaggio (min.)",
+    TR: "Yol süresi (dk.)",
+    SQ: "Koha e udhëtimit (min.)",
+    KU: "Dema rê (deq.)",
+  },
+  changesSaveFailed: {
+    DE: "Bearbeiten fehlgeschlagen.",
+    EN: "Editing failed.",
+    IT: "Modifica non riuscita.",
+    TR: "Düzenleme başarısız oldu.",
+    SQ: "Ndryshimi dështoi.",
+    KU: "Sererastkirin bi ser neket.",
+  },
+};
+
 export default function Page() {
   return (
     <React.Suspense fallback={null}>
@@ -504,6 +1435,8 @@ export default function Page() {
 function ErfassungPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [language, setLanguage] = useState<AppUiLanguage>("DE");
+  const t = (key: ErfassungTextKey): string => translate(language, key, ERFASSUNG_DICTIONARY);
   const [me, setMe] = useState<MeResponse | null>(null);
   const [meResolved, setMeResolved] = useState(false);
 
@@ -586,19 +1519,19 @@ function ErfassungPageInner() {
 
   const syncToastMessage = useMemo(() => {
     if (sourceTaskId) {
-      return "Aufgabe übernommen. Bitte Start- und Endzeit ergänzen.";
+      return t("syncTaskTaken");
     }
 
     if (syncDateParam && !syncActivityParam && !syncLocationParam) {
-      return "Datum aus der Benachrichtigung übernommen. Bitte Start- und Endzeit ergänzen.";
+      return t("syncDateTaken");
     }
 
     if (syncDateParam) {
-      return "Planeintrag übernommen. Bitte Start- und Endzeit ergänzen.";
+      return t("syncPlanTaken");
     }
 
-    return "Planeintrag übernommen. Bitte Start- und Endzeit ergänzen.";
-  }, [sourceTaskId, syncDateParam, syncActivityParam, syncLocationParam]);
+    return t("syncPlanTaken");
+  }, [sourceTaskId, syncDateParam, syncActivityParam, syncLocationParam, language]);
   const [loadingSelectedCorrectionStatus, setLoadingSelectedCorrectionStatus] = useState(false);
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
@@ -717,12 +1650,15 @@ useEffect(() => {
         return;
       }
 
+      setLanguage(j.session.language);
+
       setMe({
         ok: true,
         session: {
           userId: j.session.userId,
           fullName: j.session.fullName,
           role: j.session.role,
+          language: j.session.language,
           companyId: j.session.companyId,
           companyName: j.session.companyName,
           companySubdomain: j.session.companySubdomain,
@@ -855,10 +1791,8 @@ useEffect(() => {
   async function saveEntry() {
     setError(null);
 
-    if (!activity.trim()) return setError("Bitte Tätigkeit eingeben.");
-
-    // ✅ Falls nicht eingeloggt/Session fehlt
-    if (!me || !me.ok) return setError("Bitte neu einloggen.");
+    if (!activity.trim()) return setError(t("enterActivity"));
+    if (!me || !me.ok) return setError(t("loginAgain"));
 
     setSaving(true);
     try {
@@ -886,7 +1820,7 @@ useEffect(() => {
         const msg =
           typeof j === "object" && j !== null && "error" in j && typeof (j as { error: unknown }).error === "string"
             ? (j as { error: string }).error
-            : "Speichern fehlgeschlagen.";
+            : t("saveFailed");
         setError(msg);
         return;
       }
@@ -902,7 +1836,7 @@ useEffect(() => {
       await loadCorrectionRequests();
       await loadSelectedCorrectionStatus(workDate);
     } catch {
-      setError("Netzwerkfehler beim Speichern.");
+      setError(t("networkSaveError"));
     } finally {
       setSaving(false);
     }
@@ -920,7 +1854,7 @@ useEffect(() => {
     setEditError(null);
     setEdit({
       id: e.id,
-      userFullName: e.user?.fullName ?? "Unbekannt",
+      userFullName: e.user?.fullName ?? t("unknown"),
       workDate: toYMD(e.workDate),
       startTime: e.startTime,
       endTime: e.endTime,
@@ -957,8 +1891,8 @@ useEffect(() => {
     if (!edit) return;
 
     setEditError(null);
-    if (!edit.activity.trim()) return setEditError("Bitte Tätigkeit eingeben.");
-    if (!edit.workDate || !edit.startTime || !edit.endTime) return setEditError("Datum/Zeit fehlt.");
+    if (!edit.activity.trim()) return setEditError(t("enterActivity"));
+    if (!edit.workDate || !edit.startTime || !edit.endTime) return setEditError(`${t("date")} / ${t("start")} / ${t("end")} fehlt.`);
 
     setEditSaving(true);
     try {
@@ -986,7 +1920,7 @@ useEffect(() => {
         const msg =
           typeof j === "object" && j !== null && "error" in j && typeof (j as { error: unknown }).error === "string"
             ? (j as { error: string }).error
-            : "Bearbeiten fehlgeschlagen.";
+            : t("changesSaveFailed");
         setEditError(msg);
         return;
       }
@@ -1007,7 +1941,7 @@ useEffect(() => {
       setEditOpen(false);
       setEdit(null);
     } catch {
-      setEditError("Netzwerkfehler beim Speichern.");
+      setEditError(t("networkSaveError"));
     } finally {
       setEditSaving(false);
     }
@@ -1017,7 +1951,7 @@ useEffect(() => {
     setBreakError(null);
 
     if ((breakStartHHMM && !breakEndHHMM) || (!breakStartHHMM && breakEndHHMM)) {
-      setBreakError("Bitte Pause von und bis vollständig eingeben.");
+      setBreakError(t("saveBreakIncomplete"));
       return;
     }
 
@@ -1043,7 +1977,7 @@ useEffect(() => {
           "error" in j &&
           typeof (j as { error: unknown }).error === "string"
             ? (j as { error: string }).error
-            : "Pause speichern fehlgeschlagen.";
+            : t("saveBreakFailed");
         setBreakError(msg);
         return;
       }
@@ -1051,7 +1985,7 @@ useEffect(() => {
       await loadCorrectionRequests();
       await loadSelectedCorrectionStatus(workDate);
     } catch {
-      setBreakError("Netzwerkfehler beim Speichern der Pause.");
+      setBreakError(t("networkBreakSaveError"));
     } finally {
       setBreakSaving(false);
     }
@@ -1061,17 +1995,17 @@ useEffect(() => {
     setCorrectionSuccess(null);
 
     if (!canCreateCorrectionRequest) {
-      setCorrectionError("Ein Nachtragsantrag ist nur für vergangene Tage möglich.");
+      setCorrectionError(t("correctionPastOnly"));
       return;
     }
 
     if (hasActiveUnlockForSelectedDate) {
-      setCorrectionError("Für diesen Tag existiert bereits eine aktive Freigabe.");
+      setCorrectionError(t("correctionUnlockAlreadyExists"));
       return;
     }
 
     if (pendingCorrectionRequestForSelectedDate) {
-      setCorrectionError("Für diesen Tag existiert bereits ein offener Nachtragsantrag.");
+      setCorrectionError(t("correctionPendingAlreadyExists"));
       return;
     }
 
@@ -1097,17 +2031,17 @@ useEffect(() => {
           "error" in j &&
           typeof (j as { error: unknown }).error === "string"
             ? (j as { error: string }).error
-            : "Nachtragsantrag konnte nicht erstellt werden.";
+            : t("correctionCreateFailed");
         setCorrectionError(msg);
         return;
       }
 
-      setCorrectionSuccess("Nachtragsantrag wurde erfolgreich gesendet.");
+      setCorrectionSuccess(t("correctionSentSuccess"));
       setCorrectionNote("");
       await loadCorrectionRequests();
       await loadSelectedCorrectionStatus(workDate);
     } catch {
-      setCorrectionError("Netzwerkfehler beim Senden des Nachtragsantrags.");
+      setCorrectionError(t("networkCorrectionError"));
     } finally {
       setCorrectionSaving(false);
     }
@@ -1291,7 +2225,7 @@ useEffect(() => {
     return (
       <AppShell activeLabel="#wirkönnendas">
         <div className="card tenant-status-card tenant-status-card-neutral" style={{ padding: 14 }}>
-          <div style={{ color: "var(--muted)" }}>Lade...</div>
+          <div style={{ color: "var(--muted)" }}>{t("loading")}</div>
         </div>
       </AppShell>
     );
@@ -1303,7 +2237,7 @@ useEffect(() => {
       {/* CREATE */}
       <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
         <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <span style={{ color: "var(--accent)" }}>＋</span> Stunden erfassen
+          <span style={{ color: "var(--accent)" }}>＋</span> {t("createEntry")}
         </div>
 
         {error && (
@@ -1319,7 +2253,7 @@ useEffect(() => {
 
         {/* ✅ Name nur anzeigen (automatisch aus Session), kein Input mehr */}
         <div style={{ marginBottom: 12 }}>
-          <div className="label">Mitarbeiter</div>
+          <div className="label">{t("employee")}</div>
           <div
             className="input tenant-readonly-input"
             style={{
@@ -1329,13 +2263,13 @@ useEffect(() => {
             {meName || "—"}
           </div>
           <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-            Der Eintrag wird automatisch deinem Konto zugeordnet.
+            {t("entryAssignedAutomatically")}
           </div>
         </div>
 
         <div className="row" style={{ marginBottom: 12 }}>
           <div>
-            <div className="label">Datum</div>
+            <div className="label">{t("date")}</div>
 
             <input
               className="input erfassung-date-desktop"
@@ -1351,7 +2285,7 @@ useEffect(() => {
                 type="date"
                 value={workDate}
                 onChange={(e) => setWorkDate(e.target.value)}
-                aria-label="Datum auswählen"
+                aria-label={t("selectDate")}
               />
             </div>
           </div>
@@ -1387,12 +2321,12 @@ useEffect(() => {
                 }
                 style={{ fontWeight: 800 }}
               >
-                Vergangener Tag ausgewählt
+                {t("selectedPastDay")}
               </div>
 
               {loadingSelectedCorrectionStatus ? (
                 <div style={{ fontSize: 13, color: "var(--muted)" }}>
-                  Status für den ausgewählten Tag wird geladen...
+                  {t("statusLoading")}
                 </div>
               ) : hasAdminTaskBypassForSelectedDate ? (
                 <>
@@ -1469,7 +2403,7 @@ useEffect(() => {
                           setCorrectionOpen(true);
                         }}
                       >
-                        Neuen Nachtragsantrag senden
+                        {t("sendNewCorrectionRequest")}
                       </button>
                     </div>
                   ) : null}
@@ -1499,7 +2433,7 @@ useEffect(() => {
                           setCorrectionOpen(true);
                         }}
                       >
-                        Nachtragsantrag senden
+                        {t("sendCorrectionRequest")}
                       </button>
                     </div>
                   ) : null}
@@ -1511,7 +2445,7 @@ useEffect(() => {
 
         <div className="row erfassung-time-row" style={{ marginBottom: 12 }}>
           <div className="erfassung-time-field">
-            <div className="label">Beginn</div>
+            <div className="label">{t("start")}</div>
             <input
               className="input erfassung-time-input"
               type="time"
@@ -1520,7 +2454,7 @@ useEffect(() => {
             />
           </div>
           <div className="erfassung-time-field">
-            <div className="label">Ende</div>
+            <div className="label">{t("end")}</div>
             <input
               className="input erfassung-time-input"
               type="time"
@@ -1533,7 +2467,7 @@ useEffect(() => {
         <div className="tenant-computation-card" style={{ marginBottom: 12 }}>
           <div style={{ display: "grid", gap: 6 }}>
             <div className="tenant-computation-head">
-              <div style={{ color: "var(--muted)" }}>Arbeitszeit (Tag berechnet)</div>
+              <div style={{ color: "var(--muted)" }}>{t("workTimeCalculated")}</div>
               <div className="tenant-computation-value">
                 {dayPreview ? formatHM(dayPreview.netDay) : ""}
               </div>
@@ -1547,11 +2481,11 @@ useEffect(() => {
               </div>
             ) : dayPreview.legalBreak > 0 ? (
               <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                Brutto {formatHM(dayPreview.grossDay)} · Gesetzliche Pause {formatPause(dayPreview.legalBreak)} · Netto {formatHM(dayPreview.netDay)}
+                <div>{t("gross")} {formatHM(dayPreview.grossDay)} · {t("legalBreak")} {formatPause(dayPreview.legalBreak)} · {t("net")} {formatHM(dayPreview.netDay)}</div>
               </div>
             ) : (
               <div style={{ fontSize: 12, color: "var(--muted)", display: "grid", gap: 4 }}>
-                <div>Brutto {formatHM(dayPreview.grossDay)} · Netto {formatHM(dayPreview.netDay)}</div>
+                <div>{t("gross")} {formatHM(dayPreview.grossDay)} · {t("net")} {formatHM(dayPreview.netDay)}</div>
                 {getLegalBreakHintLines().map((line) => (
                   <div key={line}>{line}</div>
                 ))}
@@ -1561,41 +2495,41 @@ useEffect(() => {
         </div>
 
         <div style={{ marginBottom: 12 }}>
-          <div className="label">Ausgeführte Tätigkeit</div>
+          <div className="label">{t("activityPerformed")}</div>
           <textarea
             className="textarea"
-            placeholder="z.B. Fliesen verlegen, Verfugen..."
+            placeholder={t("activityPlaceholder")}
             value={activity}
             onChange={(e) => setActivity(e.target.value)}
           />
         </div>
 
         <div style={{ marginBottom: 12 }}>
-          <div className="label">Einsatzort</div>
+          <div className="label">{t("location")}</div>
           <input
             className="input"
-            placeholder="z.B. Musterstraße 5, München"
+            placeholder={t("locationPlaceholder")}
             value={location}
             onChange={(e) => setLocation(e.target.value)}
           />
         </div>
 
         <div style={{ marginBottom: 12 }}>
-          <div className="label">Notiz für Admin</div>
+          <div className="label">{t("noteForAdmin")}</div>
           <textarea
             className="textarea"
-            placeholder="Optional: Hinweise zum Einsatz, Material, Besonderheiten..."
+            placeholder={t("notePlaceholder")}
             value={noteEmployee}
             onChange={(e) => setNoteEmployee(e.target.value)}
           />
           <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-            Diese Notiz ist optional und wird dem Admin beim Eintrag angezeigt.
+            {t("noteOptionalVisibleToAdmin")}
           </div>
         </div>
 
         <div className="label" style={{ marginBottom: 12 }}>
           <div>
-            <div className="label">Fahrzeit (Min.)</div>
+            <div className="label">{t("travelMinutes")}</div>
             <input
               className="input"
               inputMode="numeric"
@@ -1621,7 +2555,7 @@ useEffect(() => {
               setError(null);
             }}
           >
-            Abbrechen
+            {t("cancel")}
           </button>
 
           <button
@@ -1630,14 +2564,14 @@ useEffect(() => {
             onClick={saveEntry}
             disabled={saving}
           >
-            {saving ? "Speichert..." : "Eintrag speichern"}
+            {saving ? t("saving") : t("saveEntry")}
           </button>
         </div>
       </div>
 
             <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
         <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <span style={{ color: "var(--accent)" }}>⏸</span> Pause erfassen
+          <span style={{ color: "var(--accent)" }}>⏸</span> {t("breakCapture")}
         </div>
 
         {breakError ? (
@@ -1647,7 +2581,7 @@ useEffect(() => {
         ) : null}
 
         <div style={{ marginBottom: 12 }}>
-          <div className="label">Datum</div>
+          <div className="label">{t("date")}</div>
           <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
             {formatDateDE(workDate)}
           </div>
@@ -1655,7 +2589,7 @@ useEffect(() => {
 
         <div className="row erfassung-time-row" style={{ marginBottom: 12 }}>
           <div className="erfassung-time-field">
-            <div className="label">Pause von</div>
+            <div className="label">{t("breakFrom")}</div>
             <input
               className="input erfassung-time-input"
               type="time"
@@ -1664,7 +2598,7 @@ useEffect(() => {
             />
           </div>
           <div className="erfassung-time-field">
-            <div className="label">Pause bis</div>
+            <div className="label">{t("breakTo")}</div>
             <input
               className="input erfassung-time-input"
               type="time"
@@ -1677,7 +2611,7 @@ useEffect(() => {
         <div className="tenant-computation-card" style={{ marginBottom: 12 }}>
           <div style={{ display: "grid", gap: 6 }}>
             <div className="tenant-computation-head">
-              <div style={{ color: "var(--muted)" }}>Pausenberechnung</div>
+              <div style={{ color: "var(--muted)" }}>{t("breakCalculation")}</div>
               <div className="tenant-computation-value">
                 {breakPreviewText.rightValue}
               </div>
@@ -1692,7 +2626,7 @@ useEffect(() => {
         </div>
 
         <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>
-          Die gesetzliche Pause richtet sich nach der gesamten Arbeitszeit des Tages. Falls du zu wenig Pause einträgst, ergänzt die App die fehlende Differenz automatisch.
+          {t("breakRuleInfo")}
         </div>
 
         <div className="erfassung-dual-actions">
@@ -1705,7 +2639,7 @@ useEffect(() => {
               setBreakError(null);
             }}
           >
-            Zurücksetzen
+            {t("reset")}
           </button>
 
           <button
@@ -1714,7 +2648,7 @@ useEffect(() => {
             onClick={saveDayBreak}
             disabled={breakSaving}
           >
-            {breakSaving ? "Speichert..." : "Pause speichern"}
+            {breakSaving ? t("saving") : t("saveBreak")}
           </button>
         </div>
       </div>
@@ -1732,17 +2666,17 @@ useEffect(() => {
           }}
         >
           <div className="section-title" style={{ marginBottom: 0 }}>
-            Alle Einträge
+            {t("allEntries")}
           </div>
 
           <div style={{ minWidth: 160 }}>
-            <div className="label">Jahr</div>
+            <div className="label">{t("year")}</div>
             <select
               className="input"
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
             >
-              <option value="ALLE">Alle Jahre</option>
+              <option value="ALLE">{t("allYears")}</option>
               {availableYears.map((year) => (
                 <option key={year} value={year}>
                   {year}
@@ -1761,7 +2695,7 @@ useEffect(() => {
                 borderColor: "rgba(255,255,255,0.08)",
               }}
             >
-              Lade Einträge...
+              {t("loadingEntries")}
             </div>
           ) : null}
 
@@ -1772,8 +2706,7 @@ useEffect(() => {
                 padding: 14,
                 borderColor: "rgba(255,255,255,0.08)",
               }}
-            >
-              Keine Einträge für das ausgewählte Jahr vorhanden.
+            >{t("noEntriesForYear")}
             </div>
           ) : null}
           {filteredGroupedEntries.map((m) => (
@@ -1801,7 +2734,7 @@ useEffect(() => {
                   </span>
                 </div>
 
-                <div style={{ opacity: 0.7, fontSize: 12 }}>Ein-/Ausklappen</div>
+                <div style={{ opacity: 0.7, fontSize: 12 }}>{t("expandCollapse")}</div>
               </summary>
 
               <div style={{ padding: "0 0 12px 0", display: "grid", gap: 10 }}>
@@ -1846,7 +2779,7 @@ useEffect(() => {
                             }}
                           >
                             <span>
-                              {d.entries.length} {d.entries.length === 1 ? "Eintrag" : "Einträge"}
+                              {d.entries.length} {d.entries.length === 1 ? t("entry") : t("entries")}
                             </span>
 
                             <span style={{ opacity: 0.5 }}>·</span>
@@ -1866,9 +2799,9 @@ useEffect(() => {
                                 cursor: "pointer",
                                 fontWeight: 900,
                               }}
-                              title="Pausen-Details anzeigen"
+                              title={t("showBreakDetails")}
                             >
-                              {formatPause(pauseMin)} Pause
+                              {formatPause(pauseMin)} {t("break")}
                             </button>
                           </div>
                         </div>
@@ -1893,20 +2826,20 @@ useEffect(() => {
                                 </div>
 
                                 <div style={{ color: "rgba(255,255,255,0.92)", fontWeight: 800 }}>
-                                  {e.startTime}–{e.endTime} Uhr
+                                  {e.startTime}–{e.endTime} {t("oClock")}
                                 </div>
 
                                 <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
-                                  {e.activity?.trim() ? e.activity : "Keine Tätigkeit hinterlegt"}
+                                  {e.activity?.trim() ? e.activity : t("noActivityStored")}
                                 </div>
 
                                 <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
-                                  {e.location?.trim() ? e.location : "Keine Baustelle / Adresse hinterlegt"}
+                                  {e.location?.trim() ? e.location : t("noLocationStored")}
                                 </div>
 
                                 {hasTravel ? (
                                   <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
-                                    Fahrtzeit: {formatMinutesCompact(e.travelMinutes)}
+                                    {t("travelTime")} {formatMinutesCompact(e.travelMinutes)}
                                   </div>
                                 ) : null}
                               </div>
@@ -1924,27 +2857,27 @@ useEffect(() => {
                                 <button
                                   type="button"
                                   onClick={() => openDetailsModal(e)}
-                                  title="Details anzeigen"
+                                  title={t("showDetails")}
                                   className="tenant-icon-button tenant-icon-button-success"
                                 >
-                                  ℹ️ Details
+                                  ℹ️ {t("details")}
                                 </button>
 
                                 {e.noteEmployee.trim() ? (
                                   <button
                                     type="button"
                                     onClick={() => openNoteModal(e)}
-                                    title="Notiz anzeigen"
+                                    title={t("showNote")}
                                     className="tenant-icon-button tenant-icon-button-info"
                                   >
-                                    📝 Notiz
+                                    📝 {t("note")}
                                   </button>
                                 ) : null}
 
                                 <button
                                   type="button"
                                   onClick={() => openEditModal(e)}
-                                  title="Bearbeiten"
+                                  title={t("edit")}
                                   className="tenant-icon-button tenant-icon-button-neutral"
                                 >
                                   ✏️
@@ -1953,7 +2886,7 @@ useEffect(() => {
                                 <button
                                   type="button"
                                   onClick={() => deleteEntry(e.id)}
-                                  title="Löschen"
+                                  title={t("delete")}
                                   className="tenant-icon-button tenant-icon-button-danger"
                                 >
                                   🗑️
@@ -1974,7 +2907,7 @@ useEffect(() => {
 
             <Modal
         open={detailsOpen}
-        title="Arbeitszeit-Details"
+        title={t("workTimeDetails")}
         onClose={() => {
           setDetailsOpen(false);
           setDetailsEntry(null);
@@ -1989,7 +2922,7 @@ useEffect(() => {
                 setDetailsEntry(null);
               }}
             >
-              Schließen
+              {t("close")}
             </button>
           </div>
         }
@@ -2038,7 +2971,7 @@ useEffect(() => {
 
             <Modal
         open={breakInfoOpen}
-        title="Pausen-Details"
+        title={t("breakDetails")}
         onClose={() => setBreakInfoOpen(false)}
         footer={
           <div style={{ display: "flex", gap: 10 }}>
@@ -2047,14 +2980,14 @@ useEffect(() => {
               type="button"
               onClick={() => setBreakInfoOpen(false)}
             >
-              Schließen
+              {t("close")}
             </button>
           </div>
         }
       >
         <div style={{ display: "grid", gap: 12 }}>
           <div>
-            <div className="label">Datum</div>
+            <div className="label">{t("date")}</div>            
             <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
               {formatDateDE(breakInfoDate)}
             </div>
@@ -2111,7 +3044,7 @@ useEffect(() => {
                 setNoteEntry(null);
               }}
             >
-              Schließen
+              {t("close")}
             </button>
           </div>
         }
@@ -2119,7 +3052,7 @@ useEffect(() => {
         {!noteEntry ? null : (
           <div style={{ display: "grid", gap: 12 }}>
             <div>
-              <div className="label">Datum</div>
+              <div className="label">{t("date")}</div>             
               <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
                 {formatDateDE(toYMD(noteEntry.workDate))} · {noteEntry.startTime}–{noteEntry.endTime}
               </div>
@@ -2139,7 +3072,7 @@ useEffect(() => {
 
       <Modal
         open={correctionOpen}
-        title="Nachtragsantrag senden"
+        title={t("sendCorrectionRequest")}
         onClose={() => {
           setCorrectionOpen(false);
           setCorrectionError(null);
@@ -2156,7 +3089,7 @@ useEffect(() => {
                 setCorrectionSuccess(null);
               }}
             >
-              Schließen
+              {t("close")}
             </button>
             <button
               className="btn btn-accent"
@@ -2198,7 +3131,7 @@ useEffect(() => {
           </div>
 
           <div>
-            <div className="label">Notiz für Admin</div>
+            <div className="label">{t("noteForAdmin")}</div>
             <textarea
               className="textarea"
               placeholder="Optional: kurze Begründung oder Hinweis"
@@ -2229,7 +3162,7 @@ useEffect(() => {
       {/* ✅ EDIT MODAL */}
       <Modal
         open={editOpen}
-        title="Eintrag bearbeiten"
+        title={t("editEntry")}
         onClose={() => {
           setEditOpen(false);
           setEdit(null);
@@ -2246,7 +3179,7 @@ useEffect(() => {
                 setEditError(null);
               }}
             >
-              Abbrechen
+              {t("cancel")}
             </button>
             <button
               className="btn btn-accent"
@@ -2281,7 +3214,7 @@ useEffect(() => {
 
             <div className="modal-grid-1">
               <div className="modal-field">
-                <div className="label">Datum</div>
+                <div className="label">{t("date")}</div>                
                 <input
                   className="input modal-date-input"
                   type="date"
@@ -2305,7 +3238,7 @@ useEffect(() => {
                   width: "100%",
                 }}
               >
-                <div className="label">Beginn</div>
+                <div className="label">{t("start")}</div>
                 <input
                   className="input"
                   type="time"
@@ -2327,7 +3260,7 @@ useEffect(() => {
                   width: "100%",
                 }}
               >
-                <div className="label">Ende</div>
+                <div className="label">{t("end")}</div>
                 <input
                   className="input"
                   type="time"
@@ -2346,7 +3279,7 @@ useEffect(() => {
             <div className="tenant-computation-card">
               <div style={{ display: "grid", gap: 6 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-                  <div style={{ color: "var(--muted)" }}>Arbeitszeit (Tag berechnet)</div>
+                  <div style={{ color: "var(--muted)" }}>{t("workTimeCalculated")}</div>
                   <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(editPreview.netDay)}</div>
                 </div>
                 <div style={{ marginTop: 2, fontSize: 12, color: "var(--muted)" }}>
@@ -2374,18 +3307,18 @@ useEffect(() => {
             </div>
 
             <div>
-              <div className="label">Notiz für Admin</div>
+              <div className="label">{t("noteForAdmin")}</div>
               <textarea
                 className="textarea"
                 value={edit.noteEmployee}
                 onChange={(e) => setEdit((p) => (p ? { ...p, noteEmployee: e.target.value } : p))}
-                placeholder="Optional: Hinweise zum Eintrag"
+                placeholder={t("notePlaceholder")}
               />
             </div>
 
             <div className="modal-grid-1">
               <div className="modal-field">
-                <div className="label">Fahrzeit (Min.)</div>
+                <div className="label">{t("travelMinutes")}</div>
                 <input
                   className="input"
                   inputMode="numeric"
