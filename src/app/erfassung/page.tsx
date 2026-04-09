@@ -164,7 +164,10 @@ function toIsoDateLocal(d: Date): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function formatDateDE(yyyyMmDd: string): string {
+function formatDateLocalized(
+  language: AppUiLanguage,
+  yyyyMmDd: string
+): string {
   const parts = yyyyMmDd.split("-");
   const y = Number(parts[0]);
   const m = Number(parts[1]);
@@ -174,15 +177,28 @@ function formatDateDE(yyyyMmDd: string): string {
     return yyyyMmDd;
   }
 
-  const weekdayNames = ["So.", "Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa."] as const;
   const dt = new Date(y, m - 1, d);
-  const weekday = weekdayNames[dt.getDay()] ?? "";
+  const weekday = getWeekdayShort(language, dt.getDay());
 
   const day = String(d).padStart(2, "0");
   const month = String(m).padStart(2, "0");
   const year = String(y);
 
-  return `${weekday} ${day}.${month}.${year}`;
+  switch (language) {
+    case "EN":
+      return `${weekday} ${month}/${day}/${year}`;
+    case "IT":
+      return `${weekday} ${day}/${month}/${year}`;
+    case "TR":
+      return `${weekday} ${day}.${month}.${year}`;
+    case "SQ":
+      return `${weekday} ${day}.${month}.${year}`;
+    case "KU":
+      return `${weekday} ${day}.${month}.${year}`;
+    case "DE":
+    default:
+      return `${weekday} ${day}.${month}.${year}`;
+  }
 }
 
 function formatHM(minutes: number) {
@@ -199,7 +215,10 @@ function toYMD(dateStr: string): string {
 function monthKeyFromWorkDate(workDate: string): string {
   return toYMD(workDate).slice(0, 7); // YYYY-MM
 }
-function monthLabelDE(monthKey: string): string {
+function monthLabelLocalized(
+  language: AppUiLanguage,
+  monthKey: string
+): string {
   const [yStr, mStr] = monthKey.split("-");
   const y = Number(yStr);
   const m = Number(mStr);
@@ -208,26 +227,7 @@ function monthLabelDE(monthKey: string): string {
     return monthKey;
   }
 
-  const monthNames = [
-    "Januar",
-    "Februar",
-    "März",
-    "April",
-    "Mai",
-    "Juni",
-    "Juli",
-    "August",
-    "September",
-    "Oktober",
-    "November",
-    "Dezember",
-  ] as const;
-
-  const monthName = monthNames[m - 1];
-  if (!monthName) {
-    return monthKey;
-  }
-
+  const monthName = getMonthName(language, m);
   return `${monthName} ${y}`;
 }
 function sortMonthKeysDesc(a: string, b: string): number {
@@ -257,7 +257,10 @@ function sortYMDDesc(a: string, b: string): number {
   return a === b ? 0 : a > b ? -1 : 1;
 }
 
-function groupByMonthThenDay(entries: WorkEntry[]): MonthDayGroup[] {
+function groupByMonthThenDay(
+  language: AppUiLanguage,
+  entries: WorkEntry[]
+): MonthDayGroup[] {
   const monthMap = new Map<string, Map<string, WorkEntry[]>>();
 
   for (const e of entries) {
@@ -280,13 +283,13 @@ function groupByMonthThenDay(entries: WorkEntry[]): MonthDayGroup[] {
 
     const days: DayGroup[] = dayKeys.map((dk) => ({
       date: dk,
-      label: formatDateDE(dk),
+      label: formatDateLocalized(language, dk),
       entries: (dayMap.get(dk) ?? []).slice().sort(sortEntriesDesc),
     }));
 
     return {
       key: mk,
-      label: monthLabelDE(mk),
+      label: monthLabelLocalized(language, mk),
       days,
     };
   });
@@ -298,25 +301,11 @@ function formatPause(minutes: number): string {
   return formatHM(m);
 }
 
-function formatDateDayLineDE(yyyyMmDd: string): string {
-  const parts = yyyyMmDd.split("-");
-  const y = Number(parts[0]);
-  const m = Number(parts[1]);
-  const d = Number(parts[2]);
-
-  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
-    return yyyyMmDd;
-  }
-
-  const weekdayNames = ["So.", "Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa."] as const;
-  const dt = new Date(y, m - 1, d);
-  const weekday = weekdayNames[dt.getDay()] ?? "";
-
-  const day = String(d).padStart(2, "0");
-  const month = String(m).padStart(2, "0");
-  const year = String(y);
-
-  return `${weekday} ${day}.${month}.${year}`;
+function formatDateDayLineLocalized(
+  language: AppUiLanguage,
+  yyyyMmDd: string
+): string {
+  return formatDateLocalized(language, yyyyMmDd);
 }
 
 function formatMinutesCompact(minutes: number) {
@@ -329,13 +318,6 @@ function hasCompleteTimeRange(startHHMM: string, endHHMM: string): boolean {
   return /^\d{2}:\d{2}$/.test(startHHMM) && /^\d{2}:\d{2}$/.test(endHHMM);
 }
 
-function getLegalBreakHintLines(): string[] {
-  return [
-    "Gesetzliche Pausen:",
-    "ab mehr als 6h: 30 Min",
-    "ab mehr als 9h: 45 Min",
-  ];
-}
 
 function hasMeaningfulEntryInput(params: {
   startTime: string;
@@ -452,6 +434,49 @@ function replaceTemplate(
   return Object.entries(values).reduce((result, [key, value]) => {
     return result.replaceAll(`{${key}}`, String(value));
   }, template);
+}
+
+function getMonthName(language: AppUiLanguage, month: number): string {
+  const keys = [
+    "monthJanuary",
+    "monthFebruary",
+    "monthMarch",
+    "monthApril",
+    "monthMay",
+    "monthJune",
+    "monthJuly",
+    "monthAugust",
+    "monthSeptember",
+    "monthOctober",
+    "monthNovember",
+    "monthDecember",
+  ] as const;
+
+  const key = keys[month - 1];
+  return key ? translate(language, key, ERFASSUNG_DICTIONARY) : String(month);
+}
+
+function getWeekdayShort(language: AppUiLanguage, weekdayIndex: number): string {
+  const keys = [
+    "weekdaySundayShort",
+    "weekdayMondayShort",
+    "weekdayTuesdayShort",
+    "weekdayWednesdayShort",
+    "weekdayThursdayShort",
+    "weekdayFridayShort",
+    "weekdaySaturdayShort",
+  ] as const;
+
+  const key = keys[weekdayIndex];
+  return key ? translate(language, key, ERFASSUNG_DICTIONARY) : "";
+}
+
+function getLegalBreakHintLines(language: AppUiLanguage): string[] {
+  return [
+    translate(language, "legalBreakHeadline", ERFASSUNG_DICTIONARY),
+    translate(language, "legalBreakAfterSixHours", ERFASSUNG_DICTIONARY),
+    translate(language, "legalBreakAfterNineHours", ERFASSUNG_DICTIONARY),
+  ];
 }
 
 type SessionData = {
@@ -629,7 +654,30 @@ type ErfassungTextKey =
   | "currentMissingDaysNeedsRequest"
   | "currentMissingDaysUntilLock"
   | "employeeManagedServerSide"
-  | "dayGrossBreakNet";
+  | "dayGrossBreakNet"
+  | "monthJanuary"
+  | "monthFebruary"
+  | "monthMarch"
+  | "monthApril"
+  | "monthMay"
+  | "monthJune"
+  | "monthJuly"
+  | "monthAugust"
+  | "monthSeptember"
+  | "monthOctober"
+  | "monthNovember"
+  | "monthDecember"
+  | "weekdaySundayShort"
+  | "weekdayMondayShort"
+  | "weekdayTuesdayShort"
+  | "weekdayWednesdayShort"
+  | "weekdayThursdayShort"
+  | "weekdayFridayShort"
+  | "weekdaySaturdayShort"
+  | "legalBreakHeadline"
+  | "legalBreakAfterSixHours"
+  | "legalBreakAfterNineHours"
+  | "legalBreakAutoApplied";
 
 const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage, string>> = {
   loading: {
@@ -639,6 +687,190 @@ const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage, strin
     TR: "Yükleniyor...",
     SQ: "Duke u ngarkuar...",
     KU: "Tê barkirin...",
+  },
+  monthJanuary: {
+    DE: "Januar",
+    EN: "January",
+    IT: "Gennaio",
+    TR: "Ocak",
+    SQ: "Janar",
+    KU: "Rêbendan",
+  },
+  monthFebruary: {
+    DE: "Februar",
+    EN: "February",
+    IT: "Febbraio",
+    TR: "Şubat",
+    SQ: "Shkurt",
+    KU: "Reşemî",
+  },
+  monthMarch: {
+    DE: "März",
+    EN: "March",
+    IT: "Marzo",
+    TR: "Mart",
+    SQ: "Mars",
+    KU: "Adar",
+  },
+  monthApril: {
+    DE: "April",
+    EN: "April",
+    IT: "Aprile",
+    TR: "Nisan",
+    SQ: "Prill",
+    KU: "Nîsan",
+  },
+  monthMay: {
+    DE: "Mai",
+    EN: "May",
+    IT: "Maggio",
+    TR: "Mayıs",
+    SQ: "Maj",
+    KU: "Gulan",
+  },
+  monthJune: {
+    DE: "Juni",
+    EN: "June",
+    IT: "Giugno",
+    TR: "Haziran",
+    SQ: "Qershor",
+    KU: "Hezîran",
+  },
+  monthJuly: {
+    DE: "Juli",
+    EN: "July",
+    IT: "Luglio",
+    TR: "Temmuz",
+    SQ: "Korrik",
+    KU: "Tîrmeh",
+  },
+  monthAugust: {
+    DE: "August",
+    EN: "August",
+    IT: "Agosto",
+    TR: "Ağustos",
+    SQ: "Gusht",
+    KU: "Tebax",
+  },
+  monthSeptember: {
+    DE: "September",
+    EN: "September",
+    IT: "Settembre",
+    TR: "Eylül",
+    SQ: "Shtator",
+    KU: "Îlon",
+  },
+  monthOctober: {
+    DE: "Oktober",
+    EN: "October",
+    IT: "Ottobre",
+    TR: "Ekim",
+    SQ: "Tetor",
+    KU: "Cotmeh",
+  },
+  monthNovember: {
+    DE: "November",
+    EN: "November",
+    IT: "Novembre",
+    TR: "Kasım",
+    SQ: "Nëntor",
+    KU: "Mijdar",
+  },
+  monthDecember: {
+    DE: "Dezember",
+    EN: "December",
+    IT: "Dicembre",
+    TR: "Aralık",
+    SQ: "Dhjetor",
+    KU: "Kanûn",
+  },
+  weekdaySundayShort: {
+    DE: "So.",
+    EN: "Sun",
+    IT: "Dom",
+    TR: "Paz",
+    SQ: "Die",
+    KU: "Yek",
+  },
+  weekdayMondayShort: {
+    DE: "Mo.",
+    EN: "Mon",
+    IT: "Lun",
+    TR: "Pzt",
+    SQ: "Hën",
+    KU: "Duş",
+  },
+  weekdayTuesdayShort: {
+    DE: "Di.",
+    EN: "Tue",
+    IT: "Mar",
+    TR: "Sal",
+    SQ: "Mar",
+    KU: "Sêş",
+  },
+  weekdayWednesdayShort: {
+    DE: "Mi.",
+    EN: "Wed",
+    IT: "Mer",
+    TR: "Çar",
+    SQ: "Mër",
+    KU: "Çar",
+  },
+  weekdayThursdayShort: {
+    DE: "Do.",
+    EN: "Thu",
+    IT: "Gio",
+    TR: "Per",
+    SQ: "Enj",
+    KU: "Pênc",
+  },
+  weekdayFridayShort: {
+    DE: "Fr.",
+    EN: "Fri",
+    IT: "Ven",
+    TR: "Cum",
+    SQ: "Pre",
+    KU: "În",
+  },
+  weekdaySaturdayShort: {
+    DE: "Sa.",
+    EN: "Sat",
+    IT: "Sab",
+    TR: "Cmt",
+    SQ: "Sht",
+    KU: "Şem",
+  },
+  legalBreakHeadline: {
+    DE: "Gesetzliche Pausen:",
+    EN: "Legal breaks:",
+    IT: "Pause legali:",
+    TR: "Yasal molalar:",
+    SQ: "Pushimet ligjore:",
+    KU: "Navberên qanûnî:",
+  },
+  legalBreakAfterSixHours: {
+    DE: "ab mehr als 6h: 30 Min",
+    EN: "more than 6h: 30 min",
+    IT: "oltre 6h: 30 min",
+    TR: "6 saatten fazla: 30 dk",
+    SQ: "mbi 6 orë: 30 min",
+    KU: "zêdetirî 6 saetan: 30 deq",
+  },
+  legalBreakAfterNineHours: {
+    DE: "ab mehr als 9h: 45 Min",
+    EN: "more than 9h: 45 min",
+    IT: "oltre 9h: 45 min",
+    TR: "9 saatten fazla: 45 dk",
+    SQ: "mbi 9 orë: 45 min",
+    KU: "zêdetirî 9 saetan: 45 deq",
+  },
+  legalBreakAutoApplied: {
+    DE: "Gesetzliche Pause automatisch eingetragen:",
+    EN: "Legal break applied automatically:",
+    IT: "Pausa legale applicata automaticamente:",
+    TR: "Yasal mola otomatik uygulandı:",
+    SQ: "Pushimi ligjor u zbatua automatikisht:",
+    KU: "Navbera qanûnî bixweber hate sepandin:",
   },
   to: {
     DE: "bis",
@@ -1526,7 +1758,11 @@ function ErfassungPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [language, setLanguage] = useState<AppUiLanguage>("DE");
-  const t = (key: ErfassungTextKey): string => translate(language, key, ERFASSUNG_DICTIONARY);
+  const t = React.useCallback(
+    (key: ErfassungTextKey): string =>
+      translate(language, key, ERFASSUNG_DICTIONARY),
+    [language]
+  );
   const [me, setMe] = useState<MeResponse | null>(null);
   const [meResolved, setMeResolved] = useState(false);
 
@@ -2139,7 +2375,7 @@ useEffect(() => {
     }
   }
 
-  const groupedEntries = useMemo(() => groupByMonthThenDay(entries), [entries]);
+  const groupedEntries = useMemo(() => groupByMonthThenDay(language, entries), [language, entries]);
 
   const availableYears = useMemo(() => {
     const years = Array.from(
@@ -2171,7 +2407,7 @@ useEffect(() => {
     if (!shouldShowBreakComputation) {
       return {
         rightValue: "",
-        detailLines: getLegalBreakHintLines(),
+        detailLines: getLegalBreakHintLines(language),      
       };
     }
 
@@ -2181,7 +2417,7 @@ useEffect(() => {
     if (dayTotals.legalBreak === 0) {
       return {
         rightValue: "",
-        detailLines: getLegalBreakHintLines(),
+        detailLines: getLegalBreakHintLines(language),      
       };
     }
 
@@ -2189,7 +2425,7 @@ useEffect(() => {
       return {
         rightValue: formatPause(dayTotals.legalBreak),
         detailLines: [
-          `${t("legalBreak")}: ${formatPause(dayTotals.legalBreak)}`,
+          `${t("legalBreakAutoApplied")} ${formatPause(dayTotals.legalBreak)}`,
           `${t("gross")} ${formatHM(dayTotals.grossDay)} · ${t("net")} ${formatHM(dayTotals.netDay)}`,
         ],
       };
@@ -2380,7 +2616,7 @@ useEffect(() => {
             />
 
             <div className="date-display-input erfassung-date-mobile">
-              <div className="date-display-value">{formatDateDE(workDate)}</div>
+              <div className="date-display-value">{formatDateLocalized(language, workDate)}</div>
               <input
                 className="date-display-native-input"
                 type="date"
@@ -2436,14 +2672,16 @@ useEffect(() => {
                   </div>
 
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                    {t("directEntryPossible")} {formatDateDE(workDate)}.
+                    {t("directEntryPossible")} {formatDateLocalized(language, workDate)}.
                     {selectedCorrectionStatus?.adminTaskBypass?.startDate &&
                     selectedCorrectionStatus?.adminTaskBypass?.endDate &&
                     selectedCorrectionStatus.adminTaskBypass.startDate !==
                       selectedCorrectionStatus.adminTaskBypass.endDate
-                      ? ` ${t("releasedRangeFromTo")} ${formatDateDE(
+                      ? ` ${t("releasedRangeFromTo")} ${formatDateLocalized(
+                          language,
                           selectedCorrectionStatus.adminTaskBypass.startDate
-                        )} ${t("to")} ${formatDateDE(
+                        )} ${t("to")} ${formatDateLocalized(
+                          language,
                           selectedCorrectionStatus.adminTaskBypass.endDate
                         )}.`
                       : ""}
@@ -2576,7 +2814,7 @@ useEffect(() => {
 
             {!dayPreview ? (
               <div style={{ fontSize: 12, color: "var(--muted)", display: "grid", gap: 4 }}>
-                {getLegalBreakHintLines().map((line) => (
+                {getLegalBreakHintLines(language).map((line) => (
                   <div key={line}>{line}</div>
                 ))}
               </div>
@@ -2587,7 +2825,7 @@ useEffect(() => {
             ) : (
               <div style={{ fontSize: 12, color: "var(--muted)", display: "grid", gap: 4 }}>
                 <div>{t("gross")} {formatHM(dayPreview.grossDay)} · {t("net")} {formatHM(dayPreview.netDay)}</div>
-                {getLegalBreakHintLines().map((line) => (
+                {getLegalBreakHintLines(language).map((line) => (
                   <div key={line}>{line}</div>
                 ))}
               </div>
@@ -2684,7 +2922,7 @@ useEffect(() => {
         <div style={{ marginBottom: 12 }}>
           <div className="label">{t("date")}</div>
           <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
-            {formatDateDE(workDate)}
+            {formatDateLocalized(language, workDate)}
           </div>
         </div>
 
@@ -2866,7 +3104,7 @@ useEffect(() => {
                       >
                         <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
                           <div style={{ fontWeight: 900 }}>
-                            {formatDateDayLineDE(d.date)}
+                            {formatDateDayLineLocalized(language, d.date)}
                           </div>
 
                           <div
@@ -3033,7 +3271,7 @@ useEffect(() => {
             <div>
               <div className="label">{t("dateAndTime")}</div>
               <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
-                {formatDateDE(toYMD(detailsEntry.workDate))} · {detailsEntry.startTime}–{detailsEntry.endTime}
+                {formatDateLocalized(language, toYMD(detailsEntry.workDate))} · {detailsEntry.startTime}–{detailsEntry.endTime}
               </div>
             </div>
 
@@ -3090,7 +3328,7 @@ useEffect(() => {
           <div>
             <div className="label">{t("date")}</div>            
             <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
-              {formatDateDE(breakInfoDate)}
+              {formatDateLocalized(language, breakInfoDate)}
             </div>
           </div>
 
@@ -3155,7 +3393,7 @@ useEffect(() => {
             <div>
               <div className="label">{t("date")}</div>             
               <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
-                {formatDateDE(toYMD(noteEntry.workDate))} · {noteEntry.startTime}–{noteEntry.endTime}
+                {formatDateLocalized(language, toYMD(noteEntry.workDate))} · {noteEntry.startTime}–{noteEntry.endTime}
               </div>
             </div>
 
@@ -3223,7 +3461,7 @@ useEffect(() => {
           <div>
             <div className="label">{t("selectedDate")}</div>
             <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
-              {formatDateDE(workDate)}
+              {formatDateLocalized(language, workDate)}
             </div>
           </div>
 

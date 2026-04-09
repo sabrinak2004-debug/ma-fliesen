@@ -111,7 +111,19 @@ type AufgabenTextKey =
   | "missingEntriesRange"
   | "missingEntriesModalHint"
   | "goToCapture"
-  | "close";
+  | "close"
+  | "monthJanuary"
+  | "monthFebruary"
+  | "monthMarch"
+  | "monthApril"
+  | "monthMay"
+  | "monthJune"
+  | "monthJuly"
+  | "monthAugust"
+  | "monthSeptember"
+  | "monthOctober"
+  | "monthNovember"
+  | "monthDecember";
 
 const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>> = {
   dashLabel: {
@@ -121,6 +133,102 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Görevlerim",
     SQ: "Detyrat e mia",
     KU: "Erkên min",
+  },
+  monthJanuary: {
+    DE: "Januar",
+    EN: "January",
+    IT: "Gennaio",
+    TR: "Ocak",
+    SQ: "Janar",
+    KU: "Rêbendan",
+  },
+  monthFebruary: {
+    DE: "Februar",
+    EN: "February",
+    IT: "Febbraio",
+    TR: "Şubat",
+    SQ: "Shkurt",
+    KU: "Reşemî",
+  },
+  monthMarch: {
+    DE: "März",
+    EN: "March",
+    IT: "Marzo",
+    TR: "Mart",
+    SQ: "Mars",
+    KU: "Adar",
+  },
+  monthApril: {
+    DE: "April",
+    EN: "April",
+    IT: "Aprile",
+    TR: "Nisan",
+    SQ: "Prill",
+    KU: "Nîsan",
+  },
+  monthMay: {
+    DE: "Mai",
+    EN: "May",
+    IT: "Maggio",
+    TR: "Mayıs",
+    SQ: "Maj",
+    KU: "Gulan",
+  },
+  monthJune: {
+    DE: "Juni",
+    EN: "June",
+    IT: "Giugno",
+    TR: "Haziran",
+    SQ: "Qershor",
+    KU: "Hezîran",
+  },
+  monthJuly: {
+    DE: "Juli",
+    EN: "July",
+    IT: "Luglio",
+    TR: "Temmuz",
+    SQ: "Korrik",
+    KU: "Tîrmeh",
+  },
+  monthAugust: {
+    DE: "August",
+    EN: "August",
+    IT: "Agosto",
+    TR: "Ağustos",
+    SQ: "Gusht",
+    KU: "Tebax",
+  },
+  monthSeptember: {
+    DE: "September",
+    EN: "September",
+    IT: "Settembre",
+    TR: "Eylül",
+    SQ: "Shtator",
+    KU: "Îlon",
+  },
+  monthOctober: {
+    DE: "Oktober",
+    EN: "October",
+    IT: "Ottobre",
+    TR: "Ekim",
+    SQ: "Tetor",
+    KU: "Cotmeh",
+  },
+  monthNovember: {
+    DE: "November",
+    EN: "November",
+    IT: "Novembre",
+    TR: "Kasım",
+    SQ: "Nëntor",
+    KU: "Mijdar",
+  },
+  monthDecember: {
+    DE: "Dezember",
+    EN: "December",
+    IT: "Dicembre",
+    TR: "Aralık",
+    SQ: "Dhjetor",
+    KU: "Kanûn",
   },
   tasksLoadFailed: {
     DE: "Aufgaben konnten nicht geladen werden.",
@@ -562,42 +670,85 @@ function isTasksApiResponse(v: unknown): v is TasksApiResponse {
   );
 }
 
-function formatDateDE(value: string | null): string {
-  if (!value) return "—";
+function formatDateLocalized(
+  language: AppUiLanguage,
+  value: string | null
+): string {
+  if (!value) {
+    return translate(language, "noDate", AUFGABEN_DICTIONARY);
+  }
 
   const normalized = value.length >= 10 ? value.slice(0, 10) : value;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return "—";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return translate(language, "noDate", AUFGABEN_DICTIONARY);
+  }
 
   const [year, month, day] = normalized.split("-");
-  return `${day}.${month}.${year}`;
+
+  switch (language) {
+    case "EN":
+      return `${month}/${day}/${year}`;
+    case "IT":
+      return `${day}/${month}/${year}`;
+    case "TR":
+      return `${day}.${month}.${year}`;
+    case "SQ":
+      return `${day}.${month}.${year}`;
+    case "KU":
+      return `${day}.${month}.${year}`;
+    case "DE":
+    default:
+      return `${day}.${month}.${year}`;
+  }
 }
 
-function formatDateLongDE(value: string): string {
+function formatDateLongLocalized(
+  language: AppUiLanguage,
+  value: string
+): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
 
   const [, month, day] = value.split("-");
-  const monthNames = [
-    "Januar",
-    "Februar",
-    "März",
-    "April",
-    "Mai",
-    "Juni",
-    "Juli",
-    "August",
-    "September",
-    "Oktober",
-    "November",
-    "Dezember",
+
+  const monthKeys = [
+    "monthJanuary",
+    "monthFebruary",
+    "monthMarch",
+    "monthApril",
+    "monthMay",
+    "monthJune",
+    "monthJuly",
+    "monthAugust",
+    "monthSeptember",
+    "monthOctober",
+    "monthNovember",
+    "monthDecember",
   ] as const;
 
-  const monthName = monthNames[Number(month) - 1];
-  if (!monthName) return value;
+  const monthKey = monthKeys[Number(month) - 1];
+  if (!monthKey) return value;
 
-  return `${day}. ${monthName}`;
+  const monthName = translate(language, monthKey, AUFGABEN_DICTIONARY);
+
+  switch (language) {
+    case "EN":
+      return `${monthName} ${Number(day)}`;
+    case "IT":
+      return `${Number(day)} ${monthName}`;
+    case "TR":
+      return `${Number(day)} ${monthName}`;
+    case "SQ":
+      return `${Number(day)} ${monthName}`;
+    case "KU":
+      return `${Number(day)} ${monthName}`;
+    case "DE":
+    default:
+      return `${day}. ${monthName}`;
+  }
 }
 
-function formatReferenceRangeDE(
+function formatReferenceRangeLocalized(
+  language: AppUiLanguage,
   startDate: string | null,
   endDate: string | null,
   fallbackDate: string | null
@@ -605,11 +756,11 @@ function formatReferenceRangeDE(
   const start = startDate ?? fallbackDate;
   const end = endDate ?? startDate ?? fallbackDate;
 
-  if (!start) return "—";
-  if (!end) return formatDateDE(start);
-  if (start === end) return formatDateDE(start);
+  if (!start) return translate(language, "noDate", AUFGABEN_DICTIONARY);
+  if (!end) return formatDateLocalized(language, start);
+  if (start === end) return formatDateLocalized(language, start);
 
-  return `${formatDateDE(start)} bis ${formatDateDE(end)}`;
+  return `${formatDateLocalized(language, start)} ${translate(language, "until", AUFGABEN_DICTIONARY)} ${formatDateLocalized(language, end)}`;
 }
 
 function replaceTemplate(
@@ -735,7 +886,8 @@ function taskActionHref(task: TaskRow): string {
 }
 
 function taskActionText(language: AppUiLanguage, task: TaskRow): string {
-  const referenceText = formatReferenceRangeDE(
+  const referenceText = formatReferenceRangeLocalized(
+    language,
     task.referenceStartDate,
     task.referenceEndDate,
     task.referenceDate
@@ -841,7 +993,7 @@ export default function AufgabenPage() {
     };
   }, []);
 
-  async function loadTasks(): Promise<void> {
+  const loadTasks = React.useCallback(async (): Promise<void> => {
     setLoading(true);
     setError("");
 
@@ -893,11 +1045,11 @@ export default function AufgabenPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [t]);
 
   useEffect(() => {
     void loadTasks();
-  }, []);
+  }, [loadTasks]);
 
   const openTasks = useMemo(
     () => sortTasksByDateDesc(tasks.filter((task) => task.status === "OPEN")),
@@ -927,11 +1079,11 @@ export default function AufgabenPage() {
   const missingWorkEntryRangeText = useMemo(() => {
     if (!missingWorkEntryAlert) return "";
 
-    const fromText = formatDateLongDE(missingWorkEntryAlert.oldestMissingDate);
-    const toText = formatDateLongDE(missingWorkEntryAlert.newestMissingDate);
+    const fromText = formatDateLongLocalized(language, missingWorkEntryAlert.oldestMissingDate);
+    const toText = formatDateLongLocalized(language, missingWorkEntryAlert.newestMissingDate);
 
     return fromText === toText ? fromText : `${fromText} bis ${toText}`;
-  }, [missingWorkEntryAlert]);
+  }, [missingWorkEntryAlert, language]);
 
   async function completeTask(taskId: string): Promise<void> {
     setActionTaskId(taskId);
@@ -986,7 +1138,8 @@ export default function AufgabenPage() {
         </div>
 
         <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-          {t("referencePeriod")} {formatReferenceRangeDE(
+          {t("referencePeriod")} {formatReferenceRangeLocalized(
+            language,
             task.referenceStartDate,
             task.referenceEndDate,
             task.referenceDate
@@ -1012,7 +1165,7 @@ export default function AufgabenPage() {
 
         {task.completedAt ? (
           <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-            {t("completedOn")} {formatDateDE(task.completedAt)}
+            {t("completedOn")} {formatDateLocalized(language, task.completedAt)}
           </div>
         ) : null}
 
