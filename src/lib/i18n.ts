@@ -70,3 +70,52 @@ export function translate<Key extends string>(
 
   return entry[language] ?? entry.DE;
 }
+export type LegalTextKey =
+  | "back"
+  | "privacyTitle"
+  | "privacyUpdated"
+  | "termsTitle"
+  | "termsUpdated";
+
+export const LEGAL_UI_TEXTS: Record<LegalTextKey, Record<AppUiLanguage, string>> = {
+  back: {
+    DE: "Zurück",
+    EN: "Back",
+    IT: "Indietro",
+    TR: "Geri",
+    SQ: "Kthehu",
+    KU: "Vegere",
+  },
+  privacyTitle: {
+    DE: "Datenschutzerklärung",
+    EN: "Privacy Policy",
+    IT: "Informativa sulla Privacy",
+    TR: "Gizlilik Politikası",
+    SQ: "Politika e Privatësisë",
+    KU: "Polîtîkaya Nepenîtiyê",
+  },
+  privacyUpdated: {
+    DE: "Letzte Aktualisierung: 30.03.2026",
+    EN: "Last updated: 2026-03-30",
+    IT: "Ultimo aggiornamento: 30.03.2026",
+    TR: "Son güncelleme: 30.03.2026",
+    SQ: "Përditësimi i fundit: 30.03.2026",
+    KU: "Dawiya nûkirinê: 30.03.2026",
+  },
+  termsTitle: {
+    DE: "Nutzungsbedingungen",
+    EN: "Terms of Use",
+    IT: "Termini di Utilizzo",
+    TR: "Kullanım Koşulları",
+    SQ: "Kushtet e Përdorimit",
+    KU: "Mercên Bikaranînê",
+  },
+  termsUpdated: {
+    DE: "Letzte Aktualisierung: 30.03.2026",
+    EN: "Last updated: 2026-03-30",
+    IT: "Ultimo aggiornamento: 30.03.2026",
+    TR: "Son güncelleme: 30.03.2026",
+    SQ: "Përditësimi i fundit: 30.03.2026",
+    KU: "Dawiya nûkirinê: 30.03.2026",
+  },
+};
