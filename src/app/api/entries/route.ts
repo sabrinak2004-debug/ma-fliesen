@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { assertEmployeeMayEditDate, berlinTodayYMD, consumeTimeEntryUnlock } from "@/lib/timesheetLock";
 import { computeDayBreakFromGross } from "@/lib/breaks";
+import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 
 function dateOnly(yyyyMmDd: string) {
   return new Date(`${yyyyMmDd}T00:00:00.000Z`);
@@ -41,6 +42,57 @@ function getNumber(v: unknown): number {
     return Number.isFinite(n) ? n : 0;
   }
   return 0;
+}
+
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
+
+function toPrismaNullableJsonInput(
+  value: Record<string, string> | null
+): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+  if (value === null) {
+    return Prisma.JsonNull;
+  }
+
+  return value as Prisma.InputJsonValue;
 }
 
 type EntryBody = {
@@ -208,6 +260,8 @@ type WorkEntryRow = {
   breakMinutes: number;
   breakAuto: boolean;
   noteEmployee: string | null;
+  noteEmployeeSourceLanguage: string | null;
+  noteEmployeeTranslations: Prisma.JsonValue | null;
   user: {
     id: string;
     fullName: string;
@@ -448,6 +502,8 @@ export async function GET(req: Request) {
     breakMinutes: row.breakMinutes ?? 0,
     breakAuto: row.breakAuto ?? false,
     noteEmployee: row.noteEmployee ?? "",
+    noteEmployeeSourceLanguage: row.noteEmployeeSourceLanguage ?? null,
+    noteEmployeeTranslations: row.noteEmployeeTranslations ?? null,
     user: {
       id: row.user.id,
       fullName: row.user.fullName,
@@ -471,7 +527,11 @@ export async function GET(req: Request) {
       breakMinutes: p?.breakMinutes ?? row.breakMinutes,
       breakAuto: p?.breakAuto ?? row.breakAuto,
       workMinutes: p?.workMinutes ?? row.workMinutes,
-      noteEmployee: row.noteEmployee ?? "",
+      noteEmployee: getTranslatedText(
+        row.noteEmployee,
+        row.noteEmployeeTranslations,
+        session.language
+      ),
       user: {
         id: row.user.id,
         fullName: row.user.fullName,
@@ -553,6 +613,18 @@ export async function POST(req: Request) {
     }
   }
 
+  let noteEmployeeSourceLanguage: SupportedLang | null = null;
+  let noteEmployeeTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (noteEmployee) {
+    const translationResult = await translateAllLanguages(noteEmployee);
+    noteEmployeeSourceLanguage = translationResult.sourceLanguage;
+    noteEmployeeTranslations = toPrismaNullableJsonInput(
+      translationResult.translations
+    );
+  }
+
   const created = await prisma.workEntry.create({
     data: {
       userId: targetUserId,
@@ -567,6 +639,8 @@ export async function POST(req: Request) {
       breakAuto: false,
       workMinutes: diffMin,
       noteEmployee: noteEmployee || null,
+      noteEmployeeSourceLanguage,
+      noteEmployeeTranslations,
     },
     include: {
       user: {
@@ -610,7 +684,11 @@ export async function POST(req: Request) {
     grossMinutes: createdFresh.grossMinutes ?? 0,
     breakMinutes: createdFresh.breakMinutes ?? 0,
     breakAuto: createdFresh.breakAuto ?? false,
-    noteEmployee: createdFresh.noteEmployee ?? "",
+    noteEmployee: getTranslatedText(
+      createdFresh.noteEmployee,
+      createdFresh.noteEmployeeTranslations,
+      session.language
+    ),
     user: { id: createdFresh.user.id, fullName: createdFresh.user.fullName },
   };
 
@@ -728,6 +806,29 @@ export async function PATCH(req: Request) {
   const oldWorkDateYMD = toIsoDateUTC(existing.workDate);
   const oldUserId = existing.userId;
 
+  let nextNoteEmployeeSourceLanguage: SupportedLang | null =
+    (existing.noteEmployeeSourceLanguage as SupportedLang | null) ?? null;
+
+  let nextNoteEmployeeTranslations:
+    | Prisma.InputJsonValue
+    | Prisma.NullableJsonNullValueInput =
+    existing.noteEmployeeTranslations === null
+      ? Prisma.JsonNull
+      : (existing.noteEmployeeTranslations as Prisma.InputJsonValue);
+
+  if (!isAdmin) {
+    if (noteEmployee) {
+      const translationResult = await translateAllLanguages(noteEmployee);
+      nextNoteEmployeeSourceLanguage = translationResult.sourceLanguage;
+      nextNoteEmployeeTranslations = toPrismaNullableJsonInput(
+        translationResult.translations
+      );
+    } else {
+      nextNoteEmployeeSourceLanguage = null;
+      nextNoteEmployeeTranslations = Prisma.JsonNull;
+    }
+  }
+
   const updated = await prisma.workEntry.update({
     where: { id },
     data: {
@@ -743,6 +844,8 @@ export async function PATCH(req: Request) {
       breakAuto: false,
       workMinutes: diffMin,
       noteEmployee: noteEmployee || null,
+      noteEmployeeSourceLanguage: nextNoteEmployeeSourceLanguage,
+      noteEmployeeTranslations: nextNoteEmployeeTranslations,
     },
     include: {
       user: {
@@ -792,7 +895,11 @@ export async function PATCH(req: Request) {
     grossMinutes: updatedFresh.grossMinutes ?? 0,
     breakMinutes: updatedFresh.breakMinutes ?? 0,
     breakAuto: updatedFresh.breakAuto ?? false,
-    noteEmployee: updatedFresh.noteEmployee ?? "",
+    noteEmployee: getTranslatedText(
+      updatedFresh.noteEmployee,
+      updatedFresh.noteEmployeeTranslations,
+      session.language
+    ),
     user: { id: updatedFresh.user.id, fullName: updatedFresh.user.fullName },
   };
 

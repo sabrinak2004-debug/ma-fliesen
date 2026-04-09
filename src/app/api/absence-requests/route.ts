@@ -4,10 +4,12 @@ import {
   AbsenceDayPortion,
   AbsenceRequestStatus,
   AbsenceType,
+  Prisma,
 } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildPushUrl, sendPushToAdmins } from "@/lib/webpush";
+import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 
 type CreateAbsenceRequestBody = {
   startDate?: unknown;
@@ -315,6 +317,57 @@ function sumReservedPendingPaidVacationUnitsUntil(
     if (row.endDate > limitDate) return sum;
     return sum + row.units;
   }, 0);
+}
+
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
+
+function toPrismaNullableJsonInput(
+  value: Record<string, string> | null
+): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+  if (value === null) {
+    return Prisma.JsonNull;
+  }
+
+  return value as Prisma.InputJsonValue;
 }
 
 export async function rebalanceAutoUnpaidVacationRequestsForYear(
@@ -645,31 +698,35 @@ async function getRemainingPaidVacationDaysForMonth(
   return Math.max(0, (accruedUnits - approvedPaidUnits - reservedPendingUnits) / 2);
 }
 
-function mapRequest(r: {
-  id: string;
-  startDate: Date;
-  endDate: Date;
-  type: AbsenceType;
-  dayPortion: AbsenceDayPortion;
-  status: AbsenceRequestStatus;
-  compensation: AbsenceCompensation;
-  paidVacationUnits: number;
-  unpaidVacationUnits: number;
-  autoUnpaidBecauseNoBalance: boolean;
-  compensationLockedBySystem: boolean;
-  noteEmployee: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  decidedAt: Date | null;
-  user: {
+function mapRequest(
+  r: {
     id: string;
-    fullName: string;
-  };
-  decidedBy: {
-    id: string;
-    fullName: string;
-  } | null;
-}) {
+    startDate: Date;
+    endDate: Date;
+    type: AbsenceType;
+    dayPortion: AbsenceDayPortion;
+    status: AbsenceRequestStatus;
+    compensation: AbsenceCompensation;
+    paidVacationUnits: number;
+    unpaidVacationUnits: number;
+    autoUnpaidBecauseNoBalance: boolean;
+    compensationLockedBySystem: boolean;
+    noteEmployee: string | null;
+    noteEmployeeTranslations?: Prisma.JsonValue | null;
+    createdAt: Date;
+    updatedAt: Date;
+    decidedAt: Date | null;
+    user: {
+      id: string;
+      fullName: string;
+    };
+    decidedBy: {
+      id: string;
+      fullName: string;
+    } | null;
+  },
+  language: string | null | undefined
+) {
   return {
     id: r.id,
     startDate: toIsoDateUTC(r.startDate),
@@ -682,7 +739,11 @@ function mapRequest(r: {
     unpaidVacationUnits: r.unpaidVacationUnits,
     autoUnpaidBecauseNoBalance: r.autoUnpaidBecauseNoBalance,
     compensationLockedBySystem: r.compensationLockedBySystem,
-    noteEmployee: r.noteEmployee ?? "",
+    noteEmployee: getTranslatedText(
+      r.noteEmployee,
+      r.noteEmployeeTranslations,
+      language
+    ),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     decidedAt: r.decidedAt ? r.decidedAt.toISOString() : null,
@@ -782,7 +843,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    requests: requests.map(mapRequest),
+    requests: requests.map((request) => mapRequest(request, session.language)),
     vacationRequestBalance: {
       remainingPaidVacationDaysForMonth,
     },
@@ -986,6 +1047,18 @@ export async function POST(req: Request) {
     );
   }
 
+  let noteEmployeeSourceLanguage: SupportedLang | null = null;
+  let noteEmployeeTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (noteEmployee) {
+    const translationResult = await translateAllLanguages(noteEmployee);
+    noteEmployeeSourceLanguage = translationResult.sourceLanguage;
+    noteEmployeeTranslations = toPrismaNullableJsonInput(
+      translationResult.translations
+    );
+  }
+
   const created = await prisma.absenceRequest.create({
     data: {
       userId: session.userId,
@@ -1000,6 +1073,8 @@ export async function POST(req: Request) {
       autoUnpaidBecauseNoBalance,
       compensationLockedBySystem,
       noteEmployee: noteEmployee || null,
+      noteEmployeeSourceLanguage,
+      noteEmployeeTranslations,
     },
     include: {
       user: {
@@ -1046,6 +1121,6 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    request: mapRequest(created),
+    request: mapRequest(created, session.language),
   });
 }

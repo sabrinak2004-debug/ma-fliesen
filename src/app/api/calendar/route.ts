@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import Holidays from "date-holidays";
 import { toHHMMUTC } from "@/lib/time";
 
@@ -44,7 +44,50 @@ type PlanPreviewItem = {
   activity: string;
   location: string;
   noteEmployee: string | null;
+  noteEmployeeTranslations: Prisma.JsonValue | null;
 };
+
+type SupportedLang = "DE" | "EN" | "IT" | "TR" | "SQ" | "KU";
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -164,6 +207,7 @@ if (me.role === Role.ADMIN && userIdParam) {
         activity: true,
         location: true,
         noteEmployee: true,
+        noteEmployeeTranslations: true,
       },
       orderBy: [{ workDate: "asc" }, { startHHMM: "asc" }],
     }),
@@ -183,6 +227,7 @@ if (me.role === Role.ADMIN && userIdParam) {
       activity: p.activity ?? "",
       location: p.location ?? "",
       noteEmployee: p.noteEmployee ?? null,
+      noteEmployeeTranslations: p.noteEmployeeTranslations ?? null,
     });
     planMap.set(key, list);
   }
@@ -202,7 +247,13 @@ if (me.role === Role.ADMIN && userIdParam) {
             .map((x) => {
               const base = `${x.startHHMM}–${x.endHHMM} ${x.activity}`.trim();
               const withLoc = x.location ? `${base} · ${x.location}` : base;
-              return x.noteEmployee ? `${withLoc} · 📝 ${x.noteEmployee}` : withLoc;
+              const translatedNote = getTranslatedText(
+                x.noteEmployee,
+                x.noteEmployeeTranslations,
+                session.language
+              );
+
+              return translatedNote ? `${withLoc} · 📝 ${translatedNote}` : withLoc;
             })
             .join(" | ");
 

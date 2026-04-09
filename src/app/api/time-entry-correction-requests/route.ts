@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  Prisma,
   Role,
   TaskRequiredAction,
   TaskStatus,
@@ -13,7 +14,7 @@ import {
   getLockedMissingRequiredWorkDates,
   getMissingRequiredWorkDates,
 } from "@/lib/timesheetLock";
-
+import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 
 type CreateTimeEntryCorrectionRequestBody = {
   targetDate?: unknown;
@@ -48,6 +49,53 @@ function addUtcDays(d: Date, days: number): Date {
   const copy = new Date(d.getTime());
   copy.setUTCDate(copy.getUTCDate() + days);
   return copy;
+}
+
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: unknown): value is TranslationMap {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(args: {
+  originalText: string | null;
+  translations: unknown;
+  language: string | null | undefined;
+}): string {
+  const fallback = args.originalText ?? "";
+  const targetLanguage = toSupportedLang(args.language);
+
+  if (!isTranslationMap(args.translations)) {
+    return fallback;
+  }
+
+  const translated = args.translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
+
+function toPrismaNullableJsonInput(
+  value: Record<string, string> | null
+): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+  if (value === null) {
+    return Prisma.JsonNull;
+  }
+
+  return value as Prisma.InputJsonValue;
 }
 
 async function findValidAdminTaskForAutoApproval(args: {
@@ -86,32 +134,45 @@ async function findValidAdminTaskForAutoApproval(args: {
   return task ?? null;
 }
 
-function mapRequest(r: {
-  id: string;
-  startDate: Date;
-  endDate: Date;
-  status: TimeEntryCorrectionRequestStatus;
-  noteEmployee: string | null;
-  noteAdmin: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  decidedAt: Date | null;
-  user: {
+function mapRequest(
+  r: {
     id: string;
-    fullName: string;
-  };
-  decidedBy: {
-    id: string;
-    fullName: string;
-  } | null;
-}) {
+    startDate: Date;
+    endDate: Date;
+    status: TimeEntryCorrectionRequestStatus;
+    noteEmployee: string | null;
+    noteEmployeeTranslations: Prisma.JsonValue | null;
+    noteAdmin: string | null;
+    noteAdminTranslations: Prisma.JsonValue | null;
+    createdAt: Date;
+    updatedAt: Date;
+    decidedAt: Date | null;
+    user: {
+      id: string;
+      fullName: string;
+    };
+    decidedBy: {
+      id: string;
+      fullName: string;
+    } | null;
+  },
+  language: string | null | undefined
+) {
   return {
     id: r.id,
     startDate: toIsoDateUTC(r.startDate),
     endDate: toIsoDateUTC(r.endDate),
     status: r.status,
-    noteEmployee: r.noteEmployee ?? "",
-    noteAdmin: r.noteAdmin ?? "",
+    noteEmployee: getTranslatedText({
+      originalText: r.noteEmployee,
+      translations: r.noteEmployeeTranslations,
+      language,
+    }),
+    noteAdmin: getTranslatedText({
+      originalText: r.noteAdmin,
+      translations: r.noteAdminTranslations,
+      language,
+    }),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     decidedAt: r.decidedAt ? r.decidedAt.toISOString() : null,
@@ -163,7 +224,7 @@ export async function GET() {
 
   return NextResponse.json({
     ok: true,
-    requests: requests.map(mapRequest),
+    requests: requests.map((request) => mapRequest(request, session.language)),
   });
 }
 
@@ -279,6 +340,18 @@ export async function POST(req: Request) {
     );
   }
 
+  let noteEmployeeSourceLanguage: SupportedLang | null = null;
+  let noteEmployeeTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (noteEmployee) {
+    const translationResult = await translateAllLanguages(noteEmployee);
+    noteEmployeeSourceLanguage = translationResult.sourceLanguage;
+    noteEmployeeTranslations = toPrismaNullableJsonInput(
+      translationResult.translations
+    );
+  }
+
   const created = await prisma.$transaction(async (tx) => {
     const request = await tx.timeEntryCorrectionRequest.create({
       data: {
@@ -289,6 +362,8 @@ export async function POST(req: Request) {
           ? TimeEntryCorrectionRequestStatus.APPROVED
           : TimeEntryCorrectionRequestStatus.PENDING,
         noteEmployee: noteEmployee || null,
+        noteEmployeeSourceLanguage,
+        noteEmployeeTranslations,
       },
       include: {
         user: {
@@ -352,7 +427,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    request: mapRequest(created),
+    request: mapRequest(created, session.language),
     autoApprovedFromAdminTask: Boolean(adminTaskForAutoApproval),
   });
 }

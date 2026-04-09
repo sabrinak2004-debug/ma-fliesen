@@ -217,6 +217,10 @@ model PlanEntry {
 
   noteEmployee String?
   noteAdmin    String?
+  noteEmployeeSourceLanguage AppLanguage?
+  noteEmployeeTranslations   Json?
+  noteAdminSourceLanguage    AppLanguage?
+  noteAdminTranslations      Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -347,6 +351,10 @@ model TimeEntryCorrectionRequest {
   status       TimeEntryCorrectionRequestStatus @default(PENDING)
   noteEmployee String?
   noteAdmin    String?
+  noteEmployeeSourceLanguage AppLanguage?
+  noteEmployeeTranslations   Json?
+  noteAdminSourceLanguage    AppLanguage?
+  noteAdminTranslations      Json?
 
   decidedAt   DateTime?
   decidedById String?

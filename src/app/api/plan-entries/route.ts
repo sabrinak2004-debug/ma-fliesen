@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { Role } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 function parseYMD(ymd: string) {
   const [y, m, d] = ymd.split("-").map(Number);
@@ -32,6 +33,48 @@ function extractUserId(session: unknown): string | null {
   }
 
   return null;
+}
+
+type SupportedLang = "DE" | "EN" | "IT" | "TR" | "SQ" | "KU";
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
 }
 
 export async function GET(req: Request) {
@@ -107,6 +150,9 @@ export async function GET(req: Request) {
       location: true,
       travelMinutes: true,
       noteEmployee: true,
+      noteEmployeeTranslations: true,
+      noteAdmin: true,
+      noteAdminTranslations: true,
       user: {
         select: {
           id: true,
@@ -116,5 +162,19 @@ export async function GET(req: Request) {
     },
   });
 
-  return NextResponse.json({ entries });
+  return NextResponse.json({
+    entries: entries.map((entry) => ({
+      ...entry,
+      noteEmployee: getTranslatedText(
+        entry.noteEmployee,
+        entry.noteEmployeeTranslations,
+        session?.language ?? "DE"
+      ),
+      noteAdmin: getTranslatedText(
+        entry.noteAdmin,
+        entry.noteAdminTranslations,
+        session?.language ?? "DE"
+      ),
+    })),
+  });
 }
