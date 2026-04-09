@@ -14,6 +14,7 @@ import {
 } from "@/lib/tenantBranding";
 import PushOnboarding from "@/components/PushOnboarding";
 import {
+  APP_UI_LANGUAGES,
   type AppUiLanguage,
   getLanguageLabel,
   normalizeAppUiLanguage,
@@ -197,7 +198,10 @@ type AppShellTextKey =
   | "employeeArea"
   | "openItems"
   | "openTasksAria"
-  | "language";
+  | "language"
+  | "languageSaving"
+  | "languageSaved"
+  | "languageSaveError";
 
 const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = {
   capture: {
@@ -317,7 +321,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     EN: "Log out",
     IT: "Esci",
     TR: "Çıkış yap",
-    SQ: "Dil",
+    SQ: "Dilnişanê derkeve",
     KU: "Derkeve",
   },
   loading: {
@@ -383,6 +387,30 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Dil",
     SQ: "Gjuha",
     KU: "Ziman",
+  },
+  languageSaving: {
+    DE: "Sprache wird gespeichert...",
+    EN: "Saving language...",
+    IT: "Salvataggio lingua...",
+    TR: "Dil kaydediliyor...",
+    SQ: "Gjuha po ruhet...",
+    KU: "Ziman tê tomar kirin...",
+  },
+  languageSaved: {
+    DE: "Sprache gespeichert.",
+    EN: "Language saved.",
+    IT: "Lingua salvata.",
+    TR: "Dil kaydedildi.",
+    SQ: "Gjuha u ruajt.",
+    KU: "Ziman hate tomar kirin.",
+  },
+  languageSaveError: {
+    DE: "Sprache konnte nicht gespeichert werden.",
+    EN: "Language could not be saved.",
+    IT: "Impossibile salvare la lingua.",
+    TR: "Dil kaydedilemedi.",
+    SQ: "Gjuha nuk mund të ruhej.",
+    KU: "Ziman nehat tomar kirin.",
   },
 };
 
@@ -455,6 +483,8 @@ export default function AppShell({
   const [, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [languageSaving, setLanguageSaving] = useState(false);
+  const [languageMessage, setLanguageMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -698,6 +728,18 @@ export default function AppShell({
     };
   }, [mobileOpen]);
 
+  useEffect(() => {
+    if (!languageMessage) return;
+
+    const timeout = window.setTimeout(() => {
+      setLanguageMessage(null);
+    }, 2500);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [languageMessage]);
+
   async function handleLogout() {
     try {
       await fetch("/api/logout", {
@@ -719,6 +761,76 @@ export default function AppShell({
           : "/login";
 
       window.location.href = targetLogin;
+    }
+  }
+
+  async function handleLanguageChange(nextLanguage: AppUiLanguage) {
+    if (!session) return;
+    if (nextLanguage === currentLanguage) return;
+
+    setLanguageSaving(true);
+    setLanguageMessage(null);
+
+    try {
+      const response = await fetch("/api/me/language", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          Pragma: "no-cache",
+        },
+        body: JSON.stringify({
+          language: nextLanguage,
+        }),
+      });
+
+      const json: unknown = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setLanguageMessage(tAppShell(currentLanguage, "languageSaveError"));
+        return;
+      }
+
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              language: nextLanguage,
+            }
+          : prev
+      );
+
+      try {
+        const cachedRaw = window.localStorage.getItem("app_session_cache");
+        const cachedParsed: unknown = cachedRaw ? JSON.parse(cachedRaw) : null;
+
+        if (isSessionData(cachedParsed)) {
+          window.localStorage.setItem(
+            "app_session_cache",
+            JSON.stringify({
+              ...cachedParsed,
+              language: nextLanguage,
+            })
+          );
+        }
+      } catch {
+        // ignore localStorage errors
+      }
+
+      if (
+        isRecord(json) &&
+        json["ok"] === true &&
+        typeof json["language"] === "string"
+      ) {
+        document.documentElement.lang = nextLanguage.toLowerCase();
+      }
+
+      setLanguageMessage(tAppShell(nextLanguage, "languageSaved"));
+    } catch {
+      setLanguageMessage(tAppShell(currentLanguage, "languageSaveError"));
+    } finally {
+      setLanguageSaving(false);
     }
   }
 
@@ -992,6 +1104,39 @@ export default function AppShell({
 
               <div style={{ flex: 1 }} />
 
+              <div className="appshell-language-panel">
+                <label className="appshell-language-label">
+                  {tAppShell(currentLanguage, "language")}
+                </label>
+
+                <select
+                  className="input appshell-language-select"
+                  value={currentLanguage}
+                  onChange={(event) => {
+                    void handleLanguageChange(
+                      normalizeAppUiLanguage(event.target.value)
+                    );
+                  }}
+                  disabled={!session || languageSaving}
+                >
+                  {APP_UI_LANGUAGES.map((language) => (
+                    <option key={language} value={language}>
+                      {getLanguageLabel(language)}
+                    </option>
+                  ))}
+                </select>
+
+                {languageSaving ? (
+                  <div className="appshell-language-message">
+                    {tAppShell(currentLanguage, "languageSaving")}
+                  </div>
+                ) : languageMessage ? (
+                  <div className="appshell-language-message">
+                    {languageMessage}
+                  </div>
+                ) : null}
+              </div>
+
               <button
                 type="button"
                 onClick={handleLogout}
@@ -1137,6 +1282,39 @@ export default function AppShell({
             </nav>
 
             <div className="appshell-sidebar-bottom">
+              <div className="appshell-language-panel appshell-language-panel-desktop">
+                <label className="appshell-language-label">
+                  {tAppShell(currentLanguage, "language")}
+                </label>
+
+                <select
+                  className="input appshell-language-select"
+                  value={currentLanguage}
+                  onChange={(event) => {
+                    void handleLanguageChange(
+                      normalizeAppUiLanguage(event.target.value)
+                    );
+                  }}
+                  disabled={!session || languageSaving}
+                >
+                  {APP_UI_LANGUAGES.map((language) => (
+                    <option key={language} value={language}>
+                      {getLanguageLabel(language)}
+                    </option>
+                  ))}
+                </select>
+
+                {languageSaving ? (
+                  <div className="appshell-language-message">
+                    {tAppShell(currentLanguage, "languageSaving")}
+                  </div>
+                ) : languageMessage ? (
+                  <div className="appshell-language-message">
+                    {languageMessage}
+                  </div>
+                ) : null}
+              </div>
+
               <div className="appshell-sidebar-logout-wrap">
                 <button
                   type="button"

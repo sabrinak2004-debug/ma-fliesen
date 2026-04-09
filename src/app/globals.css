@@ -3497,3 +3497,32 @@ li {
     flex-direction: column;
   }
 }
+.appshell-language-panel {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  background: var(--surface-strong);
+}
+
+.appshell-language-panel-desktop {
+  margin-bottom: 14px;
+}
+
+.appshell-language-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.appshell-language-select {
+  margin: 0;
+}
+
+.appshell-language-message {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
