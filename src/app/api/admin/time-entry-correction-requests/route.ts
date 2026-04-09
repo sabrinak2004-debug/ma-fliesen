@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { TimeEntryCorrectionRequestStatus } from "@prisma/client";
+import { Prisma, TimeEntryCorrectionRequestStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
+import type { SupportedLang } from "@/lib/translate";
 
 function isTimeEntryCorrectionRequestStatus(v: string): v is TimeEntryCorrectionRequestStatus {
   return v === "PENDING" || v === "APPROVED" || v === "REJECTED";
@@ -14,32 +15,86 @@ function toIsoDateUTC(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function mapRequest(r: {
-  id: string;
-  startDate: Date;
-  endDate: Date;
-  status: TimeEntryCorrectionRequestStatus;
-  noteEmployee: string | null;
-  noteAdmin: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  decidedAt: Date | null;
-  user: {
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
+
+function mapRequest(
+  r: {
     id: string;
-    fullName: string;
-  };
-  decidedBy: {
-    id: string;
-    fullName: string;
-  } | null;
-}) {
+    startDate: Date;
+    endDate: Date;
+    status: TimeEntryCorrectionRequestStatus;
+    noteEmployee: string | null;
+    noteEmployeeTranslations?: Prisma.JsonValue | null;
+    noteAdmin: string | null;
+    noteAdminTranslations?: Prisma.JsonValue | null;
+    createdAt: Date;
+    updatedAt: Date;
+    decidedAt: Date | null;
+    user: {
+      id: string;
+      fullName: string;
+    };
+    decidedBy: {
+      id: string;
+      fullName: string;
+    } | null;
+  },
+  language: string | null | undefined
+) {
   return {
     id: r.id,
     startDate: toIsoDateUTC(r.startDate),
     endDate: toIsoDateUTC(r.endDate),
     status: r.status,
-    noteEmployee: r.noteEmployee ?? "",
-    noteAdmin: r.noteAdmin ?? "",
+    noteEmployee: getTranslatedText(
+      r.noteEmployee,
+      r.noteEmployeeTranslations,
+      language
+    ),
+    noteAdmin: getTranslatedText(
+      r.noteAdmin,
+      r.noteAdminTranslations,
+      language
+    ),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     decidedAt: r.decidedAt ? r.decidedAt.toISOString() : null,
@@ -58,6 +113,12 @@ function mapRequest(r: {
 
 export async function GET(req: Request) {
   const admin = await requireAdmin();
+  const adminUser = admin
+    ? await prisma.appUser.findUnique({
+        where: { id: admin.id },
+        select: { language: true },
+      })
+    : null;
   if (!admin) {
     return NextResponse.json(
       { ok: false, error: "Keine Berechtigung." },
@@ -144,11 +205,19 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    requests: requests.map(mapRequest),
+    requests: requests.map((request) =>
+      mapRequest(request, adminUser?.language ?? "DE")
+    ),
     grouped: {
-      pending: grouped.pending.map(mapRequest),
-      approved: grouped.approved.map(mapRequest),
-      rejected: grouped.rejected.map(mapRequest),
+      pending: grouped.pending.map((request) =>
+        mapRequest(request, adminUser?.language ?? "DE")
+      ),
+      approved: grouped.approved.map((request) =>
+        mapRequest(request, adminUser?.language ?? "DE")
+      ),
+      rejected: grouped.rejected.map((request) =>
+        mapRequest(request, adminUser?.language ?? "DE")
+      ),
     },
   });
 }

@@ -262,6 +262,8 @@ model AdminNote {
 
   workDate DateTime @db.Date
   note     String   @default("")
+  noteSourceLanguage AppLanguage?
+  noteTranslations   Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
