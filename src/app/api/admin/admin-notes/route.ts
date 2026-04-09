@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/requireAdmin";
+import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 
 function parseYMD(ymd: string) {
   const [y, m, d] = ymd.split("-").map(Number);
@@ -13,6 +15,57 @@ type PostBody = {
   workDate: string; // YYYY-MM-DD
   note: string; // darf auch leer sein (optional)
 };
+
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
+
+function toPrismaNullableJsonInput(
+  value: Record<string, string> | null
+): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+  if (value === null) {
+    return Prisma.JsonNull;
+  }
+
+  return value as Prisma.InputJsonValue;
+}
 
 export async function GET(req: Request) {
   const admin = await requireAdmin();
@@ -37,7 +90,16 @@ export async function GET(req: Request) {
     orderBy: [{ workDate: "asc" }, { createdAt: "asc" }],
   });
 
-  return NextResponse.json({ notes });
+  return NextResponse.json({
+    notes: notes.map((note) => ({
+      ...note,
+      note: getTranslatedText(
+        note.note,
+        note.noteTranslations,
+        admin.language
+      ),
+    })),
+  });
 }
 
 export async function POST(req: Request) {
@@ -66,10 +128,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Ungültiger Mitarbeiter" }, { status: 400 });
   }
 
+  let noteSourceLanguage: SupportedLang | null = null;
+  let noteTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (typeof note === "string" && note.trim()) {
+    const translationResult = await translateAllLanguages(note);
+    noteSourceLanguage = translationResult.sourceLanguage;
+    noteTranslations = toPrismaNullableJsonInput(translationResult.translations);
+  }
+
   const data = {
     userId: targetUser.id,
     workDate: parseYMD(String(workDate)),
     note: typeof note === "string" ? note : "",
+    noteSourceLanguage,
+    noteTranslations,
   };
 
   // Wenn id vorhanden -> Update
@@ -92,7 +166,13 @@ export async function POST(req: Request) {
 
     const saved = await prisma.adminNote.update({
       where: { id: existing.id },
-      data: { note: data.note, workDate: data.workDate, userId: data.userId },
+      data: {
+        note: data.note,
+        noteSourceLanguage: data.noteSourceLanguage,
+        noteTranslations: data.noteTranslations,
+        workDate: data.workDate,
+        userId: data.userId,
+      },
     });
     return NextResponse.json({ ok: true, note: saved });
   }
@@ -106,7 +186,11 @@ export async function POST(req: Request) {
       },
     },
     create: data,
-    update: { note: data.note },
+    update: {
+      note: data.note,
+      noteSourceLanguage: data.noteSourceLanguage,
+      noteTranslations: data.noteTranslations,
+    },
   });
 
   return NextResponse.json({ ok: true, note: saved });

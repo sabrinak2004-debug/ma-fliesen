@@ -118,6 +118,12 @@ model CalendarEvent {
   endAt    DateTime
   location String?
   notes    String?
+  titleSourceLanguage    AppLanguage?
+  titleTranslations      Json?
+  locationSourceLanguage AppLanguage?
+  locationTranslations   Json?
+  notesSourceLanguage    AppLanguage?
+  notesTranslations      Json?
 
   // ===== Google Sync Felder =====
   googleEventId   String?   @unique
@@ -306,6 +312,8 @@ model AbsenceRequest {
   compensationLockedBySystem Boolean @default(false)
 
   noteEmployee String?
+  noteEmployeeSourceLanguage AppLanguage?
+  noteEmployeeTranslations Json?
 
   decidedAt   DateTime?
   decidedById String?
