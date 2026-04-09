@@ -415,6 +415,12 @@ model Task {
   title       String
   description String?
 
+  // 🔴 NEU:
+  titleSourceLanguage AppLanguage?
+  titleTranslations   Json?
+  descriptionSourceLanguage AppLanguage?
+  descriptionTranslations   Json?
+
   category       TaskCategory
   status         TaskStatus         @default(OPEN)
   requiredAction TaskRequiredAction @default(NONE)
