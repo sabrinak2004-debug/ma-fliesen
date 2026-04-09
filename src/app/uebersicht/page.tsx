@@ -182,7 +182,14 @@ type OverviewTextKey =
   | "entries"
   | "entry"
   | "km"
-  | "me";
+  | "me"
+  | "monthCsv"
+  | "yearZip"
+  | "rangeCsv"
+  | "daysUsed"
+  | "daysLabel"
+  | "untilMonthlyTarget"
+  | "monthlyProgressDetails";
 
 const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>> = {
   tasks: {
@@ -192,6 +199,62 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Görevler",
     SQ: "Detyrat",
     KU: "Erk",
+  },
+  monthCsv: {
+    DE: "Monat (CSV)",
+    EN: "Month (CSV)",
+    IT: "Mese (CSV)",
+    TR: "Ay (CSV)",
+    SQ: "Muaji (CSV)",
+    KU: "Meh (CSV)",
+  },
+  yearZip: {
+    DE: "Jahr (ZIP)",
+    EN: "Year (ZIP)",
+    IT: "Anno (ZIP)",
+    TR: "Yıl (ZIP)",
+    SQ: "Viti (ZIP)",
+    KU: "Sal (ZIP)",
+  },
+  rangeCsv: {
+    DE: "Zeitraum (CSV)",
+    EN: "Range (CSV)",
+    IT: "Intervallo (CSV)",
+    TR: "Aralık (CSV)",
+    SQ: "Periudha (CSV)",
+    KU: "Navbera demê (CSV)",
+  },
+  daysUsed: {
+    DE: "Tagen verbraucht",
+    EN: "days used",
+    IT: "giorni utilizzati",
+    TR: "gün kullanıldı",
+    SQ: "ditë të përdorura",
+    KU: "roj hatine bikaranîn",
+  },
+  daysLabel: {
+    DE: "Tage",
+    EN: "days",
+    IT: "giorni",
+    TR: "gün",
+    SQ: "ditë",
+    KU: "roj",
+  },
+  untilMonthlyTarget: {
+    DE: "bis zum Monatssoll",
+    EN: "until the monthly target",
+    IT: "fino all'obiettivo mensile",
+    TR: "aylık hedefe kadar",
+    SQ: "deri te objektivi mujor",
+    KU: "heta armanca mehane",
+  },
+  monthlyProgressDetails: {
+    DE: "Details Monatsfortschritt",
+    EN: "Monthly progress details",
+    IT: "Dettagli avanzamento mensile",
+    TR: "Aylık ilerleme detayları",
+    SQ: "Detajet e progresit mujor",
+    KU: "Hûrguliyên pêşveçûna mehane",
   },
   myTasks: {
     DE: "Meine Aufgaben",
@@ -1475,7 +1538,7 @@ const resetAbsFilters = (): void => {
 
           {exportMode === "MONTH" ? (
             <div style={{ display: "grid", gap: 8 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Monat auswählen</div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectMonth")}</div>
               <input
                 type="month"
                 value={exportMonth}
@@ -1490,14 +1553,14 @@ const resetAbsFilters = (): void => {
                 }}
               />
               <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                Download: <b>eine CSV</b> für <b>{exportMonth}</b>
+                {t("downloadOneCsvFor")} <b>{exportMonth}</b>
               </div>
             </div>
           ) : null}
 
           {exportMode === "YEAR" ? (
             <div style={{ display: "grid", gap: 8 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Jahr auswählen</div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectYear")}</div>
               <select
                 value={exportYear}
                 onChange={(e) => setExportYear(e.target.value)}
@@ -1518,18 +1581,18 @@ const resetAbsFilters = (): void => {
               </select>
 
               <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                Download: <b>ZIP</b> mit <b>12 CSVs</b> (pro Monat eine Datei)
+                {t("downloadZipWith12Csvs")}
               </div>
             </div>
           ) : null}
 
           {exportMode === "RANGE" ? (
             <div style={{ display: "grid", gap: 10 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Zeitraum auswählen</div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectRange")}</div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div style={{ display: "grid", gap: 6 }}>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Von</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("from")}</div>
                   <input
                     type="date"
                     value={rangeFrom}
@@ -1546,7 +1609,7 @@ const resetAbsFilters = (): void => {
                 </div>
 
                 <div style={{ display: "grid", gap: 6 }}>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Bis</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("to")}</div>
                   <input
                     type="date"
                     value={rangeTo}
@@ -1567,7 +1630,7 @@ const resetAbsFilters = (): void => {
                 <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>{rangeError}</div>
               ) : (
                 <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                  Download: CSV für <b>{rangeFrom}</b> bis <b>{rangeTo}</b>
+                  {t("downloadCsvFromTo")} <b>{rangeFrom}</b> {t("to").toLowerCase()} <b>{rangeTo}</b>
                 </div>
               )}
             </div>
@@ -1585,7 +1648,7 @@ const resetAbsFilters = (): void => {
             onClick={() => setWorkDetailsOpen(false)}
             className="app-action-card-button app-action-card-button-neutral"
           >
-            Schließen
+            {t("close")}
           </button>
         }
         maxWidth={640}
@@ -1611,7 +1674,7 @@ const resetAbsFilters = (): void => {
       <Modal
         open={progressDetailsOpen}
         onClose={() => setProgressDetailsOpen(false)}
-        title="Details Monatsfortschritt"
+        title={t("monthlyProgressDetails")}
         footer={
           <button
             type="button"
@@ -1634,7 +1697,7 @@ const resetAbsFilters = (): void => {
           <div className="small">{t("holidayCredited")} {formatMinutesAsHM(holidayMinutes)}</div>
           <div className="small">{t("holidaysInMonth")} {holidayCountInMonth}</div>
           <div className="small">
-            {t("unpaidAbsence")} {String(unpaidAbsenceDays).replace(".", ",")} {language === "DE" ? "Tage" : language === "EN" ? "days" : language === "IT" ? "giorni" : language === "TR" ? "gün" : language === "SQ" ? "ditë" : "roj"}
+            {t("unpaidAbsence")} {String(unpaidAbsenceDays).replace(".", ",")} {t("daysLabel")}
           </div>
           <div className="small">
             {t("unpaidAbsenceMinutes")} {formatMinutesAsHM(unpaidAbsenceMinutes)}
@@ -1690,7 +1753,12 @@ const resetAbsFilters = (): void => {
               <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{t("month")}</div>
               <select
                 value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value as MonthOption)}
+                onChange={(e) => {
+                  const nextMonth = e.target.value;
+                  if (MONTH_OPTIONS.some((option) => option.value === nextMonth)) {
+                    setSelectedMonth(nextMonth as MonthOption);
+                  }
+                }}
                 className="app-filter-select"
               >
                 {MONTH_OPTIONS.map((m) => (
@@ -1756,10 +1824,10 @@ const resetAbsFilters = (): void => {
             <div className="small">{t("remainingVacation")}</div>
             <div className="big">{String(remainingVacationDays).replace(".", ",")}</div>
             <div className="small">
-              {String(usedVacationDaysYtd).replace(".", ",")} {t("usedOfConsumed")} {String(accruedVacationDays).replace(".", ",")} {language === "DE" ? "Tagen verbraucht" : language === "EN" ? "days used" : language === "IT" ? "giorni utilizzati" : language === "TR" ? "gün kullanıldı" : language === "SQ" ? "ditë të përdorura" : "roj hatine bikaranîn"}
+              {String(usedVacationDaysYtd).replace(".", ",")} {t("usedOfConsumed")} {String(accruedVacationDays).replace(".", ",")} {t("daysUsed")}
             </div>
             <div className="small">
-              {t("annualEntitlement")} {String(annualVacationDays).replace(".", ",")} {language === "DE" ? "Tage" : language === "EN" ? "days" : language === "IT" ? "giorni" : language === "TR" ? "gün" : language === "SQ" ? "ditë" : "roj"}
+              {t("annualEntitlement")} {String(annualVacationDays).replace(".", ",")} {t("daysLabel")}
             </div>
           </div>
           <div className="app-kpi-icon">🗓</div>
@@ -1779,7 +1847,7 @@ const resetAbsFilters = (): void => {
         {t("monthProgress")} – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ color: "var(--muted)" }}>
-            {t("stillUntilTarget")} {formatMinutesAsHM(Math.max(0, netTargetMinutes - totalMinutes))} {language === "DE" ? "bis zum Monatssoll" : language === "EN" ? "until the monthly target" : language === "IT" ? "fino all'obiettivo mensile" : language === "TR" ? "aylık hedefe kadar" : language === "SQ" ? "deri te objektivi mujor" : "heta armanca mehane"}
+            {t("stillUntilTarget")} {formatMinutesAsHM(Math.max(0, netTargetMinutes - totalMinutes))} {t("untilMonthlyTarget")}
             {baseTargetMinutes > 0 ? (
               <span>
                 {" "}· {t("holidaysConsidered")}

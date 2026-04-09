@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import { translate, type AppUiLanguage } from "@/lib/i18n";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 /* eslint-disable @next/next/no-img-element */
@@ -24,8 +25,289 @@ type ShareNavigator = Navigator & {
 
 type ReactPdfModule = typeof import("react-pdf");
 
+type SessionDTO = {
+  userId: string;
+  fullName: string;
+  role: "EMPLOYEE" | "ADMIN";
+  language: AppUiLanguage;
+  companyId: string;
+  companyName: string;
+  companySubdomain: string;
+  companyLogoUrl?: string | null;
+  primaryColor?: string | null;
+};
+
+type KalenderDokumenteTextKey =
+  | "unexpectedResponse"
+  | "fileCouldNotBeLoaded"
+  | "previewUnsupported"
+  | "unknownError"
+  | "previewOpenError"
+  | "shareUnavailable"
+  | "shareFailed"
+  | "documentsCouldNotBeLoaded"
+  | "networkError"
+  | "pdfViewerLoadError"
+  | "documents"
+  | "backToCalendar"
+  | "loadingDocuments"
+  | "noDocuments"
+  | "previewInApp"
+  | "shareSave"
+  | "close"
+  | "documentLoading"
+  | "pdfViewerLoading"
+  | "pdfLoading"
+  | "pdfLoadFailed"
+  | "pageLoading";
+
+const KALENDER_DOKUMENTE_DICTIONARY: Record<
+  KalenderDokumenteTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  unexpectedResponse: {
+    DE: "Unerwartete Antwort.",
+    EN: "Unexpected response.",
+    IT: "Risposta inattesa.",
+    TR: "Beklenmeyen yanıt.",
+    SQ: "Përgjigje e papritur.",
+    KU: "Bersiva neçaverêkirî.",
+  },
+  fileCouldNotBeLoaded: {
+    DE: "Datei konnte nicht geladen werden.",
+    EN: "File could not be loaded.",
+    IT: "Impossibile caricare il file.",
+    TR: "Dosya yüklenemedi.",
+    SQ: "Skedari nuk mund të ngarkohej.",
+    KU: "Pel nehat barkirin.",
+  },
+  previewUnsupported: {
+    DE: "Dieser Dateityp kann in der App nicht angezeigt werden.",
+    EN: "This file type cannot be displayed in the app.",
+    IT: "Questo tipo di file non può essere visualizzato nell'app.",
+    TR: "Bu dosya türü uygulamada görüntülenemez.",
+    SQ: "Ky lloj skedari nuk mund të shfaqet në aplikacion.",
+    KU: "Ev cureya pelê di appê de nayê nîşandan.",
+  },
+  unknownError: {
+    DE: "Unbekannter Fehler",
+    EN: "Unknown error",
+    IT: "Errore sconosciuto",
+    TR: "Bilinmeyen hata",
+    SQ: "Gabim i panjohur",
+    KU: "Çewtiya nenas",
+  },
+  previewOpenError: {
+    DE: "Dokument konnte nicht in der App geöffnet werden: {message}",
+    EN: "Document could not be opened in the app: {message}",
+    IT: "Impossibile aprire il documento nell'app: {message}",
+    TR: "Belge uygulamada açılamadı: {message}",
+    SQ: "Dokumenti nuk mund të hapej në aplikacion: {message}",
+    KU: "Belge di appê de venebû: {message}",
+  },
+  shareUnavailable: {
+    DE: "Auf diesem Gerät ist 'Teilen / In Dateien sichern' hier nicht verfügbar.",
+    EN: "“Share / Save to files” is not available here on this device.",
+    IT: "“Condividi / Salva nei file” non è disponibile qui su questo dispositivo.",
+    TR: "Bu cihazda burada “Paylaş / Dosyalara kaydet” kullanılamıyor.",
+    SQ: "“Ndaj / Ruaj te skedarët” nuk është i disponueshëm këtu në këtë pajisje.",
+    KU: "Li ser vê cîhazê de “Parve bike / Di pelan de tomar bike” li vir tune ye.",
+  },
+  shareFailed: {
+    DE: "Dokument konnte nicht geteilt bzw. gespeichert werden.",
+    EN: "Document could not be shared or saved.",
+    IT: "Il documento non può essere condiviso o salvato.",
+    TR: "Belge paylaşılamadı veya kaydedilemedi.",
+    SQ: "Dokumenti nuk mund të ndahej ose ruhej.",
+    KU: "Belge nehat parvekirin an tomarkirin.",
+  },
+  documentsCouldNotBeLoaded: {
+    DE: "Dokumente konnten nicht geladen werden.",
+    EN: "Documents could not be loaded.",
+    IT: "Impossibile caricare i documenti.",
+    TR: "Belgeler yüklenemedi.",
+    SQ: "Dokumentet nuk mund të ngarkoheshin.",
+    KU: "Belge nehatin barkirin.",
+  },
+  networkError: {
+    DE: "Netzwerkfehler.",
+    EN: "Network error.",
+    IT: "Errore di rete.",
+    TR: "Ağ hatası.",
+    SQ: "Gabim rrjeti.",
+    KU: "Çewtiya torê.",
+  },
+  pdfViewerLoadError: {
+    DE: "PDF-Viewer konnte nicht geladen werden: {message}",
+    EN: "PDF viewer could not be loaded: {message}",
+    IT: "Impossibile caricare il visualizzatore PDF: {message}",
+    TR: "PDF görüntüleyici yüklenemedi: {message}",
+    SQ: "Shikuesi PDF nuk mund të ngarkohej: {message}",
+    KU: "Nîşanderê PDF nehat barkirin: {message}",
+  },
+  documents: {
+    DE: "Dokumente",
+    EN: "Documents",
+    IT: "Documenti",
+    TR: "Belgeler",
+    SQ: "Dokumente",
+    KU: "Belge",
+  },
+  backToCalendar: {
+    DE: "← Zurück zum Kalender",
+    EN: "← Back to calendar",
+    IT: "← Torna al calendario",
+    TR: "← Takvime geri dön",
+    SQ: "← Kthehu te kalendari",
+    KU: "← Vegere salnameyê",
+  },
+  loadingDocuments: {
+    DE: "Lade Dokumente...",
+    EN: "Loading documents...",
+    IT: "Caricamento documenti...",
+    TR: "Belgeler yükleniyor...",
+    SQ: "Dokumentet po ngarkohen...",
+    KU: "Belge têne barkirin...",
+  },
+  noDocuments: {
+    DE: "Keine Dokumente vorhanden.",
+    EN: "No documents available.",
+    IT: "Nessun documento disponibile.",
+    TR: "Belge yok.",
+    SQ: "Nuk ka dokumente.",
+    KU: "Belge tune ne.",
+  },
+  previewInApp: {
+    DE: "In App ansehen",
+    EN: "View in app",
+    IT: "Apri nell'app",
+    TR: "Uygulamada görüntüle",
+    SQ: "Shiko në aplikacion",
+    KU: "Di appê de bibîne",
+  },
+  shareSave: {
+    DE: "Teilen / Sichern",
+    EN: "Share / Save",
+    IT: "Condividi / Salva",
+    TR: "Paylaş / Kaydet",
+    SQ: "Ndaj / Ruaj",
+    KU: "Parve bike / Tomar bike",
+  },
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+  },
+  documentLoading: {
+    DE: "Dokument wird geladen...",
+    EN: "Document is loading...",
+    IT: "Caricamento documento...",
+    TR: "Belge yükleniyor...",
+    SQ: "Dokumenti po ngarkohet...",
+    KU: "Belge tê barkirin...",
+  },
+  pdfViewerLoading: {
+    DE: "PDF-Viewer wird geladen...",
+    EN: "PDF viewer is loading...",
+    IT: "Caricamento visualizzatore PDF...",
+    TR: "PDF görüntüleyici yükleniyor...",
+    SQ: "Shikuesi PDF po ngarkohet...",
+    KU: "Nîşanderê PDF tê barkirin...",
+  },
+  pdfLoading: {
+    DE: "PDF wird geladen...",
+    EN: "PDF is loading...",
+    IT: "Caricamento PDF...",
+    TR: "PDF yükleniyor...",
+    SQ: "PDF po ngarkohet...",
+    KU: "PDF tê barkirin...",
+  },
+  pdfLoadFailed: {
+    DE: "PDF konnte nicht geladen werden.",
+    EN: "PDF could not be loaded.",
+    IT: "Impossibile caricare il PDF.",
+    TR: "PDF yüklenemedi.",
+    SQ: "PDF nuk mund të ngarkohej.",
+    KU: "PDF nehat barkirin.",
+  },
+  pageLoading: {
+    DE: "Seite wird geladen...",
+    EN: "Page is loading...",
+    IT: "Caricamento pagina...",
+    TR: "Sayfa yükleniyor...",
+    SQ: "Faqja po ngarkohet...",
+    KU: "Rûpel tê barkirin...",
+  },
+};
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
+}
+
+function getStringField(obj: Record<string, unknown>, key: string): string | null {
+  const value = obj[key];
+  return typeof value === "string" ? value : null;
+}
+
+function isSessionDTO(v: unknown): v is SessionDTO {
+  if (!isRecord(v)) return false;
+
+  const userId = getStringField(v, "userId");
+  const fullName = getStringField(v, "fullName");
+  const role = getStringField(v, "role");
+  const language = getStringField(v, "language");
+  const companyId = getStringField(v, "companyId");
+  const companyName = getStringField(v, "companyName");
+  const companySubdomain = getStringField(v, "companySubdomain");
+
+  const companyLogoUrlRaw = v["companyLogoUrl"];
+  const primaryColorRaw = v["primaryColor"];
+
+  const companyLogoUrl =
+    companyLogoUrlRaw === undefined ||
+    companyLogoUrlRaw === null ||
+    typeof companyLogoUrlRaw === "string";
+
+  const primaryColor =
+    primaryColorRaw === undefined ||
+    primaryColorRaw === null ||
+    typeof primaryColorRaw === "string";
+
+  return (
+    typeof userId === "string" &&
+    typeof fullName === "string" &&
+    (role === "ADMIN" || role === "EMPLOYEE") &&
+    (language === "DE" ||
+      language === "EN" ||
+      language === "IT" ||
+      language === "TR" ||
+      language === "SQ" ||
+      language === "KU") &&
+    typeof companyId === "string" &&
+    typeof companyName === "string" &&
+    typeof companySubdomain === "string" &&
+    companyLogoUrl &&
+    primaryColor
+  );
+}
+
+function parseMeResponse(j: unknown): SessionDTO | null {
+  if (!isRecord(j)) return null;
+  const session = j["session"];
+  if (session === null) return null;
+  return isSessionDTO(session) ? session : null;
+}
+
+function replaceTemplate(
+  template: string,
+  values: Record<string, string | number>
+): string {
+  return Object.entries(values).reduce((result, [key, value]) => {
+    return result.replaceAll(`{${key}}`, String(value));
+  }, template);
 }
 
 function isDocItem(x: unknown): x is DocItem {
@@ -66,6 +348,9 @@ function canPreviewMime(mimeType: string): boolean {
 
 export default function KalenderDokumentePage() {
   const router = useRouter();
+  const [language, setLanguage] = useState<AppUiLanguage>("DE");
+  const t = (key: KalenderDokumenteTextKey): string =>
+    translate(language, key, KALENDER_DOKUMENTE_DICTIONARY);
   const params = useParams<{ entryId: string }>();
   const entryId = useMemo(() => (params?.entryId ? String(params.entryId) : ""), [params]);
 
@@ -123,7 +408,7 @@ export default function KalenderDokumentePage() {
     });
 
     if (!response.ok) {
-      throw new Error("Datei konnte nicht geladen werden.");
+      throw new Error(t("fileCouldNotBeLoaded"));
     }
 
     return await response.blob();
@@ -131,7 +416,7 @@ export default function KalenderDokumentePage() {
 
   async function previewDocument(doc: DocItem): Promise<void> {
     if (!canPreviewMime(doc.mimeType)) {
-      setErr("Dieser Dateityp kann in der App nicht angezeigt werden.");
+      setErr(t("previewUnsupported"));
       return;
     }
 
@@ -150,8 +435,12 @@ export default function KalenderDokumentePage() {
       setPreviewUrl(blobUrl);
     } catch (error) {
       closePreview();
-      const message = error instanceof Error ? error.message : "Unbekannter Fehler";
-      setErr(`Dokument konnte nicht in der App geöffnet werden: ${message}`);
+      const message = error instanceof Error ? error.message : t("unknownError");
+      setErr(
+        replaceTemplate(t("previewOpenError"), {
+          message,
+        })
+      );
     } finally {
       setPreviewLoading(false);
     }
@@ -179,9 +468,9 @@ export default function KalenderDokumentePage() {
         return;
       }
 
-      setErr("Auf diesem Gerät ist 'Teilen / In Dateien sichern' hier nicht verfügbar.");
+      setErr(t("shareUnavailable"));
     } catch {
-      setErr("Dokument konnte nicht geteilt bzw. gespeichert werden.");
+      setErr(t("shareFailed"));
     }
   }
 
@@ -203,7 +492,7 @@ export default function KalenderDokumentePage() {
         const msg =
           isRecord(j) && typeof j.error === "string"
             ? j.error
-            : "Dokumente konnten nicht geladen werden.";
+            : t("documentsCouldNotBeLoaded");
         setErr(msg);
         setDocs([]);
         return;
@@ -211,12 +500,41 @@ export default function KalenderDokumentePage() {
 
       setDocs(getDocsFromJson(j));
     } catch {
-      setErr("Netzwerkfehler.");
+      setErr(t("networkError"));
       setDocs([]);
     } finally {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    let alive = true;
+
+    fetch("/api/me", {
+      method: "GET",
+      cache: "no-store",
+      credentials: "include",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    })
+      .then((r) => r.json())
+      .then((j: unknown) => {
+        if (!alive) return;
+        const parsed = parseMeResponse(j);
+        if (parsed?.language) {
+          setLanguage(parsed.language);
+        }
+      })
+      .catch(() => {
+        if (!alive) return;
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     void loadDocs();
@@ -265,8 +583,12 @@ export default function KalenderDokumentePage() {
           }
             } catch (error) {
           if (active) {
-            const message = error instanceof Error ? error.message : "Unbekannter Fehler";
-            setErr(`PDF-Viewer konnte nicht geladen werden: ${message}`);
+            const message = error instanceof Error ? error.message : t("unknownError");
+            setErr(
+              replaceTemplate(t("pdfViewerLoadError"), {
+                message,
+              })
+            );
           }
         }
       }
@@ -300,9 +622,9 @@ export default function KalenderDokumentePage() {
             alignItems: "center",
           }}
         >
-          <div style={{ fontWeight: 900, fontSize: 18 }}>Dokumente</div>
+          <div style={{ fontWeight: 900, fontSize: 18 }}>{t("documents")}</div>
           <button className="btn" onClick={backToCalendar}>
-            ← Zurück zum Kalender
+            {t("backToCalendar")}
           </button>
         </div>
 
@@ -316,13 +638,13 @@ export default function KalenderDokumentePage() {
         />
 
         {loading ? (
-          <div style={{ color: "var(--muted)" }}>Lade Dokumente...</div>
+          <div style={{ color: "var(--muted)" }}>{t("loadingDocuments")}</div>
         ) : err ? (
           <div className="card app-danger-card">
             <span className="app-danger-text">{err}</span>
           </div>
         ) : docs.length === 0 ? (
-          <div style={{ color: "var(--muted)" }}>Keine Dokumente vorhanden.</div>
+          <div style={{ color: "var(--muted)" }}>{t("noDocuments")}</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {docs.map((d) => (
@@ -340,7 +662,7 @@ export default function KalenderDokumentePage() {
                       void previewDocument(d);
                     }}
                   >
-                    In App ansehen
+                    {t("previewInApp")}
                   </button>
 
                   <button
@@ -350,7 +672,7 @@ export default function KalenderDokumentePage() {
                       void shareDocument(d);
                     }}
                   >
-                    Teilen / Sichern
+                    {t("shareSave")}
                   </button>
                 </div>
               </div>
@@ -367,7 +689,7 @@ export default function KalenderDokumentePage() {
             </div>
 
             <button type="button" className="btn" onClick={closePreview}>
-              Schließen
+              {t("close")}
             </button>
           </div>
 
@@ -384,7 +706,7 @@ export default function KalenderDokumentePage() {
                   fontWeight: 700,
                 }}
               >
-                Dokument wird geladen...
+                {t("documentLoading")}
               </div>
             ) : previewMimeType === "application/pdf" && previewUrl ? (
               <div
@@ -398,13 +720,13 @@ export default function KalenderDokumentePage() {
                 }}
               >
                 {!PdfDocument || !PdfPage ? (
-                  <div style={{ color: "white" }}>PDF-Viewer wird geladen...</div>
+                  <div style={{ color: "white" }}>{t("pdfViewerLoading")}</div>
                 ) : (
                   <PdfDocument
                     file={previewUrl}
                     options={pdfOptions}
-                    loading={<div style={{ color: "white" }}>PDF wird geladen...</div>}
-                    error={<div style={{ color: "white" }}>PDF konnte nicht geladen werden.</div>}
+                    loading={<div style={{ color: "white" }}>{t("pdfLoading")}</div>}
+                    error={<div style={{ color: "white" }}>{t("pdfLoadFailed")}</div>}
                     onLoadSuccess={({ numPages }: { numPages: number }) => {
                       setPreviewPdfPages(numPages);
                     }}
@@ -430,7 +752,7 @@ export default function KalenderDokumentePage() {
                           renderTextLayer={false}
                           renderAnnotationLayer={false}
                           renderMode="canvas"
-                          loading={<div style={{ color: "white" }}>Seite wird geladen...</div>}
+                          loading={<div style={{ color: "white" }}>{t("pageLoading")}</div>}
                         />
                       </div>
                     ))}

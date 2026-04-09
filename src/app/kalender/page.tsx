@@ -246,7 +246,35 @@ type KalenderTextKey =
   | "close"
   | "newRequest"
   | "sendRequest"
-  | "calendarLoadingFallback";
+  | "calendarLoadingFallback"
+  | "weekShortMon"
+  | "weekShortTue"
+  | "weekShortWed"
+  | "weekShortThu"
+  | "weekShortFri"
+  | "weekShortSat"
+  | "weekShortSun"
+  | "calendarWeekLabel"
+  | "loadingAbsencesRequests"
+  | "for"
+  | "selectDate"
+  | "pleaseEnterTitle"
+  | "timeMustBeHHMM"
+  | "savingFailed"
+  | "deletingFailed"
+  | "networkDeleteError"
+  | "employeePlanCouldNotBeLoaded"
+  | "planCouldNotBeLoaded"
+  | "networkPlanLoadError"
+  | "networkEmployeePlanLoadError"
+  | "appointmentsCouldNotBeLoaded"
+  | "networkAppointmentsLoadError"
+  | "publicHolidayDefault"
+  | "daysLabel"
+  | "dayLabel"
+  | "vacationConfirmedSingleDay"
+  | "sickConfirmedHalfDay"
+  | "sickConfirmedFullDay";
 
 const KALENDER_DICTIONARY: Record<KalenderTextKey, Record<AppUiLanguage, string>> = {
   unexpectedResponse: {
@@ -256,6 +284,230 @@ const KALENDER_DICTIONARY: Record<KalenderTextKey, Record<AppUiLanguage, string>
     TR: "Beklenmeyen yanıt.",
     SQ: "Përgjigje e papritur.",
     KU: "Bersiva neçaverêkirî.",
+  },
+  weekShortMon: {
+    DE: "Mo",
+    EN: "Mon",
+    IT: "Lun",
+    TR: "Pzt",
+    SQ: "Hën",
+    KU: "Dş",
+  },
+  weekShortTue: {
+    DE: "Di",
+    EN: "Tue",
+    IT: "Mar",
+    TR: "Sal",
+    SQ: "Mar",
+    KU: "Sê",
+  },
+  weekShortWed: {
+    DE: "Mi",
+    EN: "Wed",
+    IT: "Mer",
+    TR: "Çar",
+    SQ: "Mër",
+    KU: "Çr",
+  },
+  weekShortThu: {
+    DE: "Do",
+    EN: "Thu",
+    IT: "Gio",
+    TR: "Per",
+    SQ: "Enj",
+    KU: "Pnc",
+  },
+  weekShortFri: {
+    DE: "Fr",
+    EN: "Fri",
+    IT: "Ven",
+    TR: "Cum",
+    SQ: "Pre",
+    KU: "În",
+  },
+  weekShortSat: {
+    DE: "Sa",
+    EN: "Sat",
+    IT: "Sab",
+    TR: "Cmt",
+    SQ: "Sht",
+    KU: "Şem",
+  },
+  weekShortSun: {
+    DE: "So",
+    EN: "Sun",
+    IT: "Dom",
+    TR: "Paz",
+    SQ: "Die",
+    KU: "Yek",
+  },
+  calendarWeekLabel: {
+    DE: "KW",
+    EN: "CW",
+    IT: "Sett.",
+    TR: "HF",
+    SQ: "JV",
+    KU: "HJ",
+  },
+  loadingAbsencesRequests: {
+    DE: "Abwesenheiten/Anträge laden…",
+    EN: "Loading absences/requests…",
+    IT: "Caricamento assenze/richieste…",
+    TR: "Devamsızlıklar/talepler yükleniyor…",
+    SQ: "Mungesat/kërkesat po ngarkohen…",
+    KU: "Nebûn/daxwaz têne barkirin…",
+  },
+  for: {
+    DE: "für",
+    EN: "for",
+    IT: "per",
+    TR: "için",
+    SQ: "për",
+    KU: "ji bo",
+  },
+  selectDate: {
+    DE: "Datum auswählen.",
+    EN: "Please select a date.",
+    IT: "Seleziona una data.",
+    TR: "Lütfen bir tarih seçin.",
+    SQ: "Ju lutem zgjidhni një datë.",
+    KU: "Ji kerema xwe dîrokek hilbijêre.",
+  },
+  pleaseEnterTitle: {
+    DE: "Bitte Titel eingeben.",
+    EN: "Please enter a title.",
+    IT: "Inserisci un titolo.",
+    TR: "Lütfen bir başlık girin.",
+    SQ: "Ju lutem shkruani një titull.",
+    KU: "Ji kerema xwe sernavek binivîse.",
+  },
+  timeMustBeHHMM: {
+    DE: "Start/Ende muss HH:MM sein.",
+    EN: "Start/end must be HH:MM.",
+    IT: "Inizio/fine deve essere HH:MM.",
+    TR: "Başlangıç/bitiş HH:MM olmalı.",
+    SQ: "Fillimi/fundi duhet të jetë HH:MM.",
+    KU: "Destpêk/dawî divê HH:MM be.",
+  },
+  savingFailed: {
+    DE: "Speichern fehlgeschlagen.",
+    EN: "Saving failed.",
+    IT: "Salvataggio non riuscito.",
+    TR: "Kaydetme başarısız oldu.",
+    SQ: "Ruajtja dështoi.",
+    KU: "Tomarkirin têk çû.",
+  },
+  deletingFailed: {
+    DE: "Löschen fehlgeschlagen.",
+    EN: "Deleting failed.",
+    IT: "Eliminazione non riuscita.",
+    TR: "Silme başarısız oldu.",
+    SQ: "Fshirja dështoi.",
+    KU: "Jêbirin têk çû.",
+  },
+  networkDeleteError: {
+    DE: "Netzwerkfehler beim Löschen.",
+    EN: "Network error while deleting.",
+    IT: "Errore di rete durante l'eliminazione.",
+    TR: "Silme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë fshirjes.",
+    KU: "Di jêbirinê de çewtiya torê.",
+  },
+  employeePlanCouldNotBeLoaded: {
+    DE: "Plan des Mitarbeiters konnte nicht geladen werden.",
+    EN: "Employee schedule could not be loaded.",
+    IT: "Impossibile caricare il piano del dipendente.",
+    TR: "Çalışan planı yüklenemedi.",
+    SQ: "Plani i punonjësit nuk mund të ngarkohej.",
+    KU: "Plana karmend nehat barkirin.",
+  },
+  planCouldNotBeLoaded: {
+    DE: "Plan konnte nicht geladen werden.",
+    EN: "Schedule could not be loaded.",
+    IT: "Impossibile caricare il piano.",
+    TR: "Plan yüklenemedi.",
+    SQ: "Plani nuk mund të ngarkohej.",
+    KU: "Plan nehat barkirin.",
+  },
+  networkPlanLoadError: {
+    DE: "Netzwerkfehler beim Laden des Plans.",
+    EN: "Network error while loading the schedule.",
+    IT: "Errore di rete durante il caricamento del piano.",
+    TR: "Plan yüklenirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ngarkimit të planit.",
+    KU: "Di barkirina planê de çewtiya torê.",
+  },
+  networkEmployeePlanLoadError: {
+    DE: "Netzwerkfehler beim Laden des Mitarbeiter-Plans.",
+    EN: "Network error while loading the employee schedule.",
+    IT: "Errore di rete durante il caricamento del piano del dipendente.",
+    TR: "Çalışan planı yüklenirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ngarkimit të planit të punonjësit.",
+    KU: "Di barkirina plana karmend de çewtiya torê.",
+  },
+  appointmentsCouldNotBeLoaded: {
+    DE: "Termine konnten nicht geladen werden.",
+    EN: "Appointments could not be loaded.",
+    IT: "Impossibile caricare gli appuntamenti.",
+    TR: "Randevular yüklenemedi.",
+    SQ: "Takimet nuk mund të ngarkoheshin.",
+    KU: "Hevdîtin nehatin barkirin.",
+  },
+  networkAppointmentsLoadError: {
+    DE: "Netzwerkfehler beim Laden der Termine.",
+    EN: "Network error while loading appointments.",
+    IT: "Errore di rete durante il caricamento degli appuntamenti.",
+    TR: "Randevular yüklenirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ngarkimit të takimeve.",
+    KU: "Di barkirina hevdîtinan de çewtiya torê.",
+  },
+  publicHolidayDefault: {
+    DE: "Gesetzlicher Feiertag",
+    EN: "Public holiday",
+    IT: "Festività legale",
+    TR: "Resmî tatil",
+    SQ: "Festë zyrtare",
+    KU: "Cejna fermî",
+  },
+  daysLabel: {
+    DE: "Tage",
+    EN: "days",
+    IT: "giorni",
+    TR: "gün",
+    SQ: "ditë",
+    KU: "roj",
+  },
+  dayLabel: {
+    DE: "Tag",
+    EN: "day",
+    IT: "giorno",
+    TR: "gün",
+    SQ: "ditë",
+    KU: "roj",
+  },
+  vacationConfirmedSingleDay: {
+    DE: "🌴 Urlaub ({date})",
+    EN: "🌴 Vacation ({date})",
+    IT: "🌴 Ferie ({date})",
+    TR: "🌴 İzin ({date})",
+    SQ: "🌴 Pushim ({date})",
+    KU: "🌴 Bêhnvedan ({date})",
+  },
+  sickConfirmedHalfDay: {
+    DE: "🤒 Krank (0,5 Tag)",
+    EN: "🤒 Sick (0.5 day)",
+    IT: "🤒 Malattia (0,5 giorno)",
+    TR: "🤒 Hasta (0,5 gün)",
+    SQ: "🤒 I sëmurë (0,5 ditë)",
+    KU: "🤒 Nexweş (0.5 roj)",
+  },
+  sickConfirmedFullDay: {
+    DE: "🤒 Krank (1 Tag)",
+    EN: "🤒 Sick (1 day)",
+    IT: "🤒 Malattia (1 giorno)",
+    TR: "🤒 Hasta (1 gün)",
+    SQ: "🤒 I sëmurë (1 ditë)",
+    KU: "🤒 Nexweş (1 roj)",
   },
   statusOpen: {
     DE: "Offen",
@@ -1161,19 +1413,36 @@ function isCalendarDay(v: unknown): v is CalendarDay {
   );
 }
 
-function parseCalendarResponse(j: unknown): CalendarResponse {
-  if (!isRecord(j)) return { ok: false, error: "Unerwartete Antwort." };
+function parseCalendarResponse(
+  j: unknown,
+  language: AppUiLanguage
+): CalendarResponse {
+  if (!isRecord(j)) {
+    return {
+      ok: false,
+      error: translate(language, "unexpectedResponse", KALENDER_DICTIONARY),
+    };
+  }
 
   const okVal = j["ok"];
   if (okVal === true) {
     const days = j["days"];
-    if (!Array.isArray(days)) return { ok: false, error: "Unerwartete Antwort." };
+    if (!Array.isArray(days)) {
+      return {
+        ok: false,
+        error: translate(language, "unexpectedResponse", KALENDER_DICTIONARY),
+      };
+    }
     return { ok: true, days: days.filter(isCalendarDay) };
   }
 
   const err = j["error"];
   if (typeof err === "string" && err.trim()) return { ok: false, error: err };
-  return { ok: false, error: "Unerwartete Antwort." };
+
+  return {
+    ok: false,
+    error: translate(language, "unexpectedResponse", KALENDER_DICTIONARY),
+  };
 }
 
 function isAbsenceDTO(v: unknown): v is AbsenceDTO {
@@ -2139,7 +2408,7 @@ function KalenderPageInner({
       if (isAdminViewingEmployee && selectedUserId) qs.set("userId", selectedUserId);
       const r = await fetch(`/api/calendar?${qs.toString()}`);
       const j: unknown = await r.json();
-      const parsed = parseCalendarResponse(j);
+      const parsed = parseCalendarResponse(j, language);
       setData(parsed.ok ? parsed.days : []);
     } finally {
       setLoading(false);
@@ -2284,7 +2553,15 @@ function KalenderPageInner({
       const d = new Date(ws);
       d.setDate(ws.getDate() + i);
       const ymd = toYMDLocal(d);
-      const weekdayShort = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
+      const weekdayShort = [
+        t("weekShortMon"),
+        t("weekShortTue"),
+        t("weekShortWed"),
+        t("weekShortThu"),
+        t("weekShortFri"),
+        t("weekShortSat"),
+        t("weekShortSun"),
+      ] as const;
       const weekdayIndex = (d.getDay() + 6) % 7;
       const label = weekdayShort[weekdayIndex] ?? "";
       const dayNum = String(d.getDate()).padStart(2, "0");
@@ -2304,18 +2581,18 @@ function KalenderPageInner({
 
       if (!r.ok) {
         setDayPlans([]);
-        setPlansError(extractErrorMessage(j, language === "DE" ? "Plan konnte nicht geladen werden." : t("loadingPlan")));
+        setPlansError(extractErrorMessage(j, t("planCouldNotBeLoaded")));
         return;
       }
 
       setDayPlans(parsePlanEntriesResponse(j));
     } catch {
       setDayPlans([]);
-      setPlansError(language === "DE" ? "Netzwerkfehler beim Laden des Plans." : "Network error.");
+      setPlansError(t("networkPlanLoadError"));
     } finally {
       setPlansLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const loadAdminEmployeePlansForDay = useCallback(async (date: string): Promise<void> => {
     if (!selectedUserId) {
@@ -2344,7 +2621,7 @@ function KalenderPageInner({
         setAdminEmployeePlansError(
           extractErrorMessage(
             j,
-            language === "DE" ? "Plan des Mitarbeiters konnte nicht geladen werden." : "Employee schedule could not be loaded."
+            t("employeePlanCouldNotBeLoaded")
           )
         );
         return;
@@ -2354,35 +2631,39 @@ function KalenderPageInner({
     } catch {
       setAdminEmployeeDayPlans([]);
       setAdminEmployeePlansError(
-        language === "DE" ? "Netzwerkfehler beim Laden des Mitarbeiter-Plans." : "Network error."
+        t("networkEmployeePlanLoadError")
       );
     } finally {
       setAdminEmployeePlansLoading(false);
     }
-  }, [selectedUserId]);
+  }, [selectedUserId, t]);
 
   const loadAppointmentsForDay = useCallback(async (date: string): Promise<void> => {
     setApptLoading(true);
     setApptError(null);
+
     try {
       const r = await fetch(`/api/admin/appointments?date=${encodeURIComponent(date)}`);
       const j: unknown = await r.json();
+
       if (!r.ok) {
         setDayAppointments([]);
-        setApptError(extractErrorMessage(j, language === "DE" ? "Termine konnten nicht geladen werden." : "Appointments could not be loaded."));
+        setApptError(extractErrorMessage(j, t("appointmentsCouldNotBeLoaded")));
         return;
       }
+
       const list = parseAppointmentsResponse(j)
         .slice()
         .sort((a, b) => (a.startHHMM < b.startHHMM ? -1 : a.startHHMM > b.startHHMM ? 1 : 0));
+
       setDayAppointments(list);
     } catch {
       setDayAppointments([]);
-      setApptError(language === "DE" ? "Netzwerkfehler beim Laden der Termine." : "Network error.");
+      setApptError(t("networkAppointmentsLoadError"));
     } finally {
       setApptLoading(false);
     }
-  }, []);
+  }, [t]);
 
   function resetAppointmentForm(): void {
     setApptEditingId(null);
@@ -2650,18 +2931,18 @@ function KalenderPageInner({
   async function saveAppointment(): Promise<void> {
     const date = effectiveAdminDate();
     if (!date) {
-      setApptError(`${t("date")} auswählen.`);
+      setApptError(t("selectDate"));
       return;
     }
 
     setApptError(null);
     const titleValue = apptTitle.trim();
     if (!titleValue) {
-      setApptError(language === "DE" ? "Bitte Titel eingeben." : "Please enter a title.");
+      setApptError(t("pleaseEnterTitle"));
       return;
     }
     if (!/^\d{2}:\d{2}$/.test(apptStart) || !/^\d{2}:\d{2}$/.test(apptEnd)) {
-      setApptError(language === "DE" ? "Start/Ende muss HH:MM sein." : "Start/end must be HH:MM.");
+      setApptError(t("timeMustBeHHMM"));
       return;
     }
 
@@ -2682,7 +2963,7 @@ function KalenderPageInner({
         });
         const j: unknown = await r.json();
         if (!r.ok) {
-          setApptError(extractErrorMessage(j, language === "DE" ? "Speichern fehlgeschlagen." : "Saving failed."));
+          setApptError(extractErrorMessage(j, t("savingFailed")));
           return;
         }
       } else {
@@ -2700,7 +2981,7 @@ function KalenderPageInner({
         });
         const j: unknown = await r.json();
         if (!r.ok) {
-          setApptError(extractErrorMessage(j, language === "DE" ? "Speichern fehlgeschlagen." : "Saving failed."));
+          setApptError(extractErrorMessage(j, t("savingFailed")));
           return;
         }
 
@@ -2747,7 +3028,7 @@ function KalenderPageInner({
       const r = await fetch(`/api/admin/appointments/${encodeURIComponent(id)}`, { method: "DELETE" });
       const j: unknown = await r.json();
       if (!r.ok) {
-        setApptError(extractErrorMessage(j, language === "DE" ? "Löschen fehlgeschlagen." : "Deleting failed."));
+        setApptError(extractErrorMessage(j, t("deletingFailed")));
         return;
       }
 
@@ -2760,7 +3041,7 @@ function KalenderPageInner({
       if (apptEditingId === id) resetAppointmentForm();
       await Promise.all([loadAppointmentsForDay(selectedDate), reloadMonthAll()]);
     } catch {
-      setApptError(language === "DE" ? "Netzwerkfehler beim Löschen." : "Network error.");
+      setApptError(t("networkDeleteError"));
     } finally {
       setSaving(false);
     }
@@ -2857,7 +3138,7 @@ function KalenderPageInner({
 
               {viewMode === "WEEK" && weekMeta ? (
                 <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 800 }}>
-                  KW {weekMeta.kw}
+                  {t("calendarWeekLabel")} {weekMeta.kw}
                 </div>
               ) : null}
             </div>
@@ -2875,7 +3156,7 @@ function KalenderPageInner({
                 className={`calendar-segmented-button ${viewMode === "WEEK" ? "is-active" : ""}`}
                 onClick={() => setViewMode("WEEK")}
               >
-                Woche
+                {t("week")}
               </button>
             </div>
 
@@ -3014,7 +3295,7 @@ function KalenderPageInner({
                         ) : null}
 
                         {info?.hasHoliday ? (
-                          <span className={pillClassName()} title={info.holidayName ?? "Gesetzlicher Feiertag"}>
+                          <span className={pillClassName()} title={info.holidayName ?? t("publicHolidayDefault")}>
                             <span style={smallDot(holidayDotColor())} /> {t("holiday")}
                           </span>
                         ) : null}
@@ -3089,7 +3370,15 @@ function KalenderPageInner({
           <>
             <div className="calendar-grid-scroll">
               <div className="calendar-month-grid">
-                {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((w) => (
+                {[
+                  t("weekShortMon"),
+                  t("weekShortTue"),
+                  t("weekShortWed"),
+                  t("weekShortThu"),
+                  t("weekShortFri"),
+                  t("weekShortSat"),
+                  t("weekShortSun"),
+                ].map((w) => (
                   <div key={w} className="calendar-weekday-head">
                     {w}
                   </div>
@@ -3156,7 +3445,7 @@ function KalenderPageInner({
                                 background: "var(--accent)",
                                 boxShadow: "0 0 0 3px var(--accent-soft)",
                               }}
-                              title="Heute"
+                              title={t("today")}
                             />
                           ) : null}
                         </div>
@@ -3280,7 +3569,7 @@ function KalenderPageInner({
 
                 {!isAdminViewingEmployee && (absLoading || reqLoading) ? (
                   <div style={{ fontSize: 12, opacity: 0.8 }}>
-                    {language === "DE" ? "Abwesenheiten/Anträge laden…" : "Loading absences/requests..."}
+                    {t("loadingAbsencesRequests")}
                   </div>
                 ) : null}
               </div>
@@ -3339,7 +3628,7 @@ function KalenderPageInner({
                 <div style={{ fontWeight: 900 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {getHolidayIcon(dayMap.get(selectedDate)?.holidayName ?? null)}
-                    {dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}
+                    {dayMap.get(selectedDate)?.holidayName ?? t("publicHolidayDefault")}
                   </span>
                 </div>
                 <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
@@ -3353,7 +3642,7 @@ function KalenderPageInner({
                 <div style={{ fontWeight: 900, fontSize: 16 }}>{t("appointments")}</div>
                 <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 2 }}>
                   {selectedDate
-                    ? `${t("appointments")} ${language === "DE" ? "für" : "for"} ${selectedDate}`
+                    ? `${t("appointments")} ${t("for")} ${selectedDate}`
                     : t("appointments")}
                 </div>
               </div>
@@ -3635,7 +3924,7 @@ function KalenderPageInner({
                 <div style={{ fontWeight: 900 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {getHolidayIcon(dayMap.get(selectedDate)?.holidayName ?? null)}
-                    {dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}
+                    {dayMap.get(selectedDate)?.holidayName ?? t("publicHolidayDefault")}
                   </span>
                 </div>
                 <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
@@ -3694,18 +3983,18 @@ function KalenderPageInner({
                 <div style={{ marginTop: 8, display: "flex", gap: 10, flexWrap: "wrap", color: "var(--muted)" }}>
                   {dayMap.get(selectedDate)?.hasPlan ? <span className={pillClassName()}>{t("scheduleExists")}</span> : null}
                   {dayMap.get(selectedDate)?.hasHoliday ? (
-                    <span className={pillClassName()} title={dayMap.get(selectedDate)?.holidayName ?? "Gesetzlicher Feiertag"}>
+                    <span className={pillClassName()} title={dayMap.get(selectedDate)?.holidayName ?? t("publicHolidayDefault")}>
                       {t("holiday")}
                     </span>
                   ) : null}
                   {dayMap.get(selectedDate)?.hasVacation ? (
                     <span className={pillClassName()}>
-                      {getAbsenceCompensationSummary(
-                        language,
-                        monthAbsences.filter(
-                          (a) => a.absenceDate === selectedDate && a.type === "VACATION"
-                        )
-                      ) === "Unbezahlt"
+                      {monthAbsences.some(
+                        (a) =>
+                          a.absenceDate === selectedDate &&
+                          a.type === "VACATION" &&
+                          a.compensation === "UNPAID"
+                      )
                         ? t("paidVacation")
                         : t("vacation")}
                     </span>
@@ -3825,7 +4114,9 @@ function KalenderPageInner({
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {confirmedAbsencesForSelectedDay.some((a) => a.type === "VACATION") ? (
                       <div className="card" style={{ padding: 12 }}>
-                        <div style={{ fontWeight: 900 }}>🌴 Urlaub ({selectedDate})</div>
+                        <div style={{ fontWeight: 900 }}>
+                          {replaceTemplate(t("vacationConfirmedSingleDay"), { date: selectedDate })}
+                        </div>
                         <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
                           {t("alreadyConfirmedRegistered")}
                         </div>
@@ -3843,7 +4134,9 @@ function KalenderPageInner({
                       .map((a) => (
                         <div key={a.id} className="card" style={{ padding: 12 }}>
                           <div style={{ fontWeight: 900 }}>
-                            🤒 Krank ({a.dayPortion === "HALF_DAY" ? "0,5 Tag" : "1 Tag"})
+                            {a.dayPortion === "HALF_DAY"
+                              ? t("sickConfirmedHalfDay")
+                              : t("sickConfirmedFullDay")}
                           </div>
                           <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
                             {t("alreadyConfirmedRegistered")}
@@ -3855,7 +4148,7 @@ function KalenderPageInner({
               </div>
 
               <div style={{ marginTop: 14 }}>
-                <div className="label">Meine Anträge</div>
+                <div className="label">{t("myRequests")}</div>
 
                 {requestBlocksForSelectedDay.length === 0 ? (
                   <div className="card calendar-status-card calendar-status-card-neutral" style={{ opacity: 0.85 }}>
@@ -3879,7 +4172,7 @@ function KalenderPageInner({
                         {b.type === "VACATION" ? (
                           <>
                             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                              {t("total")} {formatVacationDays((b.paidVacationUnits + b.unpaidVacationUnits) / 2)} {language === "DE" ? "Tage" : language === "EN" ? "days" : language === "IT" ? "giorni" : language === "TR" ? "gün" : language === "SQ" ? "ditë" : "roj"}
+                              {t("total")} {formatVacationDays((b.paidVacationUnits + b.unpaidVacationUnits) / 2)} {t("daysLabel")}
                             </div>
 
                             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
@@ -4057,7 +4350,7 @@ function KalenderPageInner({
                     <div>
                       {t("total")} {formatVacationDays(
                         (selectedRequestBlock.paidVacationUnits + selectedRequestBlock.unpaidVacationUnits) / 2
-                      )} Tage
+                      )} {t("daysLabel")}
                     </div>
 
                     <div style={{ marginTop: 6, color: "var(--muted)" }}>

@@ -445,6 +445,15 @@ function isString(v: unknown): v is string {
   return typeof v === "string";
 }
 
+function replaceTemplate(
+  template: string,
+  values: Record<string, string | number>
+): string {
+  return Object.entries(values).reduce((result, [key, value]) => {
+    return result.replaceAll(`{${key}}`, String(value));
+  }, template);
+}
+
 type SessionData = {
   userId: string;
   fullName: string;
@@ -611,7 +620,16 @@ type ErfassungTextKey =
   | "assignmentManagedServerSide"
   | "performedActivity"
   | "travelTimeMin"
-  | "changesSaveFailed";
+  | "changesSaveFailed"
+  | "dateStartEndMissing"
+  | "sending"
+  | "to"
+  | "optionalReasonPlaceholder"
+  | "existingCorrectionHint"
+  | "currentMissingDaysNeedsRequest"
+  | "currentMissingDaysUntilLock"
+  | "employeeManagedServerSide"
+  | "dayGrossBreakNet";
 
 const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage, string>> = {
   loading: {
@@ -621,6 +639,78 @@ const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage, strin
     TR: "Yükleniyor...",
     SQ: "Duke u ngarkuar...",
     KU: "Tê barkirin...",
+  },
+  to: {
+    DE: "bis",
+    EN: "to",
+    IT: "fino a",
+    TR: "ile",
+    SQ: "deri",
+    KU: "heta",
+  },
+  dateStartEndMissing: {
+    DE: "Datum / Beginn / Ende fehlt.",
+    EN: "Date / start / end is missing.",
+    IT: "Manca data / inizio / fine.",
+    TR: "Tarih / başlangıç / bitiş eksik.",
+    SQ: "Mungon data / fillimi / fundi.",
+    KU: "Dîrok / destpêk / dawî kêm e.",
+  },
+  sending: {
+    DE: "Sendet...",
+    EN: "Sending...",
+    IT: "Invio...",
+    TR: "Gönderiliyor...",
+    SQ: "Duke dërguar...",
+    KU: "Tê şandin...",
+  },
+  optionalReasonPlaceholder: {
+    DE: "Optional: kurze Begründung oder Hinweis",
+    EN: "Optional: short reason or note",
+    IT: "Opzionale: breve motivazione o nota",
+    TR: "İsteğe bağlı: kısa açıklama veya not",
+    SQ: "Opsionale: arsye ose shënim i shkurtër",
+    KU: "Vebijarkî: ravekirinek kurt an nîşe",
+  },
+  existingCorrectionHint: {
+    DE: "Hinweis: Für {range} existiert bereits ein offener Antrag.",
+    EN: "Note: There is already an open request for {range}.",
+    IT: "Nota: esiste già una richiesta aperta per {range}.",
+    TR: "Not: {range} için zaten açık bir talep var.",
+    SQ: "Shënim: për {range} ekziston tashmë një kërkesë e hapur.",
+    KU: "Têbînî: ji bo {range} daxwazek vekirî heye.",
+  },
+  currentMissingDaysNeedsRequest: {
+    DE: "Aktuell: {current}/{limit} fehlende Arbeitstage. Ein Nachtragsantrag ist erforderlich.",
+    EN: "Current: {current}/{limit} missing workdays. A correction request is required.",
+    IT: "Attuale: {current}/{limit} giorni lavorativi mancanti. È richiesta una domanda di integrazione.",
+    TR: "Şu an: {current}/{limit} eksik iş günü. Düzeltme talebi gereklidir.",
+    SQ: "Aktualisht: {current}/{limit} ditë pune të munguara. Kërkohet një kërkesë korrigjimi.",
+    KU: "Niha: {current}/{limit} rojên karê yên wenda. Daxwaza rastkirinê pêwist e.",
+  },
+  currentMissingDaysUntilLock: {
+    DE: "Aktuell: {current}/{limit} fehlende Arbeitstage bis zur Sperrung.",
+    EN: "Current: {current}/{limit} missing workdays until lock.",
+    IT: "Attuale: {current}/{limit} giorni lavorativi mancanti fino al blocco.",
+    TR: "Şu an: kilide kadar {current}/{limit} eksik iş günü.",
+    SQ: "Aktualisht: {current}/{limit} ditë pune të munguara deri në bllokim.",
+    KU: "Niha: heta girtinê {current}/{limit} rojên karê yên wenda.",
+  },
+  employeeManagedServerSide: {
+    DE: "Zuordnung wird serverseitig automatisch verwaltet.",
+    EN: "Assignment is managed automatically on the server side.",
+    IT: "L'assegnazione è gestita automaticamente dal server.",
+    TR: "Atama sunucu tarafında otomatik olarak yönetilir.",
+    SQ: "Caktimi menaxhohet automatikisht nga serveri.",
+    KU: "Girêdan li aliyê serverê bixweber tê rêvebirin.",
+  },
+  dayGrossBreakNet: {
+    DE: "Tag: Brutto {gross} · Wirksame Pause {breakValue} · Netto {netValue}",
+    EN: "Day: Gross {gross} · Effective break {breakValue} · Net {netValue}",
+    IT: "Giorno: Lordo {gross} · Pausa effettiva {breakValue} · Netto {netValue}",
+    TR: "Gün: Brüt {gross} · Etkili mola {breakValue} · Net {netValue}",
+    SQ: "Dita: Bruto {gross} · Pushimi efektiv {breakValue} · Neto {netValue}",
+    KU: "Roj: Berî derxistin {gross} · Navbera bi bandor {breakValue} · Safî {netValue}",
   },
   details: {
     DE: "Details anzeigen",
@@ -1531,7 +1621,7 @@ function ErfassungPageInner() {
     }
 
     return t("syncPlanTaken");
-  }, [sourceTaskId, syncDateParam, syncActivityParam, syncLocationParam, language]);
+  }, [sourceTaskId, syncDateParam, syncActivityParam, syncLocationParam, t]);
   const [loadingSelectedCorrectionStatus, setLoadingSelectedCorrectionStatus] = useState(false);
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
@@ -1892,7 +1982,9 @@ useEffect(() => {
 
     setEditError(null);
     if (!edit.activity.trim()) return setEditError(t("enterActivity"));
-    if (!edit.workDate || !edit.startTime || !edit.endTime) return setEditError(`${t("date")} / ${t("start")} / ${t("end")} fehlt.`);
+    if (!edit.workDate || !edit.startTime || !edit.endTime) {
+      return setEditError(t("dateStartEndMissing"));
+    }
 
     setEditSaving(true);
     try {
@@ -2097,8 +2189,8 @@ useEffect(() => {
       return {
         rightValue: formatPause(dayTotals.legalBreak),
         detailLines: [
-          `Gesetzliche Pause automatisch eingetragen: ${formatPause(dayTotals.legalBreak)}`,
-          `Brutto ${formatHM(dayTotals.grossDay)} · Netto ${formatHM(dayTotals.netDay)}`,
+          `${t("legalBreak")}: ${formatPause(dayTotals.legalBreak)}`,
+          `${t("gross")} ${formatHM(dayTotals.grossDay)} · ${t("net")} ${formatHM(dayTotals.netDay)}`,
         ],
       };
     }
@@ -2107,9 +2199,9 @@ useEffect(() => {
       return {
         rightValue: formatPause(dayTotals.effectiveBreak),
         detailLines: [
-          `Eingetragen: ${formatPause(selectedBreak.manualMinutes)}`,
-          `Auto-Zusatz: ${formatPause(dayTotals.autoSupplement)}`,
-          `Gesetzlich notwendig: ${formatPause(dayTotals.legalBreak)}`,
+          `${t("manualBreak")}: ${formatPause(selectedBreak.manualMinutes)}`,
+          `${t("autoCompleted")}: ${formatPause(dayTotals.autoSupplement)}`,
+          `${t("legallyRequired")}: ${formatPause(dayTotals.legalBreak)}`,
         ],
       };
     }
@@ -2117,12 +2209,12 @@ useEffect(() => {
     return {
       rightValue: formatPause(dayTotals.effectiveBreak),
       detailLines: [
-        `Eingetragen: ${formatPause(selectedBreak.manualMinutes)}`,
-        `Gesetzlich notwendig: ${formatPause(dayTotals.legalBreak)}`,
-        `Brutto ${formatHM(dayTotals.grossDay)} · Netto ${formatHM(dayTotals.netDay)}`,
+        `${t("manualBreak")}: ${formatPause(selectedBreak.manualMinutes)}`,
+        `${t("legallyRequired")}: ${formatPause(dayTotals.legalBreak)}`,
+        `${t("gross")} ${formatHM(dayTotals.grossDay)} · ${t("net")} ${formatHM(dayTotals.netDay)}`,
       ],
     };
-  }, [shouldShowBreakComputation, dayBreakMap, workDate, entries]);
+  }, [shouldShowBreakComputation, dayBreakMap, workDate, entries, t]);
 
     useEffect(() => {
     if (selectedYear !== "ALLE") return;
@@ -2200,17 +2292,25 @@ useEffect(() => {
   ]);
   const correctionProgressText = useMemo(() => {
     if (!canCreateCorrectionRequest) return null;
+
     if (hasAdminTaskBypassForSelectedDate) {
-      return "Für diesen Tag ist kein Nachtragsantrag erforderlich, weil du ihn über eine Admin-Aufgabe geöffnet hast.";
+      return t("noCorrectionBecauseAdminTask");
     }
+
     if (hasActiveUnlockForSelectedDate) return null;
     if (pendingCorrectionRequestForSelectedDate) return null;
 
     if (requiresCorrectionRequestForSelectedDate) {
-      return `Aktuell: ${currentMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage. Ein Nachtragsantrag ist erforderlich.`;
+      return replaceTemplate(t("currentMissingDaysNeedsRequest"), {
+        current: currentMissingWorkdaysCount,
+        limit: graceWorkdaysLimit,
+      });
     }
 
-    return `Ab dem ${graceWorkdaysLimit + 1}. fehlenden Arbeitstag muss ein Nachtragsantrag gestellt werden. Aktuell: ${currentMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage bis zur Sperrung.`;
+    return replaceTemplate(t("currentMissingDaysUntilLock"), {
+      current: currentMissingWorkdaysCount,
+      limit: graceWorkdaysLimit,
+    });
   }, [
     canCreateCorrectionRequest,
     hasAdminTaskBypassForSelectedDate,
@@ -2219,6 +2319,7 @@ useEffect(() => {
     requiresCorrectionRequestForSelectedDate,
     currentMissingWorkdaysCount,
     graceWorkdaysLimit,
+    t,
   ]);
 
   if (!meResolved) {
@@ -2331,18 +2432,18 @@ useEffect(() => {
               ) : hasAdminTaskBypassForSelectedDate ? (
                 <>
                   <div style={{ fontSize: 13, color: "var(--text)" }}>
-                    Für diesen Tag ist kein Nachtragsantrag erforderlich, weil du ihn über eine Admin-Aufgabe geöffnet hast.
+                    {t("noCorrectionBecauseAdminTask")}
                   </div>
 
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                    Du kannst den Eintrag für {formatDateDE(workDate)} direkt erfassen.
+                    {t("directEntryPossible")} {formatDateDE(workDate)}.
                     {selectedCorrectionStatus?.adminTaskBypass?.startDate &&
                     selectedCorrectionStatus?.adminTaskBypass?.endDate &&
                     selectedCorrectionStatus.adminTaskBypass.startDate !==
                       selectedCorrectionStatus.adminTaskBypass.endDate
-                      ? ` Der freigegebene Zeitraum reicht von ${formatDateDE(
+                      ? ` ${t("releasedRangeFromTo")} ${formatDateDE(
                           selectedCorrectionStatus.adminTaskBypass.startDate
-                        )} bis ${formatDateDE(
+                        )} ${t("to")} ${formatDateDE(
                           selectedCorrectionStatus.adminTaskBypass.endDate
                         )}.`
                       : ""}
@@ -2351,12 +2452,12 @@ useEffect(() => {
               ) : hasActiveUnlockForSelectedDate ? (
                 <>
                   <div style={{ fontSize: 13, color: "var(--text)" }}>
-                    Dieser Tag wurde vom Admin für den Nachtrag freigegeben. Du kannst ihn jetzt bearbeiten.
+                    {t("adminReleasedDay")}
                   </div>
 
                   {latestDecisionRequestForSelectedDate?.status === "APPROVED" ? (
                     <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                      Genehmigter Zeitraum:{" "}
+                      {t("approvedRange")}{" "}
                       {formatCorrectionRange(
                         latestDecisionRequestForSelectedDate.startDate,
                         latestDecisionRequestForSelectedDate.endDate
@@ -2367,7 +2468,7 @@ useEffect(() => {
               ) : pendingCorrectionRequestForSelectedDate ? (
                 <>
                   <div style={{ fontSize: 13, color: "var(--text)" }}>
-                    Für diesen Tag existiert bereits ein offener Nachtragsantrag.
+                    {t("pendingCorrectionExists")}
                   </div>
 
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>
@@ -2381,11 +2482,11 @@ useEffect(() => {
               ) : latestDecisionRequestForSelectedDate?.status === "REJECTED" ? (
                 <>
                   <div style={{ fontSize: 13, color: "var(--text)" }}>
-                    Der letzte Nachtragsantrag für diesen Zeitraum wurde abgelehnt.
+                    {t("lastCorrectionRejected")}
                   </div>
 
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                    Letzte Entscheidung für:{" "}
+                    {t("lastDecisionFor")}{" "}
                     {formatCorrectionRange(
                       latestDecisionRequestForSelectedDate.startDate,
                       latestDecisionRequestForSelectedDate.endDate
@@ -2412,8 +2513,8 @@ useEffect(() => {
                 <>
                   <div style={{ fontSize: 13, color: "var(--text)" }}>
                     {requiresCorrectionRequestForSelectedDate
-                      ? "Für den ausgewählten Tag ist jetzt ein Nachtragsantrag erforderlich."
-                      : "Für den ausgewählten Tag ist aktuell noch kein Nachtragsantrag erforderlich."}
+                      ? t("correctionRequiredNow")
+                      : t("correctionNotRequiredNow")}
                   </div>
 
                   {correctionProgressText ? (
@@ -2930,28 +3031,28 @@ useEffect(() => {
         {!detailsEntry ? null : (
           <div style={{ display: "grid", gap: 12 }}>
             <div>
-              <div className="label">Datum & Zeit</div>
+              <div className="label">{t("dateAndTime")}</div>
               <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
                 {formatDateDE(toYMD(detailsEntry.workDate))} · {detailsEntry.startTime}–{detailsEntry.endTime}
               </div>
             </div>
 
             <div>
-              <div className="label">Netto-Arbeitszeit</div>
+              <div className="label">{t("netWorkTime")}</div>
               <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
                 {formatHM(detailsEntry.workMinutes ?? 0)}
               </div>
             </div>
 
             <div>
-              <div className="label">Baustelle / Adresse</div>
+              <div className="label">{t("siteOrAddress")}</div>
               <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
                 {detailsEntry.location?.trim() ? detailsEntry.location : "—"}
               </div>
             </div>
 
             <div>
-              <div className="label">Ausgeführte Tätigkeit</div>
+              <div className="label">{t("performedActivity")}</div>
               <div
                 className="input tenant-note-surface"
               >
@@ -2960,7 +3061,7 @@ useEffect(() => {
             </div>
 
             <div>
-              <div className="label">Fahrtzeit</div>
+              <div className="label">{t("travelTime")}</div>
               <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
                 {formatMinutesCompact(detailsEntry.travelMinutes ?? 0)}
               </div>
@@ -2994,32 +3095,32 @@ useEffect(() => {
           </div>
 
           <div>
-            <div className="label">Manuell eingetragene Pause</div>
+            <div className="label">{t("manualBreak")}</div>
             <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
               {breakInfoManualStart && breakInfoManualEnd
                 ? `${breakInfoManualStart}–${breakInfoManualEnd} · ${formatMinutesCompact(breakInfoManualMinutes)}`
                 : breakInfoManualMinutes > 0
                 ? formatMinutesCompact(breakInfoManualMinutes)
-                : "Keine manuelle Pause eingetragen"}
+                : t("noManualBreak")}
             </div>
           </div>
 
           <div>
-            <div className="label">Gesetzlich erforderlich</div>
+            <div className="label">{t("legallyRequired")}</div>
             <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
               {formatMinutesCompact(breakInfoLegalMinutes)}
             </div>
           </div>
 
           <div>
-            <div className="label">Automatisch ergänzt</div>
+            <div className="label">{t("autoCompleted")}</div>
             <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
-              {breakInfoAutoMinutes > 0 ? formatMinutesCompact(breakInfoAutoMinutes) : "Keine automatische Ergänzung"}
+              {breakInfoAutoMinutes > 0 ? formatMinutesCompact(breakInfoAutoMinutes) : t("noAutoCompletion")}
             </div>
           </div>
 
           <div>
-            <div className="label">Wirksame Pause gesamt</div>
+            <div className="label">{t("effectiveBreakTotal")}</div>
             <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
               {formatMinutesCompact(breakInfoEffectiveMinutes)}
             </div>
@@ -3029,7 +3130,7 @@ useEffect(() => {
 
       <Modal
         open={noteOpen}
-        title="Notiz für Admin"
+        title={t("noteForAdmin")}
         onClose={() => {
           setNoteOpen(false);
           setNoteEntry(null);
@@ -3059,11 +3160,11 @@ useEffect(() => {
             </div>
 
             <div>
-              <div className="label">Notiz</div>
+              <div className="label">{t("note")}</div>
               <div
                 className="input tenant-note-surface-tall"
               >
-                {noteEntry.noteEmployee.trim() || "Keine Notiz vorhanden."}
+                {noteEntry.noteEmployee.trim() || t("noNote")}
               </div>
             </div>
           </div>
@@ -3097,7 +3198,7 @@ useEffect(() => {
               onClick={submitCorrectionRequest}
               disabled={correctionSaving}
             >
-              {correctionSaving ? "Sendet..." : "Antrag senden"}
+              {correctionSaving ? t("sending") : t("sendRequest")}
             </button>
           </div>
         }
@@ -3120,21 +3221,21 @@ useEffect(() => {
           ) : null}
 
           <div>
-            <div className="label">Ausgewähltes Datum</div>
+            <div className="label">{t("selectedDate")}</div>
             <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
               {formatDateDE(workDate)}
             </div>
           </div>
 
           <div style={{ fontSize: 13, color: "var(--muted)" }}>
-            Der Server ermittelt automatisch den ältesten fehlenden Arbeitstag bis zu diesem Datum und erstellt daraus den passenden Nachtragszeitraum.
+            {t("serverDeterminesCorrectionRange")}
           </div>
 
           <div>
             <div className="label">{t("noteForAdmin")}</div>
             <textarea
               className="textarea"
-              placeholder="Optional: kurze Begründung oder Hinweis"
+              placeholder={t("optionalReasonPlaceholder")}
               value={correctionNote}
               onChange={(e) => setCorrectionNote(e.target.value)}
             />
@@ -3142,19 +3243,27 @@ useEffect(() => {
 
           <div style={{ fontSize: 12, color: "var(--muted)" }}>
             {loadingSelectedCorrectionStatus || loadingCorrectionRequests
-              ? "Bestehende Nachtragsinformationen werden geladen..."
+              ? t("existingCorrectionInfoLoading")
               : hasAdminTaskBypassForSelectedDate
-              ? "Für diesen Tag ist kein Nachtragsantrag erforderlich, weil du ihn über eine Admin-Aufgabe geöffnet hast."
+              ? t("noCorrectionBecauseAdminTask")
               : hasActiveUnlockForSelectedDate
-              ? "Für den ausgewählten Tag existiert bereits eine aktive Freigabe. Ein neuer Antrag ist aktuell nicht nötig."
+              ? t("activeUnlockAlreadyExists")
               : pendingCorrectionRequestForSelectedDate
-              ? `Hinweis: Für ${formatCorrectionRange(
-                  pendingCorrectionRequestForSelectedDate.startDate,
-                  pendingCorrectionRequestForSelectedDate.endDate
-                )} existiert bereits ein offener Antrag.`
+              ? replaceTemplate(t("existingCorrectionHint"), {
+                  range: formatCorrectionRange(
+                    pendingCorrectionRequestForSelectedDate.startDate,
+                    pendingCorrectionRequestForSelectedDate.endDate
+                  ),
+                })
               : requiresCorrectionRequestForSelectedDate
-              ? `Aktuell: ${currentMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage. Ein Nachtragsantrag ist erforderlich.`
-              : `Aktuell: ${currentMissingWorkdaysCount}/${graceWorkdaysLimit} fehlende Arbeitstage bis zur Sperrung.`}
+              ? replaceTemplate(t("currentMissingDaysNeedsRequest"), {
+                  current: currentMissingWorkdaysCount,
+                  limit: graceWorkdaysLimit,
+                })
+              : replaceTemplate(t("currentMissingDaysUntilLock"), {
+                  current: currentMissingWorkdaysCount,
+                  limit: graceWorkdaysLimit,
+                })}
           </div>
         </div>
       </Modal>
@@ -3187,7 +3296,7 @@ useEffect(() => {
               onClick={saveEdit}
               disabled={editSaving}
             >
-              {editSaving ? "Speichert..." : "Änderungen speichern"}
+              {editSaving ? t("saving") : t("saveChanges")}
             </button>
           </div>
         }
@@ -3203,12 +3312,12 @@ useEffect(() => {
         ) : null}
 
             <div>
-              <div className="label">Mitarbeiter</div>
+              <div className="label">{t("employee")}</div>
               <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.85 }}>
                 {edit.userFullName}
               </div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-                Zuordnung wird serverseitig automatisch verwaltet.
+                {t("employeeManagedServerSide")}
               </div>
             </div>
 
@@ -3283,13 +3392,17 @@ useEffect(() => {
                   <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(editPreview.netDay)}</div>
                 </div>
                 <div style={{ marginTop: 2, fontSize: 12, color: "var(--muted)" }}>
-                  Tag: Brutto {formatHM(editPreview.grossDay)} · Wirksame Pause {formatPause(editPreview.effectiveBreak)} · Netto {formatHM(editPreview.netDay)}
+                  {replaceTemplate(t("dayGrossBreakNet"), {
+                    gross: formatHM(editPreview.grossDay),
+                    breakValue: formatPause(editPreview.effectiveBreak),
+                    netValue: formatHM(editPreview.netDay),
+                  })}
                 </div>
               </div>
             </div>
 
             <div>
-              <div className="label">Ausgeführte Tätigkeit</div>
+              <div className="label">{t("performedActivity")}</div>
               <textarea
                 className="textarea"
                 value={edit.activity}
@@ -3298,7 +3411,7 @@ useEffect(() => {
             </div>
 
             <div>
-              <div className="label">Einsatzort</div>
+              <div className="label">{t("location")}</div>
               <input
                 className="input"
                 value={edit.location}
