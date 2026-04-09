@@ -71,6 +71,13 @@ export async function GET(req: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const adminUser = await prisma.appUser.findUnique({
+    where: { id: admin.id },
+    select: {
+      language: true,
+    },
+  });
+
   const url = new URL(req.url);
   const weekStart = url.searchParams.get("weekStart");
   if (!weekStart) return NextResponse.json({ error: "weekStart missing" }, { status: 400 });
@@ -96,7 +103,7 @@ export async function GET(req: Request) {
       note: getTranslatedText(
         note.note,
         note.noteTranslations,
-        admin.language
+        adminUser?.language ?? "DE"
       ),
     })),
   });
