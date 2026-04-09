@@ -157,6 +157,8 @@ model GoogleCalendarConnection {
 model WorkEntry {
   id     String  @id @default(uuid())
   userId String
+  noteEmployeeSourceLanguage AppLanguage?
+  noteEmployeeTranslations Json?
   user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   workDate  DateTime @db.Date
