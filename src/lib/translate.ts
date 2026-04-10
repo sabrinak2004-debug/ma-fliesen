@@ -134,13 +134,12 @@ async function getGoogleAccessToken(): Promise<string> {
 }
 
 async function callGoogleTranslate(
-  path: "translate" | "detect",
   body: Record<string, unknown>
 ): Promise<GoogleTranslateResponse> {
   const accessToken = await getGoogleAccessToken();
 
   const response = await fetch(
-    `https://translation.googleapis.com/language/translate/v2/${path}`,
+    "https://translation.googleapis.com/language/translate/v2",
     {
       method: "POST",
       headers: {
@@ -152,12 +151,19 @@ async function callGoogleTranslate(
     }
   );
 
+  const responseText = await response.text();
+
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Google-Übersetzung fehlgeschlagen: ${errorText}`);
+    throw new Error(
+      `Google-Übersetzung fehlgeschlagen (${response.status} ${response.statusText}): ${responseText}`
+    );
   }
 
-  return (await response.json()) as GoogleTranslateResponse;
+  try {
+    return JSON.parse(responseText) as GoogleTranslateResponse;
+    } catch {
+    throw new Error(`Google-Übersetzung lieferte keine gültige JSON-Antwort: ${responseText}`);
+    }
 }
 
 export async function detectLanguage(text: string): Promise<SupportedLang | null> {
@@ -167,9 +173,9 @@ export async function detectLanguage(text: string): Promise<SupportedLang | null
     return null;
   }
 
-  const response = await callGoogleTranslate("detect", {
+  const response = await callGoogleTranslate({
     q: trimmed,
-  });
+    });
 
   const detectedLanguage = response.data?.detections?.[0]?.[0]?.language;
 
@@ -191,14 +197,14 @@ export async function translateText(args: {
     return args.text;
   }
 
-  const response = await callGoogleTranslate("translate", {
+  const response = await callGoogleTranslate({
     q: args.text,
     target: mapAppLangToGoogleLang(args.targetLanguage),
     ...(args.sourceLanguage
-      ? { source: mapAppLangToGoogleLang(args.sourceLanguage) }
-      : {}),
+        ? { source: mapAppLangToGoogleLang(args.sourceLanguage) }
+        : {}),
     format: "text",
-  });
+    });
 
   const translatedText = response.data?.translations?.[0]?.translatedText;
 
