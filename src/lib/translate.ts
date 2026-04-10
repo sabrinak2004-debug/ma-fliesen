@@ -139,18 +139,21 @@ async function callGoogleTranslate(
 ): Promise<GoogleTranslateResponse> {
   const accessToken = await getGoogleAccessToken();
 
-  const response = await fetch(
-    `https://translation.googleapis.com/language/translate/v2/${path}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(body),
-      cache: "no-store",
-    }
-  );
+  const endpoint =
+    path === "translate"
+      ? "https://translation.googleapis.com/language/translate/v2"
+      : "https://translation.googleapis.com/language/translate/v2/detect";
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "x-goog-user-project": GOOGLE_CLOUD_PROJECT_ID,
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -227,9 +230,18 @@ export async function translateAllLanguages(
     };
   }
 
-  const resolvedSourceLanguage = sourceLanguage ?? (await detectLanguage(text));
+  let resolvedSourceLanguage = sourceLanguage ?? null;
 
-  const entries = await Promise.all(
+  if (!resolvedSourceLanguage) {
+    try {
+      resolvedSourceLanguage = await detectLanguage(text);
+    } catch (error) {
+      console.error("Spracherkennung fehlgeschlagen:", error);
+      resolvedSourceLanguage = null;
+    }
+  }
+
+  const settledEntries = await Promise.allSettled(
     SUPPORTED_LANGUAGES.map(async (language) => {
       if (resolvedSourceLanguage === language) {
         return [language, text] as const;
@@ -246,16 +258,21 @@ export async function translateAllLanguages(
   );
 
   const translations: TranslationMap = {
-    DE: "",
-    EN: "",
-    IT: "",
-    TR: "",
-    SQ: "",
-    KU: "",
+    DE: text,
+    EN: text,
+    IT: text,
+    TR: text,
+    SQ: text,
+    KU: text,
   };
 
-  for (const [language, translatedText] of entries) {
-    translations[language] = translatedText;
+  for (const entry of settledEntries) {
+    if (entry.status === "fulfilled") {
+      const [language, translatedText] = entry.value;
+      translations[language] = translatedText;
+    } else {
+      console.error("Einzelübersetzung fehlgeschlagen:", entry.reason);
+    }
   }
 
   return {

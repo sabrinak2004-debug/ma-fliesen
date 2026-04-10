@@ -885,58 +885,70 @@ export async function PATCH(req: Request) {
 
   if (!isAdmin) {
     if (noteEmployee) {
-      const translationResult = await translateAllLanguages(noteEmployee);
-      nextNoteEmployeeSourceLanguage = translationResult.sourceLanguage;
-      nextNoteEmployeeTranslations = toPrismaNullableJsonInput(
-        translationResult.translations
-      );
+      try {
+        const translationResult = await translateAllLanguages(noteEmployee);
+        nextNoteEmployeeSourceLanguage = translationResult.sourceLanguage;
+        nextNoteEmployeeTranslations = toPrismaNullableJsonInput(
+          translationResult.translations
+        );
+      } catch (error) {
+        console.error("Übersetzung noteEmployee fehlgeschlagen:", error);
+      }
     } else {
       nextNoteEmployeeSourceLanguage = null;
       nextNoteEmployeeTranslations = Prisma.JsonNull;
     }
   }
 
-let nextActivitySourceLanguage: SupportedLang | null =
-  (existing.activitySourceLanguage as SupportedLang | null) ?? null;
+  let nextActivitySourceLanguage: SupportedLang | null =
+    (existing.activitySourceLanguage as SupportedLang | null) ?? null;
 
-let nextActivityTranslations:
-  | Prisma.InputJsonValue
-  | Prisma.NullableJsonNullValueInput =
-  existing.activityTranslations === null
-    ? Prisma.JsonNull
-    : (existing.activityTranslations as Prisma.InputJsonValue);
+  let nextActivityTranslations:
+    | Prisma.InputJsonValue
+    | Prisma.NullableJsonNullValueInput =
+    existing.activityTranslations === null
+      ? Prisma.JsonNull
+      : (existing.activityTranslations as Prisma.InputJsonValue);
 
-if (activity) {
-  const translationResult = await translateAllLanguages(activity);
-  nextActivitySourceLanguage = translationResult.sourceLanguage;
-  nextActivityTranslations = toPrismaNullableJsonInput(
-    translationResult.translations
-  );
-} else {
-  nextActivitySourceLanguage = null;
-  nextActivityTranslations = Prisma.JsonNull;
-}
+  if (activity) {
+    try {
+      const translationResult = await translateAllLanguages(activity);
+      nextActivitySourceLanguage = translationResult.sourceLanguage;
+      nextActivityTranslations = toPrismaNullableJsonInput(
+        translationResult.translations
+      );
+    } catch (error) {
+      console.error("Übersetzung activity fehlgeschlagen:", error);
+    }
+  } else {
+    nextActivitySourceLanguage = null;
+    nextActivityTranslations = Prisma.JsonNull;
+  }
 
-let nextLocationSourceLanguage: SupportedLang | null =
-  (existing.locationSourceLanguage as SupportedLang | null) ?? null;
+  let nextLocationSourceLanguage: SupportedLang | null =
+    (existing.locationSourceLanguage as SupportedLang | null) ?? null;
 
-let nextLocationTranslations:
-  | Prisma.InputJsonValue
-  | Prisma.NullableJsonNullValueInput =
-  existing.locationTranslations === null
-    ? Prisma.JsonNull
-    : (existing.locationTranslations as Prisma.InputJsonValue);
+  let nextLocationTranslations:
+    | Prisma.InputJsonValue
+    | Prisma.NullableJsonNullValueInput =
+    existing.locationTranslations === null
+      ? Prisma.JsonNull
+      : (existing.locationTranslations as Prisma.InputJsonValue);
 
-if (location) {
-  const translationResult = await translateAllLanguages(location);
-  nextLocationSourceLanguage = translationResult.sourceLanguage;
-  nextLocationTranslations = toPrismaNullableJsonInput(
-    translationResult.translations
-  );
-} else {
-  nextLocationSourceLanguage = null;
-  nextLocationTranslations = Prisma.JsonNull;
-}
+  if (location) {
+    try {
+      const translationResult = await translateAllLanguages(location);
+      nextLocationSourceLanguage = translationResult.sourceLanguage;
+      nextLocationTranslations = toPrismaNullableJsonInput(
+        translationResult.translations
+      );
+    } catch (error) {
+      console.error("Übersetzung location fehlgeschlagen:", error);
+    }
+  } else {
+    nextLocationSourceLanguage = null;
+    nextLocationTranslations = Prisma.JsonNull;
+  }
 
   const updated = await prisma.workEntry.update({
     where: { id },

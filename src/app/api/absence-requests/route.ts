@@ -1052,11 +1052,15 @@ export async function POST(req: Request) {
     Prisma.JsonNull;
 
   if (noteEmployee) {
-    const translationResult = await translateAllLanguages(noteEmployee);
-    noteEmployeeSourceLanguage = translationResult.sourceLanguage;
-    noteEmployeeTranslations = toPrismaNullableJsonInput(
-      translationResult.translations
-    );
+    try {
+      const translationResult = await translateAllLanguages(noteEmployee);
+      noteEmployeeSourceLanguage = translationResult.sourceLanguage;
+      noteEmployeeTranslations = toPrismaNullableJsonInput(
+        translationResult.translations
+      );
+    } catch (error) {
+      console.error("Übersetzung noteEmployee fehlgeschlagen:", error);
+    }
   }
 
   const created = await prisma.absenceRequest.create({

@@ -954,8 +954,11 @@ function sortTasksByDateDesc(tasks: TaskRow[]): TaskRow[] {
 
 export default function AufgabenPage() {
   const [language, setLanguage] = useState<AppUiLanguage>("DE");
-  const t = (key: AufgabenTextKey): string =>
-    translate(language, key, AUFGABEN_DICTIONARY);
+  const t = React.useCallback(
+    (key: AufgabenTextKey): string =>
+      translate(language, key, AUFGABEN_DICTIONARY),
+    [language]
+  );
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionTaskId, setActionTaskId] = useState("");
