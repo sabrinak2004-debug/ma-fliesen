@@ -2140,13 +2140,25 @@ useEffect(() => {
         body: JSON.stringify(payload),
       });
 
-      const j = (await r.json()) as unknown;
+      const responseText = await r.text();
+
+      let j: unknown = null;
+
+      try {
+        j = responseText ? (JSON.parse(responseText) as unknown) : null;
+      } catch {
+        j = null;
+      }
 
       if (!r.ok) {
         const msg =
-          typeof j === "object" && j !== null && "error" in j && typeof (j as { error: unknown }).error === "string"
+          typeof j === "object" &&
+          j !== null &&
+          "error" in j &&
+          typeof (j as { error: unknown }).error === "string"
             ? (j as { error: string }).error
-            : t("saveFailed");
+            : responseText.trim() || t("saveFailed");
+
         setError(msg);
         return;
       }
@@ -2242,13 +2254,25 @@ useEffect(() => {
         body: JSON.stringify(payload),
       });
 
-      const j = (await r.json()) as unknown;
+      const responseText = await r.text();
+
+      let j: unknown = null;
+
+      try {
+        j = responseText ? (JSON.parse(responseText) as unknown) : null;
+      } catch {
+        j = null;
+      }
 
       if (!r.ok) {
         const msg =
-          typeof j === "object" && j !== null && "error" in j && typeof (j as { error: unknown }).error === "string"
+          typeof j === "object" &&
+          j !== null &&
+          "error" in j &&
+          typeof (j as { error: unknown }).error === "string"
             ? (j as { error: string }).error
-            : t("changesSaveFailed");
+            : responseText.trim() || t("changesSaveFailed");
+
         setEditError(msg);
         return;
       }

@@ -7,7 +7,8 @@ import { computeDayBreakFromGross } from "@/lib/breaks";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 
 function dateOnly(yyyyMmDd: string) {
-  return new Date(`${yyyyMmDd}T00:00:00.000Z`);
+  const [year, month, day] = yyyyMmDd.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
 }
 
 function timeOnly(hhmm: string) {
@@ -86,7 +87,7 @@ function getTranslatedText(
 }
 
 function toPrismaNullableJsonInput(
-  value: Record<string, string> | null
+  value: TranslationMap | null
 ): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
   if (value === null) {
     return Prisma.JsonNull;
@@ -634,11 +635,15 @@ export async function POST(req: Request) {
     Prisma.JsonNull;
 
   if (noteEmployee) {
-    const translationResult = await translateAllLanguages(noteEmployee);
-    noteEmployeeSourceLanguage = translationResult.sourceLanguage;
-    noteEmployeeTranslations = toPrismaNullableJsonInput(
-      translationResult.translations
-    );
+    try {
+      const translationResult = await translateAllLanguages(noteEmployee);
+      noteEmployeeSourceLanguage = translationResult.sourceLanguage;
+      noteEmployeeTranslations = toPrismaNullableJsonInput(
+        translationResult.translations
+      );
+    } catch (error) {
+      console.error("Übersetzung noteEmployee fehlgeschlagen:", error);
+    }
   }
 
 let activitySourceLanguage: SupportedLang | null = null;
@@ -646,11 +651,15 @@ let activityTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueIn
   Prisma.JsonNull;
 
 if (activity) {
-  const translationResult = await translateAllLanguages(activity);
-  activitySourceLanguage = translationResult.sourceLanguage;
-  activityTranslations = toPrismaNullableJsonInput(
-    translationResult.translations
-  );
+  try {
+    const translationResult = await translateAllLanguages(activity);
+    activitySourceLanguage = translationResult.sourceLanguage;
+    activityTranslations = toPrismaNullableJsonInput(
+      translationResult.translations
+    );
+  } catch (error) {
+    console.error("Übersetzung activity fehlgeschlagen:", error);
+  }
 }
 
 let locationSourceLanguage: SupportedLang | null = null;
@@ -658,11 +667,15 @@ let locationTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueIn
   Prisma.JsonNull;
 
 if (location) {
-  const translationResult = await translateAllLanguages(location);
-  locationSourceLanguage = translationResult.sourceLanguage;
-  locationTranslations = toPrismaNullableJsonInput(
-    translationResult.translations
-  );
+  try {
+    const translationResult = await translateAllLanguages(location);
+    locationSourceLanguage = translationResult.sourceLanguage;
+    locationTranslations = toPrismaNullableJsonInput(
+      translationResult.translations
+    );
+  } catch (error) {
+    console.error("Übersetzung location fehlgeschlagen:", error);
+  }
 }
 
   const created = await prisma.workEntry.create({
