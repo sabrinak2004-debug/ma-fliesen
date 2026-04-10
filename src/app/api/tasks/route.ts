@@ -151,11 +151,10 @@ export async function GET(req: Request): Promise<NextResponse> {
 
   const url = new URL(req.url);
   const statusParam = url.searchParams.get("status");
-
   const todayYMD = berlinTodayYMD();
 
-  const [tasks, missingDates] = await Promise.all([
-    prisma.task.findMany({
+  try {
+    const tasks = await prisma.task.findMany({
       where: {
         assignedToUserId: session.userId,
         assignedToUser: {
@@ -188,36 +187,71 @@ export async function GET(req: Request): Promise<NextResponse> {
           },
         },
       },
-    }),
-    getMissingRequiredWorkDates(session.userId, todayYMD, {
-      includeUntilDate: true,
-      companyId: session.companyId,
-    }),
-  ]);
+    });
 
-  const missingWorkEntryAlert: MissingWorkEntryAlert =
-    missingDates.length > 0
-      ? {
-          count: missingDates.length,
-          oldestMissingDate: missingDates[0],
-          newestMissingDate: missingDates[missingDates.length - 1],
-        }
-      : null;
+    let missingDates: string[] = [];
 
-  return NextResponse.json({
-  tasks: tasks.map((task) => ({
-    ...task,
-    title: getTranslatedText(
-      task.title,
-      task.titleTranslations,
-      session.language
-    ),
-    description: getTranslatedText(
-      task.description,
-      task.descriptionTranslations,
-      session.language
-    ),
-  })),
-  missingWorkEntryAlert,
-});
+    try {
+      missingDates = await getMissingRequiredWorkDates(session.userId, todayYMD, {
+        includeUntilDate: true,
+        companyId: session.companyId,
+      });
+    } catch (error) {
+      console.error("getMissingRequiredWorkDates fehlgeschlagen in /api/tasks:", error);
+      missingDates = [];
+    }
+
+    const missingWorkEntryAlert: MissingWorkEntryAlert =
+      missingDates.length > 0
+        ? {
+            count: missingDates.length,
+            oldestMissingDate: missingDates[0],
+            newestMissingDate: missingDates[missingDates.length - 1],
+          }
+        : null;
+
+    const missingDateSet = new Set(missingDates);
+
+    return NextResponse.json({
+      tasks: tasks
+        .filter((task) =>
+          shouldKeepTask({
+            task: {
+              status: task.status,
+              category: task.category,
+              requiredAction: task.requiredAction,
+              referenceDate: task.referenceDate,
+              referenceStartDate: task.referenceStartDate,
+              referenceEndDate: task.referenceEndDate,
+            },
+            missingDateSet,
+          })
+        )
+        .map((task) => ({
+          ...task,
+          title: getTranslatedText(
+            task.title,
+            task.titleTranslations,
+            session.language
+          ),
+          description: getTranslatedText(
+            task.description,
+            task.descriptionTranslations,
+            session.language
+          ),
+        })),
+      missingWorkEntryAlert,
+    });
+  } catch (error) {
+    console.error("/api/tasks fehlgeschlagen:", error);
+
+    return NextResponse.json(
+      {
+        error: "Aufgaben konnten nicht geladen werden.",
+        tasks: [],
+        missingWorkEntryAlert: null,
+      },
+      { status: 500 }
+    );
+  }
 }
