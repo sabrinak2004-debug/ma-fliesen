@@ -36,6 +36,7 @@ type AdminSessionDTO = {
   userId: string;
   fullName: string;
   role: "ADMIN" | "EMPLOYEE";
+  language: "DE" | "EN" | "IT" | "TR" | "SQ" | "KU";
   companyId: string;
   companyName: string;
   companySubdomain: string;
@@ -49,6 +50,12 @@ function isAdminSessionDTO(v: unknown): v is AdminSessionDTO {
     getStringField(v, "userId") !== null &&
     getStringField(v, "fullName") !== null &&
     (v["role"] === "ADMIN" || v["role"] === "EMPLOYEE") &&
+    (v["language"] === "DE" ||
+      v["language"] === "EN" ||
+      v["language"] === "IT" ||
+      v["language"] === "TR" ||
+      v["language"] === "SQ" ||
+      v["language"] === "KU") &&
     getStringField(v, "companyId") !== null &&
     getStringField(v, "companyName") !== null &&
     getStringField(v, "companySubdomain") !== null &&

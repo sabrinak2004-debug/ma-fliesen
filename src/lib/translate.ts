@@ -134,12 +134,13 @@ async function getGoogleAccessToken(): Promise<string> {
 }
 
 async function callGoogleTranslate(
+  path: "translate" | "detect",
   body: Record<string, unknown>
 ): Promise<GoogleTranslateResponse> {
   const accessToken = await getGoogleAccessToken();
 
   const response = await fetch(
-    "https://translation.googleapis.com/language/translate/v2",
+    `https://translation.googleapis.com/language/translate/v2/${path}`,
     {
       method: "POST",
       headers: {
@@ -151,19 +152,12 @@ async function callGoogleTranslate(
     }
   );
 
-  const responseText = await response.text();
-
   if (!response.ok) {
-    throw new Error(
-      `Google-Übersetzung fehlgeschlagen (${response.status} ${response.statusText}): ${responseText}`
-    );
+    const errorText = await response.text();
+    throw new Error(`Google-Übersetzung fehlgeschlagen: ${errorText}`);
   }
 
-  try {
-    return JSON.parse(responseText) as GoogleTranslateResponse;
-    } catch {
-    throw new Error(`Google-Übersetzung lieferte keine gültige JSON-Antwort: ${responseText}`);
-    }
+  return (await response.json()) as GoogleTranslateResponse;
 }
 
 export async function detectLanguage(text: string): Promise<SupportedLang | null> {
@@ -173,7 +167,7 @@ export async function detectLanguage(text: string): Promise<SupportedLang | null
     return null;
   }
 
-  const response = await callGoogleTranslate({
+  const response = await callGoogleTranslate("detect", {
     q: trimmed,
     });
 
@@ -197,7 +191,7 @@ export async function translateText(args: {
     return args.text;
   }
 
-  const response = await callGoogleTranslate({
+  const response = await callGoogleTranslate("translate", {
     q: args.text,
     target: mapAppLangToGoogleLang(args.targetLanguage),
     ...(args.sourceLanguage
