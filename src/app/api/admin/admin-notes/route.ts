@@ -58,7 +58,7 @@ function getTranslatedText(
 }
 
 function toPrismaNullableJsonInput(
-  value: Record<string, string> | null
+  value: TranslationMap | null
 ): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
   if (value === null) {
     return Prisma.JsonNull;

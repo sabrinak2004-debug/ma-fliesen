@@ -147,7 +147,9 @@ export async function GET(req: Request) {
       startHHMM: true,
       endHHMM: true,
       activity: true,
+      activityTranslations: true,
       location: true,
+      locationTranslations: true,
       travelMinutes: true,
       noteEmployee: true,
       noteEmployeeTranslations: true,
@@ -165,6 +167,16 @@ export async function GET(req: Request) {
   return NextResponse.json({
     entries: entries.map((entry) => ({
       ...entry,
+      activity: getTranslatedText(
+        entry.activity,
+        entry.activityTranslations,
+        session?.language ?? "DE"
+      ),
+      location: getTranslatedText(
+        entry.location,
+        entry.locationTranslations,
+        session?.language ?? "DE"
+      ),
       noteEmployee: getTranslatedText(
         entry.noteEmployee,
         entry.noteEmployeeTranslations,

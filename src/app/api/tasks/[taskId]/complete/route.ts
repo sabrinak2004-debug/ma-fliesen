@@ -314,5 +314,19 @@ export async function POST(
     url: "/admin/tasks",
   });
 
-  return NextResponse.json({ task });
+  return NextResponse.json({
+  task: {
+    ...task,
+    title: task.titleTranslations && typeof task.titleTranslations === "object"
+      ? (task.titleTranslations as Record<string, unknown>)[session.language] && typeof (task.titleTranslations as Record<string, unknown>)[session.language] === "string"
+        ? ((task.titleTranslations as Record<string, string>)[session.language] ?? task.title)
+        : task.title
+      : task.title,
+    description: task.descriptionTranslations && typeof task.descriptionTranslations === "object"
+      ? (task.descriptionTranslations as Record<string, unknown>)[session.language] && typeof (task.descriptionTranslations as Record<string, unknown>)[session.language] === "string"
+        ? ((task.descriptionTranslations as Record<string, string>)[session.language] ?? task.description)
+        : task.description
+      : task.description,
+  },
+});
 }

@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { getSession } from "@/lib/auth";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
+
 
 function hasCompanyScope(
   value: unknown
@@ -95,9 +97,67 @@ type WorkEntryPostBody = {
   breakMinutes?: number;
 };
 
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
+
+function toPrismaNullableJsonInput(
+  value: TranslationMap | null
+): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+  if (value === null) {
+    return Prisma.JsonNull;
+  }
+
+  return value as Prisma.InputJsonValue;
+}
+
 export async function GET(req: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const adminUser = await prisma.appUser.findUnique({
+    where: { id: admin.id },
+    select: {
+      language: true,
+    },
+  });
 
   const session = await getSession();
   if (!hasCompanyScope(session) || session.role !== "ADMIN") {
@@ -131,8 +191,16 @@ export async function GET(req: Request) {
     workDate: e.workDate,
     startHHMM: hhmmFromTime(e.startTime),
     endHHMM: hhmmFromTime(e.endTime),
-    activity: e.activity,
-    location: e.location,
+    activity: getTranslatedText(
+      e.activity,
+      e.activityTranslations,
+      adminUser?.language ?? "DE"
+    ),
+    location: getTranslatedText(
+      e.location,
+      e.locationTranslations,
+      adminUser?.language ?? "DE"
+    ),
     travelMinutes: e.travelMinutes,
     workMinutes: e.workMinutes,
     grossMinutes: e.grossMinutes ?? 0,
@@ -193,13 +261,41 @@ export async function POST(req: Request) {
   const brk = normalizeBreakMinutes(body.breakMinutes, grossMinutes);
   const netMinutes = Math.max(0, grossMinutes - brk.breakMinutes);
 
+  let activitySourceLanguage: SupportedLang | null = null;
+  let activityTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (typeof activity === "string" && activity.trim()) {
+    const translationResult = await translateAllLanguages(activity);
+    activitySourceLanguage = translationResult.sourceLanguage;
+    activityTranslations = toPrismaNullableJsonInput(
+      translationResult.translations
+    );
+  }
+
+  let locationSourceLanguage: SupportedLang | null = null;
+  let locationTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (typeof location === "string" && location.trim()) {
+    const translationResult = await translateAllLanguages(location);
+    locationSourceLanguage = translationResult.sourceLanguage;
+    locationTranslations = toPrismaNullableJsonInput(
+      translationResult.translations
+    );
+  }
+
   const data: Prisma.WorkEntryUncheckedCreateInput = {
     userId: targetUser.id,
     workDate: parseYMD(String(workDate)),
     startTime: timeToDbTime(String(startHHMM)),
     endTime: timeToDbTime(String(endHHMM)),
     activity: String(activity),
+    activitySourceLanguage,
+    activityTranslations,
     location: location ? String(location) : "",
+    locationSourceLanguage,
+    locationTranslations,
     travelMinutes: travelMinutes ?? 0,
     grossMinutes,
     breakMinutes: brk.breakMinutes,

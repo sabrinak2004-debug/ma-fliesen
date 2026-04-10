@@ -6,6 +6,7 @@ import {
   AbsenceType,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { rebalanceAutoUnpaidVacationRequestsForYear } from "@/app/api/absence-requests/route";
 
@@ -38,6 +39,7 @@ function mapRequest(r: {
   autoUnpaidBecauseNoBalance: boolean;
   compensationLockedBySystem: boolean;
   noteEmployee: string | null;
+  noteEmployeeTranslations: Prisma.JsonValue | null;
   createdAt: Date;
   updatedAt: Date;
   decidedAt: Date | null;

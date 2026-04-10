@@ -53,8 +53,14 @@ function addUtcDays(d: Date, days: number): Date {
 
 type TranslationMap = Partial<Record<SupportedLang, string>>;
 
-function isTranslationMap(value: unknown): value is TranslationMap {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+function isTranslationMap(
+  value: Prisma.JsonValue | null | undefined
+): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
 }
 
 function toSupportedLang(language: string | null | undefined): SupportedLang {
@@ -74,7 +80,7 @@ function toSupportedLang(language: string | null | undefined): SupportedLang {
 
 function getTranslatedText(args: {
   originalText: string | null;
-  translations: unknown;
+  translations: Prisma.JsonValue | null | undefined;
   language: string | null | undefined;
 }): string {
   const fallback = args.originalText ?? "";

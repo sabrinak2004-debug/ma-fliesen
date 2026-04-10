@@ -172,7 +172,11 @@ model WorkEntry {
   endTime   DateTime @db.Time
 
   activity      String
+  activitySourceLanguage AppLanguage?
+  activityTranslations   Json?
   location      String
+  locationSourceLanguage AppLanguage?
+  locationTranslations   Json?
   distanceKm    Decimal @default(0)
   travelMinutes Int     @default(0)
   grossMinutes  Int     @default(0) // Brutto ohne Pause (Start-Ende)
@@ -218,7 +222,11 @@ model PlanEntry {
   startHHMM     String
   endHHMM       String
   activity      String
+  activitySourceLanguage AppLanguage?
+  activityTranslations   Json?
   location      String
+  locationSourceLanguage AppLanguage?
+  locationTranslations   Json?
   travelMinutes Int      @default(0)
 
   noteEmployee String?
@@ -251,6 +259,8 @@ model PlanEntryDocument {
   fileName  String
   mimeType  String
   sizeBytes Int
+  titleSourceLanguage AppLanguage?
+  titleTranslations   Json?
 
   // ✅ Datei direkt in DB
   data Bytes

@@ -2,12 +2,55 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { berlinTodayYMD, getMissingRequiredWorkDates } from "@/lib/timesheetLock";
+import { Prisma } from "@prisma/client";
 
 type MissingWorkEntryAlert = {
   count: number;
   oldestMissingDate: string;
   newestMissingDate: string;
 } | null;
+
+type SupportedLang = "DE" | "EN" | "IT" | "TR" | "SQ" | "KU";
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
 
 function toIsoDateUTC(date: Date): string {
   const y = date.getUTCFullYear();
@@ -161,5 +204,20 @@ export async function GET(req: Request): Promise<NextResponse> {
         }
       : null;
 
-  return NextResponse.json({ tasks, missingWorkEntryAlert });
+  return NextResponse.json({
+  tasks: tasks.map((task) => ({
+    ...task,
+    title: getTranslatedText(
+      task.title,
+      task.titleTranslations,
+      session.language
+    ),
+    description: getTranslatedText(
+      task.description,
+      task.descriptionTranslations,
+      session.language
+    ),
+  })),
+  missingWorkEntryAlert,
+});
 }

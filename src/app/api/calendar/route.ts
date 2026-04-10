@@ -42,7 +42,9 @@ type PlanPreviewItem = {
   startHHMM: string;
   endHHMM: string;
   activity: string;
+  activityTranslations: Prisma.JsonValue | null;
   location: string;
+  locationTranslations: Prisma.JsonValue | null;
   noteEmployee: string | null;
   noteEmployeeTranslations: Prisma.JsonValue | null;
 };
@@ -205,7 +207,9 @@ if (me.role === Role.ADMIN && userIdParam) {
         startHHMM: true,
         endHHMM: true,
         activity: true,
+        activityTranslations: true,
         location: true,
+        locationTranslations: true,
         noteEmployee: true,
         noteEmployeeTranslations: true,
       },
@@ -225,7 +229,9 @@ if (me.role === Role.ADMIN && userIdParam) {
       startHHMM: p.startHHMM,
       endHHMM: p.endHHMM,
       activity: p.activity ?? "",
+      activityTranslations: p.activityTranslations ?? null,
       location: p.location ?? "",
+      locationTranslations: p.locationTranslations ?? null,
       noteEmployee: p.noteEmployee ?? null,
       noteEmployeeTranslations: p.noteEmployeeTranslations ?? null,
     });
@@ -245,8 +251,20 @@ if (me.role === Role.ADMIN && userIdParam) {
         : plans
             .slice(0, 2)
             .map((x) => {
-              const base = `${x.startHHMM}–${x.endHHMM} ${x.activity}`.trim();
-              const withLoc = x.location ? `${base} · ${x.location}` : base;
+              const translatedActivity = getTranslatedText(
+                x.activity,
+                x.activityTranslations,
+                session.language
+              );
+
+              const translatedLocation = getTranslatedText(
+                x.location,
+                x.locationTranslations,
+                session.language
+              );
+
+              const base = `${x.startHHMM}–${x.endHHMM} ${translatedActivity}`.trim();
+              const withLoc = translatedLocation ? `${base} · ${translatedLocation}` : base;
               const translatedNote = getTranslatedText(
                 x.noteEmployee,
                 x.noteEmployeeTranslations,

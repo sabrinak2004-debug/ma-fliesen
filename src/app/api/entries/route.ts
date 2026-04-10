@@ -253,7 +253,11 @@ type WorkEntryRow = {
   startTime: Date;
   endTime: Date;
   activity: string;
+  activitySourceLanguage: string | null;
+  activityTranslations: Prisma.JsonValue | null;
   location: string;
+  locationSourceLanguage: string | null;
+  locationTranslations: Prisma.JsonValue | null;
   travelMinutes: number;
   workMinutes: number;
   grossMinutes: number;
@@ -495,7 +499,11 @@ export async function GET(req: Request) {
     startTime: row.startTime,
     endTime: row.endTime,
     activity: row.activity ?? "",
+    activitySourceLanguage: row.activitySourceLanguage ?? null,
+    activityTranslations: row.activityTranslations ?? null,
     location: row.location ?? "",
+    locationSourceLanguage: row.locationSourceLanguage ?? null,
+    locationTranslations: row.locationTranslations ?? null,
     travelMinutes: row.travelMinutes ?? 0,
     workMinutes: row.workMinutes ?? 0,
     grossMinutes: row.grossMinutes ?? 0,
@@ -520,8 +528,16 @@ export async function GET(req: Request) {
       workDate: toIsoDateUTC(row.workDate),
       startTime: toHHMMUTC(row.startTime),
       endTime: toHHMMUTC(row.endTime),
-      activity: row.activity,
-      location: row.location,
+      activity: getTranslatedText(
+        row.activity,
+        row.activityTranslations,
+        session.language
+      ),
+      location: getTranslatedText(
+        row.location,
+        row.locationTranslations,
+        session.language
+      ),
       travelMinutes: row.travelMinutes,
       grossMinutes: p?.grossMinutes ?? row.grossMinutes,
       breakMinutes: p?.breakMinutes ?? row.breakMinutes,
@@ -625,6 +641,30 @@ export async function POST(req: Request) {
     );
   }
 
+let activitySourceLanguage: SupportedLang | null = null;
+let activityTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+  Prisma.JsonNull;
+
+if (activity) {
+  const translationResult = await translateAllLanguages(activity);
+  activitySourceLanguage = translationResult.sourceLanguage;
+  activityTranslations = toPrismaNullableJsonInput(
+    translationResult.translations
+  );
+}
+
+let locationSourceLanguage: SupportedLang | null = null;
+let locationTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+  Prisma.JsonNull;
+
+if (location) {
+  const translationResult = await translateAllLanguages(location);
+  locationSourceLanguage = translationResult.sourceLanguage;
+  locationTranslations = toPrismaNullableJsonInput(
+    translationResult.translations
+  );
+}
+
   const created = await prisma.workEntry.create({
     data: {
       userId: targetUserId,
@@ -632,7 +672,11 @@ export async function POST(req: Request) {
       startTime: timeOnly(startTime),
       endTime: timeOnly(endTime),
       activity,
+      activitySourceLanguage,
+      activityTranslations,
       location,
+      locationSourceLanguage,
+      locationTranslations,
       travelMinutes: travelMinutesNum,
       grossMinutes: diffMin,
       breakMinutes: 0,
@@ -677,8 +721,16 @@ export async function POST(req: Request) {
     workDate: toIsoDateUTC(createdFresh.workDate),
     startTime: toHHMMUTC(createdFresh.startTime),
     endTime: toHHMMUTC(createdFresh.endTime),
-    activity: createdFresh.activity ?? "",
-    location: createdFresh.location ?? "",
+    activity: getTranslatedText(
+      createdFresh.activity,
+      createdFresh.activityTranslations,
+      session.language
+    ),
+    location: getTranslatedText(
+      createdFresh.location,
+      createdFresh.locationTranslations,
+      session.language
+    ),
     travelMinutes: createdFresh.travelMinutes ?? 0,
     workMinutes: createdFresh.workMinutes ?? 0,
     grossMinutes: createdFresh.grossMinutes ?? 0,
@@ -829,6 +881,48 @@ export async function PATCH(req: Request) {
     }
   }
 
+let nextActivitySourceLanguage: SupportedLang | null =
+  (existing.activitySourceLanguage as SupportedLang | null) ?? null;
+
+let nextActivityTranslations:
+  | Prisma.InputJsonValue
+  | Prisma.NullableJsonNullValueInput =
+  existing.activityTranslations === null
+    ? Prisma.JsonNull
+    : (existing.activityTranslations as Prisma.InputJsonValue);
+
+if (activity) {
+  const translationResult = await translateAllLanguages(activity);
+  nextActivitySourceLanguage = translationResult.sourceLanguage;
+  nextActivityTranslations = toPrismaNullableJsonInput(
+    translationResult.translations
+  );
+} else {
+  nextActivitySourceLanguage = null;
+  nextActivityTranslations = Prisma.JsonNull;
+}
+
+let nextLocationSourceLanguage: SupportedLang | null =
+  (existing.locationSourceLanguage as SupportedLang | null) ?? null;
+
+let nextLocationTranslations:
+  | Prisma.InputJsonValue
+  | Prisma.NullableJsonNullValueInput =
+  existing.locationTranslations === null
+    ? Prisma.JsonNull
+    : (existing.locationTranslations as Prisma.InputJsonValue);
+
+if (location) {
+  const translationResult = await translateAllLanguages(location);
+  nextLocationSourceLanguage = translationResult.sourceLanguage;
+  nextLocationTranslations = toPrismaNullableJsonInput(
+    translationResult.translations
+  );
+} else {
+  nextLocationSourceLanguage = null;
+  nextLocationTranslations = Prisma.JsonNull;
+}
+
   const updated = await prisma.workEntry.update({
     where: { id },
     data: {
@@ -837,7 +931,11 @@ export async function PATCH(req: Request) {
       startTime: timeOnly(startTime),
       endTime: timeOnly(endTime),
       activity,
+      activitySourceLanguage: nextActivitySourceLanguage,
+      activityTranslations: nextActivityTranslations,
       location,
+      locationSourceLanguage: nextLocationSourceLanguage,
+      locationTranslations: nextLocationTranslations,
       travelMinutes: travelMinutesNum,
       grossMinutes: diffMin,
       breakMinutes: 0,
@@ -888,8 +986,16 @@ export async function PATCH(req: Request) {
     workDate: toIsoDateUTC(updatedFresh.workDate),
     startTime: toHHMMUTC(updatedFresh.startTime),
     endTime: toHHMMUTC(updatedFresh.endTime),
-    activity: updatedFresh.activity ?? "",
-    location: updatedFresh.location ?? "",
+    activity: getTranslatedText(
+      updatedFresh.activity,
+      updatedFresh.activityTranslations,
+      session.language
+    ),
+    location: getTranslatedText(
+      updatedFresh.location,
+      updatedFresh.locationTranslations,
+      session.language
+    ),
     travelMinutes: updatedFresh.travelMinutes ?? 0,
     workMinutes: updatedFresh.workMinutes ?? 0,
     grossMinutes: updatedFresh.grossMinutes ?? 0,

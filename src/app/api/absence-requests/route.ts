@@ -361,7 +361,7 @@ function getTranslatedText(
 }
 
 function toPrismaNullableJsonInput(
-  value: Record<string, string> | null
+  value: TranslationMap | null
 ): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
   if (value === null) {
     return Prisma.JsonNull;
@@ -712,7 +712,7 @@ function mapRequest(
     autoUnpaidBecauseNoBalance: boolean;
     compensationLockedBySystem: boolean;
     noteEmployee: string | null;
-    noteEmployeeTranslations?: Prisma.JsonValue | null;
+    noteEmployeeTranslations: Prisma.JsonValue | null;
     createdAt: Date;
     updatedAt: Date;
     decidedAt: Date | null;
