@@ -1058,3 +1058,1108 @@ export const ADMIN_APPOINTMENTS_UI_TEXTS: Record<
     KU: "Salname tê barkirin...",
   },
 };
+export type AdminDashboardTextKey =
+  | "activeLabel"
+  | "loading"
+  | "dashboardLoadError"
+  | "unexpectedDashboardResponse"
+  | "networkLoadError"
+  | "exportDownloadError"
+  | "exportOpenError"
+  | "exportShareError"
+  | "pushSendError"
+  | "pushNetworkError"
+  | "pushSuccessPrefix"
+  | "saveFailed"
+  | "saveNetworkError"
+  | "deleteConfirm"
+  | "deleteFailed"
+  | "deleteNetworkError"
+  | "cancel"
+  | "close"
+  | "download"
+  | "shareOrSave"
+  | "shareOrSaveTitle"
+  | "downloadTitle"
+  | "monthForOverviewAndExport"
+  | "manageTasks"
+  | "exportAdmin"
+  | "monthCsv"
+  | "yearZip"
+  | "rangeCsv"
+  | "exportTarget"
+  | "allCombined"
+  | "singleEmployee"
+  | "selectEmployee"
+  | "pleaseChoose"
+  | "selectMonth"
+  | "selectYear"
+  | "selectRange"
+  | "rangeFromToRequired"
+  | "rangeFromAfterTo"
+  | "employeeRequired"
+  | "employeeUnavailable"
+  | "activeEmployees"
+  | "missingEntriesToday"
+  | "absencesToday"
+  | "missingEntriesGeneral"
+  | "details"
+  | "active"
+  | "noActiveEmployees"
+  | "openToday"
+  | "noMissingEntriesToday"
+  | "noAbsencesToday"
+  | "overdueDays"
+  | "sendPush"
+  | "sending"
+  | "noGeneralOverdueMissingEntries"
+  | "workDetailsTitle"
+  | "breakDetailsTitle"
+  | "employeeNoteTitle"
+  | "editWorkTitle"
+  | "employee"
+  | "dateAndTime"
+  | "date"
+  | "netWorkTime"
+  | "siteOrAddress"
+  | "executedActivity"
+  | "travelTime"
+  | "manualBreak"
+  | "legallyRequired"
+  | "autoSupplemented"
+  | "noAutoSupplement"
+  | "effectiveBreakTotal"
+  | "note"
+  | "noNoteAvailable"
+  | "dateAndTimeNotEditable"
+  | "activity"
+  | "location"
+  | "travelTimeMinutes"
+  | "saving"
+  | "save"
+  | "monthTotal"
+  | "workTimeTotal"
+  | "vacation"
+  | "sick"
+  | "unpaidVacation"
+  | "overtimeGross"
+  | "entries"
+  | "byEmployee"
+  | "noDashboardData"
+  | "noEmployeesInPeriod"
+  | "noEntries"
+  | "expandCollapse"
+  | "workTimes"
+  | "entry"
+  | "entriesPlural"
+  | "day"
+  | "days"
+  | "pause"
+  | "showBreakDetails"
+  | "showDetails"
+  | "showEmployeeNote"
+  | "editWithoutTime"
+  | "delete"
+  | "noSiteOrAddress"
+  | "noWorkTimesInMonth"
+  | "sickness"
+  | "period"
+  | "periods"
+  | "sickLabel"
+  | "noSickDaysInMonth"
+  | "vacationLabel"
+  | "vacationUnpaidLabel"
+  | "noVacationInMonth"
+  | "halfDay"
+  | "dashboard"
+  | "activeEmployeesModal"
+  | "missingEntriesTodayModal"
+  | "absencesTodayModal"
+  | "missingEntriesGeneralModal"
+  | "dash"
+  | "workTimeHours"
+  | "vacationHours"
+  | "sickHours"
+  | "unpaidVacationHours";
+
+export const ADMIN_DASHBOARD_UI_TEXTS: Record<
+  AdminDashboardTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  activeLabel: {
+    DE: "Dashboard",
+    EN: "Dashboard",
+    IT: "Dashboard",
+    TR: "Gösterge paneli",
+    SQ: "Paneli",
+    KU: "Dashboard",
+  },
+  loading: {
+    DE: "Lade...",
+    EN: "Loading...",
+    IT: "Caricamento...",
+    TR: "Yükleniyor...",
+    SQ: "Duke u ngarkuar...",
+    KU: "Tê barkirin...",
+  },
+  dashboardLoadError: {
+    DE: "Dashboard konnte nicht geladen werden.",
+    EN: "Dashboard could not be loaded.",
+    IT: "Impossibile caricare il dashboard.",
+    TR: "Gösterge paneli yüklenemedi.",
+    SQ: "Paneli nuk mund të ngarkohej.",
+    KU: "Dashboard nehate barkirin.",
+  },
+  unexpectedDashboardResponse: {
+    DE: "Unerwartete Dashboard-Antwort.",
+    EN: "Unexpected dashboard response.",
+    IT: "Risposta dashboard imprevista.",
+    TR: "Beklenmeyen gösterge paneli yanıtı.",
+    SQ: "Përgjigje e papritur nga paneli.",
+    KU: "Bersiva dashboardê nexwestî bû.",
+  },
+  networkLoadError: {
+    DE: "Netzwerkfehler beim Laden.",
+    EN: "Network error while loading.",
+    IT: "Errore di rete durante il caricamento.",
+    TR: "Yükleme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ngarkimit.",
+    KU: "Dema barkirinê de xeletiya torê.",
+  },
+  exportDownloadError: {
+    DE: "Export konnte nicht heruntergeladen werden.",
+    EN: "Export could not be downloaded.",
+    IT: "Impossibile scaricare l'esportazione.",
+    TR: "Dışa aktarma indirilemedi.",
+    SQ: "Eksporti nuk mund të shkarkohej.",
+    KU: "Export nehate daxistin.",
+  },
+  exportOpenError: {
+    DE: "Export konnte nicht geöffnet werden.",
+    EN: "Export could not be opened.",
+    IT: "Impossibile aprire l'esportazione.",
+    TR: "Dışa aktarma açılamadı.",
+    SQ: "Eksporti nuk mund të hapej.",
+    KU: "Export venebû.",
+  },
+  exportShareError: {
+    DE: "Export konnte nicht geteilt oder gesichert werden.",
+    EN: "Export could not be shared or saved.",
+    IT: "Impossibile condividere o salvare l'esportazione.",
+    TR: "Dışa aktarma paylaşılamadı veya kaydedilemedi.",
+    SQ: "Eksporti nuk mund të ndahej ose ruhej.",
+    KU: "Export nehat parvekirin an tomarkirin.",
+  },
+  pushSendError: {
+    DE: "Push konnte nicht gesendet werden.",
+    EN: "Push could not be sent.",
+    IT: "Impossibile inviare la notifica push.",
+    TR: "Push bildirimi gönderilemedi.",
+    SQ: "Njoftimi push nuk mund të dërgohej.",
+    KU: "Push nehate şandin.",
+  },
+  pushNetworkError: {
+    DE: "Netzwerkfehler beim Senden des Reminders.",
+    EN: "Network error while sending reminder.",
+    IT: "Errore di rete durante l'invio del promemoria.",
+    TR: "Hatırlatma gönderilirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë dërgimit të kujtesës.",
+    KU: "Dema şandina bîranînê de xeletiya torê.",
+  },
+  pushSuccessPrefix: {
+    DE: "Push an",
+    EN: "Push sent to",
+    IT: "Push inviato a",
+    TR: "Push gönderildi:",
+    SQ: "Push u dërgua te",
+    KU: "Push hate şandin ji bo",
+  },
+  saveFailed: {
+    DE: "Speichern fehlgeschlagen.",
+    EN: "Saving failed.",
+    IT: "Salvataggio non riuscito.",
+    TR: "Kaydetme başarısız oldu.",
+    SQ: "Ruajtja dështoi.",
+    KU: "Tomarkirin serneket.",
+  },
+  saveNetworkError: {
+    DE: "Netzwerkfehler beim Speichern.",
+    EN: "Network error while saving.",
+    IT: "Errore di rete durante il salvataggio.",
+    TR: "Kaydetme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ruajtjes.",
+    KU: "Dema tomarkirinê de xeletiya torê.",
+  },
+  deleteConfirm: {
+    DE: "Diesen Eintrag wirklich löschen?",
+    EN: "Really delete this entry?",
+    IT: "Eliminare davvero questa voce?",
+    TR: "Bu kayıt gerçekten silinsin mi?",
+    SQ: "Ta fshijmë vërtet këtë hyrje?",
+    KU: "Bi rastî vê tomariyê jê bibin?",
+  },
+  deleteFailed: {
+    DE: "Löschen fehlgeschlagen.",
+    EN: "Delete failed.",
+    IT: "Eliminazione non riuscita.",
+    TR: "Silme başarısız oldu.",
+    SQ: "Fshirja dështoi.",
+    KU: "Jêbirin serneket.",
+  },
+  deleteNetworkError: {
+    DE: "Netzwerkfehler beim Löschen.",
+    EN: "Network error while deleting.",
+    IT: "Errore di rete durante l'eliminazione.",
+    TR: "Silme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë fshirjes.",
+    KU: "Dema jêbirinê de xeletiya torê.",
+  },
+  cancel: {
+    DE: "Abbrechen",
+    EN: "Cancel",
+    IT: "Annulla",
+    TR: "İptal",
+    SQ: "Anulo",
+    KU: "Betal bike",
+  },
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+  },
+  download: {
+    DE: "Download",
+    EN: "Download",
+    IT: "Scarica",
+    TR: "İndir",
+    SQ: "Shkarko",
+    KU: "Daxe",
+  },
+  shareOrSave: {
+    DE: "Teilen / Sichern",
+    EN: "Share / Save",
+    IT: "Condividi / Salva",
+    TR: "Paylaş / Kaydet",
+    SQ: "Ndaj / Ruaj",
+    KU: "Parve bike / Tomar bike",
+  },
+  shareOrSaveTitle: {
+    DE: "Export teilen oder sichern",
+    EN: "Share or save export",
+    IT: "Condividi o salva esportazione",
+    TR: "Dışa aktarmayı paylaş veya kaydet",
+    SQ: "Ndaje ose ruaje eksportin",
+    KU: "Exportê parve bike an tomar bike",
+  },
+  downloadTitle: {
+    DE: "Export herunterladen",
+    EN: "Download export",
+    IT: "Scarica esportazione",
+    TR: "Dışa aktarmayı indir",
+    SQ: "Shkarko eksportin",
+    KU: "Exportê daxîne",
+  },
+  monthForOverviewAndExport: {
+    DE: "Monat (für Übersicht + Export)",
+    EN: "Month (for overview + export)",
+    IT: "Mese (per panoramica + esportazione)",
+    TR: "Ay (genel görünüm + dışa aktarma için)",
+    SQ: "Muaji (për përmbledhje + eksport)",
+    KU: "Meh (ji bo dîtin + export)",
+  },
+  manageTasks: {
+    DE: "Aufgaben verwalten",
+    EN: "Manage tasks",
+    IT: "Gestisci attività",
+    TR: "Görevleri yönet",
+    SQ: "Menaxho detyrat",
+    KU: "Erkan birêve bibe",
+  },
+  exportAdmin: {
+    DE: "Export (Admin)",
+    EN: "Export (Admin)",
+    IT: "Esporta (Admin)",
+    TR: "Dışa aktar (Yönetici)",
+    SQ: "Eksport (Admin)",
+    KU: "Export (Admin)",
+  },
+  monthCsv: {
+    DE: "Monat (CSV)",
+    EN: "Month (CSV)",
+    IT: "Mese (CSV)",
+    TR: "Ay (CSV)",
+    SQ: "Muaji (CSV)",
+    KU: "Meh (CSV)",
+  },
+  yearZip: {
+    DE: "Jahr (ZIP)",
+    EN: "Year (ZIP)",
+    IT: "Anno (ZIP)",
+    TR: "Yıl (ZIP)",
+    SQ: "Viti (ZIP)",
+    KU: "Sal (ZIP)",
+  },
+  rangeCsv: {
+    DE: "Zeitraum (CSV)",
+    EN: "Range (CSV)",
+    IT: "Periodo (CSV)",
+    TR: "Aralık (CSV)",
+    SQ: "Periudha (CSV)",
+    KU: "Dem (CSV)",
+  },
+  exportTarget: {
+    DE: "Export-Ziel",
+    EN: "Export target",
+    IT: "Destinazione esportazione",
+    TR: "Dışa aktarma hedefi",
+    SQ: "Objektivi i eksportit",
+    KU: "Armanca exportê",
+  },
+  allCombined: {
+    DE: "Alle gesammelt",
+    EN: "All combined",
+    IT: "Tutti insieme",
+    TR: "Tümü birlikte",
+    SQ: "Të gjitha së bashku",
+    KU: "Hemû bi hev re",
+  },
+  singleEmployee: {
+    DE: "Einzelner Mitarbeiter",
+    EN: "Single employee",
+    IT: "Singolo dipendente",
+    TR: "Tek çalışan",
+    SQ: "Një punonjës",
+    KU: "Karmendek tenê",
+  },
+  selectEmployee: {
+    DE: "Mitarbeiter auswählen",
+    EN: "Select employee",
+    IT: "Seleziona dipendente",
+    TR: "Çalışan seç",
+    SQ: "Zgjidh punonjësin",
+    KU: "Karmend hilbijêre",
+  },
+  pleaseChoose: {
+    DE: "— Bitte wählen —",
+    EN: "— Please choose —",
+    IT: "— Seleziona —",
+    TR: "— Lütfen seçin —",
+    SQ: "— Ju lutem zgjidhni —",
+    KU: "— Ji kerema xwe hilbijêre —",
+  },
+  selectMonth: {
+    DE: "Monat auswählen",
+    EN: "Select month",
+    IT: "Seleziona mese",
+    TR: "Ay seç",
+    SQ: "Zgjidh muajin",
+    KU: "Meh hilbijêre",
+  },
+  selectYear: {
+    DE: "Jahr auswählen",
+    EN: "Select year",
+    IT: "Seleziona anno",
+    TR: "Yıl seç",
+    SQ: "Zgjidh vitin",
+    KU: "Sal hilbijêre",
+  },
+  selectRange: {
+    DE: "Zeitraum auswählen",
+    EN: "Select range",
+    IT: "Seleziona periodo",
+    TR: "Aralık seç",
+    SQ: "Zgjidh periudhën",
+    KU: "Dem hilbijêre",
+  },
+  rangeFromToRequired: {
+    DE: "Bitte Von und Bis auswählen.",
+    EN: "Please select from and to.",
+    IT: "Seleziona data iniziale e finale.",
+    TR: "Lütfen başlangıç ve bitiş seçin.",
+    SQ: "Ju lutem zgjidhni nga dhe deri më.",
+    KU: "Ji kerema xwe ji û heta hilbijêre.",
+  },
+  rangeFromAfterTo: {
+    DE: "Von-Datum darf nicht nach dem Bis-Datum liegen.",
+    EN: "Start date must not be after end date.",
+    IT: "La data iniziale non può essere successiva alla data finale.",
+    TR: "Başlangıç tarihi bitiş tarihinden sonra olamaz.",
+    SQ: "Data e fillimit nuk mund të jetë pas datës së mbarimit.",
+    KU: "Dîroka destpêkê nabe piştî dîroka dawiyê be.",
+  },
+  employeeRequired: {
+    DE: "Bitte Mitarbeiter auswählen.",
+    EN: "Please select an employee.",
+    IT: "Seleziona un dipendente.",
+    TR: "Lütfen bir çalışan seçin.",
+    SQ: "Ju lutem zgjidhni një punonjës.",
+    KU: "Ji kerema xwe karmendek hilbijêre.",
+  },
+  employeeUnavailable: {
+    DE: "Ausgewählter Mitarbeiter ist in dieser Ansicht nicht verfügbar.",
+    EN: "Selected employee is not available in this view.",
+    IT: "Il dipendente selezionato non è disponibile in questa vista.",
+    TR: "Seçilen çalışan bu görünümde mevcut değil.",
+    SQ: "Punonjësi i zgjedhur nuk është i disponueshëm në këtë pamje.",
+    KU: "Karmenda hilbijartî di vê dîtinê de berdest nîne.",
+  },
+  activeEmployees: {
+    DE: "Aktive Mitarbeiter",
+    EN: "Active employees",
+    IT: "Dipendenti attivi",
+    TR: "Aktif çalışanlar",
+    SQ: "Punonjës aktivë",
+    KU: "Karmendên çalak",
+  },
+  missingEntriesToday: {
+    DE: "Fehlende Einträge (heute)",
+    EN: "Missing entries (today)",
+    IT: "Voci mancanti (oggi)",
+    TR: "Eksik kayıtlar (bugün)",
+    SQ: "Hyrje që mungojnë (sot)",
+    KU: "Tomarên winda (îro)",
+  },
+  absencesToday: {
+    DE: "Abwesenheiten (heute)",
+    EN: "Absences (today)",
+    IT: "Assenze (oggi)",
+    TR: "Devamsızlıklar (bugün)",
+    SQ: "Mungesa (sot)",
+    KU: "Nebûn (îro)",
+  },
+  missingEntriesGeneral: {
+    DE: "Fehlende Einträge (allgemein)",
+    EN: "Missing entries (general)",
+    IT: "Voci mancanti (generale)",
+    TR: "Eksik kayıtlar (genel)",
+    SQ: "Hyrje që mungojnë (në përgjithësi)",
+    KU: "Tomarên winda (giştî)",
+  },
+  details: {
+    DE: "Details",
+    EN: "Details",
+    IT: "Dettagli",
+    TR: "Detaylar",
+    SQ: "Detaje",
+    KU: "Hûrgulî",
+  },
+  active: {
+    DE: "aktiv",
+    EN: "active",
+    IT: "attivo",
+    TR: "aktif",
+    SQ: "aktiv",
+    KU: "çalak",
+  },
+  noActiveEmployees: {
+    DE: "Keine aktiven Mitarbeiter vorhanden.",
+    EN: "No active employees available.",
+    IT: "Nessun dipendente attivo disponibile.",
+    TR: "Aktif çalışan yok.",
+    SQ: "Nuk ka punonjës aktivë.",
+    KU: "Ti karmenda çalak tune ye.",
+  },
+  openToday: {
+    DE: "heute offen",
+    EN: "open today",
+    IT: "aperto oggi",
+    TR: "bugün açık",
+    SQ: "hapur sot",
+    KU: "îro vekirî",
+  },
+  noMissingEntriesToday: {
+    DE: "Heute fehlen aktuell keine Einträge.",
+    EN: "There are currently no missing entries today.",
+    IT: "Attualmente non mancano voci oggi.",
+    TR: "Bugün şu anda eksik kayıt yok.",
+    SQ: "Aktualisht sot nuk mungojnë hyrje.",
+    KU: "Îro niha ti tomarê winda tune ye.",
+  },
+  noAbsencesToday: {
+    DE: "Heute sind keine Mitarbeiter abwesend.",
+    EN: "No employees are absent today.",
+    IT: "Oggi nessun dipendente è assente.",
+    TR: "Bugün devamsız çalışan yok.",
+    SQ: "Sot nuk mungon asnjë punonjës.",
+    KU: "Îro ti karmend tune ye ku nebe.",
+  },
+  overdueDays: {
+    DE: "überfällige Tage",
+    EN: "overdue days",
+    IT: "giorni in ritardo",
+    TR: "gecikmiş günler",
+    SQ: "ditë të vonuara",
+    KU: "rojên derengmayî",
+  },
+  sendPush: {
+    DE: "Push senden",
+    EN: "Send push",
+    IT: "Invia push",
+    TR: "Push gönder",
+    SQ: "Dërgo push",
+    KU: "Push bişîne",
+  },
+  sending: {
+    DE: "Sende…",
+    EN: "Sending…",
+    IT: "Invio in corso…",
+    TR: "Gönderiliyor…",
+    SQ: "Duke dërguar…",
+    KU: "Tê şandin…",
+  },
+  noGeneralOverdueMissingEntries: {
+    DE: "Aktuell gibt es keine allgemeinen überfälligen fehlenden Arbeitseinträge.",
+    EN: "There are currently no general overdue missing work entries.",
+    IT: "Attualmente non ci sono voci di lavoro mancanti e scadute in generale.",
+    TR: "Şu anda genel gecikmiş eksik çalışma kaydı yok.",
+    SQ: "Aktualisht nuk ka hyrje pune të munguar të vonuara në përgjithësi.",
+    KU: "Niha bi giştî ti tomara karê winda ya derengmayî tune ye.",
+  },
+  workDetailsTitle: {
+    DE: "Arbeitszeit-Details",
+    EN: "Work time details",
+    IT: "Dettagli orario di lavoro",
+    TR: "Çalışma süresi detayları",
+    SQ: "Detajet e orarit të punës",
+    KU: "Hûrguliyên demê ya karê",
+  },
+  breakDetailsTitle: {
+    DE: "Pausen-Details",
+    EN: "Break details",
+    IT: "Dettagli pausa",
+    TR: "Mola detayları",
+    SQ: "Detajet e pushimit",
+    KU: "Hûrguliyên bêhnvedanê",
+  },
+  employeeNoteTitle: {
+    DE: "Mitarbeiter-Notiz",
+    EN: "Employee note",
+    IT: "Nota dipendente",
+    TR: "Çalışan notu",
+    SQ: "Shënim i punonjësit",
+    KU: "Nîşeya karmend",
+  },
+  editWorkTitle: {
+    DE: "Arbeitszeit bearbeiten (Admin)",
+    EN: "Edit work time (admin)",
+    IT: "Modifica orario di lavoro (admin)",
+    TR: "Çalışma süresini düzenle (yönetici)",
+    SQ: "Ndrysho orarin e punës (admin)",
+    KU: "Dema karê biguherîne (admin)",
+  },
+  employee: {
+    DE: "Mitarbeiter",
+    EN: "Employee",
+    IT: "Dipendente",
+    TR: "Çalışan",
+    SQ: "Punonjësi",
+    KU: "Karmend",
+  },
+  dateAndTime: {
+    DE: "Datum & Zeit",
+    EN: "Date & time",
+    IT: "Data e ora",
+    TR: "Tarih ve saat",
+    SQ: "Data & ora",
+    KU: "Dîrok û dem",
+  },
+  date: {
+    DE: "Datum",
+    EN: "Date",
+    IT: "Data",
+    TR: "Tarih",
+    SQ: "Data",
+    KU: "Dîrok",
+  },
+  netWorkTime: {
+    DE: "Netto-Arbeitszeit",
+    EN: "Net work time",
+    IT: "Tempo di lavoro netto",
+    TR: "Net çalışma süresi",
+    SQ: "Koha neto e punës",
+    KU: "Dema karê ya net",
+  },
+  siteOrAddress: {
+    DE: "Baustelle / Adresse",
+    EN: "Site / address",
+    IT: "Cantiere / indirizzo",
+    TR: "Şantiye / adres",
+    SQ: "Kantier / adresë",
+    KU: "Cihê karê / navnîşan",
+  },
+  executedActivity: {
+    DE: "Ausgeführte Tätigkeit",
+    EN: "Executed activity",
+    IT: "Attività svolta",
+    TR: "Yapılan faaliyet",
+    SQ: "Veprimtaria e kryer",
+    KU: "Çalakiya hatiye kirin",
+  },
+  travelTime: {
+    DE: "Fahrtzeit",
+    EN: "Travel time",
+    IT: "Tempo di viaggio",
+    TR: "Yol süresi",
+    SQ: "Koha e udhëtimit",
+    KU: "Dema rêyê",
+  },
+  manualBreak: {
+    DE: "Manuell eingetragene Pause",
+    EN: "Manually entered break",
+    IT: "Pausa inserita manualmente",
+    TR: "Elle girilen mola",
+    SQ: "Pushim i futur manualisht",
+    KU: "Bêhnvedana bi destan hatiye nivîsandin",
+  },
+  legallyRequired: {
+    DE: "Gesetzlich erforderlich",
+    EN: "Legally required",
+    IT: "Richiesto per legge",
+    TR: "Yasal olarak gerekli",
+    SQ: "E kërkuar me ligj",
+    KU: "Bi qanûnê pêwîst",
+  },
+  autoSupplemented: {
+    DE: "Automatisch ergänzt",
+    EN: "Automatically supplemented",
+    IT: "Integrato automaticamente",
+    TR: "Otomatik tamamlandı",
+    SQ: "Plotësuar automatikisht",
+    KU: "Bi awayekî otomatîk hat zêdekirin",
+  },
+  noAutoSupplement: {
+    DE: "Keine automatische Ergänzung",
+    EN: "No automatic supplement",
+    IT: "Nessuna integrazione automatica",
+    TR: "Otomatik tamamlama yok",
+    SQ: "Pa plotësim automatik",
+    KU: "Ti zêdekirina otomatîk tune",
+  },
+  effectiveBreakTotal: {
+    DE: "Wirksame Pause gesamt",
+    EN: "Effective total break",
+    IT: "Pausa effettiva totale",
+    TR: "Toplam etkili mola",
+    SQ: "Pushimi efektiv total",
+    KU: "Bêhnvedana bi bandor a giştî",
+  },
+  note: {
+    DE: "Notiz",
+    EN: "Note",
+    IT: "Nota",
+    TR: "Not",
+    SQ: "Shënim",
+    KU: "Nîşe",
+  },
+  noNoteAvailable: {
+    DE: "Keine Notiz vorhanden.",
+    EN: "No note available.",
+    IT: "Nessuna nota disponibile.",
+    TR: "Not yok.",
+    SQ: "Nuk ka shënim.",
+    KU: "Ti nîşe tune ye.",
+  },
+  dateAndTimeNotEditable: {
+    DE: "Datum & Zeit (nicht änderbar)",
+    EN: "Date & time (not editable)",
+    IT: "Data e ora (non modificabili)",
+    TR: "Tarih ve saat (değiştirilemez)",
+    SQ: "Data & ora (nuk mund të ndryshohet)",
+    KU: "Dîrok û dem (nayê guhertin)",
+  },
+  activity: {
+    DE: "Tätigkeit",
+    EN: "Activity",
+    IT: "Attività",
+    TR: "Faaliyet",
+    SQ: "Veprimtaria",
+    KU: "Çalakî",
+  },
+  location: {
+    DE: "Ort",
+    EN: "Location",
+    IT: "Luogo",
+    TR: "Konum",
+    SQ: "Vendi",
+    KU: "Cih",
+  },
+  travelTimeMinutes: {
+    DE: "Fahrtzeit (Min)",
+    EN: "Travel time (min)",
+    IT: "Tempo di viaggio (min)",
+    TR: "Yol süresi (dk)",
+    SQ: "Koha e udhëtimit (min)",
+    KU: "Dema rêyê (deq)",
+  },
+  saving: {
+    DE: "Speichere…",
+    EN: "Saving…",
+    IT: "Salvataggio…",
+    TR: "Kaydediliyor…",
+    SQ: "Duke ruajtur…",
+    KU: "Tê tomarkirin…",
+  },
+  save: {
+    DE: "Speichern",
+    EN: "Save",
+    IT: "Salva",
+    TR: "Kaydet",
+    SQ: "Ruaj",
+    KU: "Tomar bike",
+  },
+  monthTotal: {
+    DE: "Monat (gesamt)",
+    EN: "Month (total)",
+    IT: "Mese (totale)",
+    TR: "Ay (toplam)",
+    SQ: "Muaji (gjithsej)",
+    KU: "Meh (tevahî)",
+  },
+  workTimeTotal: {
+    DE: "Arbeitszeit gesamt:",
+    EN: "Total work time:",
+    IT: "Tempo di lavoro totale:",
+    TR: "Toplam çalışma süresi:",
+    SQ: "Koha totale e punës:",
+    KU: "Dema karê ya giştî:",
+  },
+  vacation: {
+    DE: "Urlaub:",
+    EN: "Vacation:",
+    IT: "Ferie:",
+    TR: "İzin:",
+    SQ: "Pushim:",
+    KU: "Betlane:",
+  },
+  sick: {
+    DE: "Krank:",
+    EN: "Sick:",
+    IT: "Malattia:",
+    TR: "Hastalık:",
+    SQ: "Sëmurë:",
+    KU: "Nexweş:",
+  },
+  unpaidVacation: {
+    DE: "Urlaub unbezahlt:",
+    EN: "Unpaid vacation:",
+    IT: "Ferie non pagate:",
+    TR: "Ücretsiz izin:",
+    SQ: "Pushim i papaguar:",
+    KU: "Betlaneya bêpere:",
+  },
+  overtimeGross: {
+    DE: "Überstunden (Brutto):",
+    EN: "Overtime (gross):",
+    IT: "Straordinari (lordi):",
+    TR: "Fazla mesai (brüt):",
+    SQ: "Orë shtesë (bruto):",
+    KU: "Demjimêrên zêde (brût):",
+  },
+  entries: {
+    DE: "Einträge:",
+    EN: "Entries:",
+    IT: "Voci:",
+    TR: "Kayıtlar:",
+    SQ: "Hyrje:",
+    KU: "Tomar:",
+  },
+  byEmployee: {
+    DE: "Nach Mitarbeiter",
+    EN: "By employee",
+    IT: "Per dipendente",
+    TR: "Çalışana göre",
+    SQ: "Sipas punonjësit",
+    KU: "Li gorî karmend",
+  },
+  noDashboardData: {
+    DE: "Keine Dashboarddaten verfügbar.",
+    EN: "No dashboard data available.",
+    IT: "Nessun dato dashboard disponibile.",
+    TR: "Gösterge paneli verisi yok.",
+    SQ: "Nuk ka të dhëna paneli.",
+    KU: "Ti daneya dashboardê tune ye.",
+  },
+  noEmployeesInPeriod: {
+    DE: "Keine Mitarbeiter im Zeitraum.",
+    EN: "No employees in selected period.",
+    IT: "Nessun dipendente nel periodo selezionato.",
+    TR: "Seçilen dönemde çalışan yok.",
+    SQ: "Nuk ka punonjës në periudhën e zgjedhur.",
+    KU: "Di dema hilbijartî de ti karmend tune ne.",
+  },
+  noEntries: {
+    DE: "Keine Einträge.",
+    EN: "No entries.",
+    IT: "Nessuna voce.",
+    TR: "Kayıt yok.",
+    SQ: "Nuk ka hyrje.",
+    KU: "Ti tomar tune ne.",
+  },
+  expandCollapse: {
+    DE: "Ein-/Ausklappen",
+    EN: "Expand/collapse",
+    IT: "Espandi/comprimi",
+    TR: "Genişlet/daralt",
+    SQ: "Hap/mbyll",
+    KU: "Veke/bigire",
+  },
+  workTimes: {
+    DE: "🛠 Arbeitszeiten",
+    EN: "🛠 Work times",
+    IT: "🛠 Orari di lavoro",
+    TR: "🛠 Çalışma süreleri",
+    SQ: "🛠 Orari i punës",
+    KU: "🛠 Demên karê",
+  },
+  entry: {
+    DE: "Eintrag",
+    EN: "entry",
+    IT: "voce",
+    TR: "kayıt",
+    SQ: "hyrje",
+    KU: "tomar",
+  },
+  entriesPlural: {
+    DE: "Einträge",
+    EN: "entries",
+    IT: "voci",
+    TR: "kayıt",
+    SQ: "hyrje",
+    KU: "tomar",
+  },
+  day: {
+    DE: "Tag",
+    EN: "day",
+    IT: "giorno",
+    TR: "gün",
+    SQ: "ditë",
+    KU: "roj",
+  },
+  days: {
+    DE: "Tage",
+    EN: "days",
+    IT: "giorni",
+    TR: "gün",
+    SQ: "ditë",
+    KU: "roj",
+  },
+  pause: {
+    DE: "Pause",
+    EN: "break",
+    IT: "pausa",
+    TR: "mola",
+    SQ: "pushim",
+    KU: "bêhnvedan",
+  },
+  showBreakDetails: {
+    DE: "Pausen-Details anzeigen",
+    EN: "Show break details",
+    IT: "Mostra dettagli pausa",
+    TR: "Mola detaylarını göster",
+    SQ: "Shfaq detajet e pushimit",
+    KU: "Hûrguliyên bêhnvedanê nîşan bide",
+  },
+  showDetails: {
+    DE: "Details anzeigen",
+    EN: "Show details",
+    IT: "Mostra dettagli",
+    TR: "Detayları göster",
+    SQ: "Shfaq detajet",
+    KU: "Hûrguliyan nîşan bide",
+  },
+  showEmployeeNote: {
+    DE: "Mitarbeiter-Notiz anzeigen",
+    EN: "Show employee note",
+    IT: "Mostra nota dipendente",
+    TR: "Çalışan notunu göster",
+    SQ: "Shfaq shënimin e punonjësit",
+    KU: "Nîşeya karmend nîşan bide",
+  },
+  editWithoutTime: {
+    DE: "Bearbeiten (ohne Zeit)",
+    EN: "Edit (without time)",
+    IT: "Modifica (senza orario)",
+    TR: "Düzenle (saat olmadan)",
+    SQ: "Ndrysho (pa orë)",
+    KU: "Biguherîne (bê dem)",
+  },
+  delete: {
+    DE: "Löschen",
+    EN: "Delete",
+    IT: "Elimina",
+    TR: "Sil",
+    SQ: "Fshij",
+    KU: "Jê bibe",
+  },
+  noSiteOrAddress: {
+    DE: "Keine Baustelle / Adresse hinterlegt",
+    EN: "No site / address stored",
+    IT: "Nessun cantiere / indirizzo salvato",
+    TR: "Şantiye / adres kayıtlı değil",
+    SQ: "Nuk ka kantier / adresë të ruajtur",
+    KU: "Ti cihê karê / navnîşan nehatî tomar kirin",
+  },
+  noWorkTimesInMonth: {
+    DE: "Keine Arbeitszeiten im Monat.",
+    EN: "No work times in month.",
+    IT: "Nessun orario di lavoro nel mese.",
+    TR: "Ay içinde çalışma süresi yok.",
+    SQ: "Nuk ka orar pune në muaj.",
+    KU: "Di mehê de demê karê tune ye.",
+  },
+  sickness: {
+    DE: "🌡 Krankheit",
+    EN: "🌡 Sickness",
+    IT: "🌡 Malattia",
+    TR: "🌡 Hastalık",
+    SQ: "🌡 Sëmundje",
+    KU: "🌡 Nexweşî",
+  },
+  period: {
+    DE: "Zeitraum",
+    EN: "period",
+    IT: "periodo",
+    TR: "dönem",
+    SQ: "periudhë",
+    KU: "dem",
+  },
+  periods: {
+    DE: "Zeiträume",
+    EN: "periods",
+    IT: "periodi",
+    TR: "dönem",
+    SQ: "periudha",
+    KU: "dem",
+  },
+  sickLabel: {
+    DE: "🌡 Krank",
+    EN: "🌡 Sick",
+    IT: "🌡 Malato",
+    TR: "🌡 Hasta",
+    SQ: "🌡 Sëmurë",
+    KU: "🌡 Nexweş",
+  },
+  noSickDaysInMonth: {
+    DE: "Keine Krankheitstage im Monat.",
+    EN: "No sick days in month.",
+    IT: "Nessun giorno di malattia nel mese.",
+    TR: "Ay içinde hastalık günü yok.",
+    SQ: "Nuk ka ditë sëmundjeje në muaj.",
+    KU: "Di mehê de rojên nexweşiyê tune ne.",
+  },
+  vacationLabel: {
+    DE: "🌴 Urlaub",
+    EN: "🌴 Vacation",
+    IT: "🌴 Ferie",
+    TR: "🌴 İzin",
+    SQ: "🌴 Pushim",
+    KU: "🌴 Betlane",
+  },
+  vacationUnpaidLabel: {
+    DE: "💸 Urlaub unbezahlt",
+    EN: "💸 Unpaid vacation",
+    IT: "💸 Ferie non pagate",
+    TR: "💸 Ücretsiz izin",
+    SQ: "💸 Pushim i papaguar",
+    KU: "💸 Betlaneya bêpere",
+  },
+  noVacationInMonth: {
+    DE: "Kein Urlaub im Monat.",
+    EN: "No vacation in month.",
+    IT: "Nessuna ferie nel mese.",
+    TR: "Ay içinde izin yok.",
+    SQ: "Nuk ka pushim në muaj.",
+    KU: "Di mehê de betlane tune ye.",
+  },
+  halfDay: {
+    DE: "0,5 Tag",
+    EN: "0.5 day",
+    IT: "0,5 giorno",
+    TR: "0,5 gün",
+    SQ: "0,5 ditë",
+    KU: "0.5 roj",
+  },
+  dashboard: {
+    DE: "Dashboard",
+    EN: "Dashboard",
+    IT: "Dashboard",
+    TR: "Gösterge paneli",
+    SQ: "Paneli",
+    KU: "Dashboard",
+  },
+  activeEmployeesModal: {
+    DE: "Aktive Mitarbeiter",
+    EN: "Active employees",
+    IT: "Dipendenti attivi",
+    TR: "Aktif çalışanlar",
+    SQ: "Punonjës aktivë",
+    KU: "Karmendên çalak",
+  },
+  missingEntriesTodayModal: {
+    DE: "Fehlende Einträge heute",
+    EN: "Missing entries today",
+    IT: "Voci mancanti oggi",
+    TR: "Bugün eksik kayıtlar",
+    SQ: "Hyrje që mungojnë sot",
+    KU: "Tomarên winda yên îro",
+  },
+  absencesTodayModal: {
+    DE: "Abwesenheiten heute",
+    EN: "Absences today",
+    IT: "Assenze oggi",
+    TR: "Bugünkü devamsızlıklar",
+    SQ: "Mungesa sot",
+    KU: "Nebûnên îro",
+  },
+  missingEntriesGeneralModal: {
+    DE: "Fehlende Einträge (allgemein)",
+    EN: "Missing entries (general)",
+    IT: "Voci mancanti (generale)",
+    TR: "Eksik kayıtlar (genel)",
+    SQ: "Hyrje që mungojnë (në përgjithësi)",
+    KU: "Tomarên winda (giştî)",
+  },
+  dash: {
+    DE: "—",
+    EN: "—",
+    IT: "—",
+    TR: "—",
+    SQ: "—",
+    KU: "—",
+  },
+  workTimeHours: {
+    DE: "Arbeitszeit",
+    EN: "Work time",
+    IT: "Tempo di lavoro",
+    TR: "Çalışma süresi",
+    SQ: "Koha e punës",
+    KU: "Dema karê",
+  },
+  vacationHours: {
+    DE: "Urlaub",
+    EN: "Vacation",
+    IT: "Ferie",
+    TR: "İzin",
+    SQ: "Pushim",
+    KU: "Betlane",
+  },
+  sickHours: {
+    DE: "Krank",
+    EN: "Sick",
+    IT: "Malattia",
+    TR: "Hastalık",
+    SQ: "Sëmurë",
+    KU: "Nexweş",
+  },
+  unpaidVacationHours: {
+    DE: "Urlaub unbezahlt",
+    EN: "Unpaid vacation",
+    IT: "Ferie non pagate",
+    TR: "Ücretsiz izin",
+    SQ: "Pushim i papaguar",
+    KU: "Betlaneya bêpere",
+  },
+};

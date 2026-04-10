@@ -6,6 +6,11 @@ import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { Info } from "lucide-react";
+import {
+  ADMIN_DASHBOARD_UI_TEXTS,
+  translate,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 /* =========================
    Types (Dashboard Timeline)
@@ -352,12 +357,19 @@ function formatHoursInfoFromMinutes(minutes: number): string {
   return `${String((minutes / 60).toFixed(1)).replace(".", ",")}h`;
 }
 
-function formatDateDE(iso: string): string {
+function formatDate(iso: string, language: AppUiLanguage): string {
   const normalized = iso.length >= 10 ? iso.slice(0, 10) : iso;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return iso;
 
-  const [y, m, d] = normalized.split("-");
-  return `${d}.${m}.${y}`;
+  const [y, m, d] = normalized.split("-").map(Number);
+  const date = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
+
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Europe/Berlin",
+  }).format(date);
 }
 
 function formatMinutesCompact(minutes: number): string {
@@ -366,14 +378,23 @@ function formatMinutesCompact(minutes: number): string {
   return formatHM(mins);
 }
 
-function absenceTypeLabel(type: "VACATION" | "SICK"): string {
-  return type === "VACATION" ? "Urlaub" : "Krank";
+function absenceTypeLabel(
+  type: "VACATION" | "SICK",
+  language: AppUiLanguage
+): string {
+  return type === "VACATION"
+    ? translate(language, "vacation", ADMIN_DASHBOARD_UI_TEXTS).replace(":", "")
+    : translate(language, "sick", ADMIN_DASHBOARD_UI_TEXTS).replace(":", "");
 }
 
-function overdueRangeLabel(oldestMissingDate: string, newestMissingDate: string): string {
+function overdueRangeLabel(
+  oldestMissingDate: string,
+  newestMissingDate: string,
+  language: AppUiLanguage
+): string {
   return oldestMissingDate === newestMissingDate
-    ? formatDateDE(oldestMissingDate)
-    : `${formatDateDE(oldestMissingDate)} – ${formatDateDE(newestMissingDate)}`;
+    ? formatDate(oldestMissingDate, language)
+    : `${formatDate(oldestMissingDate, language)} – ${formatDate(newestMissingDate, language)}`;
 }
 
 function getDayBreakForDate(dayBreaks: AdminDayBreak[], workDate: string): AdminDayBreak | null {
@@ -452,10 +473,24 @@ function absenceDayValue(dayPortion: "FULL_DAY" | "HALF_DAY"): number {
   return dayPortion === "HALF_DAY" ? 0.5 : 1;
 }
 
-function formatDayCountDE(days: number): string {
-  if (days === 0.5) return "0,5 Tag";
-  if (Number.isInteger(days)) return `${days} ${days === 1 ? "Tag" : "Tage"}`;
-  return `${String(days).replace(".", ",")} Tage`;
+function formatDayCount(days: number, language: AppUiLanguage): string {
+  if (days === 0.5) {
+    return translate(language, "halfDay", ADMIN_DASHBOARD_UI_TEXTS);
+  }
+
+  if (Number.isInteger(days)) {
+    return `${days} ${
+      days === 1
+        ? translate(language, "day", ADMIN_DASHBOARD_UI_TEXTS)
+        : translate(language, "days", ADMIN_DASHBOARD_UI_TEXTS)
+    }`;
+  }
+
+  return `${String(days).replace(".", ",")} ${translate(
+    language,
+    "days",
+    ADMIN_DASHBOARD_UI_TEXTS
+  )}`;
 }
 
 function groupAbsenceRanges(items: AdminTimelineItem[]): AbsenceRange[] {
@@ -629,6 +664,11 @@ export default function AdminDashboardPage() {
   const [exportEmployeeId, setExportEmployeeId] = useState<string>("");
   const [exportBusy, setExportBusy] = useState(false);
   const [exportActionError, setExportActionError] = useState<string>("");
+  const language: AppUiLanguage = session?.language ?? "DE";
+
+  function t(key: keyof typeof ADMIN_DASHBOARD_UI_TEXTS): string {
+    return translate(language, key, ADMIN_DASHBOARD_UI_TEXTS);
+  }
 
   const employeeOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -645,10 +685,10 @@ export default function AdminDashboardPage() {
 
   const exportTargetError = useMemo(() => {
     if (exportTarget !== "SINGLE_EMPLOYEE") return "";
-    if (!exportEmployeeId) return "Bitte Mitarbeiter auswählen.";
+    if (!exportEmployeeId) return t("employeeRequired");
 
     const exists = employeeOptions.some((u) => u.id === exportEmployeeId);
-    if (!exists) return "Ausgewählter Mitarbeiter ist in dieser Ansicht nicht verfügbar.";
+    if (!exists) return t("employeeUnavailable");
 
     return "";
   }, [exportTarget, exportEmployeeId, employeeOptions]);
@@ -701,10 +741,10 @@ export default function AdminDashboardPage() {
 
   const rangeError = useMemo(() => {
     if (exportMode !== "RANGE") return "";
-    if (!rangeFrom || !rangeTo) return "Bitte Von und Bis auswählen.";
-    if (rangeFrom > rangeTo) return "Von-Datum darf nicht nach dem Bis-Datum liegen.";
+    if (!rangeFrom || !rangeTo) return t("rangeFromToRequired");
+    if (rangeFrom > rangeTo) return t("rangeFromAfterTo");
     return "";
-  }, [exportMode, rangeFrom, rangeTo]);
+  }, [exportMode, rangeFrom, rangeTo, language]);
 
   function buildExportUrl(): string | null {
     if (exportTarget === "SINGLE_EMPLOYEE" && exportTargetError) return null;
@@ -745,7 +785,7 @@ export default function AdminDashboardPage() {
       });
 
       if (!response.ok) {
-        let message = "Export konnte nicht heruntergeladen werden.";
+        let message = t("exportDownloadError");
 
         try {
           const data: unknown = await response.json();
@@ -779,7 +819,7 @@ export default function AdminDashboardPage() {
         URL.revokeObjectURL(objectUrl);
       }, 1000);
     } catch {
-      setExportActionError("Export konnte nicht heruntergeladen werden.");
+      setExportActionError(t("exportDownloadError"));
     } finally {
       setExportBusy(false);
     }
@@ -797,7 +837,7 @@ export default function AdminDashboardPage() {
       });
 
       if (!response.ok) {
-        let message = "Export konnte nicht geöffnet werden.";
+        let message = t("exportOpenError");
 
         try {
           const data: unknown = await response.json();
@@ -850,7 +890,7 @@ export default function AdminDashboardPage() {
         URL.revokeObjectURL(objectUrl);
       }, 1000);
     } catch {
-      setExportActionError("Export konnte nicht geteilt oder gesichert werden.");
+      setExportActionError(t("exportShareError"));
     } finally {
       setExportBusy(false);
     }
@@ -889,15 +929,15 @@ export default function AdminDashboardPage() {
       const j: unknown = await r.json().catch(() => ({}));
 
       if (!r.ok) {
-        const msg = isRecord(j) && isString(j["error"]) ? j["error"] : "Push konnte nicht gesendet werden.";
+        const msg = isRecord(j) && isString(j["error"]) ? j["error"] : t("pushSendError");
         setRemindErr(msg);
         return;
       }
 
-      setRemindSuccess(`Push an ${fullName} gesendet.`);
+      setRemindSuccess(`${t("pushSuccessPrefix")} ${fullName} gesendet.`);
       setReloadTick((x) => x + 1);
     } catch {
-      setRemindErr("Netzwerkfehler beim Senden des Reminders.");
+      setRemindErr(t("pushNetworkError"));
     } finally {
       setRemindLoadingUserId("");
     }
@@ -994,7 +1034,7 @@ export default function AdminDashboardPage() {
         if (!alive) return;
 
         if (!rd.ok) {
-          const msg = isRecord(jd) && isString(jd["error"]) ? jd["error"] : "Dashboard konnte nicht geladen werden.";
+          const msg = isRecord(jd) && isString(jd["error"]) ? jd["error"] : t("dashboardLoadError");
           setErr(msg);
           setDash(null);
           setOverview(null);
@@ -1002,7 +1042,7 @@ export default function AdminDashboardPage() {
         }
 
         if (!isAdminDashboardOk(jd)) {
-          setErr("Unerwartete Dashboard-Antwort.");
+          setErr(t("unexpectedDashboardResponse"));
           setDash(null);
           setOverview(null);
           return;
@@ -1018,7 +1058,7 @@ export default function AdminDashboardPage() {
         setOverview(jo);
       } catch {
         if (!alive) return;
-        setErr("Netzwerkfehler beim Laden.");
+        setErr(t("networkLoadError"));
         setDash(null);
         setOverview(null);
       } finally {
@@ -1044,7 +1084,7 @@ export default function AdminDashboardPage() {
           opacity: exportBusy ? 0.7 : 1,
         }}
       >
-        Abbrechen
+        {t("cancel")}
       </button>
 
       <button
@@ -1059,9 +1099,9 @@ export default function AdminDashboardPage() {
               : "pointer",
           opacity: rangeError || exportTargetError || exportBusy ? 0.7 : 1,
         }}
-        title={isMobileDevice() ? "Export teilen oder sichern" : "Export herunterladen"}
+        title={isMobileDevice() ? t("shareOrSaveTitle") : t("downloadTitle")}
       >
-        {isMobileDevice() ? "Teilen / Sichern" : "Download"}
+        {isMobileDevice() ? t("shareOrSave") : t("download")}
       </button>
     </>
   );
@@ -1133,7 +1173,7 @@ export default function AdminDashboardPage() {
 
       const j: unknown = await r.json().catch(() => ({}));
       if (!r.ok) {
-        const msg = isRecord(j) && isString(j["error"]) ? j["error"] : "Speichern fehlgeschlagen.";
+        const msg = isRecord(j) && isString(j["error"]) ? j["error"] : t("saveFailed");
         setEditErr(msg);
         return;
       }
@@ -1141,14 +1181,15 @@ export default function AdminDashboardPage() {
       setEditOpen(false);
       setReloadTick((x) => x + 1);
     } catch {
-      setEditErr("Netzwerkfehler beim Speichern.");
+      setEditErr(t("saveNetworkError"));
     } finally {
       setEditSaving(false);
     }
   }
 
   async function deleteWorkEntry(entryId: string) {
-    const ok = typeof window !== "undefined" ? window.confirm("Diesen Eintrag wirklich löschen?") : false;
+    const ok =
+      typeof window !== "undefined" ? window.confirm(t("deleteConfirm")) : false;
     if (!ok) return;
 
     try {
@@ -1158,32 +1199,32 @@ export default function AdminDashboardPage() {
       });
       const j: unknown = await r.json().catch(() => ({}));
       if (!r.ok) {
-        const msg = isRecord(j) && isString(j["error"]) ? j["error"] : "Löschen fehlgeschlagen.";
+        const msg = isRecord(j) && isString(j["error"]) ? j["error"] : t("deleteFailed");
         setErr(msg);
         return;
       }
 
       setReloadTick((x) => x + 1);
     } catch {
-      setErr("Netzwerkfehler beim Löschen.");
+      setErr(t("deleteNetworkError"));
     }
   }
 
   if (!sessionChecked) {
     return (
-      <AppShell activeLabel="Dashboard">
+      <AppShell activeLabel={t("dashboard")}>
         <div className="card" style={{ padding: 14 }}>
-          <div style={{ color: "var(--muted)" }}>Lade...</div>
+          <div style={{ color: "var(--muted)" }}>{t("loading")}</div>
         </div>
       </AppShell>
     );
   }
 
   return (
-    <AppShell activeLabel="Dashboard">
+    <AppShell activeLabel={t("dashboard")}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
         <div style={{ display: "grid", gap: 6 }}>
-          <div style={{ fontSize: 12, color: "var(--muted)" }}>Monat (für Übersicht + Export)</div>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("monthForOverviewAndExport")}</div>
           <input
             type="month"
             value={month}
@@ -1199,9 +1240,9 @@ export default function AdminDashboardPage() {
             style={{
               fontWeight: 900,
             }}
-            title="Aufgaben verwalten"
+            title={t("manageTasks")}
           >
-            📋 Aufgaben
+            📋 {t("manageTasks")}
           </Link>
 
           <button
@@ -1209,7 +1250,7 @@ export default function AdminDashboardPage() {
             type="button"
             className="btn btn-accent"
             style={{ fontWeight: 900 }}
-            title="Export (Admin)"
+            title={t("exportAdmin")}
           >
             ⬇️ Export
           </button>
@@ -1217,7 +1258,7 @@ export default function AdminDashboardPage() {
           <Modal
             open={exportOpen}
             onClose={() => setExportOpen(false)}
-            title="Export (Admin)"
+            title={t("exportAdmin")}
             footer={exportFooter}
             maxWidth={720}
           >
@@ -1230,9 +1271,9 @@ export default function AdminDashboardPage() {
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {([
-                  { key: "MONTH", label: "Monat (CSV)" },
-                  { key: "YEAR", label: "Jahr (ZIP)" },
-                  { key: "RANGE", label: "Zeitraum (CSV)" },
+                  { key: "MONTH", label: t("monthCsv") },
+                  { key: "YEAR", label: t("yearZip") },
+                  { key: "RANGE", label: t("rangeCsv") },
                 ] as Array<{ key: ExportMode; label: string }>).map((m) => (
                   <button
                     key={m.key}
@@ -1250,7 +1291,7 @@ export default function AdminDashboardPage() {
               </div>
 
               <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
-                <div style={{ fontSize: 12, color: "var(--muted)" }}>Export-Ziel</div>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("exportTarget")}</div>
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button
@@ -1265,7 +1306,7 @@ export default function AdminDashboardPage() {
                       fontWeight: 900,
                     }}
                   >
-                    Alle gesammelt
+                    {t("allCombined")}
                   </button>
 
                   <button
@@ -1277,21 +1318,21 @@ export default function AdminDashboardPage() {
                       fontWeight: 900,
                     }}
                   >
-                    Einzelner Mitarbeiter
+                    {t("singleEmployee")}
                   </button>
                 </div>
               </div>
 
               {exportTarget === "SINGLE_EMPLOYEE" ? (
                 <div style={{ display: "grid", gap: 6 }}>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter auswählen</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectEmployee")}</div>
                   <select
                     value={exportEmployeeId}
                     onChange={(e) => setExportEmployeeId(e.target.value)}
                     className="select"
                   >
                     <option value="" style={{ color: "black" }}>
-                      — Bitte wählen —
+                      {t("pleaseChoose")}
                     </option>
                     {employeeOptions.map((u) => (
                       <option key={u.id} value={u.id} style={{ color: "black" }}>
@@ -1310,7 +1351,7 @@ export default function AdminDashboardPage() {
 
               {exportMode === "MONTH" ? (
                 <div style={{ display: "grid", gap: 8 }}>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Monat auswählen</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectMonth")}</div>
                   <input
                     type="month"
                     value={exportMonth}
@@ -1322,7 +1363,7 @@ export default function AdminDashboardPage() {
 
               {exportMode === "YEAR" ? (
                 <div style={{ display: "grid", gap: 8 }}>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Jahr auswählen</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectYear")}</div>
                   <select
                     value={exportYear}
                     onChange={(e) => setExportYear(e.target.value)}
@@ -1339,7 +1380,7 @@ export default function AdminDashboardPage() {
 
               {exportMode === "RANGE" ? (
                 <div style={{ display: "grid", gap: 10 }}>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Zeitraum auswählen</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectRange")}</div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <input
@@ -1373,13 +1414,13 @@ export default function AdminDashboardPage() {
         onClose={closeKpiModal}
         title={
           kpiModalKind === "ACTIVE"
-            ? "Aktive Mitarbeiter"
+            ? t("activeEmployeesModal")
             : kpiModalKind === "MISSING"
-            ? "Fehlende Einträge heute"
+            ? t("missingEntriesTodayModal")
             : kpiModalKind === "ABSENT"
-            ? "Abwesenheiten heute"
+            ? t("absencesTodayModal")
             : kpiModalKind === "OVERDUE_GENERAL"
-            ? "Fehlende Einträge (allgemein)"
+            ? t("missingEntriesGeneralModal")
             : ""
         }
         footer={
@@ -1388,7 +1429,7 @@ export default function AdminDashboardPage() {
             onClick={closeKpiModal}
             className="btn"
           >
-            Schließen
+            {t("close")}
           </button>
         }
         maxWidth={720}
@@ -1425,12 +1466,12 @@ export default function AdminDashboardPage() {
                     }}
                   >
                     <div>{person.fullName}</div>
-                    <div style={{ color: "var(--muted-2)", fontSize: 12 }}>aktiv</div>
+                    <div style={{ color: "var(--muted-2)", fontSize: 12 }}>{t("active")}</div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ color: "var(--muted)" }}>Keine aktiven Mitarbeiter vorhanden.</div>
+              <div style={{ color: "var(--muted)" }}>{t("noActiveEmployees")}</div>
             )
           ) : null}
 
@@ -1453,13 +1494,13 @@ export default function AdminDashboardPage() {
                   >
                     <div style={{ fontWeight: 900 }}>{person.fullName}</div>
                     <div style={{ color: "var(--muted-2)", fontSize: 12, fontWeight: 900 }}>
-                      heute offen
+                      {t("openToday")}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ color: "var(--muted)" }}>Heute fehlen aktuell keine Einträge.</div>
+              <div style={{ color: "var(--muted)" }}>{t("noMissingEntriesToday")}</div>
             )
           ) : null}
 
@@ -1482,13 +1523,13 @@ export default function AdminDashboardPage() {
                   >
                     <div style={{ fontWeight: 900 }}>{person.fullName}</div>
                     <div style={{ color: "var(--muted-2)", fontSize: 12, fontWeight: 900 }}>
-                      {absenceTypeLabel(person.type)}
+                      {absenceTypeLabel(person.type, language)}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ color: "var(--muted)" }}>Heute sind keine Mitarbeiter abwesend.</div>
+              <div style={{ color: "var(--muted)" }}>{t("noAbsencesToday")}</div>
             )
           ) : null}
           {kpiModalKind === "OVERDUE_GENERAL" ? (
@@ -1511,7 +1552,7 @@ export default function AdminDashboardPage() {
                     <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
                       <div style={{ fontWeight: 900 }}>{person.fullName}</div>
                       <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
-                        {person.missingDatesCount} überfällige Tage · {overdueRangeLabel(person.oldestMissingDate, person.newestMissingDate)}
+                        {person.missingDatesCount} {t("overdueDays")} · {overdueRangeLabel(person.oldestMissingDate, person.newestMissingDate, language)}
                       </div>
                     </div>
 
@@ -1531,13 +1572,13 @@ export default function AdminDashboardPage() {
                         flexShrink: 0,
                       }}
                     >
-                      {remindLoadingUserId === person.userId ? "Sende…" : "Push senden"}
+                      {remindLoadingUserId === person.userId ? t("sending") : t("sendPush")}
                     </button>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ color: "var(--muted)" }}>Aktuell gibt es keine allgemeinen überfälligen fehlenden Arbeitseinträge.</div>
+              <div style={{ color: "var(--muted)" }}>{t("noGeneralOverdueMissingEntries")}</div>
             )
           ) : null}
         </div>
@@ -1546,48 +1587,48 @@ export default function AdminDashboardPage() {
       <Modal
         open={detailsOpen}
         onClose={() => setDetailsOpen(false)}
-        title="Arbeitszeit-Details"
+        title={t("workDetailsTitle")}
         footer={
           <button
             type="button"
             onClick={() => setDetailsOpen(false)}
             className="btn"
           >
-            Schließen
+            {t("close")}
           </button>
         }
         maxWidth={640}
       >
         <div style={{ display: "grid", gap: 12 }}>
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("employee")}</div>
             <div style={{ fontWeight: 1000 }}>{detailsUserLabel}</div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Datum & Zeit</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("dateAndTime")}</div>
             <div style={{ fontWeight: 1000 }}>
-              {formatDateDE(detailsDate)} · {detailsTime}
+              {formatDate(detailsDate, language)} · {detailsTime}
             </div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Netto-Arbeitszeit</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("netWorkTime")}</div>
             <div style={{ fontWeight: 1000 }}>{formatHM(detailsWorkMinutes)}</div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Baustelle / Adresse</div>
-            <div style={{ fontWeight: 1000 }}>{detailsLocation || "—"}</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("siteOrAddress")}</div>
+            <div style={{ fontWeight: 1000 }}>{detailsLocation || t("dash")}</div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Ausgeführte Tätigkeit</div>
-            <div style={{ fontWeight: 1000 }}>{detailsActivity || "—"}</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("executedActivity")}</div>
+            <div style={{ fontWeight: 1000 }}>{detailsActivity || t("dash")}</div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Fahrtzeit</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("travelTime")}</div>
             <div style={{ fontWeight: 1000 }}>{formatMinutesCompact(detailsTravelMinutes)}</div>
           </div>
         </div>
@@ -1596,54 +1637,54 @@ export default function AdminDashboardPage() {
       <Modal
         open={breakInfoOpen}
         onClose={() => setBreakInfoOpen(false)}
-        title="Pausen-Details"
+        title={t("breakDetailsTitle")}
         footer={
           <button
             type="button"
             onClick={() => setBreakInfoOpen(false)}
             className="btn"
           >
-            Schließen
+            {t("close")}
           </button>
         }
         maxWidth={640}
       >
         <div style={{ display: "grid", gap: 12 }}>
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("employee")}</div>
             <div style={{ fontWeight: 1000 }}>{breakInfoUserLabel}</div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Datum</div>
-            <div style={{ fontWeight: 1000 }}>{formatDateDE(breakInfoDate)}</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("date")}</div>
+            <div style={{ fontWeight: 1000 }}>{formatDate(breakInfoDate, language)}</div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Manuell eingetragene Pause</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("manualBreak")}</div>
             <div style={{ fontWeight: 1000 }}>
               {breakInfoManualStart && breakInfoManualEnd
                 ? `${breakInfoManualStart}–${breakInfoManualEnd} · ${formatMinutesCompact(breakInfoManualMinutes)}`
                 : breakInfoManualMinutes > 0
                 ? formatMinutesCompact(breakInfoManualMinutes)
-                : "Keine manuelle Pause eingetragen"}
+                : t("noNoteAvailable")}
             </div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Gesetzlich erforderlich</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("legallyRequired")}</div>
             <div style={{ fontWeight: 1000 }}>{formatMinutesCompact(breakInfoLegalMinutes)}</div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Automatisch ergänzt</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("autoSupplemented")}</div>
             <div style={{ fontWeight: 1000 }}>
-              {breakInfoAutoMinutes > 0 ? formatMinutesCompact(breakInfoAutoMinutes) : "Keine automatische Ergänzung"}
+              {breakInfoAutoMinutes > 0 ? formatMinutesCompact(breakInfoAutoMinutes) : t("noAutoSupplement")}
             </div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Wirksame Pause gesamt</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("effectiveBreakTotal")}</div>
             <div style={{ fontWeight: 1000 }}>{formatMinutesCompact(breakInfoEffectiveMinutes)}</div>
           </div>
         </div>
@@ -1652,33 +1693,33 @@ export default function AdminDashboardPage() {
       <Modal
         open={noteOpen}
         onClose={() => setNoteOpen(false)}
-        title="Mitarbeiter-Notiz"
+        title={t("employeeNoteTitle")}
         footer={
           <button
             type="button"
             onClick={() => setNoteOpen(false)}
             className="btn"
           >
-            Schließen
+            {t("close")}
           </button>
         }
         maxWidth={640}
       >
         <div style={{ display: "grid", gap: 12 }}>
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("employee")}</div>
             <div style={{ fontWeight: 1000 }}>{noteUserLabel}</div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Datum & Zeit</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("dateAndTime")}</div>
             <div style={{ fontWeight: 1000 }}>
-              {formatDateDE(noteDate)} · {noteTime}
+              {formatDate(noteDate, language)} · {noteTime}
             </div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Notiz</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("note")}</div>
             <div
               style={{
                 whiteSpace: "pre-wrap",
@@ -1690,7 +1731,7 @@ export default function AdminDashboardPage() {
                 minHeight: 90,
               }}
             >
-              {noteText.trim() ? noteText : "Keine Notiz vorhanden."}
+              {noteText.trim() ? noteText : t("noNoteAvailable")}
             </div>
           </div>
         </div>
@@ -1699,7 +1740,7 @@ export default function AdminDashboardPage() {
       <Modal
         open={editOpen}
         onClose={() => (editSaving ? null : setEditOpen(false))}
-        title="Arbeitszeit bearbeiten (Admin)"
+        title={t("editWorkTitle")}
         footer={
           <>
             <button
@@ -1712,7 +1753,7 @@ export default function AdminDashboardPage() {
                 opacity: editSaving ? 0.7 : 1,
               }}
             >
-              Abbrechen
+              {t("cancel")}
             </button>
 
             <button
@@ -1725,7 +1766,7 @@ export default function AdminDashboardPage() {
                 opacity: editSaving ? 0.7 : 1,
               }}
             >
-              {editSaving ? "Speichere…" : "Speichern"}
+              {editSaving ? t("saving") : t("save")}
             </button>
           </>
         }
@@ -1733,19 +1774,19 @@ export default function AdminDashboardPage() {
       >
         <div style={{ display: "grid", gap: 12 }}>
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("employee")}</div>
             <div style={{ fontWeight: 1000 }}>{editUserLabel}</div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Datum & Zeit (nicht änderbar)</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("dateAndTimeNotEditable")}</div>
             <div style={{ fontWeight: 1000 }}>
-              {formatDateDE(editDate)} · {editTime}
+              {formatDate(editDate, language)} · {editTime}
             </div>
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Tätigkeit</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("activity")}</div>
             <input
               value={editActivity}
               onChange={(e) => setEditActivity(e.target.value)}
@@ -1762,7 +1803,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Ort</div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("location")}</div>
             <input
               value={editLocation}
               onChange={(e) => setEditLocation(e.target.value)}
@@ -1780,7 +1821,7 @@ export default function AdminDashboardPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
             <div style={{ display: "grid", gap: 6 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Fahrtzeit (Min)</div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("travelTimeMinutes")}</div>
               <input
                 inputMode="numeric"
                 value={editTravelMinutes}
@@ -1825,7 +1866,7 @@ export default function AdminDashboardPage() {
         >
           <div>
             <div style={{ display: "grid", gap: 6 }}>
-              <div className="small">Aktive Mitarbeiter</div>
+              <div className="small">{t("activeEmployees")}</div>
                 <div
                   style={{
                     display: "inline-flex",
@@ -1837,12 +1878,12 @@ export default function AdminDashboardPage() {
                     lineHeight: 1,
                   }}
                 >
-                  <span>Details</span>
+                  <span>{t("details")}</span>
                   <Info size={14} />
                 </div>
               </div>
 
-            <div className="big">{dash?.cards.employeesActive ?? "—"}</div>
+            <div className="big">{dash?.cards.employeesActive ?? t("dash")}</div>
           </div>
 
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>👥</div>
@@ -1861,7 +1902,7 @@ export default function AdminDashboardPage() {
         >
           <div>
            <div style={{ display: "grid", gap: 6 }}>
-            <div className="small">Fehlende Einträge (heute)</div>
+            <div className="small">{t("missingEntriesToday")}</div>
             <div
               style={{
                 display: "inline-flex",
@@ -1873,12 +1914,12 @@ export default function AdminDashboardPage() {
                 lineHeight: 1,
               }}
             >
-              <span>Details</span>
+              <span>{t("details")}</span>
               <Info size={14} />
             </div>
           </div>
 
-            <div className="big">{dash?.cards.missingToday ?? "—"}</div>
+            <div className="big">{dash?.cards.missingToday ?? t("dash")}</div>
           </div>
 
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>⚠️</div>
@@ -1897,7 +1938,7 @@ export default function AdminDashboardPage() {
         >
           <div>
             <div style={{ display: "grid", gap: 6 }}>
-              <div className="small">Abwesenheiten (heute)</div>
+              <div className="small">{t("absencesToday")}</div>
               <div
                 style={{
                   display: "inline-flex",
@@ -1909,12 +1950,12 @@ export default function AdminDashboardPage() {
                   lineHeight: 1,
                 }}
               >
-                <span>Details</span>
+                <span>{t("details")}</span>
                 <Info size={14} />
               </div>
             </div>
 
-            <div className="big">{dash?.cards.absencesToday ?? "—"}</div>
+            <div className="big">{dash?.cards.absencesToday ?? t("dash")}</div>
           </div>
 
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌴</div>
@@ -1932,7 +1973,7 @@ export default function AdminDashboardPage() {
         >
           <div>
             <div style={{ display: "grid", gap: 6 }}>
-              <div className="small">Fehlende Einträge (allgemein)</div>
+              <div className="small">{t("missingEntriesGeneral")}</div>
               <div
                 style={{
                   display: "inline-flex",
@@ -1944,12 +1985,12 @@ export default function AdminDashboardPage() {
                   lineHeight: 1,
                 }}
               >
-                <span>Details</span>
+                <span>{t("details")}</span>
                 <Info size={14} />
               </div>
             </div>
 
-            <div className="big">{dash?.cards.overdueMissingGeneral ?? "—"}</div>
+            <div className="big">{dash?.cards.overdueMissingGeneral ?? t("dash")}</div>
           </div>
 
           <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🕘</div>
@@ -1958,17 +1999,17 @@ export default function AdminDashboardPage() {
 
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
         <div className="section-title" style={{ marginBottom: 10 }}>
-          Monat (gesamt)
+          {t("monthTotal")}
         </div>
 
         <div className="admin-month-summary">
           <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
-            <span>Arbeitszeit gesamt:</span>
+            <span>{t("workTimeTotal")}</span>
             <b>{overview ? formatHours1(overview.totals.workMinutes) : "—"}</b>
           </div>
 
           <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
-            <span>Urlaub:</span>
+            <span>{t("vacation")}</span>
             <b>
               {overview
                 ? `${String(overview.totals.vacationDays).replace(".", ",")} (${formatHoursInfoFromMinutes(
@@ -1979,7 +2020,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
-            <span>Krank:</span>
+            <span>{t("sick")}</span>
             <b>
               {overview
                 ? `${String(overview.totals.sickDays).replace(".", ",")} (${formatHoursInfoFromMinutes(
@@ -1990,7 +2031,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
-            <span>Urlaub unbezahlt:</span>
+            <span>{t("unpaidVacation")}</span>
             <b>
               {overview
                 ? `${String(overview.totals.unpaidAbsenceDays).replace(".", ",")} (${formatHoursInfoFromMinutes(
@@ -2001,7 +2042,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
-            <span>Überstunden (Brutto):</span>
+            <span>{t("overtimeGross")}</span>
             <b>
               {overview
                 ? formatHoursInfoFromMinutes(overview.totals.workMinutes - overview.totals.targetMinutes)
@@ -2010,21 +2051,21 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="admin-month-summary-item" style={{ color: "var(--muted)" }}>
-            <span>Einträge:</span>
+            <span>{t("entries")}</span>
             <b>{overview ? overview.totals.entriesCount : "—"}</b>
           </div>
         </div>
       </div>
 
       <div className="card" style={{ padding: 18 }}>
-        <div className="section-title" style={{ marginBottom: 12 }}>Nach Mitarbeiter</div>
+        <div className="section-title" style={{ marginBottom: 12 }}>{t("byEmployee")}</div>
 
         {loading ? (
-          <div style={{ color: "var(--muted)" }}>Lade...</div>
+          <div style={{ color: "var(--muted)" }}>{t("loading")}</div>
         ) : !dash ? (
-          <div style={{ color: "var(--muted)" }}>Keine Dashboarddaten verfügbar.</div>
+          <div style={{ color: "var(--muted)" }}>{t("noDashboardData")}</div>
         ) : dash.employeesTimeline.length === 0 ? (
-          <div style={{ color: "var(--muted)" }}>Keine Mitarbeiter im Zeitraum.</div>
+          <div style={{ color: "var(--muted)" }}>{t("noEmployeesInPeriod")}</div>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {dash.employeesTimeline
@@ -2055,7 +2096,7 @@ export default function AdminDashboardPage() {
                         fontWeight: 900,
                       }}
                       onClick={() => setOpenUsers((prev) => toggleUser(prev, u.userId))}
-                      title="Ein-/Ausklappen"
+                      title={t("expandCollapse")}
                     >
                       <div>{open ? "▼ " : "▶ "} {u.fullName}</div>
                       <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(totalWorkMinutes)}</div>
@@ -2065,7 +2106,7 @@ export default function AdminDashboardPage() {
                       <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                         {(() => {
                           if (u.items.length === 0) {
-                            return <div style={{ color: "var(--muted)" }}>Keine Einträge.</div>;
+                            return <div style={{ color: "var(--muted)" }}>{t("noEntries")}</div>;
                           }
 
                           const workItems = u.items
@@ -2104,7 +2145,11 @@ export default function AdminDashboardPage() {
 
                           return (
                             <div style={{ display: "grid", gap: 10 }}>
-                              {sectionHeader("WORK", "🛠 Arbeitszeiten", `${workItems.length} Eintrag${workItems.length === 1 ? "" : "e"}`)}
+                              {sectionHeader(
+                                "WORK",
+                                t("workTimes"),
+                                `${workItems.length} ${workItems.length === 1 ? t("entry") : t("entriesPlural")}`
+                              )}
                               {cat.WORK ? (
                                 workItems.length > 0 ? (
                                   <div style={{ display: "grid", gap: 10 }}>
@@ -2144,11 +2189,11 @@ export default function AdminDashboardPage() {
                                               border: "1px solid rgba(255,255,255,0.06)",
                                               fontWeight: 1000,
                                             }}
-                                            title="Tag ein-/ausklappen"
+                                            title={t("expandCollapse")}
                                           >
                                             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                               <span>{dayOpen ? "▼" : "▶"}</span>
-                                              <span>{formatDateDE(dayKey)}</span>
+                                              <span>{formatDate(dayKey, language)}</span>
                                               <span style={{ opacity: 0.5 }}>·</span>
                                               <span style={{ color: "var(--accent)" }}>{formatHM(dayTotalMinutes)}</span>
                                               <span style={{ opacity: 0.5 }}>·</span>
@@ -2166,15 +2211,15 @@ export default function AdminDashboardPage() {
                                                   cursor: "pointer",
                                                   fontWeight: 900,
                                                 }}
-                                                title="Pausen-Details anzeigen"
+                                                title={t("showBreakDetails")}
                                               >
-                                                {formatMinutesCompact(dayPauseMinutes)} Pause
+                                                {formatMinutesCompact(dayPauseMinutes)} {t("pause")}
                                               </button>
                                             </div>
 
                                             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                                               <div style={{ color: "var(--muted-2)", fontSize: 12, fontWeight: 900 }}>
-                                                {dayEntriesCount} Eintrag{dayEntriesCount === 1 ? "" : "e"}
+                                                {dayEntriesCount} {dayEntriesCount === 1 ? t("entry") : t("entriesPlural")}
                                               </div>
                                             </div>
                                           </div>
@@ -2202,7 +2247,7 @@ export default function AdminDashboardPage() {
                                                     <div style={{ color: "var(--muted-2)", fontSize: 12 }}>
                                                       {it.location && it.location.trim()
                                                         ? it.location
-                                                        : "Keine Baustelle / Adresse hinterlegt"}
+                                                        : t("noSiteOrAddress")}
                                                     </div>
                                                   </div>
 
@@ -2221,7 +2266,7 @@ export default function AdminDashboardPage() {
                                                         e.stopPropagation();
                                                         openWorkDetails(u.fullName, it);
                                                       }}
-                                                      title="Details anzeigen"
+                                                      title={t("showDetails")}
                                                       style={{
                                                         padding: "6px 10px",
                                                         borderRadius: 10,
@@ -2232,7 +2277,7 @@ export default function AdminDashboardPage() {
                                                         fontWeight: 900,
                                                       }}
                                                     >
-                                                      ℹ️ Details
+                                                      ℹ️ {t("details")}
                                                     </button>
 
                                                     {it.noteEmployee && it.noteEmployee.trim() ? (
@@ -2242,7 +2287,7 @@ export default function AdminDashboardPage() {
                                                           e.stopPropagation();
                                                           openEmployeeNote(u.fullName, it);
                                                         }}
-                                                        title="Mitarbeiter-Notiz anzeigen"
+                                                        title={t("showEmployeeNote")}
                                                         style={{
                                                           padding: "6px 10px",
                                                           borderRadius: 10,
@@ -2253,7 +2298,7 @@ export default function AdminDashboardPage() {
                                                           fontWeight: 900,
                                                         }}
                                                       >
-                                                        📝 Notiz
+                                                        📝 {t("note")}
                                                       </button>
                                                     ) : null}
 
@@ -2263,7 +2308,7 @@ export default function AdminDashboardPage() {
                                                         e.stopPropagation();
                                                         openEditWork(u.fullName, it);
                                                       }}
-                                                      title="Bearbeiten (ohne Zeit)"
+                                                      title={t("editWithoutTime")}
                                                       style={{
                                                         padding: "6px 10px",
                                                         borderRadius: 10,
@@ -2283,7 +2328,7 @@ export default function AdminDashboardPage() {
                                                         e.stopPropagation();
                                                         deleteWorkEntry(it.id);
                                                       }}
-                                                      title="Löschen"
+                                                      title={t("delete")}
                                                       style={{
                                                         padding: "6px 10px",
                                                         borderRadius: 10,
@@ -2306,23 +2351,27 @@ export default function AdminDashboardPage() {
                                     })}
                                   </div>
                                 ) : (
-                                  <div style={{ color: "var(--muted)", paddingLeft: 6 }}>Keine Arbeitszeiten im Monat.</div>
+                                  <div style={{ color: "var(--muted)", paddingLeft: 6 }}>{t("noWorkTimesInMonth")}</div>
                                 )
                               ) : null}
 
-                              {sectionHeader("SICK", "🌡 Krankheit", `${sickRanges.length} Zeitraum${sickRanges.length === 1 ? "" : "e"}`)}
+                              {sectionHeader(
+                                "VACATION",
+                                t("vacationLabel"),
+                                `${vacationRanges.length} ${vacationRanges.length === 1 ? t("period") : t("periods")}`
+                              )}
                               {cat.SICK ? (
                                 sickRanges.length > 0 ? (
                                   <div style={{ display: "grid", gap: 6 }}>
                                     {sickRanges.map((r, idx) => {
-                                      const from = formatDateDE(r.from);
-                                      const to = formatDateDE(r.to);
+                                      const from = formatDate(r.from, language);
+                                      const to = formatDate(r.to, language);
                                       const text =
                                         r.dayPortion === "HALF_DAY"
-                                          ? `${from} · ${formatDayCountDE(r.days)}`
+                                          ? `${from} · ${formatDayCount(r.days, language)}`
                                           : r.from === r.to
-                                          ? `${from} · ${formatDayCountDE(r.days)}`
-                                          : `${from}–${to} · ${formatDayCountDE(r.days)}`;
+                                          ? `${from} · ${formatDayCount(r.days, language)}`
+                                          : `${from}–${to} · ${formatDayCount(r.days, language)}`;
 
                                       return (
                                         <div
@@ -2335,29 +2384,33 @@ export default function AdminDashboardPage() {
                                             border: "1px solid rgba(224,75,69,0.14)",
                                           }}
                                         >
-                                          🌡 Krank · {text}
+                                          {t("sickLabel")} · {text}
                                         </div>
                                       );
                                     })}
                                   </div>
                                 ) : (
-                                  <div style={{ color: "var(--muted)", paddingLeft: 6 }}>Keine Krankheitstage im Monat.</div>
+                                  <div style={{ color: "var(--muted)", paddingLeft: 6 }}>{t("noSickDaysInMonth")}</div>
                                 )
                               ) : null}
 
-                              {sectionHeader("VACATION", "🌴 Urlaub", `${vacationRanges.length} Zeitraum${vacationRanges.length === 1 ? "" : "e"}`)}
+                              {sectionHeader(
+                                "VACATION",
+                                t("vacationLabel"),
+                                `${vacationRanges.length} ${vacationRanges.length === 1 ? t("period") : t("periods")}`
+                              )}
                               {cat.VACATION ? (
                                 vacationRanges.length > 0 ? (
                                   <div style={{ display: "grid", gap: 6 }}>
                                     {vacationRanges.map((r, idx) => {
-                                      const from = formatDateDE(r.from);
-                                      const to = formatDateDE(r.to);
+                                      const from = formatDate(r.from, language);
+                                      const to = formatDate(r.to, language);
                                       const text =
                                         r.dayPortion === "HALF_DAY"
-                                          ? `${from} · ${formatDayCountDE(r.days)}`
+                                          ? `${from} · ${formatDayCount(r.days, language)}`
                                           : r.from === r.to
-                                          ? `${from} · ${formatDayCountDE(r.days)}`
-                                          : `${from}–${to} · ${formatDayCountDE(r.days)}`;
+                                          ? `${from} · ${formatDayCount(r.days, language)}`
+                                          : `${from}–${to} · ${formatDayCount(r.days, language)}`;
 
                                       return (
                                         <div
@@ -2370,13 +2423,13 @@ export default function AdminDashboardPage() {
                                             border: "1px solid rgba(90,167,255,0.14)",
                                           }}
                                         >
-                                          {r.compensation === "UNPAID" ? "💸 Urlaub unbezahlt" : "🌴 Urlaub"} · {text}
+                                          {r.compensation === "UNPAID" ? t("vacationUnpaidLabel") : t("vacationLabel")} · {text}
                                         </div>
                                       );
                                     })}
                                   </div>
                                 ) : (
-                                  <div style={{ color: "var(--muted)", paddingLeft: 6 }}>Kein Urlaub im Monat.</div>
+                                  <div style={{ color: "var(--muted)", paddingLeft: 6 }}>{t("noVacationInMonth")}</div>
                                 )
                               ) : null}
                             </div>
