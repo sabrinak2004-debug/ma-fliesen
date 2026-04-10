@@ -4,6 +4,11 @@ import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import {
+  ADMIN_TASKS_UI_TEXTS,
+  translate,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 type EmployeeOption = {
   id: string;
@@ -166,54 +171,81 @@ function isAdminTasksApiResponse(v: unknown): v is AdminTasksApiResponse {
   );
 }
 
-function formatDateDE(value: string | null): string {
-  if (!value) return "—";
+function formatDate(value: string | null, language: AppUiLanguage): string {
+  if (!value) {
+    return translate(language, "dash", ADMIN_TASKS_UI_TEXTS);
+  }
 
   const normalized = value.length >= 10 ? value.slice(0, 10) : value;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return "—";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return translate(language, "dash", ADMIN_TASKS_UI_TEXTS);
+  }
 
-  const [y, m, d] = normalized.split("-");
-  return `${d}.${m}.${y}`;
+  const [y, m, d] = normalized.split("-").map(Number);
+  const date = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
+
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Europe/Berlin",
+  }).format(date);
 }
 
-function formatReferenceRangeDE(
+function formatReferenceRange(
   startDate: string | null,
   endDate: string | null,
-  fallbackDate: string | null
+  fallbackDate: string | null,
+  language: AppUiLanguage
 ): string {
   const start = startDate ?? fallbackDate;
   const end = endDate ?? startDate ?? fallbackDate;
 
-  if (!start) return "—";
-  if (!end) return formatDateDE(start);
-  if (start === end) return formatDateDE(start);
+  if (!start) {
+    return translate(language, "dash", ADMIN_TASKS_UI_TEXTS);
+  }
 
-  return `${formatDateDE(start)} bis ${formatDateDE(end)}`;
+  if (!end) {
+    return formatDate(start, language);
+  }
+
+  if (start === end) {
+    return formatDate(start, language);
+  }
+
+  return `${formatDate(start, language)} ${translate(
+    language,
+    "until",
+    ADMIN_TASKS_UI_TEXTS
+  )} ${formatDate(end, language)}`;
 }
 
-function categoryLabel(category: TaskCategory): string {
+function categoryLabel(category: TaskCategory, language: AppUiLanguage): string {
   switch (category) {
     case "WORK_TIME":
-      return "Arbeitszeit";
+      return translate(language, "categoryWorkTime", ADMIN_TASKS_UI_TEXTS);
     case "VACATION":
-      return "Urlaub";
+      return translate(language, "categoryVacation", ADMIN_TASKS_UI_TEXTS);
     case "SICKNESS":
-      return "Krankheit";
+      return translate(language, "categorySickness", ADMIN_TASKS_UI_TEXTS);
     case "GENERAL":
-      return "Allgemein";
+      return translate(language, "categoryGeneral", ADMIN_TASKS_UI_TEXTS);
   }
 }
 
-function requiredActionLabel(requiredAction: TaskRequiredAction): string {
+function requiredActionLabel(
+  requiredAction: TaskRequiredAction,
+  language: AppUiLanguage
+): string {
   switch (requiredAction) {
     case "NONE":
-      return "Keine Pflichtprüfung";
+      return translate(language, "noReviewRequired", ADMIN_TASKS_UI_TEXTS);
     case "WORK_ENTRY_FOR_DATE":
-      return "Arbeitszeit-Eintrag erforderlich";
+      return translate(language, "workEntryRequired", ADMIN_TASKS_UI_TEXTS);
     case "VACATION_ENTRY_FOR_DATE":
-      return "Urlaubs-Eintrag erforderlich";
+      return translate(language, "vacationEntryRequired", ADMIN_TASKS_UI_TEXTS);
     case "SICK_ENTRY_FOR_DATE":
-      return "Krankheits-Eintrag erforderlich";
+      return translate(language, "sickEntryRequired", ADMIN_TASKS_UI_TEXTS);
   }
 }
 
@@ -263,6 +295,11 @@ export default function AdminTasksPage() {
 
   const [taskQuery, setTaskQuery] = useState("");
   const [taskCategoryFilter, setTaskCategoryFilter] = useState<"ALL" | TaskCategory>("ALL");
+  const language: AppUiLanguage = session?.language ?? "DE";
+
+  function t(key: keyof typeof ADMIN_TASKS_UI_TEXTS): string {
+    return translate(language, key, ADMIN_TASKS_UI_TEXTS);
+  }
 
   async function loadData(): Promise<void> {
     if (!session || session.role !== "ADMIN") return;
@@ -283,7 +320,7 @@ export default function AdminTasksPage() {
         const message =
           isRecord(data) && isString(data["error"])
             ? data["error"]
-            : "Aufgaben konnten nicht geladen werden.";
+            : t("loadError");
         setError(message);
         setTasks([]);
         setEmployees([]);
@@ -291,7 +328,7 @@ export default function AdminTasksPage() {
       }
 
       if (!isAdminTasksApiResponse(data)) {
-        setError("Unerwartete Antwort vom Server.");
+        setError(t("unexpectedServerResponse"));
         setTasks([]);
         setEmployees([]);
         return;
@@ -304,7 +341,7 @@ export default function AdminTasksPage() {
 
       setEmployees(uniqueEmployees);
     } catch {
-      setError("Netzwerkfehler beim Laden der Aufgaben.");
+      setError(t("networkLoadError"));
       setTasks([]);
       setEmployees([]);
     } finally {
@@ -394,7 +431,7 @@ export default function AdminTasksPage() {
         task.title.toLowerCase().includes(q) ||
         (task.description ?? "").toLowerCase().includes(q) ||
         task.assignedToUser.fullName.toLowerCase().includes(q) ||
-        categoryLabel(task.category).toLowerCase().includes(q)
+        categoryLabel(task.category, language).toLowerCase().includes(q)
       );
     });
   }, [tasks, taskCategoryFilter, taskQuery]);
@@ -439,12 +476,12 @@ export default function AdminTasksPage() {
         const message =
           isRecord(data) && isString(data["error"])
             ? data["error"]
-            : "Aufgabe konnte nicht erstellt werden.";
+            : t("createTaskError");
         setError(message);
         return;
       }
 
-      setSuccess("Aufgabe wurde erstellt.");
+      setSuccess(t("createTaskSuccess"));
       setTitle("");
       setDescription("");
       setCategory("GENERAL");
@@ -453,7 +490,7 @@ export default function AdminTasksPage() {
       setReferenceEndDate("");
       await loadData();
     } catch {
-      setError("Netzwerkfehler beim Erstellen der Aufgabe.");
+      setError(t("networkCreateError"));
     } finally {
       setSubmitLoading(false);
     }
@@ -461,20 +498,20 @@ export default function AdminTasksPage() {
 
   if (!sessionChecked) {
     return (
-      <AppShell activeLabel="Aufgaben verwalten">
+      <AppShell activeLabel={t("adminTasksActiveLabel")}>
         <div className="card" style={{ padding: 18 }}>
-          <div style={{ color: "var(--muted)" }}>Lade...</div>
+          <div style={{ color: "var(--muted)" }}>{t("loading")}</div>
         </div>
       </AppShell>
     );
   }
 
   return (
-    <AppShell activeLabel="Aufgaben verwalten">
+    <AppShell activeLabel={t("adminTasksActiveLabel")}>
       <div style={{ display: "grid", gap: 16 }}>
         <div className="card" style={{ padding: 18 }}>
           <div className="section-title" style={{ marginBottom: 12 }}>
-            Neue Aufgabe erstellen
+            {t("createTaskTitle")}
           </div>
 
           <form
@@ -482,7 +519,7 @@ export default function AdminTasksPage() {
             style={{ display: "grid", gap: 12 }}
           >
             <div style={{ display: "grid", gap: 6 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Mitarbeiter</div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("employee")}</div>
               <select
                 value={assignedToUserId}
                 onChange={(e) => setAssignedToUserId(e.target.value)}
@@ -490,7 +527,7 @@ export default function AdminTasksPage() {
                 className="select"
               >
                 <option value="" style={{ color: "black" }}>
-                  — Bitte wählen —
+                  {t("pleaseChoose")}
                 </option>
                 {employees.map((employee) => (
                   <option key={employee.id} value={employee.id} style={{ color: "black" }}>
@@ -501,7 +538,7 @@ export default function AdminTasksPage() {
             </div>
 
             <div style={{ display: "grid", gap: 6 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Titel</div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("title")}</div>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -512,7 +549,7 @@ export default function AdminTasksPage() {
             </div>
 
             <div style={{ display: "grid", gap: 6 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>Beschreibung</div>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("description")}</div>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -523,23 +560,23 @@ export default function AdminTasksPage() {
 
             <div className="admin-task-form-grid">
               <div style={{ display: "grid", gap: 6 }}>
-                <div style={{ fontSize: 12, color: "var(--muted)" }}>Kategorie</div>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("category")}</div>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as TaskCategory)}
                   className="select"
                 >
-                  <option value="WORK_TIME" style={{ color: "black" }}>Arbeitszeit</option>
-                  <option value="VACATION" style={{ color: "black" }}>Urlaub</option>
-                  <option value="SICKNESS" style={{ color: "black" }}>Krankheit</option>
-                  <option value="GENERAL" style={{ color: "black" }}>Allgemein</option>
+                  <option value="WORK_TIME" style={{ color: "black" }}>{t("categoryWorkTime")}</option>
+                  <option value="VACATION" style={{ color: "black" }}>{t("categoryVacation")}</option>
+                  <option value="SICKNESS" style={{ color: "black" }}>{t("categorySickness")}</option>
+                  <option value="GENERAL" style={{ color: "black" }}>{t("categoryGeneral")}</option>
                 </select>
               </div>
 
               <div style={{ display: "grid", gap: 6 }}>
-                <div style={{ fontSize: 12, color: "var(--muted)" }}>Pflichtaktion</div>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("requiredAction")}</div>
                 <input
-                  value={requiredActionLabel(requiredAction)}
+                  value={requiredActionLabel(requiredAction, language)}
                   readOnly
                   className="input"
                   style={{
@@ -550,7 +587,7 @@ export default function AdminTasksPage() {
               </div>
 
               <div className="admin-task-date-field">
-                <div style={{ fontSize: 12, color: "var(--muted)" }}>Bezugszeitraum von</div>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("referenceStart")}</div>
                 <input
                   type="date"
                   value={referenceStartDate}
@@ -565,7 +602,7 @@ export default function AdminTasksPage() {
               </div>
 
               <div className="admin-task-date-field">
-                <div style={{ fontSize: 12, color: "var(--muted)" }}>Bezugszeitraum bis</div>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("referenceEnd")}</div>
                 <input
                   type="date"
                   value={referenceEndDate}
@@ -593,7 +630,7 @@ export default function AdminTasksPage() {
                   opacity: submitLoading ? 0.7 : 1,
                 }}
               >
-                {submitLoading ? "Erstelle..." : "Aufgabe erstellen"}
+                {submitLoading ? t("createTaskSubmitting") : t("createTaskSubmit")}
               </button>
             </div>
           </form>
@@ -601,7 +638,7 @@ export default function AdminTasksPage() {
 
         <div className="card" style={{ padding: 18 }}>
           <div className="section-title" style={{ marginBottom: 12 }}>
-            Aufgabenübersicht
+            {t("tasksOverview")}
           </div>
 
           <div
@@ -615,7 +652,7 @@ export default function AdminTasksPage() {
             <input
               value={taskQuery}
               onChange={(e) => setTaskQuery(e.target.value)}
-              placeholder="Titel, Beschreibung oder Mitarbeiter suchen…"
+              placeholder={t("searchPlaceholder")}
               className="app-filter-input"
             />
 
@@ -627,31 +664,31 @@ export default function AdminTasksPage() {
               className="app-filter-select"
             >
               <option value="ALL" style={{ color: "black" }}>
-                Alle Kategorien
+                {t("allCategories")}
               </option>
               <option value="WORK_TIME" style={{ color: "black" }}>
-                Arbeitszeit
+                {t("categoryWorkTime")}
               </option>
               <option value="VACATION" style={{ color: "black" }}>
-                Urlaub
+                {t("categoryVacation")}
               </option>
               <option value="SICKNESS" style={{ color: "black" }}>
-                Krankheit
+                {t("categorySickness")}
               </option>
               <option value="GENERAL" style={{ color: "black" }}>
-                Allgemein
+                {t("categoryGeneral")}
               </option>
             </select>
           </div>
 
           <div className="section-title" style={{ marginBottom: 12 }}>
-            Offene Aufgaben
+            {t("openTasks")}
           </div>
 
           {loading ? (
-            <div style={{ color: "var(--muted)" }}>Lade...</div>
+            <div style={{ color: "var(--muted)" }}>{t("loading")}</div>
           ) : openTasks.length === 0 ? (
-            <div style={{ color: "var(--muted)" }}>Keine offenen Aufgaben vorhanden.</div>
+            <div style={{ color: "var(--muted)" }}>{t("noOpenTasks")}</div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {openTasks.map((task) => (
@@ -666,24 +703,26 @@ export default function AdminTasksPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                     <div style={{ fontWeight: 1000 }}>{task.title}</div>
                     <div style={{ fontSize: 12, color: "var(--muted-2)", fontWeight: 900 }}>
-                      {categoryLabel(task.category)}
+                      {categoryLabel(task.category, language)}
                     </div>
                   </div>
 
                   <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-                    Mitarbeiter: {task.assignedToUser.fullName}
+                    {t("employeePrefix")} {task.assignedToUser.fullName}
                   </div>
 
                   <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-                    Pflicht: {requiredActionLabel(task.requiredAction)}
+                    {t("requiredPrefix")} {requiredActionLabel(task.requiredAction, language)}
                   </div>
 
                   <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-                    Bezugszeitraum: {formatReferenceRangeDE(
-                      task.referenceStartDate,
-                      task.referenceEndDate,
-                      task.referenceDate
-                    )}
+                    {t("referenceRangePrefix")}{" "}
+                      {formatReferenceRange(
+                        task.referenceStartDate,
+                        task.referenceEndDate,
+                        task.referenceDate,
+                        language
+                      )}
                   </div>
 
                   {task.description ? (
@@ -703,7 +742,7 @@ export default function AdminTasksPage() {
                       }
                       className="tenant-action-link"
                     >
-                      Öffnen
+                      {t("open")}
                     </Link>
                   </div>
                 </div>
@@ -712,11 +751,11 @@ export default function AdminTasksPage() {
           )}
 
           <div className="section-title" style={{ marginTop: 22, marginBottom: 12 }}>
-            Erledigte Aufgaben
+            {t("completedTasks")}
           </div>
 
           {loading ? (
-            <div style={{ color: "var(--muted)" }}>Lade...</div>
+            <div style={{ color: "var(--muted)" }}>{t("loading")}</div>
           ) : completedTasks.length === 0 ? (
             <div style={{ color: "var(--muted)" }}>Keine erledigten Aufgaben vorhanden.</div>
           ) : (
@@ -733,20 +772,21 @@ export default function AdminTasksPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                     <div style={{ fontWeight: 1000 }}>{task.title}</div>
                     <div style={{ fontSize: 12, color: "var(--muted-2)", fontWeight: 900 }}>
-                      {categoryLabel(task.category)}
+                      {categoryLabel(task.category, language)}
                     </div>
                   </div>
 
                   <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-                    Mitarbeiter: {task.assignedToUser.fullName}
+                    {t("employeePrefix")} {task.assignedToUser.fullName}
                   </div>
 
                   <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-                    Erledigt am: {formatDateDE(task.completedAt)}
+                    {t("completedAt")} {formatDate(task.completedAt, language)}
                   </div>
 
                   <div style={{ color: "var(--muted-2)", fontSize: 13 }}>
-                    Erledigt von: {task.completedByUser?.fullName ?? "—"}
+                    {t("completedBy")}{" "}
+                    {task.completedByUser?.fullName ?? t("dash")}
                   </div>
 
                   {task.description ? (

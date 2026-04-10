@@ -3,6 +3,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import {
+  ADMIN_CORRECTION_REQUESTS_UI_TEXTS,
+  translate,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -187,32 +192,54 @@ function parseAdminCorrectionRequestsResponse(v: unknown): AdminCorrectionReques
   };
 }
 
-function formatDateDE(ymd: string): string {
+function formatDate(ymd: string, language: AppUiLanguage): string {
   const normalized = ymd.length >= 10 ? ymd.slice(0, 10) : ymd;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return ymd;
 
-  const [y, m, d] = normalized.split("-");
-  return `${d}.${m}.${y}`;
+  const [y, m, d] = normalized.split("-").map(Number);
+  const date = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
+
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Europe/Berlin",
+  }).format(date);
 }
 
-function formatDateTimeDE(iso: string | null): string {
-  if (!iso) return "—";
+function formatDateTime(iso: string | null, language: AppUiLanguage): string {
+  if (!iso) {
+    return translate(language, "activeLabel", ADMIN_CORRECTION_REQUESTS_UI_TEXTS) === ""
+      ? "—"
+      : "—";
+  }
 
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
 
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = String(date.getFullYear());
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-
-  return `${day}.${month}.${year}, ${hours}:${minutes}`;
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Berlin",
+  }).format(date);
 }
 
-function rangeLabel(startDate: string, endDate: string): string {
-  if (startDate === endDate) return formatDateDE(startDate);
-  return `${formatDateDE(startDate)} – ${formatDateDE(endDate)}`;
+function formatDash(): string {
+  return "—";
+}
+
+function rangeLabel(
+  startDate: string,
+  endDate: string,
+  language: AppUiLanguage
+): string {
+  if (startDate === endDate) return formatDate(startDate, language);
+  return `${formatDate(startDate, language)} – ${formatDate(endDate, language)}`;
 }
 
 function countDaysInclusive(startDate: string, endDate: string): number {
@@ -227,10 +254,16 @@ function countDaysInclusive(startDate: string, endDate: string): number {
   return Math.floor(diffMs / 86400000) + 1;
 }
 
-function statusLabel(status: RequestStatus): string {
-  if (status === "PENDING") return "Offen";
-  if (status === "APPROVED") return "Genehmigt";
-  return "Abgelehnt";
+function statusLabel(status: RequestStatus, language: AppUiLanguage): string {
+  if (status === "PENDING") {
+    return translate(language, "open", ADMIN_CORRECTION_REQUESTS_UI_TEXTS);
+  }
+
+  if (status === "APPROVED") {
+    return translate(language, "approved", ADMIN_CORRECTION_REQUESTS_UI_TEXTS);
+  }
+
+  return translate(language, "rejected", ADMIN_CORRECTION_REQUESTS_UI_TEXTS);
 }
 
 function statusClassName(status: RequestStatus): string {
@@ -280,6 +313,11 @@ export default function NachtragsanfragenPage() {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthValue());
+  const language: AppUiLanguage = session?.language ?? "DE";
+
+  function t(key: keyof typeof ADMIN_CORRECTION_REQUESTS_UI_TEXTS): string {
+    return translate(language, key, ADMIN_CORRECTION_REQUESTS_UI_TEXTS);
+  }
 
   async function loadRequests() {
     if (!session || session.role !== "ADMIN") return;
@@ -309,7 +347,7 @@ export default function NachtragsanfragenPage() {
 
       if (!response.ok || !parsed.ok) {
         setItems([]);
-        setError(parsed.ok ? "Nachtragsanfragen konnten nicht geladen werden." : parsed.error);
+        setError(parsed.ok ? t("loadError") : parsed.error);
         window.dispatchEvent(new Event("admin-requests-changed"));
         return;
       }
@@ -318,7 +356,7 @@ export default function NachtragsanfragenPage() {
       window.dispatchEvent(new Event("admin-requests-changed"));
     } catch {
       setItems([]);
-      setError("Netzwerkfehler beim Laden der Nachtragsanfragen.");
+      setError(t("networkLoadError"));
       window.dispatchEvent(new Event("admin-requests-changed"));
     } finally {
       setLoading(false);
@@ -440,14 +478,14 @@ export default function NachtragsanfragenPage() {
         const message =
           isRecord(json) && typeof json["error"] === "string"
             ? json["error"]
-            : "Genehmigung fehlgeschlagen.";
+            : t("approveFailed");
         setError(message);
         return;
       }
 
       await loadRequests();
     } catch {
-      setError("Netzwerkfehler bei der Genehmigung.");
+      setError(t("approveNetworkError"));
     } finally {
       setBusyId(null);
     }
@@ -469,14 +507,14 @@ export default function NachtragsanfragenPage() {
         const message =
           isRecord(json) && typeof json["error"] === "string"
             ? json["error"]
-            : "Ablehnung fehlgeschlagen.";
+            : t("rejectFailed");
         setError(message);
         return;
       }
 
       await loadRequests();
     } catch {
-      setError("Netzwerkfehler bei der Ablehnung.");
+      setError(t("rejectNetworkError"));
     } finally {
       setBusyId(null);
     }
@@ -485,7 +523,7 @@ export default function NachtragsanfragenPage() {
   async function deleteRequest(id: string) {
     const confirmed =
       typeof window !== "undefined"
-        ? window.confirm("Möchtest du diese Nachtragsanfrage wirklich dauerhaft löschen?")
+        ? window.confirm(t("deleteConfirm"))
         : false;
 
     if (!confirmed) return;
@@ -508,14 +546,14 @@ export default function NachtragsanfragenPage() {
         const message =
           isRecord(json) && typeof json["error"] === "string"
             ? json["error"]
-            : "Löschen fehlgeschlagen.";
+            : t("deleteFailed");
         setError(message);
         return;
       }
 
       await loadRequests();
     } catch {
-      setError("Netzwerkfehler beim Löschen.");
+      setError(t("deleteNetworkError"));
     } finally {
       setBusyId(null);
     }
@@ -537,9 +575,9 @@ export default function NachtragsanfragenPage() {
   );
 
   const selectedUserLabel = useMemo(() => {
-    if (!selectedUserId) return "Alle Mitarbeiter";
-    return users.find((user) => user.id === selectedUserId)?.fullName ?? "Ausgewählter Mitarbeiter";
-  }, [users, selectedUserId]);
+    if (!selectedUserId) return t("allEmployees");
+    return users.find((user) => user.id === selectedUserId)?.fullName ?? t("selectedEmployee");
+  }, [users, selectedUserId, language]);
 
   function renderRequestCard(item: TimeEntryCorrectionRequestItem) {
     const isBusy = busyId === item.id;
@@ -565,21 +603,22 @@ export default function NachtragsanfragenPage() {
             </div>
 
             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 14 }}>
-              🕘 Nachtrag · {rangeLabel(item.startDate, item.endDate)} · {days} {days === 1 ? "Tag" : "Tage"}
+              🕘 {t("request")} · {rangeLabel(item.startDate, item.endDate, language)} · {days}{" "}
+              {days === 1 ? t("day") : t("days")}
             </div>
 
             <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span className={statusClassName(item.status)}>
-                {statusLabel(item.status)}
+                {statusLabel(item.status, language)}
               </span>
 
               <span className="admin-workflow-meta-chip">
-                Erstellt: {formatDateTimeDE(item.createdAt)}
+                {t("createdAt")} {formatDateTime(item.createdAt, language)}
               </span>
 
               {item.decidedAt ? (
                 <span className="admin-workflow-meta-chip">
-                  Entscheidung: {formatDateTimeDE(item.decidedAt)}
+                  {t("decisionAt")} {formatDateTime(item.decidedAt, language)}
                 </span>
               ) : null}
             </div>
@@ -588,38 +627,38 @@ export default function NachtragsanfragenPage() {
 
         <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
           <div>
-            <div className="label">Zeitraum</div>
+            <div className="label">{t("period")}</div>
             <div className="input admin-workflow-readonly-input">
-              {rangeLabel(item.startDate, item.endDate)}
+              {rangeLabel(item.startDate, item.endDate, language)}
             </div>
           </div>
 
           <div>
-            <div className="label">Mitarbeiter-Notiz</div>
+            <div className="label">{t("employeeNote")}</div>
             <div
               className={`input admin-workflow-note-input${
                 item.noteEmployee.trim() ? "" : " admin-workflow-note-input-empty"
               }`}
             >
-              {item.noteEmployee.trim() || "Keine Notiz vorhanden."}
+              {item.noteEmployee.trim() || t("noNote")}
             </div>
           </div>
 
           <div>
-            <div className="label">Admin-Notiz</div>
+            <div className="label">{t("adminNote")}</div>
             <div
               className={`input admin-workflow-note-input${
                 item.noteAdmin.trim() ? "" : " admin-workflow-note-input-empty"
               }`}
             >
-              {item.noteAdmin.trim() || "Keine Notiz vorhanden."}
+              {item.noteAdmin.trim() || t("noNote")}
             </div>
           </div>
 
           <div>
-            <div className="label">Bearbeitet von</div>
+            <div className="label">{t("processedBy")}</div>
             <div className="input admin-workflow-readonly-input-muted">
-              {item.decidedBy ? item.decidedBy.fullName : "Noch nicht entschieden"}
+              {item.decidedBy ? item.decidedBy.fullName : t("notDecidedYet")}
             </div>
           </div>
         </div>
@@ -647,7 +686,7 @@ export default function NachtragsanfragenPage() {
               minWidth: 0,
             }}
           >
-            {isBusy ? "Löscht..." : "Löschen"}
+            {isBusy ? t("deleting") : t("delete")}
           </button>
 
           {item.status === "PENDING" ? (
@@ -664,7 +703,7 @@ export default function NachtragsanfragenPage() {
                   minWidth: 0,
                 }}
               >
-                {isBusy ? "Verarbeitet..." : "Ablehnen"}
+                {isBusy ? t("processing") : t("reject")}
               </button>
 
               <button
@@ -679,7 +718,7 @@ export default function NachtragsanfragenPage() {
                   minWidth: 0,
                 }}
               >
-                {isBusy ? "Verarbeitet..." : "Genehmigen"}
+                {isBusy ? t("processing") : t("approve")}
               </button>
             </>
           ) : null}
@@ -690,20 +729,20 @@ export default function NachtragsanfragenPage() {
 
   if (!sessionChecked) {
     return (
-      <AppShell activeLabel="#wirkönnendas">
+      <AppShell activeLabel={t("activeLabel")}>
         <div className="card admin-workflow-loading-card">
-          <div className="admin-workflow-filter-text">Lädt Nachtragsanfragen...</div>
+          <div className="admin-workflow-filter-text">{t("loadingInitial")}</div>
         </div>
       </AppShell>
     );
   }
 
   return (
-    <AppShell activeLabel="#wirkönnendas">
+    <AppShell activeLabel={t("activeLabel")}>
       <div className="kpi-grid" style={{ marginBottom: 14 }}>
         <div className="card kpi">
           <div>
-            <div className="small">Offene Nachtragsanfragen</div>
+            <div className="small">{t("pendingRequestsKpi")}</div>
             <div className="big">{pendingItems.length}</div>
           </div>
           <div className="admin-workflow-kpi-icon">🕘</div>
@@ -711,7 +750,7 @@ export default function NachtragsanfragenPage() {
 
         <div className="card kpi">
           <div>
-            <div className="small">Genehmigt</div>
+            <div className="small">{t("approvedKpi")}</div>
             <div className="big">{approvedItems.length}</div>
           </div>
           <div className="admin-workflow-kpi-icon">✅</div>
@@ -719,7 +758,7 @@ export default function NachtragsanfragenPage() {
 
         <div className="card kpi">
           <div>
-            <div className="small">Abgelehnt</div>
+            <div className="small">{t("rejectedKpi")}</div>
             <div className="big">{rejectedItems.length}</div>
           </div>
           <div className="admin-workflow-kpi-icon">⛔</div>
@@ -729,22 +768,22 @@ export default function NachtragsanfragenPage() {
       <div className="card card-olive admin-workflow-filter-shell">
         <div className="section-title admin-workflow-filter-title">
           <span className="admin-workflow-filter-icon">🕘</span>
-          Nachtragsanfragen
+          {t("pageTitle")}
         </div>
 
         <div className="admin-workflow-filter-text">
-          Hier siehst du alle Nachtragsanfragen deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.
+          {t("pageDescription")}
         </div>
 
         <div className="admin-workflow-filter-grid">
           <div className="admin-workflow-filter-field">
-            <div className="label">Mitarbeiter</div>
+            <div className="label">{t("employee")}</div>
             <select
               className="input admin-workflow-filter-input"
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
             >
-              <option value="">Alle Mitarbeiter</option>
+              <option value="">{t("allEmployees")}</option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.fullName}
@@ -754,7 +793,7 @@ export default function NachtragsanfragenPage() {
           </div>
 
           <div className="admin-workflow-filter-field">
-            <div className="label">Monat</div>
+            <div className="label">{t("month")}</div>
             <input
               className="input admin-workflow-filter-input"
               type="month"
@@ -773,19 +812,19 @@ export default function NachtragsanfragenPage() {
 
       {loading ? (
         <div className="card admin-workflow-loading-card">
-          Lädt Nachtragsanfragen...
+          {t("loadingInitial")}
         </div>
       ) : (
         <div className="admin-workflow-shell">
           <details open className="admin-workflow-section">
             <summary className="admin-workflow-section-summary">
-              {sectionTitle("Offen", pendingItems.length)}
+              {sectionTitle(t("open"), pendingItems.length)}
             </summary>
 
             <div className="admin-workflow-section-content">
               {pendingItems.length === 0 ? (
                 <div className="card admin-workflow-empty-card">
-                  Keine offenen Nachtragsanfragen für diesen Filter.
+                  {t("emptyPending")}
                 </div>
               ) : (
                 pendingItems.map(renderRequestCard)
@@ -795,13 +834,13 @@ export default function NachtragsanfragenPage() {
 
           <details className="admin-workflow-section">
             <summary className="admin-workflow-section-summary">
-              {sectionTitle(`Genehmigt – ${selectedUserLabel}`, approvedItems.length)}
+              {sectionTitle(`${t("approved")} – ${selectedUserLabel}`, approvedItems.length)}
             </summary>
 
             <div className="admin-workflow-section-content">
               {approvedItems.length === 0 ? (
                 <div className="card admin-workflow-empty-card">
-                  Keine genehmigten Nachtragsanfragen für diesen Filter.
+                  {t("emptyApproved")}
                 </div>
               ) : (
                 approvedItems.map(renderRequestCard)
@@ -811,13 +850,13 @@ export default function NachtragsanfragenPage() {
 
           <details className="admin-workflow-section">
             <summary className="admin-workflow-section-summary">
-              {sectionTitle(`Abgelehnt – ${selectedUserLabel}`, rejectedItems.length)}
+              {sectionTitle(`${t("rejected")} – ${selectedUserLabel}`, rejectedItems.length)}
             </summary>
 
             <div className="admin-workflow-section-content">
               {rejectedItems.length === 0 ? (
                 <div className="card admin-workflow-empty-card">
-                  Keine abgelehnten Nachtragsanfragen für diesen Filter.
+                  {t("emptyRejected")}
                 </div>
               ) : (
                 rejectedItems.map(renderRequestCard)
