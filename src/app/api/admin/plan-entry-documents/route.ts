@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/requireAdmin";
+import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,13 +23,76 @@ function sanitizeFileName(name: string): string {
 const ALLOWED_MIME = new Set<string>(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 15 * 1024 * 1024; // 15 MB
 
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
+
+function toPrismaNullableJsonInput(
+  value: TranslationMap | null
+): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+  if (value === null) {
+    return Prisma.JsonNull;
+  }
+
+  return value as Prisma.InputJsonValue;
+}
+
 export async function GET(req: Request) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!admin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const adminUser = await prisma.appUser.findUnique({
+    where: { id: admin.id },
+    select: {
+      language: true,
+    },
+  });
 
   const url = new URL(req.url);
   const planEntryId = url.searchParams.get("planEntryId");
-  if (!planEntryId) return NextResponse.json({ error: "planEntryId missing" }, { status: 400 });
+
+  if (!planEntryId) {
+    return NextResponse.json({ error: "planEntryId missing" }, { status: 400 });
+  }
 
   const entry = await prisma.planEntry.findUnique({
     where: { id: planEntryId },
@@ -56,15 +121,31 @@ export async function GET(req: Request) {
       id: true,
       planEntryId: true,
       title: true,
+      titleTranslations: true,
       fileName: true,
       mimeType: true,
       sizeBytes: true,
       createdAt: true,
-      uploadedBy: { select: { id: true, fullName: true } },
+      uploadedBy: {
+        select: {
+          id: true,
+          fullName: true,
+        },
+      },
     },
   });
 
-  return NextResponse.json({ ok: true, documents: docs });
+  return NextResponse.json({
+    ok: true,
+    documents: docs.map((doc) => ({
+      ...doc,
+      title: getTranslatedText(
+        doc.title,
+        doc.titleTranslations,
+        adminUser?.language ?? "DE"
+      ),
+    })),
+  });
 }
 
 export async function POST(req: Request) {
@@ -88,6 +169,16 @@ export async function POST(req: Request) {
 
   const planEntryId = getString(planEntryIdRaw);
   const title = (getString(titleRaw) ?? "Dokument").trim().slice(0, 80);
+
+  let titleSourceLanguage: SupportedLang | null = null;
+  let titleTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (title.length > 0) {
+    const translationResult = await translateAllLanguages(title);
+    titleSourceLanguage = translationResult.sourceLanguage;
+    titleTranslations = toPrismaNullableJsonInput(translationResult.translations);
+  }
 
   if (!planEntryId) return NextResponse.json({ error: "planEntryId missing" }, { status: 400 });
   if (!(fileRaw instanceof File)) return NextResponse.json({ error: "file missing" }, { status: 400 });
@@ -144,6 +235,8 @@ export async function POST(req: Request) {
       planEntryId,
       uploadedById: admin.id,
       title: title.length ? title : "Dokument",
+      titleSourceLanguage,
+      titleTranslations,
       fileName,
       mimeType,
       sizeBytes,
@@ -153,6 +246,7 @@ export async function POST(req: Request) {
       id: true,
       planEntryId: true,
       title: true,
+      titleTranslations: true,
       fileName: true,
       mimeType: true,
       sizeBytes: true,

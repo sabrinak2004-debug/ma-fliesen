@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/requireAdmin";
+import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 
 function parseYMD(ymd: string) {
   const [y, m, d] = ymd.split("-").map(Number);
@@ -21,13 +23,76 @@ type PostBody = {
   noteEmployee?: string;
 };
 
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
+
+function toPrismaNullableJsonInput(
+  value: TranslationMap | null
+): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+  if (value === null) {
+    return Prisma.JsonNull;
+  }
+
+  return value as Prisma.InputJsonValue;
+}
+
 export async function GET(req: Request) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!admin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const adminUser = await prisma.appUser.findUnique({
+    where: { id: admin.id },
+    select: {
+      language: true,
+    },
+  });
 
   const url = new URL(req.url);
-  const weekStart = url.searchParams.get("weekStart"); // Montag YYYY-MM-DD
-  if (!weekStart) return NextResponse.json({ error: "weekStart missing" }, { status: 400 });
+  const weekStart = url.searchParams.get("weekStart");
+
+  if (!weekStart) {
+    return NextResponse.json({ error: "weekStart missing" }, { status: 400 });
+  }
 
   const start = parseYMD(weekStart);
   const end = new Date(start);
@@ -40,11 +105,37 @@ export async function GET(req: Request) {
         companyId: admin.companyId,
       },
     },
-    include: { user: { select: { id: true, fullName: true } } },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+        },
+      },
+    },
     orderBy: [{ workDate: "asc" }, { startHHMM: "asc" }],
   });
 
-  return NextResponse.json({ entries });
+  return NextResponse.json({
+    entries: entries.map((entry) => ({
+      ...entry,
+      activity: getTranslatedText(
+        entry.activity,
+        entry.activityTranslations,
+        adminUser?.language ?? "DE"
+      ),
+      location: getTranslatedText(
+        entry.location,
+        entry.locationTranslations,
+        adminUser?.language ?? "DE"
+      ),
+      noteEmployee: getTranslatedText(
+        entry.noteEmployee,
+        entry.noteEmployeeTranslations,
+        adminUser?.language ?? "DE"
+      ),
+    })),
+  });
 }
 
 export async function POST(req: Request) {
@@ -82,17 +173,51 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Planung nur für Mitarbeiter erlaubt." }, { status: 400 });
   }
 
+  let activitySourceLanguage: SupportedLang | null = null;
+  let activityTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (typeof activity === "string" && activity.trim()) {
+    const translationResult = await translateAllLanguages(activity);
+    activitySourceLanguage = translationResult.sourceLanguage;
+    activityTranslations = toPrismaNullableJsonInput(translationResult.translations);
+  }
+
+  let locationSourceLanguage: SupportedLang | null = null;
+  let locationTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (typeof location === "string" && location.trim()) {
+    const translationResult = await translateAllLanguages(location);
+    locationSourceLanguage = translationResult.sourceLanguage;
+    locationTranslations = toPrismaNullableJsonInput(translationResult.translations);
+  }
+
+  let noteEmployeeSourceLanguage: SupportedLang | null = null;
+  let noteEmployeeTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (typeof noteEmployee === "string" && noteEmployee.trim()) {
+    const translationResult = await translateAllLanguages(noteEmployee);
+    noteEmployeeSourceLanguage = translationResult.sourceLanguage;
+    noteEmployeeTranslations = toPrismaNullableJsonInput(translationResult.translations);
+  }
+
   const data = {
     userId: String(userId),
     workDate: parseYMD(String(workDate)),
     startHHMM: String(startHHMM),
     endHHMM: String(endHHMM),
     activity: String(activity),
+    activitySourceLanguage,
+    activityTranslations,
     location: location ? String(location) : "",
+    locationSourceLanguage,
+    locationTranslations,
     travelMinutes: Number(travelMinutes ?? 0),
-
-    // ✅ Mitarbeiter-Notiz am PlanEntry
     noteEmployee: noteEmployee ? String(noteEmployee) : null,
+    noteEmployeeSourceLanguage,
+    noteEmployeeTranslations,
   };
 
   if (id) {

@@ -4,9 +4,10 @@ import {
   AbsenceDayPortion,
   AbsenceRequestStatus,
   AbsenceType,
+  Prisma,
 } from "@prisma/client";
+import type { SupportedLang } from "@/lib/translate";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { rebalanceAutoUnpaidVacationRequestsForYear } from "@/app/api/absence-requests/route";
 
@@ -25,33 +26,76 @@ function toIsoDateUTC(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+type TranslationMap = Partial<Record<SupportedLang, string>>;
 
-function mapRequest(r: {
-  id: string;
-  startDate: Date;
-  endDate: Date;
-  type: AbsenceType;
-  dayPortion: AbsenceDayPortion;
-  status: AbsenceRequestStatus;
-  compensation: AbsenceCompensation;
-  paidVacationUnits: number;
-  unpaidVacationUnits: number;
-  autoUnpaidBecauseNoBalance: boolean;
-  compensationLockedBySystem: boolean;
-  noteEmployee: string | null;
-  noteEmployeeTranslations: Prisma.JsonValue | null;
-  createdAt: Date;
-  updatedAt: Date;
-  decidedAt: Date | null;
-  user: {
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
+
+function mapRequest(
+  r: {
     id: string;
-    fullName: string;
-  };
-  decidedBy: {
-    id: string;
-    fullName: string;
-  } | null;
-}) {
+    startDate: Date;
+    endDate: Date;
+    type: AbsenceType;
+    dayPortion: AbsenceDayPortion;
+    status: AbsenceRequestStatus;
+    compensation: AbsenceCompensation;
+    paidVacationUnits: number;
+    unpaidVacationUnits: number;
+    autoUnpaidBecauseNoBalance: boolean;
+    compensationLockedBySystem: boolean;
+    noteEmployee: string | null;
+    noteEmployeeTranslations: Prisma.JsonValue | null;
+    createdAt: Date;
+    updatedAt: Date;
+    decidedAt: Date | null;
+    user: {
+      id: string;
+      fullName: string;
+    };
+    decidedBy: {
+      id: string;
+      fullName: string;
+    } | null;
+  },
+  language: string | null | undefined
+) {
   return {
     id: r.id,
     startDate: toIsoDateUTC(r.startDate),
@@ -64,7 +108,11 @@ function mapRequest(r: {
     unpaidVacationUnits: r.unpaidVacationUnits,
     autoUnpaidBecauseNoBalance: r.autoUnpaidBecauseNoBalance,
     compensationLockedBySystem: r.compensationLockedBySystem,
-    noteEmployee: r.noteEmployee ?? "",
+    noteEmployee: getTranslatedText(
+      r.noteEmployee,
+      r.noteEmployeeTranslations,
+      language
+    ),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
     decidedAt: r.decidedAt ? r.decidedAt.toISOString() : null,
@@ -89,6 +137,13 @@ export async function GET(req: Request) {
       { status: 403 }
     );
   }
+
+  const adminUser = admin
+    ? await prisma.appUser.findUnique({
+        where: { id: admin.id },
+        select: { language: true },
+      })
+    : null;
 
   const { searchParams } = new URL(req.url);
 
@@ -204,11 +259,19 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    requests: requests.map(mapRequest),
+    requests: requests.map((request) =>
+      mapRequest(request, adminUser?.language ?? "DE")
+    ),
     grouped: {
-      pending: grouped.pending.map(mapRequest),
-      approved: grouped.approved.map(mapRequest),
-      rejected: grouped.rejected.map(mapRequest),
+      pending: grouped.pending.map((request) =>
+        mapRequest(request, adminUser?.language ?? "DE")
+      ),
+      approved: grouped.approved.map((request) =>
+        mapRequest(request, adminUser?.language ?? "DE")
+      ),
+      rejected: grouped.rejected.map((request) =>
+        mapRequest(request, adminUser?.language ?? "DE")
+      ),
     },
   });
 }

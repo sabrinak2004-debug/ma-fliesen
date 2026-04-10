@@ -709,6 +709,8 @@ if (location) {
     },
   });
 
+  await syncDailyBreakAllocation(targetUserId, workDate);
+
   if (!isAdmin && workDate !== berlinTodayYMD()) {
     await consumeTimeEntryUnlock(session.userId, workDate);
   }

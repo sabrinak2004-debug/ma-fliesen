@@ -2,13 +2,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { Role, AbsenceType } from "@prisma/client";
 import {
   berlinTodayYMD,
   getMissingRequiredWorkDates,
   isWorkEntryRequiredOnDateForUserMeta,
 } from "@/lib/timesheetLock";
 import { computeDayBreakFromGross } from "@/lib/breaks";
+import { Role, AbsenceType, Prisma } from "@prisma/client";
+import type { SupportedLang } from "@/lib/translate";
 
 function dateOnlyLocalIso(d: Date) {
   const yyyy = d.getFullYear();
@@ -72,12 +73,15 @@ type WorkEntryMonthRow = {
   startTime: Date;
   endTime: Date;
   activity: string | null;
+  activityTranslations: Prisma.JsonValue | null;
   location: string | null;
+  locationTranslations: Prisma.JsonValue | null;
   travelMinutes: number | null;
   breakMinutes: number | null;
   breakAuto: boolean | null;
   workMinutes: number | null;
   noteEmployee: string | null;
+  noteEmployeeTranslations: Prisma.JsonValue | null;
 };
 
 function buildPatchedDashboardEntries(
@@ -187,6 +191,47 @@ type DashboardOverdueMissingRow = {
   oldestMissingDate: string;
   newestMissingDate: string;
 };
+
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
 
 export async function GET(req: Request) {
   const session = await getSession();
@@ -422,12 +467,18 @@ export async function GET(req: Request) {
       startTime: true,
       endTime: true,
       activity: true,
+      activitySourceLanguage: true,
+      activityTranslations: true,
       location: true,
+      locationSourceLanguage: true,
+      locationTranslations: true,
       travelMinutes: true,
       breakMinutes: true,
       breakAuto: true,
       workMinutes: true,
       noteEmployee: true,
+      noteEmployeeSourceLanguage: true,
+      noteEmployeeTranslations: true,
     },
   });
 
@@ -493,12 +544,15 @@ export async function GET(req: Request) {
     startTime: row.startTime,
     endTime: row.endTime,
     activity: row.activity ?? null,
+    activityTranslations: row.activityTranslations ?? null,
     location: row.location ?? null,
+    locationTranslations: row.locationTranslations ?? null,
     travelMinutes: row.travelMinutes ?? 0,
     breakMinutes: row.breakMinutes ?? 0,
     breakAuto: row.breakAuto ?? false,
     workMinutes: row.workMinutes ?? 0,
     noteEmployee: row.noteEmployee ?? null,
+    noteEmployeeTranslations: row.noteEmployeeTranslations ?? null,
   }));
 
   const patchedWorkEntries = buildPatchedDashboardEntries(typedWorkEntriesMonth, dayBreakMap);
@@ -548,13 +602,28 @@ export async function GET(req: Request) {
         date,
         startHHMM,
         endHHMM,
-        activity: workEntry.activity ?? null,
-        location: workEntry.location ?? null,
+        activity: getTranslatedText(
+          workEntry.activity,
+          workEntry.activityTranslations,
+          session.language
+        ),
+        location: getTranslatedText(
+          workEntry.location,
+          workEntry.locationTranslations,
+          session.language
+        ),
         travelMinutes: workEntry.travelMinutes ?? 0,
         breakMinutes: patched?.breakMinutes ?? workEntry.breakMinutes ?? 0,
         breakAuto: patched?.breakAuto ?? workEntry.breakAuto ?? false,
-        workMinutes: patched?.workMinutes ?? workEntry.workMinutes ?? Math.max(0, grossMinutes),
-        noteEmployee: workEntry.noteEmployee ?? null,
+        workMinutes:
+          patched?.workMinutes ??
+          workEntry.workMinutes ??
+          Math.max(0, grossMinutes),
+        noteEmployee: getTranslatedText(
+          workEntry.noteEmployee,
+          workEntry.noteEmployeeTranslations,
+          session.language
+        ),
       });
     }
 
