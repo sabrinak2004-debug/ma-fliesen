@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  Prisma,
   TaskCategory,
   TaskRequiredAction,
   TaskStatus,
@@ -7,6 +8,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { sendPushToUser } from "@/lib/webpush";
+import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 
 type CreateTaskBody = {
   assignedToUserId?: string;
@@ -147,6 +149,7 @@ function normalizeReferenceRange(args: {
   referenceStartDate: Date | null;
   referenceEndDate: Date | null;
 } | null {
+
   const startDate = parseReferenceDate(args.referenceStartDateRaw);
   const endDate = parseReferenceDate(args.referenceEndDateRaw ?? args.referenceStartDateRaw);
 
@@ -184,11 +187,69 @@ function normalizeReferenceRange(args: {
   };
 }
 
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
+
+function toPrismaNullableJsonInput(
+  value: TranslationMap | null
+): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+  if (value === null) {
+    return Prisma.JsonNull;
+  }
+
+  return value as Prisma.InputJsonValue;
+}
+
 export async function GET(): Promise<NextResponse> {
   const admin = await requireAdmin();
   if (!admin) {
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
   }
+
+  const adminUser = await prisma.appUser.findUnique({
+    where: { id: admin.id },
+    select: {
+      language: true,
+    },
+  });
 
   const [tasks, employees] = await Promise.all([
     prisma.task.findMany({
@@ -242,7 +303,22 @@ export async function GET(): Promise<NextResponse> {
     }),
   ]);
 
-  return NextResponse.json({ tasks, employees });
+  return NextResponse.json({
+    tasks: tasks.map((task) => ({
+      ...task,
+      title: getTranslatedText(
+        task.title,
+        task.titleTranslations,
+        adminUser?.language ?? "DE"
+      ),
+      description: getTranslatedText(
+        task.description,
+        task.descriptionTranslations,
+        adminUser?.language ?? "DE"
+      ),
+    })),
+    employees,
+  });
 }
 
 export async function POST(req: Request): Promise<NextResponse> {
@@ -311,6 +387,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       isActive: true,
       role: true,
       companyId: true,
+      language: true,
     },
   });
 
@@ -335,12 +412,40 @@ export async function POST(req: Request): Promise<NextResponse> {
     );
   }
 
+  let titleSourceLanguage: SupportedLang | null = null;
+  let titleTranslationsRecord: TranslationMap | null = null;
+  let titleTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (title.trim()) {
+    const translationResult = await translateAllLanguages(title);
+    titleSourceLanguage = translationResult.sourceLanguage;
+    titleTranslationsRecord = translationResult.translations;
+    titleTranslations = toPrismaNullableJsonInput(translationResult.translations);
+  }
+
+  let descriptionSourceLanguage: SupportedLang | null = null;
+  let descriptionTranslationsRecord: TranslationMap | null = null;
+  let descriptionTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (description && description.trim()) {
+    const translationResult = await translateAllLanguages(description);
+    descriptionSourceLanguage = translationResult.sourceLanguage;
+    descriptionTranslationsRecord = translationResult.translations;
+    descriptionTranslations = toPrismaNullableJsonInput(translationResult.translations);
+  }
+
   const task = await prisma.task.create({
     data: {
       assignedToUserId: assignedUser.id,
       createdByUserId: admin.id,
       title,
+      titleSourceLanguage,
+      titleTranslations,
       description,
+      descriptionSourceLanguage,
+      descriptionTranslations,
       category: categoryRaw,
       status: TaskStatus.OPEN,
       requiredAction: requiredActionRaw,
@@ -366,7 +471,11 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   await sendPushToUser(assignedUser.id, {
     title: "Neue Aufgabe",
-    body: title,
+    body: getTranslatedText(
+      title,
+      titleTranslationsRecord,
+      assignedUser.language ?? "DE"
+    ),
     url: "/aufgaben",
   });
 

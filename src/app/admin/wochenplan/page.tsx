@@ -13,6 +13,7 @@ type AdminSessionDTO = {
   userId: string;
   fullName: string;
   role: "ADMIN" | "EMPLOYEE";
+  language: "DE" | "EN" | "IT" | "TR" | "SQ" | "KU";
   companyId: string;
   companyName: string;
   companySubdomain: string;
@@ -26,6 +27,12 @@ function isAdminSessionDTO(v: unknown): v is AdminSessionDTO {
     typeof v.userId === "string" &&
     typeof v.fullName === "string" &&
     (v.role === "ADMIN" || v.role === "EMPLOYEE") &&
+    (v.language === "DE" ||
+      v.language === "EN" ||
+      v.language === "IT" ||
+      v.language === "TR" ||
+      v.language === "SQ" ||
+      v.language === "KU") &&
     typeof v.companyId === "string" &&
     typeof v.companyName === "string" &&
     typeof v.companySubdomain === "string" &&
