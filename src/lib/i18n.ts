@@ -2163,3 +2163,1349 @@ export const ADMIN_DASHBOARD_UI_TEXTS: Record<
     KU: "Betlaneya bêpere",
   },
 };
+export type AdminVacationRequestsTextKey =
+  | "activeLabel"
+  | "loadingInitial"
+  | "remainingVacation"
+  | "loadingVacationAccount"
+  | "approvedPaidOfAccrued"
+  | "usedOfAccrued"
+  | "alreadyTaken"
+  | "asOf"
+  | "allEmployees"
+  | "selectedEmployee"
+  | "vacationYear"
+  | "asOfMonth"
+  | "pendingRequestsKpi"
+  | "approvedKpi"
+  | "rejectedKpi"
+  | "pageTitle"
+  | "pageDescription"
+  | "employee"
+  | "month"
+  | "loadError"
+  | "networkLoadError"
+  | "remainingLoadError"
+  | "remainingNetworkError"
+  | "requestNotFound"
+  | "approveFailed"
+  | "approveNetworkError"
+  | "rejectFailed"
+  | "rejectNetworkError"
+  | "deleteConfirm"
+  | "deleteFailed"
+  | "deleteNetworkError"
+  | "changeFailed"
+  | "updateFailed"
+  | "changeNetworkError"
+  | "statusOpen"
+  | "statusApproved"
+  | "statusRejected"
+  | "createdAt"
+  | "decisionAt"
+  | "period"
+  | "start"
+  | "end"
+  | "type"
+  | "typeVacation"
+  | "typeSick"
+  | "scope"
+  | "fullDay"
+  | "halfDay"
+  | "compensation"
+  | "paid"
+  | "unpaid"
+  | "employeeNote"
+  | "noNote"
+  | "processedBy"
+  | "notDecidedYet"
+  | "cancel"
+  | "delete"
+  | "deleting"
+  | "reject"
+  | "approve"
+  | "approveCorrected"
+  | "processing"
+  | "saveChanges"
+  | "saving"
+  | "edit"
+  | "openSection"
+  | "approvedSection"
+  | "rejectedSection"
+  | "emptyOpen"
+  | "emptyApproved"
+  | "emptyRejected"
+  | "day"
+  | "days"
+  | "halfVacationDay"
+  | "total"
+  | "mixedCompensationPrefix"
+  | "insufficientPaidVacationHint";
+
+export const ADMIN_VACATION_REQUESTS_UI_TEXTS: Record<
+  AdminVacationRequestsTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  activeLabel: {
+    DE: "#wirkönnendas",
+    EN: "#wecandothis",
+    IT: "#possiamofarlo",
+    TR: "#bunuyaparız",
+    SQ: "#nemundemiabëjmë",
+    KU: "#emdikarinbikin",
+  },
+  loadingInitial: {
+    DE: "Lädt Urlaubsanträge...",
+    EN: "Loading vacation requests...",
+    IT: "Caricamento richieste di ferie...",
+    TR: "İzin talepleri yükleniyor...",
+    SQ: "Po ngarkohen kërkesat për pushim...",
+    KU: "Daxwazên betlaneyê têne barkirin...",
+  },
+  remainingVacation: {
+    DE: "Resturlaub",
+    EN: "Remaining vacation",
+    IT: "Ferie residue",
+    TR: "Kalan izin",
+    SQ: "Pushimi i mbetur",
+    KU: "Betlaneya mayî",
+  },
+  loadingVacationAccount: {
+    DE: "Urlaubskonto wird geladen…",
+    EN: "Vacation balance is loading…",
+    IT: "Il saldo ferie si sta caricando…",
+    TR: "İzin bakiyesi yükleniyor…",
+    SQ: "Bilanci i pushimit po ngarkohet…",
+    KU: "Hejmara betlaneyê tê barkirin…",
+  },
+  approvedPaidOfAccrued: {
+    DE: "von",
+    EN: "of",
+    IT: "di",
+    TR: "içinden",
+    SQ: "nga",
+    KU: "ji",
+  },
+  usedOfAccrued: {
+    DE: "von",
+    EN: "of",
+    IT: "di",
+    TR: "içinden",
+    SQ: "nga",
+    KU: "ji",
+  },
+  alreadyTaken: {
+    DE: "Bereits genommen:",
+    EN: "Already taken:",
+    IT: "Già utilizzate:",
+    TR: "Zaten kullanıldı:",
+    SQ: "Të përdorura tashmë:",
+    KU: "Jixwe hatine girtin:",
+  },
+  asOf: {
+    DE: "Stand",
+    EN: "As of",
+    IT: "Stato al",
+    TR: "Durum",
+    SQ: "Gjendja më",
+    KU: "Rewş di",
+  },
+  allEmployees: {
+    DE: "Alle Mitarbeiter",
+    EN: "All employees",
+    IT: "Tutti i dipendenti",
+    TR: "Tüm çalışanlar",
+    SQ: "Të gjithë punonjësit",
+    KU: "Hemû karmend",
+  },
+  selectedEmployee: {
+    DE: "Ausgewählter Mitarbeiter",
+    EN: "Selected employee",
+    IT: "Dipendente selezionato",
+    TR: "Seçilen çalışan",
+    SQ: "Punonjësi i zgjedhur",
+    KU: "Karmenda hilbijartî",
+  },
+  vacationYear: {
+    DE: "Urlaubsjahr",
+    EN: "Vacation year",
+    IT: "Anno ferie",
+    TR: "İzin yılı",
+    SQ: "Viti i pushimit",
+    KU: "Sala betlaneyê",
+  },
+  asOfMonth: {
+    DE: "Stand",
+    EN: "As of",
+    IT: "Stato",
+    TR: "Durum",
+    SQ: "Gjendja",
+    KU: "Rewş",
+  },
+  pendingRequestsKpi: {
+    DE: "Offene Urlaubsanträge",
+    EN: "Open vacation requests",
+    IT: "Richieste di ferie aperte",
+    TR: "Açık izin talepleri",
+    SQ: "Kërkesa të hapura për pushim",
+    KU: "Daxwazên betlaneyê yên vekirî",
+  },
+  approvedKpi: {
+    DE: "Genehmigt",
+    EN: "Approved",
+    IT: "Approvate",
+    TR: "Onaylandı",
+    SQ: "Miratuar",
+    KU: "Pejirandî",
+  },
+  rejectedKpi: {
+    DE: "Abgelehnt",
+    EN: "Rejected",
+    IT: "Rifiutate",
+    TR: "Reddedildi",
+    SQ: "Refuzuar",
+    KU: "Redkirî",
+  },
+  pageTitle: {
+    DE: "Urlaubsanträge",
+    EN: "Vacation requests",
+    IT: "Richieste di ferie",
+    TR: "İzin talepleri",
+    SQ: "Kërkesa për pushim",
+    KU: "Daxwazên betlaneyê",
+  },
+  pageDescription: {
+    DE: "Hier siehst du alle Urlaubsanträge deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.",
+    EN: "Here you can see all vacation requests from your employees and approve or reject open requests directly.",
+    IT: "Qui puoi vedere tutte le richieste di ferie dei tuoi dipendenti e approvare o rifiutare direttamente quelle aperte.",
+    TR: "Burada çalışanlarınızın tüm izin taleplerini görebilir ve açık talepleri doğrudan onaylayabilir veya reddedebilirsiniz.",
+    SQ: "Këtu mund të shohësh të gjitha kërkesat për pushim të punonjësve të tu dhe t'i miratosh ose refuzosh direkt kërkesat e hapura.",
+    KU: "Li vir hemû daxwazên betlaneyê yên karmendên xwe dibînî û dikarî daxwazên vekirî rasterast pejirînî an red bikî.",
+  },
+  employee: {
+    DE: "Mitarbeiter",
+    EN: "Employee",
+    IT: "Dipendente",
+    TR: "Çalışan",
+    SQ: "Punonjësi",
+    KU: "Karmend",
+  },
+  month: {
+    DE: "Monat",
+    EN: "Month",
+    IT: "Mese",
+    TR: "Ay",
+    SQ: "Muaji",
+    KU: "Meh",
+  },
+  loadError: {
+    DE: "Urlaubsanträge konnten nicht geladen werden.",
+    EN: "Vacation requests could not be loaded.",
+    IT: "Impossibile caricare le richieste di ferie.",
+    TR: "İzin talepleri yüklenemedi.",
+    SQ: "Kërkesat për pushim nuk mund të ngarkoheshin.",
+    KU: "Daxwazên betlaneyê nehatin barkirin.",
+  },
+  networkLoadError: {
+    DE: "Netzwerkfehler beim Laden der Urlaubsanträge.",
+    EN: "Network error while loading vacation requests.",
+    IT: "Errore di rete durante il caricamento delle richieste di ferie.",
+    TR: "İzin talepleri yüklenirken ağ hatası oluştu.",
+    SQ: "Gabim rrjeti gjatë ngarkimit të kërkesave për pushim.",
+    KU: "Dema barkirina daxwazên betlaneyê de xeletiya torê çêbû.",
+  },
+  remainingLoadError: {
+    DE: "Resturlaub konnte nicht geladen werden.",
+    EN: "Remaining vacation could not be loaded.",
+    IT: "Impossibile caricare le ferie residue.",
+    TR: "Kalan izin yüklenemedi.",
+    SQ: "Pushimi i mbetur nuk mund të ngarkohej.",
+    KU: "Betlaneya mayî nehate barkirin.",
+  },
+  remainingNetworkError: {
+    DE: "Netzwerkfehler beim Laden des Resturlaubs.",
+    EN: "Network error while loading remaining vacation.",
+    IT: "Errore di rete durante il caricamento delle ferie residue.",
+    TR: "Kalan izin yüklenirken ağ hatası oluştu.",
+    SQ: "Gabim rrjeti gjatë ngarkimit të pushimit të mbetur.",
+    KU: "Dema barkirina betlaneya mayî de xeletiya torê çêbû.",
+  },
+  requestNotFound: {
+    DE: "Antrag nicht gefunden.",
+    EN: "Request not found.",
+    IT: "Richiesta non trovata.",
+    TR: "Talep bulunamadı.",
+    SQ: "Kërkesa nuk u gjet.",
+    KU: "Daxwaz nehat dîtin.",
+  },
+  approveFailed: {
+    DE: "Genehmigung fehlgeschlagen.",
+    EN: "Approval failed.",
+    IT: "Approvazione non riuscita.",
+    TR: "Onay başarısız oldu.",
+    SQ: "Miratimi dështoi.",
+    KU: "Pejirandin serneket.",
+  },
+  approveNetworkError: {
+    DE: "Netzwerkfehler bei der Genehmigung.",
+    EN: "Network error during approval.",
+    IT: "Errore di rete durante l'approvazione.",
+    TR: "Onay sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë miratimit.",
+    KU: "Dema pejirandinê de xeletiya torê.",
+  },
+  rejectFailed: {
+    DE: "Ablehnung fehlgeschlagen.",
+    EN: "Rejection failed.",
+    IT: "Rifiuto non riuscito.",
+    TR: "Reddetme başarısız oldu.",
+    SQ: "Refuzimi dështoi.",
+    KU: "Redkirin serneket.",
+  },
+  rejectNetworkError: {
+    DE: "Netzwerkfehler bei der Ablehnung.",
+    EN: "Network error during rejection.",
+    IT: "Errore di rete durante il rifiuto.",
+    TR: "Reddetme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë refuzimit.",
+    KU: "Dema redkirinê de xeletiya torê.",
+  },
+  deleteConfirm: {
+    DE: "Möchtest du diesen Urlaubsantrag wirklich dauerhaft löschen?",
+    EN: "Do you really want to permanently delete this vacation request?",
+    IT: "Vuoi davvero eliminare definitivamente questa richiesta di ferie?",
+    TR: "Bu izin talebini kalıcı olarak silmek istediğinizden emin misiniz?",
+    SQ: "A dëshiron vërtet ta fshish përgjithmonë këtë kërkesë për pushim?",
+    KU: "Tu bi rastî dixwazî vê daxwaza betlaneyê bi temamî jê bibî?",
+  },
+  deleteFailed: {
+    DE: "Löschen fehlgeschlagen.",
+    EN: "Delete failed.",
+    IT: "Eliminazione non riuscita.",
+    TR: "Silme başarısız oldu.",
+    SQ: "Fshirja dështoi.",
+    KU: "Jêbirin serneket.",
+  },
+  deleteNetworkError: {
+    DE: "Netzwerkfehler beim Löschen.",
+    EN: "Network error while deleting.",
+    IT: "Errore di rete durante l'eliminazione.",
+    TR: "Silme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë fshirjes.",
+    KU: "Dema jêbirinê de xeletiya torê.",
+  },
+  changeFailed: {
+    DE: "Änderung fehlgeschlagen.",
+    EN: "Change failed.",
+    IT: "Modifica non riuscita.",
+    TR: "Değişiklik başarısız oldu.",
+    SQ: "Ndryshimi dështoi.",
+    KU: "Guhertin serneket.",
+  },
+  updateFailed: {
+    DE: "Antragsdaten konnten nicht aktualisiert werden.",
+    EN: "Request data could not be updated.",
+    IT: "Impossibile aggiornare i dati della richiesta.",
+    TR: "Talep verileri güncellenemedi.",
+    SQ: "Të dhënat e kërkesës nuk mund të përditësoheshin.",
+    KU: "Daneyên daxwazê nehatin nûvekirin.",
+  },
+  changeNetworkError: {
+    DE: "Netzwerkfehler bei der Änderung.",
+    EN: "Network error while changing.",
+    IT: "Errore di rete durante la modifica.",
+    TR: "Değişiklik sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ndryshimit.",
+    KU: "Dema guhertinê de xeletiya torê.",
+  },
+  statusOpen: {
+    DE: "Offen",
+    EN: "Open",
+    IT: "Aperta",
+    TR: "Açık",
+    SQ: "E hapur",
+    KU: "Vekirî",
+  },
+  statusApproved: {
+    DE: "Genehmigt",
+    EN: "Approved",
+    IT: "Approvata",
+    TR: "Onaylandı",
+    SQ: "Miratuar",
+    KU: "Pejirandî",
+  },
+  statusRejected: {
+    DE: "Abgelehnt",
+    EN: "Rejected",
+    IT: "Rifiutata",
+    TR: "Reddedildi",
+    SQ: "Refuzuar",
+    KU: "Redkirî",
+  },
+  createdAt: {
+    DE: "Erstellt:",
+    EN: "Created:",
+    IT: "Creata:",
+    TR: "Oluşturuldu:",
+    SQ: "Krijuar:",
+    KU: "Hate afirandin:",
+  },
+  decisionAt: {
+    DE: "Entscheidung:",
+    EN: "Decision:",
+    IT: "Decisione:",
+    TR: "Karar:",
+    SQ: "Vendimi:",
+    KU: "Biryar:",
+  },
+  period: {
+    DE: "Zeitraum",
+    EN: "Period",
+    IT: "Periodo",
+    TR: "Dönem",
+    SQ: "Periudha",
+    KU: "Dem",
+  },
+  start: {
+    DE: "Start",
+    EN: "Start",
+    IT: "Inizio",
+    TR: "Başlangıç",
+    SQ: "Fillimi",
+    KU: "Destpêk",
+  },
+  end: {
+    DE: "Ende",
+    EN: "End",
+    IT: "Fine",
+    TR: "Bitiş",
+    SQ: "Fundi",
+    KU: "Dawî",
+  },
+  type: {
+    DE: "Typ",
+    EN: "Type",
+    IT: "Tipo",
+    TR: "Tür",
+    SQ: "Lloji",
+    KU: "Cure",
+  },
+  typeVacation: {
+    DE: "Urlaub",
+    EN: "Vacation",
+    IT: "Ferie",
+    TR: "İzin",
+    SQ: "Pushim",
+    KU: "Betlane",
+  },
+  typeSick: {
+    DE: "Krankheit",
+    EN: "Sickness",
+    IT: "Malattia",
+    TR: "Hastalık",
+    SQ: "Sëmundje",
+    KU: "Nexweşî",
+  },
+  scope: {
+    DE: "Umfang",
+    EN: "Scope",
+    IT: "Entità",
+    TR: "Kapsam",
+    SQ: "Shtrirja",
+    KU: "Berfirehî",
+  },
+  fullDay: {
+    DE: "Ganzer Tag",
+    EN: "Full day",
+    IT: "Giornata intera",
+    TR: "Tam gün",
+    SQ: "Ditë e plotë",
+    KU: "Rojek temam",
+  },
+  halfDay: {
+    DE: "Halber Tag",
+    EN: "Half day",
+    IT: "Mezza giornata",
+    TR: "Yarım gün",
+    SQ: "Gjysmë dite",
+    KU: "Nîv roj",
+  },
+  compensation: {
+    DE: "Vergütung",
+    EN: "Compensation",
+    IT: "Retribuzione",
+    TR: "Ücretlendirme",
+    SQ: "Kompensimi",
+    KU: "Tezmînat",
+  },
+  paid: {
+    DE: "Bezahlt",
+    EN: "Paid",
+    IT: "Pagata",
+    TR: "Ücretli",
+    SQ: "E paguar",
+    KU: "Bi pere",
+  },
+  unpaid: {
+    DE: "Unbezahlt",
+    EN: "Unpaid",
+    IT: "Non pagata",
+    TR: "Ücretsiz",
+    SQ: "E papaguar",
+    KU: "Bêpere",
+  },
+  employeeNote: {
+    DE: "Mitarbeiter-Notiz",
+    EN: "Employee note",
+    IT: "Nota del dipendente",
+    TR: "Çalışan notu",
+    SQ: "Shënim i punonjësit",
+    KU: "Nîşeya karmend",
+  },
+  noNote: {
+    DE: "Keine Notiz vorhanden.",
+    EN: "No note available.",
+    IT: "Nessuna nota disponibile.",
+    TR: "Not yok.",
+    SQ: "Nuk ka shënim.",
+    KU: "Ti nîşe tune ye.",
+  },
+  processedBy: {
+    DE: "Bearbeitet von",
+    EN: "Processed by",
+    IT: "Elaborata da",
+    TR: "İşleyen kişi",
+    SQ: "Përpunuar nga",
+    KU: "Ji aliyê vê kesî ve hate kirin",
+  },
+  notDecidedYet: {
+    DE: "Noch nicht entschieden",
+    EN: "Not decided yet",
+    IT: "Non ancora deciso",
+    TR: "Henüz karar verilmedi",
+    SQ: "Ende nuk është vendosur",
+    KU: "Hêj biryar nehatî dayîn",
+  },
+  cancel: {
+    DE: "Abbrechen",
+    EN: "Cancel",
+    IT: "Annulla",
+    TR: "İptal",
+    SQ: "Anulo",
+    KU: "Betal bike",
+  },
+  delete: {
+    DE: "Löschen",
+    EN: "Delete",
+    IT: "Elimina",
+    TR: "Sil",
+    SQ: "Fshij",
+    KU: "Jê bibe",
+  },
+  deleting: {
+    DE: "Löscht...",
+    EN: "Deleting...",
+    IT: "Eliminazione...",
+    TR: "Siliniyor...",
+    SQ: "Duke fshirë...",
+    KU: "Tê jêbirin...",
+  },
+  reject: {
+    DE: "Ablehnen",
+    EN: "Reject",
+    IT: "Rifiuta",
+    TR: "Reddet",
+    SQ: "Refuzo",
+    KU: "Red bike",
+  },
+  approve: {
+    DE: "Genehmigen",
+    EN: "Approve",
+    IT: "Approva",
+    TR: "Onayla",
+    SQ: "Mirato",
+    KU: "Pejirîne",
+  },
+  approveCorrected: {
+    DE: "Korrigieren & genehmigen",
+    EN: "Correct & approve",
+    IT: "Correggi e approva",
+    TR: "Düzelt ve onayla",
+    SQ: "Korrigjo dhe mirato",
+    KU: "Rast bike û pejirîne",
+  },
+  processing: {
+    DE: "Verarbeitet...",
+    EN: "Processing...",
+    IT: "Elaborazione...",
+    TR: "İşleniyor...",
+    SQ: "Duke u përpunuar...",
+    KU: "Tê pêvajokirin...",
+  },
+  saveChanges: {
+    DE: "Änderungen speichern",
+    EN: "Save changes",
+    IT: "Salva modifiche",
+    TR: "Değişiklikleri kaydet",
+    SQ: "Ruaj ndryshimet",
+    KU: "Guhertinan tomar bike",
+  },
+  saving: {
+    DE: "Speichert...",
+    EN: "Saving...",
+    IT: "Salvataggio...",
+    TR: "Kaydediliyor...",
+    SQ: "Duke ruajtur...",
+    KU: "Tê tomarkirin...",
+  },
+  edit: {
+    DE: "Bearbeiten",
+    EN: "Edit",
+    IT: "Modifica",
+    TR: "Düzenle",
+    SQ: "Ndrysho",
+    KU: "Biguherîne",
+  },
+  openSection: {
+    DE: "Offen",
+    EN: "Open",
+    IT: "Aperte",
+    TR: "Açık",
+    SQ: "Të hapura",
+    KU: "Vekirî",
+  },
+  approvedSection: {
+    DE: "Genehmigt",
+    EN: "Approved",
+    IT: "Approvate",
+    TR: "Onaylandı",
+    SQ: "Të miratuara",
+    KU: "Pejirandî",
+  },
+  rejectedSection: {
+    DE: "Abgelehnt",
+    EN: "Rejected",
+    IT: "Rifiutate",
+    TR: "Reddedildi",
+    SQ: "Të refuzuara",
+    KU: "Redkirî",
+  },
+  emptyOpen: {
+    DE: "Keine offenen Urlaubsanträge für diesen Filter.",
+    EN: "No open vacation requests for this filter.",
+    IT: "Nessuna richiesta di ferie aperta per questo filtro.",
+    TR: "Bu filtre için açık izin talebi yok.",
+    SQ: "Nuk ka kërkesa të hapura për pushim për këtë filtër.",
+    KU: "Ji bo vî fîlterî daxwaza betlaneyê ya vekirî tune ye.",
+  },
+  emptyApproved: {
+    DE: "Keine genehmigten Urlaubsanträge für diesen Filter.",
+    EN: "No approved vacation requests for this filter.",
+    IT: "Nessuna richiesta di ferie approvata per questo filtro.",
+    TR: "Bu filtre için onaylanmış izin talebi yok.",
+    SQ: "Nuk ka kërkesa të miratuara për pushim për këtë filtër.",
+    KU: "Ji bo vî fîlterî daxwaza betlaneyê ya pejirandî tune ye.",
+  },
+  emptyRejected: {
+    DE: "Keine abgelehnten Urlaubsanträge für diesen Filter.",
+    EN: "No rejected vacation requests for this filter.",
+    IT: "Nessuna richiesta di ferie rifiutata per questo filtro.",
+    TR: "Bu filtre için reddedilmiş izin talebi yok.",
+    SQ: "Nuk ka kërkesa të refuzuara për pushim për këtë filtër.",
+    KU: "Ji bo vî fîlterî daxwaza betlaneyê ya redkirî tune ye.",
+  },
+  day: {
+    DE: "Tag",
+    EN: "day",
+    IT: "giorno",
+    TR: "gün",
+    SQ: "ditë",
+    KU: "roj",
+  },
+  days: {
+    DE: "Tage",
+    EN: "days",
+    IT: "giorni",
+    TR: "gün",
+    SQ: "ditë",
+    KU: "roj",
+  },
+  halfVacationDay: {
+    DE: "halber Urlaubstag",
+    EN: "half vacation day",
+    IT: "mezza giornata di ferie",
+    TR: "yarım izin günü",
+    SQ: "gjysmë dite pushimi",
+    KU: "nîv roja betlaneyê",
+  },
+  total: {
+    DE: "gesamt",
+    EN: "total",
+    IT: "totale",
+    TR: "toplam",
+    SQ: "gjithsej",
+    KU: "tevahî",
+  },
+  mixedCompensationPrefix: {
+    DE: "Für diesen Antrag ist aktuell eine gemischte Vergütung vorgesehen.",
+    EN: "A mixed compensation is currently planned for this request.",
+    IT: "Per questa richiesta è attualmente prevista una retribuzione mista.",
+    TR: "Bu talep için şu anda karma bir ücretlendirme öngörülüyor.",
+    SQ: "Për këtë kërkesë aktualisht parashikohet një kompensim i përzier.",
+    KU: "Ji bo vê daxwazê niha tezmînata tevlihev hatî plan kirin.",
+  },
+  insufficientPaidVacationHint: {
+    DE: "Für diesen Antrag ist aktuell unbezahlter Urlaub vorgesehen, weil nicht genug bezahlter Urlaub verfügbar war.",
+    EN: "Unpaid vacation is currently planned for this request because not enough paid vacation was available.",
+    IT: "Per questa richiesta sono attualmente previste ferie non retribuite perché non erano disponibili abbastanza ferie retribuite.",
+    TR: "Bu talep için şu anda ücretsiz izin öngörülüyor çünkü yeterli ücretli izin mevcut değildi.",
+    SQ: "Për këtë kërkesë aktualisht është parashikuar pushim i papaguar, sepse nuk kishte mjaftueshëm pushim të paguar në dispozicion.",
+    KU: "Ji bo vê daxwazê niha betlaneya bêpere hatî plan kirin, ji ber ku têra betlaneya bi pere tunebû.",
+  },
+};
+
+export type AdminSickRequestsTextKey =
+  | "activeLabel"
+  | "loadingInitial"
+  | "pendingRequestsKpi"
+  | "approvedKpi"
+  | "rejectedKpi"
+  | "pageTitle"
+  | "pageDescription"
+  | "employee"
+  | "month"
+  | "allEmployees"
+  | "selectedEmployee"
+  | "loadError"
+  | "networkLoadError"
+  | "requestNotFound"
+  | "approveFailed"
+  | "approveNetworkError"
+  | "rejectFailed"
+  | "rejectNetworkError"
+  | "deleteConfirm"
+  | "deleteFailed"
+  | "deleteNetworkError"
+  | "changeFailed"
+  | "updateFailed"
+  | "changeNetworkError"
+  | "statusOpen"
+  | "statusApproved"
+  | "statusRejected"
+  | "createdAt"
+  | "decisionAt"
+  | "period"
+  | "start"
+  | "end"
+  | "employeeNote"
+  | "noNote"
+  | "processedBy"
+  | "notDecidedYet"
+  | "cancel"
+  | "delete"
+  | "deleting"
+  | "reject"
+  | "approve"
+  | "approveCorrected"
+  | "processing"
+  | "saveChanges"
+  | "saving"
+  | "edit"
+  | "openSection"
+  | "approvedSection"
+  | "rejectedSection"
+  | "emptyOpen"
+  | "emptyApproved"
+  | "emptyRejected"
+  | "day"
+  | "days"
+  | "sickLabel";
+
+export const ADMIN_SICK_REQUESTS_UI_TEXTS: Record<
+  AdminSickRequestsTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  activeLabel: {
+    DE: "#wirkönnendas",
+    EN: "#wecandothis",
+    IT: "#possiamofarlo",
+    TR: "#bunuyaparız",
+    SQ: "#nemundemiabëjmë",
+    KU: "#emdikarinbikin",
+  },
+  loadingInitial: {
+    DE: "Lädt Krankheitsanträge...",
+    EN: "Loading sickness requests...",
+    IT: "Caricamento richieste di malattia...",
+    TR: "Hastalık talepleri yükleniyor...",
+    SQ: "Po ngarkohen kërkesat për sëmundje...",
+    KU: "Daxwazên nexweşiyê têne barkirin...",
+  },
+  pendingRequestsKpi: {
+    DE: "Offene Krankheitsanträge",
+    EN: "Open sickness requests",
+    IT: "Richieste di malattia aperte",
+    TR: "Açık hastalık talepleri",
+    SQ: "Kërkesa të hapura për sëmundje",
+    KU: "Daxwazên nexweşiyê yên vekirî",
+  },
+  approvedKpi: {
+    DE: "Genehmigt",
+    EN: "Approved",
+    IT: "Approvate",
+    TR: "Onaylandı",
+    SQ: "Miratuar",
+    KU: "Pejirandî",
+  },
+  rejectedKpi: {
+    DE: "Abgelehnt",
+    EN: "Rejected",
+    IT: "Rifiutate",
+    TR: "Reddedildi",
+    SQ: "Refuzuar",
+    KU: "Redkirî",
+  },
+  pageTitle: {
+    DE: "Krankheitsanträge",
+    EN: "Sickness requests",
+    IT: "Richieste di malattia",
+    TR: "Hastalık talepleri",
+    SQ: "Kërkesa për sëmundje",
+    KU: "Daxwazên nexweşiyê",
+  },
+  pageDescription: {
+    DE: "Hier siehst du alle Krankheitsanträge deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.",
+    EN: "Here you can see all sickness requests from your employees and approve or reject open requests directly.",
+    IT: "Qui puoi vedere tutte le richieste di malattia dei tuoi dipendenti e approvare o rifiutare direttamente quelle aperte.",
+    TR: "Burada çalışanlarınızın tüm hastalık taleplerini görebilir ve açık talepleri doğrudan onaylayabilir veya reddedebilirsiniz.",
+    SQ: "Këtu mund të shohësh të gjitha kërkesat për sëmundje të punonjësve të tu dhe t'i miratosh ose refuzosh direkt kërkesat e hapura.",
+    KU: "Li vir hemû daxwazên nexweşiyê yên karmendên xwe dibînî û dikarî daxwazên vekirî rasterast pejirînî an red bikî.",
+  },
+  employee: {
+    DE: "Mitarbeiter",
+    EN: "Employee",
+    IT: "Dipendente",
+    TR: "Çalışan",
+    SQ: "Punonjësi",
+    KU: "Karmend",
+  },
+  month: {
+    DE: "Monat",
+    EN: "Month",
+    IT: "Mese",
+    TR: "Ay",
+    SQ: "Muaji",
+    KU: "Meh",
+  },
+  allEmployees: {
+    DE: "Alle Mitarbeiter",
+    EN: "All employees",
+    IT: "Tutti i dipendenti",
+    TR: "Tüm çalışanlar",
+    SQ: "Të gjithë punonjësit",
+    KU: "Hemû karmend",
+  },
+  selectedEmployee: {
+    DE: "Ausgewählter Mitarbeiter",
+    EN: "Selected employee",
+    IT: "Dipendente selezionato",
+    TR: "Seçilen çalışan",
+    SQ: "Punonjësi i zgjedhur",
+    KU: "Karmenda hilbijartî",
+  },
+  loadError: {
+    DE: "Krankheitsanträge konnten nicht geladen werden.",
+    EN: "Sickness requests could not be loaded.",
+    IT: "Impossibile caricare le richieste di malattia.",
+    TR: "Hastalık talepleri yüklenemedi.",
+    SQ: "Kërkesat për sëmundje nuk mund të ngarkoheshin.",
+    KU: "Daxwazên nexweşiyê nehatin barkirin.",
+  },
+  networkLoadError: {
+    DE: "Netzwerkfehler beim Laden der Krankheitsanträge.",
+    EN: "Network error while loading sickness requests.",
+    IT: "Errore di rete durante il caricamento delle richieste di malattia.",
+    TR: "Hastalık talepleri yüklenirken ağ hatası oluştu.",
+    SQ: "Gabim rrjeti gjatë ngarkimit të kërkesave për sëmundje.",
+    KU: "Dema barkirina daxwazên nexweşiyê de xeletiya torê çêbû.",
+  },
+  requestNotFound: {
+    DE: "Antrag nicht gefunden.",
+    EN: "Request not found.",
+    IT: "Richiesta non trovata.",
+    TR: "Talep bulunamadı.",
+    SQ: "Kërkesa nuk u gjet.",
+    KU: "Daxwaz nehat dîtin.",
+  },
+  approveFailed: {
+    DE: "Genehmigung fehlgeschlagen.",
+    EN: "Approval failed.",
+    IT: "Approvazione non riuscita.",
+    TR: "Onay başarısız oldu.",
+    SQ: "Miratimi dështoi.",
+    KU: "Pejirandin serneket.",
+  },
+  approveNetworkError: {
+    DE: "Netzwerkfehler bei der Genehmigung.",
+    EN: "Network error during approval.",
+    IT: "Errore di rete durante l'approvazione.",
+    TR: "Onay sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë miratimit.",
+    KU: "Dema pejirandinê de xeletiya torê.",
+  },
+  rejectFailed: {
+    DE: "Ablehnung fehlgeschlagen.",
+    EN: "Rejection failed.",
+    IT: "Rifiuto non riuscito.",
+    TR: "Reddetme başarısız oldu.",
+    SQ: "Refuzimi dështoi.",
+    KU: "Redkirin serneket.",
+  },
+  rejectNetworkError: {
+    DE: "Netzwerkfehler bei der Ablehnung.",
+    EN: "Network error during rejection.",
+    IT: "Errore di rete durante il rifiuto.",
+    TR: "Reddetme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë refuzimit.",
+    KU: "Dema redkirinê de xeletiya torê.",
+  },
+  deleteConfirm: {
+    DE: "Möchtest du diesen Krankheitsantrag wirklich dauerhaft löschen?",
+    EN: "Do you really want to permanently delete this sickness request?",
+    IT: "Vuoi davvero eliminare definitivamente questa richiesta di malattia?",
+    TR: "Bu hastalık talebini kalıcı olarak silmek istediğinizden emin misiniz?",
+    SQ: "A dëshiron vërtet ta fshish përgjithmonë këtë kërkesë për sëmundje?",
+    KU: "Tu bi rastî dixwazî vê daxwaza nexweşiyê bi temamî jê bibî?",
+  },
+  deleteFailed: {
+    DE: "Löschen fehlgeschlagen.",
+    EN: "Delete failed.",
+    IT: "Eliminazione non riuscita.",
+    TR: "Silme başarısız oldu.",
+    SQ: "Fshirja dështoi.",
+    KU: "Jêbirin serneket.",
+  },
+  deleteNetworkError: {
+    DE: "Netzwerkfehler beim Löschen.",
+    EN: "Network error while deleting.",
+    IT: "Errore di rete durante l'eliminazione.",
+    TR: "Silme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë fshirjes.",
+    KU: "Dema jêbirinê de xeletiya torê.",
+  },
+  changeFailed: {
+    DE: "Änderung fehlgeschlagen.",
+    EN: "Change failed.",
+    IT: "Modifica non riuscita.",
+    TR: "Değişiklik başarısız oldu.",
+    SQ: "Ndryshimi dështoi.",
+    KU: "Guhertin serneket.",
+  },
+  updateFailed: {
+    DE: "Antragsdaten konnten nicht aktualisiert werden.",
+    EN: "Request data could not be updated.",
+    IT: "Impossibile aggiornare i dati della richiesta.",
+    TR: "Talep verileri güncellenemedi.",
+    SQ: "Të dhënat e kërkesës nuk mund të përditësoheshin.",
+    KU: "Daneyên daxwazê nehatin nûvekirin.",
+  },
+  changeNetworkError: {
+    DE: "Netzwerkfehler bei der Änderung.",
+    EN: "Network error while changing.",
+    IT: "Errore di rete durante la modifica.",
+    TR: "Değişiklik sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ndryshimit.",
+    KU: "Dema guhertinê de xeletiya torê.",
+  },
+  statusOpen: {
+    DE: "Offen",
+    EN: "Open",
+    IT: "Aperta",
+    TR: "Açık",
+    SQ: "E hapur",
+    KU: "Vekirî",
+  },
+  statusApproved: {
+    DE: "Genehmigt",
+    EN: "Approved",
+    IT: "Approvata",
+    TR: "Onaylandı",
+    SQ: "Miratuar",
+    KU: "Pejirandî",
+  },
+  statusRejected: {
+    DE: "Abgelehnt",
+    EN: "Rejected",
+    IT: "Rifiutata",
+    TR: "Reddedildi",
+    SQ: "Refuzuar",
+    KU: "Redkirî",
+  },
+  createdAt: {
+    DE: "Erstellt:",
+    EN: "Created:",
+    IT: "Creata:",
+    TR: "Oluşturuldu:",
+    SQ: "Krijuar:",
+    KU: "Hate afirandin:",
+  },
+  decisionAt: {
+    DE: "Entscheidung:",
+    EN: "Decision:",
+    IT: "Decisione:",
+    TR: "Karar:",
+    SQ: "Vendimi:",
+    KU: "Biryar:",
+  },
+  period: {
+    DE: "Zeitraum",
+    EN: "Period",
+    IT: "Periodo",
+    TR: "Dönem",
+    SQ: "Periudha",
+    KU: "Dem",
+  },
+  start: {
+    DE: "Start",
+    EN: "Start",
+    IT: "Inizio",
+    TR: "Başlangıç",
+    SQ: "Fillimi",
+    KU: "Destpêk",
+  },
+  end: {
+    DE: "Ende",
+    EN: "End",
+    IT: "Fine",
+    TR: "Bitiş",
+    SQ: "Fundi",
+    KU: "Dawî",
+  },
+  employeeNote: {
+    DE: "Mitarbeiter-Notiz",
+    EN: "Employee note",
+    IT: "Nota del dipendente",
+    TR: "Çalışan notu",
+    SQ: "Shënim i punonjësit",
+    KU: "Nîşeya karmend",
+  },
+  noNote: {
+    DE: "Keine Notiz vorhanden.",
+    EN: "No note available.",
+    IT: "Nessuna nota disponibile.",
+    TR: "Not yok.",
+    SQ: "Nuk ka shënim.",
+    KU: "Ti nîşe tune ye.",
+  },
+  processedBy: {
+    DE: "Bearbeitet von",
+    EN: "Processed by",
+    IT: "Elaborata da",
+    TR: "İşleyen kişi",
+    SQ: "Përpunuar nga",
+    KU: "Ji aliyê vê kesî ve hate kirin",
+  },
+  notDecidedYet: {
+    DE: "Noch nicht entschieden",
+    EN: "Not decided yet",
+    IT: "Non ancora deciso",
+    TR: "Henüz karar verilmedi",
+    SQ: "Ende nuk është vendosur",
+    KU: "Hêj biryar nehatî dayîn",
+  },
+  cancel: {
+    DE: "Abbrechen",
+    EN: "Cancel",
+    IT: "Annulla",
+    TR: "İptal",
+    SQ: "Anulo",
+    KU: "Betal bike",
+  },
+  delete: {
+    DE: "Löschen",
+    EN: "Delete",
+    IT: "Elimina",
+    TR: "Sil",
+    SQ: "Fshij",
+    KU: "Jê bibe",
+  },
+  deleting: {
+    DE: "Löscht...",
+    EN: "Deleting...",
+    IT: "Eliminazione...",
+    TR: "Siliniyor...",
+    SQ: "Duke fshirë...",
+    KU: "Tê jêbirin...",
+  },
+  reject: {
+    DE: "Ablehnen",
+    EN: "Reject",
+    IT: "Rifiuta",
+    TR: "Reddet",
+    SQ: "Refuzo",
+    KU: "Red bike",
+  },
+  approve: {
+    DE: "Genehmigen",
+    EN: "Approve",
+    IT: "Approva",
+    TR: "Onayla",
+    SQ: "Mirato",
+    KU: "Pejirîne",
+  },
+  approveCorrected: {
+    DE: "Korrigieren & genehmigen",
+    EN: "Correct & approve",
+    IT: "Correggi e approva",
+    TR: "Düzelt ve onayla",
+    SQ: "Korrigjo dhe mirato",
+    KU: "Rast bike û pejirîne",
+  },
+  processing: {
+    DE: "Verarbeitet...",
+    EN: "Processing...",
+    IT: "Elaborazione...",
+    TR: "İşleniyor...",
+    SQ: "Duke u përpunuar...",
+    KU: "Tê pêvajokirin...",
+  },
+  saveChanges: {
+    DE: "Änderungen speichern",
+    EN: "Save changes",
+    IT: "Salva modifiche",
+    TR: "Değişiklikleri kaydet",
+    SQ: "Ruaj ndryshimet",
+    KU: "Guhertinan tomar bike",
+  },
+  saving: {
+    DE: "Speichert...",
+    EN: "Saving...",
+    IT: "Salvataggio...",
+    TR: "Kaydediliyor...",
+    SQ: "Duke ruajtur...",
+    KU: "Tê tomarkirin...",
+  },
+  edit: {
+    DE: "Bearbeiten",
+    EN: "Edit",
+    IT: "Modifica",
+    TR: "Düzenle",
+    SQ: "Ndrysho",
+    KU: "Biguherîne",
+  },
+  openSection: {
+    DE: "Offen",
+    EN: "Open",
+    IT: "Aperte",
+    TR: "Açık",
+    SQ: "Të hapura",
+    KU: "Vekirî",
+  },
+  approvedSection: {
+    DE: "Genehmigt",
+    EN: "Approved",
+    IT: "Approvate",
+    TR: "Onaylandı",
+    SQ: "Të miratuara",
+    KU: "Pejirandî",
+  },
+  rejectedSection: {
+    DE: "Abgelehnt",
+    EN: "Rejected",
+    IT: "Rifiutate",
+    TR: "Reddedildi",
+    SQ: "Të refuzuara",
+    KU: "Redkirî",
+  },
+  emptyOpen: {
+    DE: "Keine offenen Krankheitsanträge.",
+    EN: "No open sickness requests.",
+    IT: "Nessuna richiesta di malattia aperta.",
+    TR: "Açık hastalık talebi yok.",
+    SQ: "Nuk ka kërkesa të hapura për sëmundje.",
+    KU: "Ti daxwaza nexweşiyê ya vekirî tune ye.",
+  },
+  emptyApproved: {
+    DE: "Keine genehmigten Krankheitsanträge.",
+    EN: "No approved sickness requests.",
+    IT: "Nessuna richiesta di malattia approvata.",
+    TR: "Onaylanmış hastalık talebi yok.",
+    SQ: "Nuk ka kërkesa të miratuara për sëmundje.",
+    KU: "Ti daxwaza nexweşiyê ya pejirandî tune ye.",
+  },
+  emptyRejected: {
+    DE: "Keine abgelehnten Krankheitsanträge.",
+    EN: "No rejected sickness requests.",
+    IT: "Nessuna richiesta di malattia rifiutata.",
+    TR: "Reddedilmiş hastalık talebi yok.",
+    SQ: "Nuk ka kërkesa të refuzuara për sëmundje.",
+    KU: "Ti daxwaza nexweşiyê ya redkirî tune ye.",
+  },
+  day: {
+    DE: "Tag",
+    EN: "day",
+    IT: "giorno",
+    TR: "gün",
+    SQ: "ditë",
+    KU: "roj",
+  },
+  days: {
+    DE: "Tage",
+    EN: "days",
+    IT: "giorni",
+    TR: "gün",
+    SQ: "ditë",
+    KU: "roj",
+  },
+  sickLabel: {
+    DE: "Krank",
+    EN: "Sick",
+    IT: "Malato",
+    TR: "Hasta",
+    SQ: "Sëmurë",
+    KU: "Nexweş",
+  },
+};
+
+export type AdminUsersTextKey =
+  | "activeLabel"
+  | "pageTitle"
+  | "pageSubtitle"
+  | "loadError"
+  | "resetFailed"
+  | "loading"
+  | "empty"
+  | "createResetLink"
+  | "resetLinkTitle"
+  | "validUntil"
+  | "copied"
+  | "copyNotPossible"
+  | "copyLink"
+  | "close"
+  | "hint";
+
+export const ADMIN_USERS_UI_TEXTS: Record<
+  AdminUsersTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  activeLabel: {
+    DE: "Mitarbeiter",
+    EN: "Employees",
+    IT: "Dipendenti",
+    TR: "Çalışanlar",
+    SQ: "Punonjësit",
+    KU: "Karmend",
+  },
+  pageTitle: {
+    DE: "Mitarbeiter",
+    EN: "Employees",
+    IT: "Dipendenti",
+    TR: "Çalışanlar",
+    SQ: "Punonjësit",
+    KU: "Karmend",
+  },
+  pageSubtitle: {
+    DE: "Reset-Link erstellen und dem Mitarbeiter schicken (z. B. per WhatsApp).",
+    EN: "Create a reset link and send it to the employee (e.g. via WhatsApp).",
+    IT: "Crea un link di reset e invialo al dipendente (ad es. tramite WhatsApp).",
+    TR: "Sıfırlama bağlantısı oluştur ve çalışana gönder (ör. WhatsApp ile).",
+    SQ: "Krijo një link rivendosjeje dhe dërgoja punonjësit (p.sh. me WhatsApp).",
+    KU: "Girêdana nûvekirinê biafirîne û bişîne karmendê (mînak WhatsApp).",
+  },
+  loadError: {
+    DE: "Konnte Mitarbeiter nicht laden.",
+    EN: "Could not load employees.",
+    IT: "Impossibile caricare i dipendenti.",
+    TR: "Çalışanlar yüklenemedi.",
+    SQ: "Punonjësit nuk mund të ngarkoheshin.",
+    KU: "Karmend nehatin barkirin.",
+  },
+  resetFailed: {
+    DE: "Reset fehlgeschlagen.",
+    EN: "Reset failed.",
+    IT: "Reimpostazione non riuscita.",
+    TR: "Sıfırlama başarısız oldu.",
+    SQ: "Rivendosja dështoi.",
+    KU: "Nûvekirin serneket.",
+  },
+  loading: {
+    DE: "Lädt...",
+    EN: "Loading...",
+    IT: "Caricamento...",
+    TR: "Yükleniyor...",
+    SQ: "Duke u ngarkuar...",
+    KU: "Tê barkirin...",
+  },
+  empty: {
+    DE: "Keine Mitarbeiter gefunden.",
+    EN: "No employees found.",
+    IT: "Nessun dipendente trovato.",
+    TR: "Çalışan bulunamadı.",
+    SQ: "Nuk u gjet asnjë punonjës.",
+    KU: "Ti karmend nehat dîtin.",
+  },
+  createResetLink: {
+    DE: "Reset-Link erstellen",
+    EN: "Create reset link",
+    IT: "Crea link di reset",
+    TR: "Sıfırlama bağlantısı oluştur",
+    SQ: "Krijo link rivendosjeje",
+    KU: "Girêdana nûvekirinê biafirîne",
+  },
+  resetLinkTitle: {
+    DE: "Reset-Link",
+    EN: "Reset link",
+    IT: "Link di reset",
+    TR: "Sıfırlama bağlantısı",
+    SQ: "Link rivendosjeje",
+    KU: "Girêdana nûvekirinê",
+  },
+  validUntil: {
+    DE: "Gültig bis:",
+    EN: "Valid until:",
+    IT: "Valido fino al:",
+    TR: "Şu tarihe kadar geçerli:",
+    SQ: "I vlefshëm deri më:",
+    KU: "Derbasdar heta:",
+  },
+  copied: {
+    DE: "Kopiert ✅",
+    EN: "Copied ✅",
+    IT: "Copiato ✅",
+    TR: "Kopyalandı ✅",
+    SQ: "U kopjua ✅",
+    KU: "Hat kopîkirin ✅",
+  },
+  copyNotPossible: {
+    DE: "Kopieren nicht möglich",
+    EN: "Copying not possible",
+    IT: "Copia non possibile",
+    TR: "Kopyalama mümkün değil",
+    SQ: "Kopjimi nuk është i mundur",
+    KU: "Kopîkirin ne gengaz e",
+  },
+  copyLink: {
+    DE: "Link kopieren",
+    EN: "Copy link",
+    IT: "Copia link",
+    TR: "Bağlantıyı kopyala",
+    SQ: "Kopjo linkun",
+    KU: "Girêdanê kopî bike",
+  },
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+  },
+  hint: {
+    DE: "Hinweis: Link ist einmalig. Danach ist er ungültig.",
+    EN: "Note: The link can only be used once. Afterwards it becomes invalid.",
+    IT: "Nota: Il link è monouso. Successivamente non sarà più valido.",
+    TR: "Not: Bağlantı tek kullanımlıktır. Sonrasında geçersiz olur.",
+    SQ: "Shënim: Linku përdoret vetëm një herë. Më pas bëhet i pavlefshëm.",
+    KU: "Têbînî: Girêdan tenê carekê tê bikaranîn. Piştî wê nederbasdar dibe.",
+  },
+};

@@ -3,6 +3,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import {
+  translate,
+  toHtmlLang,
+  type AppUiLanguage,
+  type AdminSickRequestsTextKey,
+  ADMIN_SICK_REQUESTS_UI_TEXTS,
+} from "@/lib/i18n";
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AbsenceType = "VACATION" | "SICK";
@@ -192,32 +199,46 @@ function parseAdminRequestsResponse(v: unknown): AdminRequestsResponse {
   };
 }
 
-function formatDateDE(ymd: string): string {
+function formatDateLocalized(ymd: string, language: AppUiLanguage): string {
   const normalized = ymd.length >= 10 ? ymd.slice(0, 10) : ymd;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return ymd;
 
-  const [y, m, d] = normalized.split("-");
-  return `${d}.${m}.${y}`;
+  const [year, month, day] = normalized.split("-").map(Number);
+  const date = new Date(Date.UTC(year, (month || 1) - 1, day || 1));
+
+  return new Intl.DateTimeFormat(toHtmlLang(language), {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Europe/Berlin",
+  }).format(date);
 }
 
-function formatDateTimeDE(iso: string | null): string {
+function formatDateTimeLocalized(
+  iso: string | null,
+  language: AppUiLanguage
+): string {
   if (!iso) return "—";
 
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "—";
 
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = String(date.getFullYear());
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-
-  return `${day}.${month}.${year}, ${hours}:${minutes}`;
+  return new Intl.DateTimeFormat(toHtmlLang(language), {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
-function rangeLabel(startDate: string, endDate: string): string {
-  if (startDate === endDate) return formatDateDE(startDate);
-  return `${formatDateDE(startDate)} – ${formatDateDE(endDate)}`;
+function rangeLabel(
+  startDate: string,
+  endDate: string,
+  language: AppUiLanguage
+): string {
+  if (startDate === endDate) return formatDateLocalized(startDate, language);
+  return `${formatDateLocalized(startDate, language)} – ${formatDateLocalized(endDate, language)}`;
 }
 
 function countDaysInclusive(startDate: string, endDate: string): number {
@@ -232,10 +253,16 @@ function countDaysInclusive(startDate: string, endDate: string): number {
   return Math.floor(diffMs / 86400000) + 1;
 }
 
-function statusLabel(status: RequestStatus): string {
-  if (status === "PENDING") return "Offen";
-  if (status === "APPROVED") return "Genehmigt";
-  return "Abgelehnt";
+function statusLabel(status: RequestStatus, language: AppUiLanguage): string {
+  if (status === "PENDING") {
+    return translate(language, "statusOpen", ADMIN_SICK_REQUESTS_UI_TEXTS);
+  }
+
+  if (status === "APPROVED") {
+    return translate(language, "statusApproved", ADMIN_SICK_REQUESTS_UI_TEXTS);
+  }
+
+  return translate(language, "statusRejected", ADMIN_SICK_REQUESTS_UI_TEXTS);
 }
 
 function statusClassName(status: RequestStatus): string {
@@ -291,6 +318,10 @@ export default function KrankheitsantraegePage() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editStartDate, setEditStartDate] = useState<string>("");
   const [editEndDate, setEditEndDate] = useState<string>("");
+  const language: AppUiLanguage = session?.language ?? "DE";
+
+  const t = (key: AdminSickRequestsTextKey): string =>
+    translate(language, key, ADMIN_SICK_REQUESTS_UI_TEXTS);
 
   async function loadRequests() {
     if (!session || session.role !== "ADMIN") return;
@@ -321,7 +352,7 @@ export default function KrankheitsantraegePage() {
 
       if (!response.ok || !parsed.ok) {
         setItems([]);
-        setError(parsed.ok ? "Krankheitsanträge konnten nicht geladen werden." : parsed.error);
+        setError(parsed.ok ? t("loadError") : parsed.error);
         window.dispatchEvent(new Event("admin-requests-changed"));
         return;
       }
@@ -330,7 +361,7 @@ export default function KrankheitsantraegePage() {
       window.dispatchEvent(new Event("admin-requests-changed"));
     } catch {
       setItems([]);
-      setError("Netzwerkfehler beim Laden der Krankheitsanträge.");
+      setError(t("networkLoadError"));
       window.dispatchEvent(new Event("admin-requests-changed"));
     } finally {
       setLoading(false);
@@ -443,7 +474,7 @@ export default function KrankheitsantraegePage() {
     try {
       const target = items.find((item) => item.id === id);
       if (!target) {
-        setError("Antrag nicht gefunden.");
+        setError(t("requestNotFound"));
         return;
       }
 
@@ -471,7 +502,7 @@ export default function KrankheitsantraegePage() {
         const message =
           isRecord(json) && typeof json["error"] === "string"
             ? json["error"]
-            : "Genehmigung fehlgeschlagen.";
+            : t("approveFailed");
         setError(message);
         return;
       }
@@ -479,7 +510,7 @@ export default function KrankheitsantraegePage() {
       cancelEditing();
       await loadRequests();
     } catch {
-      setError("Netzwerkfehler bei der Genehmigung.");
+      setError(t("approveNetworkError"));
     } finally {
       setBusyAction(null);
     }
@@ -501,14 +532,14 @@ export default function KrankheitsantraegePage() {
         const message =
           isRecord(json) && typeof json["error"] === "string"
             ? json["error"]
-            : "Ablehnung fehlgeschlagen.";
+            : t("rejectFailed");
         setError(message);
         return;
       }
 
       await loadRequests();
     } catch {
-      setError("Netzwerkfehler bei der Ablehnung.");
+      setError(t("rejectNetworkError"));
     } finally {
       setBusyAction(null);
     }
@@ -517,7 +548,7 @@ export default function KrankheitsantraegePage() {
   async function deleteRequest(id: string) {
     const confirmed =
       typeof window !== "undefined"
-        ? window.confirm("Möchtest du diesen Krankheitsantrag wirklich dauerhaft löschen?")
+        ? window.confirm(t("deleteConfirm"))
         : false;
 
     if (!confirmed) return;
@@ -537,7 +568,7 @@ export default function KrankheitsantraegePage() {
         const message =
           isRecord(json) && typeof json["error"] === "string"
             ? json["error"]
-            : "Löschen fehlgeschlagen.";
+            : t("deleteFailed");
         setError(message);
         return;
       }
@@ -549,7 +580,7 @@ export default function KrankheitsantraegePage() {
       await loadRequests();
 
     } catch {
-      setError("Netzwerkfehler beim Löschen.");
+      setError(t("deleteNetworkError"));
     } finally {
       setBusyAction(null);
     }
@@ -575,7 +606,7 @@ export default function KrankheitsantraegePage() {
     try {
       const target = items.find((item) => item.id === id);
       if (!target) {
-        setError("Antrag nicht gefunden.");
+        setError(t("requestNotFound"));
         return;
       }
 
@@ -606,7 +637,7 @@ export default function KrankheitsantraegePage() {
         const message =
           isRecord(patchJson) && typeof patchJson["error"] === "string"
             ? patchJson["error"]
-            : "Änderung fehlgeschlagen.";
+            : t("changeFailed");
         setError(message);
         return;
       }
@@ -635,7 +666,7 @@ export default function KrankheitsantraegePage() {
         const message =
           isRecord(requestUpdateJson) && typeof requestUpdateJson["error"] === "string"
             ? requestUpdateJson["error"]
-            : "Antragsdaten konnten nicht aktualisiert werden.";
+            : t("updateFailed");
         setError(message);
         return;
       }
@@ -643,7 +674,7 @@ export default function KrankheitsantraegePage() {
       cancelEditing();
       await loadRequests();
     } catch {
-      setError("Netzwerkfehler bei der Änderung.");
+      setError(t("changeNetworkError"));
     } finally {
       setBusyAction(null);
     }
@@ -664,10 +695,10 @@ export default function KrankheitsantraegePage() {
     [items]
   );
 
-    const selectedUserLabel = useMemo(() => {
-    if (!selectedUserId) return "Alle Mitarbeiter";
-    return users.find((user) => user.id === selectedUserId)?.fullName ?? "Ausgewählter Mitarbeiter";
-  }, [users, selectedUserId]);
+  const selectedUserLabel = useMemo(() => {
+    if (!selectedUserId) return t("allEmployees");
+    return users.find((user) => user.id === selectedUserId)?.fullName ?? t("selectedEmployee");
+  }, [users, selectedUserId, language]);
 
   function renderRequestCard(item: AbsenceRequestItem) {
     const isDeleting = busyAction?.id === item.id && busyAction.action === "delete";
@@ -698,7 +729,7 @@ export default function KrankheitsantraegePage() {
             </div>
 
             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 14 }}>
-              🤒 Krank · {rangeLabel(item.startDate, item.endDate)} · {days} {days === 1 ? "Tag" : "Tage"}
+              🤒 {t("sickLabel")} · {rangeLabel(item.startDate, item.endDate, language)} · {days} {days === 1 ? t("day") : t("days")}
             </div>
 
             <div
@@ -710,16 +741,16 @@ export default function KrankheitsantraegePage() {
               }}
             >
               <span className={statusClassName(item.status)}>
-                {statusLabel(item.status)}
+                {statusLabel(item.status, language)}
               </span>
 
               <span className="admin-workflow-meta-chip">
-                Erstellt: {formatDateTimeDE(item.createdAt)}
+                {t("createdAt")} {formatDateTimeLocalized(item.createdAt, language)}
               </span>
 
               {item.decidedAt ? (
                 <span className="admin-workflow-meta-chip">
-                  Entscheidung: {formatDateTimeDE(item.decidedAt)}
+                  {t("decisionAt")} {formatDateTimeLocalized(item.decidedAt, language)}
                 </span>
               ) : null}
             </div>
@@ -728,12 +759,12 @@ export default function KrankheitsantraegePage() {
 
         <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
           <div>
-            <div className="label">Zeitraum</div>
+            <div className="label">{t("period")}</div>
 
             {isEditing ? (
               <div className="modal-grid-2">
                 <div className="modal-field">
-                  <div className="label admin-workflow-sub-label">Start</div>
+                  <div className="label admin-workflow-sub-label">{t("start")}</div>
                   <input
                     className="input modal-date-input"
                     type="date"
@@ -743,7 +774,7 @@ export default function KrankheitsantraegePage() {
                 </div>
 
                 <div className="modal-field">
-                  <div className="label admin-workflow-sub-label">Ende</div>
+                  <div className="label admin-workflow-sub-label">{t("end")}</div>
                   <input
                     className="input modal-date-input"
                     type="date"
@@ -754,25 +785,25 @@ export default function KrankheitsantraegePage() {
               </div>
             ) : (
               <div className="input admin-workflow-readonly-input">
-                {rangeLabel(item.startDate, item.endDate)}
+                {rangeLabel(item.startDate, item.endDate, language)}
               </div>
             )}
           </div>
 
           <div>
-            <div className="label">Mitarbeiter-Notiz</div>
+            <div className="label">{t("employeeNote")}</div>
             <div
               className={`input admin-workflow-note-input${
                 item.noteEmployee.trim() ? "" : " admin-workflow-note-input-empty"
               }`}
             >
-              {item.noteEmployee.trim() || "Keine Notiz vorhanden."}
+              {item.noteEmployee.trim() || t("noNote")}
             </div>
           </div>
           <div>
-            <div className="label">Bearbeitet von</div>
+            <div className="label">{t("processedBy")}</div>
             <div className="input admin-workflow-readonly-input-muted">
-              {item.decidedBy ? item.decidedBy.fullName : "Noch nicht entschieden"}
+              {item.decidedBy ? item.decidedBy.fullName : t("notDecidedYet")}
             </div>
           </div>
         </div>
@@ -800,7 +831,7 @@ export default function KrankheitsantraegePage() {
                   minWidth: 0,
                 }}
               >
-                Abbrechen
+                {t("cancel")}
               </button>
 
               <button
@@ -815,7 +846,7 @@ export default function KrankheitsantraegePage() {
                   minWidth: 0,
                 }}
               >
-                {isDeleting ? "Löscht..." : "Löschen"}
+                {isDeleting ? t("deleting") : t("delete")}
               </button>
 
               {item.status === "PENDING" ? (
@@ -832,7 +863,7 @@ export default function KrankheitsantraegePage() {
                       minWidth: 0,
                     }}
                   >
-                    {isRejecting ? "Verarbeitet..." : "Ablehnen"}
+                    {isRejecting ? t("processing") : t("reject")}
                   </button>
 
                   <button
@@ -847,7 +878,7 @@ export default function KrankheitsantraegePage() {
                       minWidth: 0,
                     }}
                   >
-                    {isApproving ? "Verarbeitet..." : "Korrigieren & genehmigen"}
+                    {isApproving ? t("processing") : t("approveCorrected")}
                   </button>
                 </>
               ) : item.status === "APPROVED" ? (
@@ -863,7 +894,7 @@ export default function KrankheitsantraegePage() {
                     minWidth: 0,
                   }}
                 >
-                  {isSaving ? "Speichert..." : "Änderungen speichern"}
+                  {isSaving ? t("saving") : t("saveChanges")}
                 </button>
               ) : null}
             </>
@@ -880,7 +911,7 @@ export default function KrankheitsantraegePage() {
                     minWidth: 0,
                   }}
                 >
-                  Bearbeiten
+                  {t("edit")}
                 </button>
               ) : null}
 
@@ -896,7 +927,7 @@ export default function KrankheitsantraegePage() {
                   minWidth: 0,
                 }}
               >
-                {isDeleting ? "Löscht..." : "Löschen"}
+                {isDeleting ? t("deleting") : t("delete")}
               </button>
 
               {item.status === "PENDING" ? (
@@ -913,7 +944,7 @@ export default function KrankheitsantraegePage() {
                       minWidth: 0,
                     }}
                   >
-                    {isRejecting ? "Verarbeitet..." : "Ablehnen"}
+                    {isRejecting ? t("processing") : t("reject")}
                   </button>
 
                   <button
@@ -928,7 +959,7 @@ export default function KrankheitsantraegePage() {
                       minWidth: 0,
                     }}
                   >
-                    {isApproving ? "Verarbeitet..." : "Genehmigen"}
+                    {isApproving ? t("processing") : t("approve")}
                   </button>
                 </>
               ) : null}
@@ -941,20 +972,20 @@ export default function KrankheitsantraegePage() {
 
   if (!sessionChecked) {
     return (
-      <AppShell activeLabel="#wirkönnendas">
+      <AppShell activeLabel={t("activeLabel")}>
         <div className="card admin-workflow-loading-card">
-          <div className="admin-workflow-filter-text">Lädt Krankheitsanträge...</div>
+          <div className="admin-workflow-filter-text">{t("loadingInitial")}</div>
         </div>
       </AppShell>
     );
   }
 
   return (
-    <AppShell activeLabel="#wirkönnendas">
+    <AppShell activeLabel={t("activeLabel")}>
       <div className="kpi-grid" style={{ marginBottom: 14 }}>
         <div className="card kpi">
           <div>
-            <div className="small">Offene Krankheitsanträge</div>
+            <div className="small">{t("pendingRequestsKpi")}</div>
             <div className="big">{pendingItems.length}</div>
           </div>
           <div className="admin-workflow-kpi-icon">🤒</div>
@@ -962,7 +993,7 @@ export default function KrankheitsantraegePage() {
 
         <div className="card kpi">
           <div>
-            <div className="small">Genehmigt</div>
+            <div className="small">{t("approvedKpi")}</div>
             <div className="big">{approvedItems.length}</div>
           </div>
           <div className="admin-workflow-kpi-icon">✅</div>
@@ -970,7 +1001,7 @@ export default function KrankheitsantraegePage() {
 
         <div className="card kpi">
           <div>
-            <div className="small">Abgelehnt</div>
+            <div className="small">{t("rejectedKpi")}</div>
             <div className="big">{rejectedItems.length}</div>
           </div>
           <div className="admin-workflow-kpi-icon">⛔</div>
@@ -980,21 +1011,21 @@ export default function KrankheitsantraegePage() {
       <div className="card card-olive admin-workflow-filter-shell">
         <div className="section-title admin-workflow-filter-title">
           <span className="admin-workflow-filter-icon">🤒</span>
-          Krankheitsanträge
+          {t("pageTitle")}
         </div>
 
         <div className="admin-workflow-filter-text">
-          Hier siehst du alle Krankheitsanträge deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.
+          {t("pageDescription")}
         </div>
         <div className="admin-workflow-filter-grid">
           <div className="admin-workflow-filter-field">
-            <div className="label">Mitarbeiter</div>
+            <div className="label">{t("employee")}</div>
             <select
               className="input admin-workflow-filter-input"
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
             >
-              <option value="">Alle Mitarbeiter</option>
+              <option value="">{t("allEmployees")}</option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.fullName}
@@ -1004,7 +1035,7 @@ export default function KrankheitsantraegePage() {
           </div>
 
           <div className="admin-workflow-filter-field">
-            <div className="label">Monat</div>
+            <div className="label">{t("month")}</div>
             <input
               className="input admin-workflow-filter-input"
               type="month"
@@ -1026,19 +1057,19 @@ export default function KrankheitsantraegePage() {
 
       {loading ? (
         <div className="card admin-workflow-loading-card">
-          Lädt Krankheitsanträge...
+          {t("loadingInitial")}
         </div>
       ) : (
         <div className="admin-workflow-shell">
           <details open className="admin-workflow-section">
             <summary className="admin-workflow-section-summary">
-              {sectionTitle("Offen", pendingItems.length)}
+              {sectionTitle(t("openSection"), pendingItems.length)}
             </summary>
 
             <div className="admin-workflow-section-content">
               {pendingItems.length === 0 ? (
                 <div className="card admin-workflow-empty-card">
-                  Keine offenen Krankheitsanträge.
+                  {t("emptyOpen")}
                 </div>
               ) : (
                 pendingItems.map(renderRequestCard)
@@ -1048,13 +1079,13 @@ export default function KrankheitsantraegePage() {
 
           <details className="admin-workflow-section">
             <summary className="admin-workflow-section-summary">
-              {sectionTitle(`Genehmigt – ${selectedUserLabel}`, approvedItems.length)}
+              {sectionTitle(`${t("approvedSection")} – ${selectedUserLabel}`, approvedItems.length)}
             </summary>
 
             <div className="admin-workflow-section-content">
               {approvedItems.length === 0 ? (
                 <div className="card admin-workflow-empty-card">
-                  Keine genehmigten Krankheitsanträge.
+                  {t("emptyApproved")}
                 </div>
               ) : (
                 approvedItems.map(renderRequestCard)
@@ -1064,13 +1095,13 @@ export default function KrankheitsantraegePage() {
 
           <details className="admin-workflow-section">
             <summary className="admin-workflow-section-summary">
-              {sectionTitle(`Abgelehnt – ${selectedUserLabel}`, rejectedItems.length)}
+              {sectionTitle(`${t("rejectedSection")} – ${selectedUserLabel}`, rejectedItems.length)}
             </summary>
 
             <div className="admin-workflow-section-content">
               {rejectedItems.length === 0 ? (
                 <div className="card admin-workflow-empty-card">
-                  Keine abgelehnten Krankheitsanträge.
+                  {t("emptyRejected")}
                 </div>
               ) : (
                 rejectedItems.map(renderRequestCard)

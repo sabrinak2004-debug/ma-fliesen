@@ -3,6 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
+import {
+  translate,
+  type AppUiLanguage,
+  type AdminUsersTextKey,
+  ADMIN_USERS_UI_TEXTS,
+} from "@/lib/i18n";
 
 type UserRow = {
   id: string;
@@ -81,14 +87,85 @@ function parseResetResponse(value: unknown): ResetResponse | null {
   return null;
 }
 
+type AdminSessionDTO = {
+  userId: string;
+  fullName: string;
+  role: "ADMIN" | "EMPLOYEE";
+  language: "DE" | "EN" | "IT" | "TR" | "SQ" | "KU";
+  companyId: string;
+  companyName: string;
+  companySubdomain: string;
+  companyLogoUrl: string | null;
+  primaryColor: string | null;
+};
+
+function isAdminSessionDTO(v: unknown): v is AdminSessionDTO {
+  return (
+    isRecord(v) &&
+    typeof v["userId"] === "string" &&
+    typeof v["fullName"] === "string" &&
+    (v["role"] === "ADMIN" || v["role"] === "EMPLOYEE") &&
+    (v["language"] === "DE" ||
+      v["language"] === "EN" ||
+      v["language"] === "IT" ||
+      v["language"] === "TR" ||
+      v["language"] === "SQ" ||
+      v["language"] === "KU") &&
+    typeof v["companyId"] === "string" &&
+    typeof v["companyName"] === "string" &&
+    typeof v["companySubdomain"] === "string" &&
+    (typeof v["companyLogoUrl"] === "string" || v["companyLogoUrl"] === null) &&
+    (typeof v["primaryColor"] === "string" || v["primaryColor"] === null)
+  );
+}
+
+function parseMeSession(v: unknown): AdminSessionDTO | null {
+  if (!isRecord(v)) return null;
+  const session = v["session"];
+  if (session === null) return null;
+  return isAdminSessionDTO(session) ? session : null;
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [language, setLanguage] = useState<AppUiLanguage>("DE");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [resetUrl, setResetUrl] = useState("");
   const [resetInfo, setResetInfo] = useState("");
+  const t = (key: AdminUsersTextKey): string =>
+    translate(language, key, ADMIN_USERS_UI_TEXTS);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadSession(): Promise<void> {
+      try {
+        const response = await fetch("/api/me", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        const json: unknown = await response.json().catch(() => null);
+        const session = parseMeSession(json);
+
+        if (!alive || !session) return;
+
+        setLanguage(session.language);
+      } catch {
+        if (!alive) return;
+      }
+    }
+
+    void loadSession();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -108,7 +185,7 @@ export default function AdminUsersPage() {
         if (!alive) return;
 
         if (!response.ok || !data || !data.ok) {
-          setErr("Konnte Mitarbeiter nicht laden.");
+          setErr(t("loadError"));
           setUsers([]);
           return;
         }
@@ -116,7 +193,7 @@ export default function AdminUsersPage() {
         setUsers(data.users);
       } catch {
         if (!alive) return;
-        setErr("Konnte Mitarbeiter nicht laden.");
+        setErr(t("loadError"));
         setUsers([]);
       } finally {
         if (!alive) return;
@@ -132,8 +209,8 @@ export default function AdminUsersPage() {
   }, []);
 
   const sorted = useMemo(
-    () => [...users].sort((a, b) => a.fullName.localeCompare(b.fullName, "de")),
-    [users]
+    () => [...users].sort((a, b) => a.fullName.localeCompare(b.fullName, language.toLowerCase())),
+    [users, language]
   );
 
   async function createResetLink(userId: string): Promise<void> {
@@ -153,18 +230,18 @@ export default function AdminUsersPage() {
 
       if (!response.ok || !data || !data.ok) {
         const message =
-          data && !data.ok ? data.error : "Reset fehlgeschlagen.";
+          data && !data.ok ? data.error : t("resetFailed");
         setErr(message);
         return;
       }
 
       setResetUrl(data.resetUrl);
       setResetInfo(
-        `Gültig bis: ${new Date(data.expiresAt).toLocaleString("de-DE")}`
+        `${t("validUntil")} ${new Date(data.expiresAt).toLocaleString(language.toLowerCase())}`
       );
       setModalOpen(true);
     } catch {
-      setErr("Reset fehlgeschlagen.");
+      setErr(t("resetFailed"));
     }
   }
 
@@ -172,23 +249,22 @@ export default function AdminUsersPage() {
     try {
       await navigator.clipboard.writeText(resetUrl);
       setResetInfo((previous) =>
-        previous.includes("Kopiert")
+        previous.includes(t("copied"))
           ? previous
-          : `${previous} • Kopiert ✅`
+          : `${previous} • ${t("copied")}`
       );
     } catch {
-      setResetInfo((previous) => `${previous} • Kopieren nicht möglich`);
+      setResetInfo((previous) => `${previous} • ${t("copyNotPossible")}`);
     }
   }
 
   return (
-    <AppShell activeLabel="Mitarbeiter">
+    <AppShell activeLabel={t("activeLabel")}>
       <div className="admin-users-shell">
-        <h1 className="admin-users-title">Mitarbeiter</h1>
+        <h1 className="admin-users-title">{t("pageTitle")}</h1>
 
         <div className="admin-users-subtitle">
-          Reset-Link erstellen und dem Mitarbeiter schicken
-          (z. B. per WhatsApp).
+          {t("pageSubtitle")}
         </div>
 
         {err ? (
@@ -198,12 +274,12 @@ export default function AdminUsersPage() {
         ) : null}
 
         {loading ? (
-          <div className="tenant-soft-panel">Lädt...</div>
+          <div className="tenant-soft-panel">{t("loading")}</div>
         ) : (
           <div className="admin-users-list">
             {sorted.length === 0 ? (
               <div className="admin-users-empty">
-                Keine Mitarbeiter gefunden.
+                {t("empty")}
               </div>
             ) : (
               sorted.map((user) => (
@@ -215,7 +291,7 @@ export default function AdminUsersPage() {
                     onClick={() => void createResetLink(user.id)}
                     className="btn"
                   >
-                    Reset-Link erstellen
+                    {t("createResetLink")}
                   </button>
                 </div>
               ))
@@ -225,7 +301,7 @@ export default function AdminUsersPage() {
 
         <Modal
           open={modalOpen}
-          title="Reset-Link"
+          title={t("resetLinkTitle")}
           onClose={() => setModalOpen(false)}
           footer={
             <div className="modal-footer-row">
@@ -234,7 +310,7 @@ export default function AdminUsersPage() {
                 onClick={() => void copyLink()}
                 className="btn"
               >
-                Link kopieren
+                {t("copyLink")}
               </button>
 
               <button
@@ -242,7 +318,7 @@ export default function AdminUsersPage() {
                 onClick={() => setModalOpen(false)}
                 className="btn"
               >
-                Schließen
+                {t("close")}
               </button>
             </div>
           }
@@ -253,7 +329,7 @@ export default function AdminUsersPage() {
             <div className="admin-users-modal-code">{resetUrl}</div>
 
             <div className="admin-users-modal-hint">
-              Hinweis: Link ist einmalig. Danach ist er ungültig.
+              {t("hint")}
             </div>
           </div>
         </Modal>

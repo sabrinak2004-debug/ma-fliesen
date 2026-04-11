@@ -3,6 +3,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import {
+  translate,
+  toHtmlLang,
+  type AppUiLanguage,
+  type AdminVacationRequestsTextKey,
+  ADMIN_VACATION_REQUESTS_UI_TEXTS,
+} from "@/lib/i18n";
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AbsenceType = "VACATION" | "SICK";
@@ -364,32 +371,46 @@ function formatVacationSignedDays(value: number): string {
   return formatVacationDays(value);
 }
 
-function formatDateDE(ymd: string): string {
+function formatDateLocalized(ymd: string, language: AppUiLanguage): string {
   const normalized = ymd.length >= 10 ? ymd.slice(0, 10) : ymd;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return ymd;
 
-  const [y, m, d] = normalized.split("-");
-  return `${d}.${m}.${y}`;
+  const [year, month, day] = normalized.split("-").map(Number);
+  const date = new Date(Date.UTC(year, (month || 1) - 1, day || 1));
+
+  return new Intl.DateTimeFormat(toHtmlLang(language), {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Europe/Berlin",
+  }).format(date);
 }
 
-function formatDateTimeDE(iso: string | null): string {
+function formatDateTimeLocalized(
+  iso: string | null,
+  language: AppUiLanguage
+): string {
   if (!iso) return "—";
 
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "—";
 
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = String(date.getFullYear());
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-
-  return `${day}.${month}.${year}, ${hours}:${minutes}`;
+  return new Intl.DateTimeFormat(toHtmlLang(language), {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
-function rangeLabel(startDate: string, endDate: string): string {
-  if (startDate === endDate) return formatDateDE(startDate);
-  return `${formatDateDE(startDate)} – ${formatDateDE(endDate)}`;
+function rangeLabel(
+  startDate: string,
+  endDate: string,
+  language: AppUiLanguage
+): string {
+  if (startDate === endDate) return formatDateLocalized(startDate, language);
+  return `${formatDateLocalized(startDate, language)} – ${formatDateLocalized(startDate === endDate ? startDate : endDate, language)}`;
 }
 
 function portionLabel(dayPortion: AbsenceDayPortion): string {
@@ -517,10 +538,16 @@ function countDaysInclusive(startDate: string, endDate: string): number {
   return Math.floor(diffMs / 86400000) + 1;
 }
 
-function statusLabel(status: RequestStatus): string {
-  if (status === "PENDING") return "Offen";
-  if (status === "APPROVED") return "Genehmigt";
-  return "Abgelehnt";
+function statusLabel(status: RequestStatus, language: AppUiLanguage): string {
+  if (status === "PENDING") {
+    return translate(language, "statusOpen", ADMIN_VACATION_REQUESTS_UI_TEXTS);
+  }
+
+  if (status === "APPROVED") {
+    return translate(language, "statusApproved", ADMIN_VACATION_REQUESTS_UI_TEXTS);
+  }
+
+  return translate(language, "statusRejected", ADMIN_VACATION_REQUESTS_UI_TEXTS);
 }
 
 function statusClassName(status: RequestStatus): string {
@@ -566,29 +593,17 @@ function currentMonthOnlyValue(): string {
   return String(new Date().getMonth() + 1).padStart(2, "0");
 }
 
-function formatMonthLabel(ym: string): string {
+function formatMonthLabel(ym: string, language: AppUiLanguage): string {
   if (!/^\d{4}-\d{2}$/.test(ym)) return ym;
 
-  const [year, month] = ym.split("-");
-  const monthNames = [
-    "Januar",
-    "Februar",
-    "März",
-    "April",
-    "Mai",
-    "Juni",
-    "Juli",
-    "August",
-    "September",
-    "Oktober",
-    "November",
-    "Dezember",
-  ] as const;
+  const [year, month] = ym.split("-").map(Number);
+  const date = new Date(Date.UTC(year, (month || 1) - 1, 1));
 
-  const index = Number(month) - 1;
-  const monthLabel = monthNames[index] ?? month;
-
-  return `${monthLabel} ${year}`;
+  return new Intl.DateTimeFormat(toHtmlLang(language), {
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Berlin",
+  }).format(date);
 }
 
 export default function UrlaubsantraegePage() {
@@ -619,22 +634,7 @@ export default function UrlaubsantraegePage() {
       String(currentYear - 3),
     ];
   }, []);
-  const resturlaubMonthOptions = useMemo(() => {
-    return [
-      { value: "01", label: "Januar" },
-      { value: "02", label: "Februar" },
-      { value: "03", label: "März" },
-      { value: "04", label: "April" },
-      { value: "05", label: "Mai" },
-      { value: "06", label: "Juni" },
-      { value: "07", label: "Juli" },
-      { value: "08", label: "August" },
-      { value: "09", label: "September" },
-      { value: "10", label: "Oktober" },
-      { value: "11", label: "November" },
-      { value: "12", label: "Dezember" },
-    ];
-  }, []);
+
   const [remainingVacationDays, setRemainingVacationDays] = useState<number>(0);
   const [accruedVacationDays, setAccruedVacationDays] = useState<number>(0);
   const [usedVacationDaysYtd, setUsedVacationDaysYtd] = useState<number>(0);
@@ -647,6 +647,25 @@ export default function UrlaubsantraegePage() {
   const [editType, setEditType] = useState<AbsenceType>("VACATION");
   const [editDayPortion, setEditDayPortion] = useState<AbsenceDayPortion>("FULL_DAY");
   const [editCompensation, setEditCompensation] = useState<AbsenceCompensation>("PAID");
+  const language: AppUiLanguage = session?.language ?? "DE";
+
+  const t = (key: AdminVacationRequestsTextKey): string =>
+    translate(language, key, ADMIN_VACATION_REQUESTS_UI_TEXTS);
+
+  const resturlaubMonthOptions = useMemo(() => {
+    return Array.from({ length: 12 }, (_, index) => {
+      const value = String(index + 1).padStart(2, "0");
+      const date = new Date(Date.UTC(2026, index, 1));
+
+      return {
+        value,
+        label: new Intl.DateTimeFormat(toHtmlLang(language), {
+          month: "long",
+          timeZone: "Europe/Berlin",
+        }).format(date),
+      };
+    });
+  }, [language]);
 
   async function loadRequests() {
     if (!session || session.role !== "ADMIN") return;
@@ -677,7 +696,7 @@ export default function UrlaubsantraegePage() {
 
       if (!response.ok || !parsed.ok) {
         setItems([]);
-        setError(parsed.ok ? "Urlaubsanträge konnten nicht geladen werden." : parsed.error);
+        setError(parsed.ok ? t("loadError") : parsed.error);
         window.dispatchEvent(new Event("admin-requests-changed"));
         return;
       }
@@ -686,7 +705,7 @@ export default function UrlaubsantraegePage() {
       window.dispatchEvent(new Event("admin-requests-changed"));
     } catch {
       setItems([]);
-      setError("Netzwerkfehler beim Laden der Urlaubsanträge.");
+      setError(t("networkLoadError"));
       window.dispatchEvent(new Event("admin-requests-changed"));
     } finally {
       setLoading(false);
@@ -714,7 +733,7 @@ export default function UrlaubsantraegePage() {
 
       if (!response.ok || "error" in parsed) {
         setRemainingVacationDays(0);
-        setResturlaubError("Resturlaub konnte nicht geladen werden.");
+        setResturlaubError(t("remainingLoadError"));
         return;
       }
 
@@ -739,7 +758,7 @@ export default function UrlaubsantraegePage() {
       setUsedVacationDaysYtd(0);
       setReservedPaidVacationDays(0);
       setRemainingVacationDays(0);
-      setResturlaubError("Netzwerkfehler beim Laden des Resturlaubs.");
+      setResturlaubError(t("remainingNetworkError"));
     } finally {
       setResturlaubLoading(false);
     }
@@ -864,7 +883,7 @@ useEffect(() => {
     try {
       const target = items.find((item) => item.id === id);
       if (!target) {
-        setError("Antrag nicht gefunden.");
+      setResturlaubError(t("remainingNetworkError"));
         return;
       }
 
@@ -895,7 +914,7 @@ useEffect(() => {
         const message =
           isRecord(json) && typeof json["error"] === "string"
             ? json["error"]
-            : "Genehmigung fehlgeschlagen.";
+            : t("approveFailed");
         setError(message);
         return;
       }
@@ -903,7 +922,7 @@ useEffect(() => {
       cancelEditing();
       await loadRequests();
     } catch {
-      setError("Netzwerkfehler bei der Genehmigung.");
+      setError(t("approveNetworkError"));
     } finally {
       setBusyAction(null);
     }
@@ -925,14 +944,14 @@ useEffect(() => {
         const message =
           isRecord(json) && typeof json["error"] === "string"
             ? json["error"]
-            : "Ablehnung fehlgeschlagen.";
+            : t("rejectFailed");
         setError(message);
         return;
       }
 
       await loadRequests();
     } catch {
-      setError("Netzwerkfehler bei der Ablehnung.");
+      setError(t("rejectNetworkError"));
     } finally {
       setBusyAction(null);
     }
@@ -941,7 +960,7 @@ useEffect(() => {
   async function deleteRequest(id: string) {
     const confirmed =
       typeof window !== "undefined"
-        ? window.confirm("Möchtest du diesen Urlaubsantrag wirklich dauerhaft löschen?")
+        ? window.confirm(t("deleteConfirm"))
         : false;
 
     if (!confirmed) return;
@@ -961,7 +980,7 @@ useEffect(() => {
         const message =
           isRecord(json) && typeof json["error"] === "string"
             ? json["error"]
-            : "Löschen fehlgeschlagen.";
+            : t("deleteFailed");
         setError(message);
         return;
       }
@@ -972,7 +991,7 @@ useEffect(() => {
 
       await loadRequests();
     } catch {
-      setError("Netzwerkfehler beim Löschen.");
+      setError(t("deleteNetworkError"));
     } finally {
       setBusyAction(null);
     }
@@ -1004,7 +1023,7 @@ useEffect(() => {
     try {
       const target = items.find((item) => item.id === id);
       if (!target) {
-        setError("Antrag nicht gefunden.");
+      setResturlaubError(t("remainingNetworkError"));
         return;
       }
 
@@ -1058,7 +1077,7 @@ useEffect(() => {
         const message =
           isRecord(patchJson) && typeof patchJson["error"] === "string"
             ? patchJson["error"]
-            : "Änderung fehlgeschlagen.";
+            : t("changeFailed");
         setError(message);
         return;
       }
@@ -1086,7 +1105,7 @@ useEffect(() => {
         const message =
           isRecord(requestUpdateJson) && typeof requestUpdateJson["error"] === "string"
             ? requestUpdateJson["error"]
-            : "Antragsdaten konnten nicht aktualisiert werden.";
+            : t("updateFailed");
         setError(message);
         return;
       }
@@ -1094,7 +1113,7 @@ useEffect(() => {
       cancelEditing();
       await loadRequests();
     } catch {
-      setError("Netzwerkfehler bei der Änderung.");
+      setError(t("changeNetworkError"));
     } finally {
       setBusyAction(null);
     }
@@ -1116,20 +1135,20 @@ useEffect(() => {
   );
 
   const selectedRequestUserLabel = useMemo(() => {
-    if (!selectedRequestUserId) return "Alle Mitarbeiter";
+    if (!selectedRequestUserId) return t("allEmployees");
     return (
       users.find((user) => user.id === selectedRequestUserId)?.fullName ??
-      "Ausgewählter Mitarbeiter"
+      t("selectedEmployee")
     );
-  }, [users, selectedRequestUserId]);
+  }, [users, selectedRequestUserId, language]);
 
   const selectedResturlaubUserLabel = useMemo(() => {
-    if (!selectedResturlaubUserId) return "Alle Mitarbeiter";
+    if (!selectedResturlaubUserId) return t("allEmployees");
     return (
       users.find((user) => user.id === selectedResturlaubUserId)?.fullName ??
-      "Ausgewählter Mitarbeiter"
+      t("selectedEmployee")
     );
-  }, [users, selectedResturlaubUserId]);
+  }, [users, selectedResturlaubUserId, language]);
 
   const showFilteredEmployeeResturlaub = selectedResturlaubUserId !== "";
 
@@ -1145,8 +1164,8 @@ useEffect(() => {
     const requestedDays = totalRequestedVacationDays(item);
     const durationText =
       item.dayPortion === "HALF_DAY"
-        ? `🌴 Urlaub · ${formatDateDE(item.startDate)} · 0,5 Tag`
-        : `🌴 Urlaub · ${rangeLabel(item.startDate, item.endDate)} · ${formatVacationDays(requestedDays)} ${requestedDays === 1 ? "Tag" : "Tage"}`;
+        ? `🌴 ${t("typeVacation")} · ${formatDateLocalized(item.startDate, language)} · 0,5 ${t("day")}`
+        : `🌴 ${t("typeVacation")} · ${rangeLabel(item.startDate, item.endDate, language)} · ${formatVacationDays(requestedDays)} ${requestedDays === 1 ? t("day") : t("days")}`;
 
     return (
       <div
@@ -1180,23 +1199,23 @@ useEffect(() => {
             {item.type === "VACATION" && item.autoUnpaidBecauseNoBalance ? (
               <div className="admin-workflow-mixed-hint">
                 {mixedCompensationHint(item)
-                  ? `Für diesen Antrag ist aktuell eine gemischte Vergütung vorgesehen. ${mixedCompensationHint(item)}`
-                  : "Für diesen Antrag ist aktuell unbezahler Urlaub vorgesehen, weil nicht genug bezahlter Urlaub verfügbar war."}
+                  ? `${t("mixedCompensationPrefix")} ${mixedCompensationHint(item)}`
+                  : t("insufficientPaidVacationHint")}
               </div>
             ) : null}
 
             <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span className={statusClassName(item.status)}>
-                {statusLabel(item.status)}
+                {statusLabel(item.status, language)}
               </span>
 
               <span className="admin-workflow-meta-chip">
-                Erstellt: {formatDateTimeDE(item.createdAt)}
+                {t("createdAt")} {formatDateTimeLocalized(item.createdAt, language)}
               </span>
 
               {item.decidedAt ? (
                 <span className="admin-workflow-meta-chip">
-                  Entscheidung: {formatDateTimeDE(item.decidedAt)}
+                  {t("decisionAt")} {formatDateTimeLocalized(item.decidedAt, language)}
                 </span>
               ) : null}
             </div>
@@ -1205,12 +1224,12 @@ useEffect(() => {
 
         <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
           <div>
-            <div className="label">Zeitraum</div>
+            <div className="label">{t("period")}</div>
 
             {isEditing ? (
               <div className="modal-grid-2">
                 <div className="modal-field">
-                  <div className="label admin-workflow-sub-label">Start</div>
+                  <div className="label admin-workflow-sub-label">{t("start")}</div>
                   <input
                     className="input modal-date-input"
                     type="date"
@@ -1220,7 +1239,7 @@ useEffect(() => {
                 </div>
 
                 <div className="modal-field">
-                  <div className="label admin-workflow-sub-label">Ende</div>
+                  <div className="label admin-workflow-sub-label">{t("end")}</div>
                   <input
                     className="input modal-date-input"
                     type="date"
@@ -1232,15 +1251,15 @@ useEffect(() => {
             ) : (
               <div className="input admin-workflow-readonly-input">
                 {item.dayPortion === "HALF_DAY"
-                  ? `${formatDateDE(item.startDate)} (halber Urlaubstag)`
-                  : rangeLabel(item.startDate, item.endDate)}
+                  ? `${formatDateLocalized(item.startDate, language)} (${t("halfVacationDay")})`
+                  : rangeLabel(item.startDate, item.endDate, language)}
               </div>
             )}
           </div>
 
           <div className="modal-grid-2">
             <div className="modal-field">
-              <div className="label">Typ</div>
+              <div className="label">{t("type")}</div>
               {isEditing ? (
                 <select
                   className="input"
@@ -1256,18 +1275,18 @@ useEffect(() => {
                     }
                   }}
                 >
-                  <option value="VACATION">Urlaub</option>
-                  <option value="SICK">Krankheit</option>
+                  <option value="VACATION">{t("typeVacation")}</option>
+                  <option value="SICK">{t("typeSick")}</option>
                 </select>
               ) : (
                 <div className="input admin-workflow-readonly-input">
-                  {item.type === "VACATION" ? "Urlaub" : "Krankheit"}
+                  {item.type === "VACATION" ? t("typeVacation") : t("typeSick")}
                 </div>
               )}
             </div>
 
             <div className="modal-field">
-              <div className="label">Umfang</div>
+              <div className="label">{t("scope")}</div>
               {isEditing ? (
                 <select
                   className="input"
@@ -1283,12 +1302,12 @@ useEffect(() => {
                   }}
                   disabled={editType === "SICK"}
                 >
-                  <option value="FULL_DAY">Ganzer Tag</option>
-                  <option value="HALF_DAY">Halber Tag</option>
+                  <option value="FULL_DAY">{t("fullDay")}</option>
+                  <option value="HALF_DAY">{t("halfDay")}</option>
                 </select>
               ) : (
                 <div className="input admin-workflow-readonly-input">
-                  {item.dayPortion === "HALF_DAY" ? "Halber Tag" : "Ganzer Tag"}
+                  {item.dayPortion === "HALF_DAY" ? t("halfDay") : t("fullDay")}
                 </div>
               )}
             </div>
@@ -1296,7 +1315,7 @@ useEffect(() => {
 
           <div className="modal-grid-1">
             <div className="modal-field">
-              <div className="label">Vergütung</div>
+              <div className="label">{t("compensation")}</div>
               {isEditing ? (
                 <select
                   className="input"
@@ -1309,13 +1328,13 @@ useEffect(() => {
                   }}
                   disabled={editType === "SICK"}
                 >
-                  <option value="PAID">Bezahlt</option>
-                  <option value="UNPAID">Unbezahlt</option>
+                  <option value="PAID">{t("paid")}</option>
+                  <option value="UNPAID">{t("unpaid")}</option>
                 </select>
               ) : (
                 <div className="input">
                   <div>
-                    {formatVacationDays(totalRequestedVacationDays(item))} {totalRequestedVacationDays(item) === 1 ? "Tag" : "Tage"} gesamt
+                    {formatVacationDays(totalRequestedVacationDays(item))} {totalRequestedVacationDays(item) === 1 ? t("day") : t("days")} {t("total")}
                   </div>
 
                   {compensationBreakdownLabel(item) ? (
@@ -1329,20 +1348,20 @@ useEffect(() => {
           </div>
 
           <div>
-            <div className="label">Mitarbeiter-Notiz</div>
+            <div className="label">{t("employeeNote")}</div>
             <div
               className={`input admin-workflow-note-input${
                 item.noteEmployee.trim() ? "" : " admin-workflow-note-input-empty"
               }`}
             >
-              {item.noteEmployee.trim() || "Keine Notiz vorhanden."}
+              {item.noteEmployee.trim() || t("noNote")}
             </div>
           </div>
 
           <div>
-            <div className="label">Bearbeitet von</div>
+            <div className="label">{t("processedBy")}</div>
             <div className="input admin-workflow-readonly-input-muted">
-              {item.decidedBy ? item.decidedBy.fullName : "Noch nicht entschieden"}
+              {item.decidedBy ? item.decidedBy.fullName : t("notDecidedYet")}
             </div>
           </div>
         </div>
@@ -1370,7 +1389,7 @@ useEffect(() => {
                   minWidth: 0,
                 }}
               >
-                Abbrechen
+                {t("cancel")}
               </button>
 
               <button
@@ -1385,7 +1404,7 @@ useEffect(() => {
                   minWidth: 0,
                 }}
               >
-                {isDeleting ? "Löscht..." : "Löschen"}
+                {isDeleting ? t("deleting") : t("delete")}
               </button>
 
               {item.status === "PENDING" ? (
@@ -1402,7 +1421,7 @@ useEffect(() => {
                       minWidth: 0,
                     }}
                   >
-                    {isRejecting ? "Verarbeitet..." : "Ablehnen"}
+                    {isRejecting ? t("processing") : t("reject")}
                   </button>
 
                   <button
@@ -1417,7 +1436,7 @@ useEffect(() => {
                       minWidth: 0,
                     }}
                   >
-                    {isApproving ? "Verarbeitet..." : "Korrigieren & genehmigen"}
+                    {isApproving ? t("processing") : t("approveCorrected")}
                   </button>
                 </>
               ) : item.status === "APPROVED" ? (
@@ -1433,7 +1452,7 @@ useEffect(() => {
                     minWidth: 0,
                   }}
                 >
-                  {isSaving ? "Speichert..." : "Änderungen speichern"}
+                  {isSaving ? t("saving") : t("saveChanges")}
                 </button>
               ) : null}
             </>
@@ -1450,7 +1469,7 @@ useEffect(() => {
                     minWidth: 0,
                   }}
                 >
-                  Bearbeiten
+                  {t("edit")}
                 </button>
               ) : null}
 
@@ -1466,7 +1485,7 @@ useEffect(() => {
                   minWidth: 0,
                 }}
               >
-                {isDeleting ? "Löscht..." : "Löschen"}
+                {isDeleting ? t("deleting") : t("delete")}
               </button>
 
               {item.status === "PENDING" ? (
@@ -1483,7 +1502,7 @@ useEffect(() => {
                       minWidth: 0,
                     }}
                   >
-                    {isRejecting ? "Verarbeitet..." : "Ablehnen"}
+                    {isRejecting ? t("processing") : t("reject")}
                   </button>
 
                   <button
@@ -1498,7 +1517,7 @@ useEffect(() => {
                       minWidth: 0,
                     }}
                   >
-                    {isApproving ? "Verarbeitet..." : "Genehmigen"}
+                    {isApproving ? t("processing") : t("approve")}
                   </button>
                 </>
               ) : null}
@@ -1511,20 +1530,20 @@ useEffect(() => {
 
   if (!sessionChecked) {
     return (
-      <AppShell activeLabel="#wirkönnendas">
+      <AppShell activeLabel={t("activeLabel")}>
         <div className="card admin-workflow-loading-card">
-          <div className="admin-workflow-filter-text">Lädt Urlaubsanträge...</div>
+          <div className="admin-workflow-filter-text">{t("loadingInitial")}</div>
         </div>
       </AppShell>
     );
   }
 
   return (
-    <AppShell activeLabel="#wirkönnendas">
+    <AppShell activeLabel={t("activeLabel")}>
       <div className="kpi-grid" style={{ marginBottom: 14 }}>
         <div className="card kpi">
           <div style={{ width: "100%" }}>
-            <div className="small">Resturlaub</div>
+            <div className="small">{t("remainingVacation")}</div>
             <div className="big">
               {resturlaubLoading
                 ? "…"
@@ -1539,19 +1558,19 @@ useEffect(() => {
 
             <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
               {resturlaubLoading
-                ? "Urlaubskonto wird geladen…"
+                ? t("loadingVacationAccount")
                 : showFilteredEmployeeResturlaub
-                  ? `${formatVacationDays(reservedPaidVacationDays)} von ${formatVacationDays(accruedVacationDays)} Tagen genehmigt bezahlt`
-                  : `${formatVacationDays(usedVacationDaysYtd)} von ${formatVacationDays(accruedVacationDays)} Tagen verbraucht`}
+                  ? `${formatVacationDays(reservedPaidVacationDays)} ${t("approvedPaidOfAccrued")} ${formatVacationDays(accruedVacationDays)} ${t("days")} ${t("paid")}`
+                  : `${formatVacationDays(usedVacationDaysYtd)} ${t("usedOfAccrued")} ${formatVacationDays(accruedVacationDays)} ${t("days")}`}
             </div>
             {showFilteredEmployeeResturlaub ? (
               <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
-                Bereits genommen: {formatVacationDays(usedVacationDaysYtd)} Tage
+                {t("alreadyTaken")} {formatVacationDays(usedVacationDaysYtd)} {t("days")}
               </div>
             ) : null}
 
             <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
-              Stand {formatMonthLabel(`${selectedResturlaubYear}-${selectedResturlaubMonth}`)}
+              {t("asOf")} {formatMonthLabel(`${selectedResturlaubYear}-${selectedResturlaubMonth}`, language)}
             </div>
 
             <div
@@ -1566,7 +1585,7 @@ useEffect(() => {
                 value={selectedResturlaubUserId}
                 onChange={(e) => setSelectedResturlaubUserId(e.target.value)}
               >
-                <option value="">Alle Mitarbeiter</option>
+                <option value="">{t("allEmployees")}</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.fullName}
@@ -1581,7 +1600,7 @@ useEffect(() => {
               >
                 {resturlaubYearOptions.map((year) => (
                   <option key={year} value={year}>
-                    Urlaubsjahr {year}
+                    {t("vacationYear")} {year}
                   </option>
                 ))}
               </select>
@@ -1593,7 +1612,7 @@ useEffect(() => {
               >
                 {resturlaubMonthOptions.map((month) => (
                   <option key={month.value} value={month.value}>
-                    Stand {month.label}
+                    {t("asOfMonth")} {month.label}
                   </option>
                 ))}
               </select>
@@ -1611,7 +1630,7 @@ useEffect(() => {
 
         <div className="card kpi">
           <div>
-            <div className="small">Offene Urlaubsanträge</div>
+            <div className="small">{t("pendingRequestsKpi")}</div>
             <div className="big">{pendingItems.length}</div>
           </div>
           <div className="admin-workflow-kpi-icon">🌴</div>
@@ -1619,7 +1638,7 @@ useEffect(() => {
 
         <div className="card kpi">
           <div>
-            <div className="small">Genehmigt</div>
+            <div className="small">{t("approvedKpi")}</div>
             <div className="big">{approvedItems.length}</div>
           </div>
           <div className="admin-workflow-kpi-icon">✅</div>
@@ -1627,7 +1646,7 @@ useEffect(() => {
 
         <div className="card kpi">
           <div>
-            <div className="small">Abgelehnt</div>
+            <div className="small">{t("rejectedKpi")}</div>
             <div className="big">{rejectedItems.length}</div>
           </div>
           <div className="admin-workflow-kpi-icon">⛔</div>
@@ -1637,21 +1656,21 @@ useEffect(() => {
       <div className="card card-olive admin-workflow-filter-shell">
         <div className="section-title admin-workflow-filter-title">
           <span className="admin-workflow-filter-icon">🌴</span>
-          Urlaubsanträge
+          {t("pageTitle")}
         </div>
 
         <div className="admin-workflow-filter-text">
-          Hier siehst du alle Urlaubsanträge deiner Mitarbeiter und kannst offene Anträge direkt genehmigen oder ablehnen.
+          {t("pageDescription")}
         </div>
         <div className="admin-workflow-filter-grid">
           <div className="admin-workflow-filter-field">
-            <div className="label">Mitarbeiter</div>
+            <div className="label">{t("employee")}</div>
             <select
               className="input admin-workflow-filter-input"
               value={selectedRequestUserId}
               onChange={(e) => setSelectedRequestUserId(e.target.value)}
             >
-              <option value="">Alle Mitarbeiter</option>
+              <option value="">{t("allEmployees")}</option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.fullName}
@@ -1661,7 +1680,7 @@ useEffect(() => {
           </div>
 
           <div className="admin-workflow-filter-field">
-            <div className="label">Monat</div>
+            <div className="label">{t("month")}</div>
             <input
               className="input admin-workflow-filter-input"
               type="month"
@@ -1680,19 +1699,19 @@ useEffect(() => {
 
       {loading ? (
         <div className="card admin-workflow-loading-card">
-          Lädt Urlaubsanträge...
+          {t("loadingInitial")}
         </div>
       ) : (
         <div className="admin-workflow-shell">
           <details open className="admin-workflow-section">
             <summary className="admin-workflow-section-summary">
-              {sectionTitle("Offen", pendingItems.length)}
+              {sectionTitle(t("openSection"), pendingItems.length)}
             </summary>
 
             <div className="admin-workflow-section-content">
               {pendingItems.length === 0 ? (
                 <div className="card admin-workflow-empty-card">
-                  Keine offenen Urlaubsanträge für diesen Filter.
+                  {t("emptyOpen")}
                 </div>
               ) : (
                 pendingItems.map(renderRequestCard)
@@ -1702,13 +1721,13 @@ useEffect(() => {
 
           <details className="admin-workflow-section">
             <summary className="admin-workflow-section-summary">
-              {sectionTitle(`Genehmigt – ${selectedRequestUserLabel}`, approvedItems.length)}
+              {sectionTitle(`${t("approvedSection")} – ${selectedRequestUserLabel}`, approvedItems.length)}
             </summary>
 
             <div className="admin-workflow-section-content">
               {approvedItems.length === 0 ? (
                 <div className="card admin-workflow-empty-card">
-                  Keine genehmigten Urlaubsanträge für diesen Filter.                
+                  {t("emptyApproved")}              
                 </div>
               ) : (
                 approvedItems.map(renderRequestCard)
@@ -1718,13 +1737,13 @@ useEffect(() => {
 
           <details className="admin-workflow-section">
             <summary className="admin-workflow-section-summary">
-              {sectionTitle(`Abgelehnt – ${selectedRequestUserLabel}`, rejectedItems.length)}
+              {sectionTitle(`${t("rejectedSection")} – ${selectedRequestUserLabel}`, rejectedItems.length)}
             </summary>
 
             <div className="admin-workflow-section-content">
               {rejectedItems.length === 0 ? (
                 <div className="card admin-workflow-empty-card">
-                  Keine abgelehnten Urlaubsanträge für diesen Filter.
+                  {t("emptyRejected")}
                 </div>
               ) : (
                 rejectedItems.map(renderRequestCard)
