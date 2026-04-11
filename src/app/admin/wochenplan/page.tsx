@@ -6,6 +6,13 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import { useRouter } from "next/navigation";
+import {
+  translate,
+  toHtmlLang,
+  type AppUiLanguage,
+  type AdminWeeklyPlanTextKey,
+  ADMIN_WEEKLY_PLAN_UI_TEXTS,
+} from "@/lib/i18n";
 
 type User = { id: string; fullName: string };
 
@@ -172,15 +179,15 @@ function isPlanEntryDocument(x: unknown): x is PlanEntryDocument {
 }
 
 const ROWS = [
-  { label: "Montag", offset: 0, type: "DAY" as const },
-  { label: "Dienstag", offset: 1, type: "DAY" as const },
-  { label: "Mittwoch", offset: 2, type: "DAY" as const },
-  { label: "Donnerstag", offset: 3, type: "DAY" as const },
-  { label: "Freitag", offset: 4, type: "DAY" as const },
-  { label: "Samstag", offset: 5, type: "DAY" as const },
-  { label: "Rep. Arbeiten", offset: null, type: "SPECIAL" as const, tag: "REP" },
-  { label: "Subunternehmer", offset: null, type: "SPECIAL" as const, tag: "SUB" },
-];
+  { labelKey: "monday", offset: 0, type: "DAY" as const },
+  { labelKey: "tuesday", offset: 1, type: "DAY" as const },
+  { labelKey: "wednesday", offset: 2, type: "DAY" as const },
+  { labelKey: "thursday", offset: 3, type: "DAY" as const },
+  { labelKey: "friday", offset: 4, type: "DAY" as const },
+  { labelKey: "saturday", offset: 5, type: "DAY" as const },
+  { labelKey: "repairWork", offset: null, type: "SPECIAL" as const, tag: "REP" },
+  { labelKey: "subcontractors", offset: null, type: "SPECIAL" as const, tag: "SUB" },
+] as const;
 
 
 function startOfWeek(d: Date) {
@@ -207,17 +214,21 @@ function getISOWeek(date: Date) {
   return weekNo;
 }
 
-function fmtDE(d: Date): string {
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = String(d.getFullYear());
-  return `${day}.${month}.${year}`;
+function formatDateLocalized(d: Date, language: AppUiLanguage): string {
+  return new Intl.DateTimeFormat(toHtmlLang(language), {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Europe/Berlin",
+  }).format(d);
 }
 
-function fmtDEshort(d: Date): string {
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  return `${day}.${month}`;
+function formatDateShortLocalized(d: Date, language: AppUiLanguage): string {
+  return new Intl.DateTimeFormat(toHtmlLang(language), {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Berlin",
+  }).format(d);
 }
 
 function ymdFromISO(iso: string): string {
@@ -278,18 +289,18 @@ async function readFileViaFileReader(file: Blob): Promise<ArrayBuffer> {
     const reader = new FileReader();
 
     reader.onerror = () => {
-      reject(new Error("Datei konnte per FileReader nicht gelesen werden."));
+      reject(new Error("FILE_READER_ERROR"));
     };
 
     reader.onabort = () => {
-      reject(new Error("Dateilesen wurde abgebrochen."));
+      reject(new Error("FILE_READER_ABORTED"));
     };
 
     reader.onload = () => {
       const result = reader.result;
 
       if (!(result instanceof ArrayBuffer)) {
-        reject(new Error("Ungültiges Dateiformat beim Lesen."));
+        reject(new Error("INVALID_FILE_FORMAT"));
         return;
       }
 
@@ -412,7 +423,7 @@ function Modal({
             className="btn"
             onClick={onClose}
             type="button"
-            aria-label="Schließen"
+            aria-label={title}
           >
             ✕
           </button>
@@ -468,6 +479,14 @@ export default function AdminWochenplanPage() {
     right: false,
     top: false,
   });
+
+  const language: AppUiLanguage = session?.language ?? "DE";
+
+  const t = (key: AdminWeeklyPlanTextKey): string =>
+    translate(language, key, ADMIN_WEEKLY_PLAN_UI_TEXTS);
+
+  const rowLabel = (key: AdminWeeklyPlanTextKey): string =>
+    translate(language, key, ADMIN_WEEKLY_PLAN_UI_TEXTS);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -567,8 +586,11 @@ export default function AdminWochenplanPage() {
     const end = new Date(weekStart);
     end.setDate(end.getDate() + 6);
     const kw = getISOWeek(weekStart);
-    return { kw, dateRange: `${fmtDEshort(weekStart)} – ${fmtDE(end)}` };
-  }, [weekStart]);
+    return {
+      kw,
+      dateRange: `${formatDateShortLocalized(weekStart, language)} – ${formatDateLocalized(end, language)}`,
+    };
+  }, [weekStart, language]);
 
   function handleDesktopPlanScroll(event: React.UIEvent<HTMLDivElement>): void {
     const el = event.currentTarget;
@@ -622,7 +644,7 @@ export default function AdminWochenplanPage() {
 
     if (uRes.status === 403 || eRes.status === 403 || nRes.status === 403) {
       setLoading(false);
-      setPageError("Kein Zugriff (Admin benötigt).");
+      setPageError(t("accessDenied"));
       return;
     }
 
@@ -680,7 +702,7 @@ export default function AdminWochenplanPage() {
       const j: unknown = await r.json().catch(() => ({}));
 
       if (!r.ok) {
-        const msg = getStringProp(j, "error") ?? "Dokumente konnten nicht geladen werden.";
+        const msg = getStringProp(j, "error") ?? t("documentsLoadError");
         setDocsError(msg);
         setDocs([]);
         return;
@@ -693,7 +715,7 @@ export default function AdminWochenplanPage() {
 
       setDocs(list);
     } catch {
-      setDocsError("Netzwerkfehler beim Laden der Dokumente.");
+      setDocsError(t("documentsNetworkError"));
       setDocs([]);
     } finally {
       setDocsLoading(false);
@@ -732,7 +754,7 @@ export default function AdminWochenplanPage() {
     );
 
     if (!response.ok) {
-      throw new Error("Datei konnte nicht geladen werden.");
+      setDocsError(t("documentPreviewError"));
     }
 
     return await response.blob();
@@ -740,7 +762,7 @@ export default function AdminWochenplanPage() {
 
   async function previewPlanDocument(doc: PlanEntryDocument): Promise<void> {
     if (!canPreviewMime(doc.mimeType)) {
-      setDocsError("Dieser Dateityp kann in der App nicht angezeigt werden.");
+      setDocsError(t("documentPreviewError"));
       return;
     }
 
@@ -756,7 +778,7 @@ export default function AdminWochenplanPage() {
       setPreviewDocTitle(doc.title || doc.fileName);
       setPreviewOpen(true);
     } catch {
-      setDocsError("Dokument konnte nicht in der App geöffnet werden.");
+      setDocsError(t("documentPreviewError"));
     }
   }
 
@@ -782,36 +804,36 @@ export default function AdminWochenplanPage() {
         return;
       }
 
-      setDocsError("Auf diesem Gerät ist 'Teilen / Sichern' hier nicht verfügbar.");
+      setDocsError(t("documentShareUnavailable"));
     } catch {
-      setDocsError("Dokument konnte nicht geteilt bzw. gespeichert werden.");
+      setDocsError(t("documentShareError"));
     }
   }
 
   async function uploadDoc() {
     if (!editEntryId) {
-      setPageError("Bitte erst den Plan-Eintrag speichern, dann Dokumente hochladen.");
+      setPageError(t("documentsSaveEntryFirst"));
       return;
     }
 
     if (!selectedFile) {
-      setDocsError("Bitte eine Datei auswählen.");
+      setDocsError(t("documentMissingFile"));
       return;
     }
 
     if (!PLAN_DOC_ALLOWED_MIME.has(selectedFile.type)) {
-      setDocsError("Dateityp nicht erlaubt. Erlaubt sind PDF, JPG, PNG und WEBP.");
+      setDocsError(t("documentInvalidType"));
       return;
     }
 
     if (selectedFile.size <= 0) {
-      setDocsError("Die gewählte Datei ist leer.");
+      setDocsError(t("documentEmptyFile"));
       return;
     }
 
     if (selectedFile.size > PLAN_DOC_MAX_BYTES) {
       setDocsError(
-        `Datei zu groß (${formatBytes(selectedFile.size)}). Maximal erlaubt sind ${formatBytes(PLAN_DOC_MAX_BYTES)}.`
+        `${t("documentTooLarge")} (${formatBytes(selectedFile.size)}). Maximal erlaubt sind ${formatBytes(PLAN_DOC_MAX_BYTES)}.`
       );
       return;
     }
@@ -828,7 +850,7 @@ export default function AdminWochenplanPage() {
       const normalizedFile = await withTimeout(
         normalizeUploadFile(selectedFile),
         15000,
-        "Die Datei konnte auf diesem Gerät nicht gelesen werden."
+        t("documentUploadReadError")
       );
 
       const fd = new FormData();
@@ -852,8 +874,8 @@ export default function AdminWochenplanPage() {
       if (!r.ok) {
         const msg =
           r.status === 413
-            ? "Die Datei ist für den Upload zu groß."
-            : getStringProp(j, "error") ?? "Upload fehlgeschlagen.";
+            ? t("documentTooLarge")
+            : getStringProp(j, "error") ?? t("documentUploadFailed");
         setDocsError(msg);
         return;
       }
@@ -862,18 +884,18 @@ export default function AdminWochenplanPage() {
       await loadDocs(editEntryId);
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === "AbortError") {
-        setDocsError("Upload dauert zu lange. Bitte Datei erneut auswählen und erneut versuchen.");
+        setDocsError(t("documentUploadTimeout"));
         return;
       }
 
       if (error instanceof Error) {
         setDocsError(
-          error.message || "Datei konnte nicht verarbeitet werden. Bitte Datei zuerst lokal verfügbar machen."
+          error.message || t("documentUploadReadError")
         );
         return;
       }
 
-      setDocsError("Netzwerkfehler beim Upload.");
+      setDocsError(t("documentUploadNetworkError"));
     } finally {
       window.clearTimeout(timeoutId);
       setUploadingDoc(false);
@@ -882,7 +904,7 @@ export default function AdminWochenplanPage() {
 
   async function deleteDoc(id: string) {
     if (!editEntryId) return;
-    const ok = typeof window !== "undefined" ? window.confirm("Dokument wirklich löschen?") : false;
+    const ok = typeof window !== "undefined" ? window.confirm(t("documentDeleteConfirm")) : false;
     if (!ok) return;
 
     setDeletingDocId(id);
@@ -892,7 +914,7 @@ export default function AdminWochenplanPage() {
         credentials: "include",
       });
       if (!r.ok) {
-        setPageError("Löschen fehlgeschlagen.");
+        setPageError(t("documentDeleteFailed"));
         return;
       }
       await loadDocs(editEntryId);
@@ -929,7 +951,7 @@ export default function AdminWochenplanPage() {
     setEditEntryId(null);
     setEntryForm({
       userId,
-      rowLabel: row.label,
+      rowLabel: rowLabel(row.labelKey),
       specialTag: row.type === "SPECIAL" ? (row.tag as "REP" | "SUB") : "",
       dateYMD: fmtYMD(date),
       startHHMM: "07:00",
@@ -956,7 +978,7 @@ export default function AdminWochenplanPage() {
     setEditEntryId(entry.id);
     setEntryForm({
       userId: entry.userId,
-      rowLabel: row.label,
+      rowLabel: rowLabel(row.labelKey),
       specialTag: isRep ? "REP" : isSub ? "SUB" : "",
       dateYMD: ymdFromISO(entry.workDate),
       startHHMM: entry.startHHMM || "07:00",
@@ -994,9 +1016,9 @@ export default function AdminWochenplanPage() {
   }
 
   async function saveEntry() {
-    if (!entryForm.userId) return setPageError("Bitte Mitarbeiter wählen.");
-    if (!entryForm.dateYMD) return setPageError("Bitte Datum wählen.");
-    if (!entryForm.startHHMM || !entryForm.endHHMM) return setPageError("Bitte Start/Ende angeben.");
+    if (!entryForm.userId) return setPageError(t("pleaseSelectEmployee"));
+    if (!entryForm.dateYMD) return setPageError(t("pleaseSelectDate"));
+    if (!entryForm.startHHMM || !entryForm.endHHMM) return setPageError(t("pleaseSelectStartEnd"));
 
     setSavingEntry(true);
     try {
@@ -1022,7 +1044,7 @@ export default function AdminWochenplanPage() {
       if (!res.ok) {
         const err: unknown = await res.json().catch(() => ({}));
         const msg = getStringProp(err, "error") ?? "unknown";
-        setPageError(`Speichern fehlgeschlagen: ${msg}`);
+        setPageError(`${t("saveEntryFailed")} ${msg}`);
         return;
       }
 
@@ -1035,7 +1057,7 @@ export default function AdminWochenplanPage() {
 
   async function deleteEntry() {
     if (!editEntryId) return;
-    const ok = window.confirm("Plan-Eintrag wirklich löschen?");
+    const ok = window.confirm(t("deleteEntryConfirm"));
     if (!ok) return;
 
     setDeletingEntry(true);
@@ -1045,7 +1067,7 @@ export default function AdminWochenplanPage() {
         credentials: "include",
       });
       if (!res.ok) {
-        setPageError("Löschen fehlgeschlagen.");
+        setPageError(t("deleteEntryFailed"));
         return;
       }
       closeEntryModal();
@@ -1056,8 +1078,8 @@ export default function AdminWochenplanPage() {
   }
 
   async function saveNote() {
-    if (!noteForm.userId) return setPageError("Bitte Mitarbeiter wählen.");
-    if (!noteForm.dateYMD) return setPageError("Bitte Datum wählen.");
+    if (!noteForm.userId) return setPageError(t("pleaseSelectEmployee"));
+    if (!noteForm.dateYMD) return setPageError(t("pleaseSelectDate"));
 
     setSavingNote(true);
     try {
@@ -1078,7 +1100,7 @@ export default function AdminWochenplanPage() {
       if (!res.ok) {
         const err: unknown = await res.json().catch(() => ({}));
         const msg = getStringProp(err, "error") ?? "unknown";
-        setPageError(`Notiz speichern fehlgeschlagen: ${msg}`);
+        setPageError(`${t("saveNoteFailed")} ${msg}`);
         return;
       }
 
@@ -1091,7 +1113,7 @@ export default function AdminWochenplanPage() {
 
   async function deleteNote() {
     if (!editNoteId) return;
-    const ok = typeof window !== "undefined" ? window.confirm("Admin-Notiz wirklich löschen?") : false;
+    const ok = typeof window !== "undefined" ? window.confirm(t("deleteNoteConfirm")) : false;
     if (!ok) return;
 
     setDeletingNote(true);
@@ -1101,7 +1123,7 @@ export default function AdminWochenplanPage() {
         credentials: "include",
       });
       if (!res.ok) {
-        setPageError("Notiz löschen fehlgeschlagen");
+        setPageError(t("deleteNoteFailed"));
         return;
       }
       closeNoteModal();
@@ -1113,7 +1135,7 @@ export default function AdminWochenplanPage() {
 
   if (!sessionChecked) {
     return (
-      <AppShell activeLabel="Wochenplan">
+      <AppShell activeLabel={t("activeLabel")}>
         <div
           style={{
             padding: 14,
@@ -1121,14 +1143,14 @@ export default function AdminWochenplanPage() {
             minWidth: 0,
           }}
         >
-          <div style={{ color: "var(--muted)" }}>lädt…</div>
+          <div style={{ color: "var(--muted)" }}>{t("loading")}</div>
         </div>
       </AppShell>
     );
   }
 
   return (
-    <AppShell activeLabel="Wochenplan">
+    <AppShell activeLabel={t("activeLabel")}>
     <div
       style={{
         padding: 14,
@@ -1165,10 +1187,10 @@ export default function AdminWochenplanPage() {
         >
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 22, fontWeight: 900, color: "var(--text)" }}>
-                Wochenplanung
+                {t("pageTitle")}
               </div>
             <div style={{ marginTop: 4 }}>
-              <div style={{ fontSize: 18, fontWeight: 800 }}>KW {weekLabel.kw}</div>
+              <div style={{ fontSize: 18, fontWeight: 800 }}>{t("calendarWeek")} {weekLabel.kw}</div>
               <div style={{ color: "var(--muted)", fontSize: 13 }}>
                 {weekLabel.dateRange}
               </div>
@@ -1201,7 +1223,7 @@ export default function AdminWochenplanPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  ← Woche
+                  {t("previousWeek")}
                 </button>
 
                 <input
@@ -1237,7 +1259,7 @@ export default function AdminWochenplanPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Woche →
+                  {t("nextWeek")}
                 </button>
               </div>
             ) : null}
@@ -1258,7 +1280,7 @@ export default function AdminWochenplanPage() {
               className="pill"
               style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
             >
-              ⟵ Termine
+              {t("appointmentsBack")}
             </Link>
 
             {isDesktop ? (
@@ -1273,7 +1295,7 @@ export default function AdminWochenplanPage() {
                     })
                   }
                 >
-                  ← Woche
+                  {t("previousWeek")}
                 </button>
 
                 <input
@@ -1297,7 +1319,7 @@ export default function AdminWochenplanPage() {
                     })
                   }
                 >
-                  Woche →
+                  {t("nextWeek")}
                 </button>
               </>
             ) : null}
@@ -1306,7 +1328,7 @@ export default function AdminWochenplanPage() {
       </div>
 
       {loading ? (
-        <div style={{ color: "var(--muted)" }}>lädt…</div>
+        <div style={{ color: "var(--muted)" }}>{t("loading")}</div>
       ) : (
         <>
         <div style={{ display: isDesktop ? "none" : "grid", gap: 12 }}>
@@ -1318,7 +1340,7 @@ export default function AdminWochenplanPage() {
 
             return (
               <details
-                key={row.label}
+                key={rowLabel(row.labelKey)}
                 className="card"
                 style={{
                   padding: 12,
@@ -1334,10 +1356,10 @@ export default function AdminWochenplanPage() {
                       }}
                     >
                       <div style={{ fontWeight: 1000, fontSize: 16, color: "var(--text)" }}>
-                        {row.label}
+                        {rowLabel(row.labelKey)}
                       </div>
                       <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                        {fmtDE(new Date(dayYMD))}
+                        {formatDateLocalized(new Date(dayYMD), language)}
                       </div>
                     </div>
                 </summary>
@@ -1366,7 +1388,7 @@ export default function AdminWochenplanPage() {
                             onClick={() => openCreateEntry(u.id, row)}
                             style={{ textDecoration: "none" }}
                           >
-                            + Plan
+                            {t("entryCreate")}
                           </button>
                         </div>
 
@@ -1398,7 +1420,7 @@ export default function AdminWochenplanPage() {
                           </div>
                         ) : (
                           <div style={{ marginTop: 10, fontSize: 12, color: "var(--muted)" }}>
-                            Keine Einträge.
+                            {t("noEntries")}
                           </div>
                         )}
 
@@ -1406,7 +1428,7 @@ export default function AdminWochenplanPage() {
                           {cellNotes.map((n) => (
                             <div
                               key={n.id}
-                              onClick={() => openEditNote(n, row.label)}
+                              onClick={() => openEditNote(n, rowLabel(row.labelKey))}
                               className="tenant-soft-panel-strong"
                               style={{
                                 padding: "10px 12px",
@@ -1425,7 +1447,7 @@ export default function AdminWochenplanPage() {
 
                           <button
                             type="button"
-                            onClick={() => openCreateNote(u.id, dayYMD, row.label)}
+                            onClick={() => openCreateNote(u.id, dayYMD, rowLabel(row.labelKey))}
                             className="tenant-action-link"
                             style={{
                               width: "100%",
@@ -1433,7 +1455,7 @@ export default function AdminWochenplanPage() {
                               fontWeight: 900,
                             }}
                           >
-                            + Notiz (Admin)
+                            {t("noteCreate")}
                           </button>
                         </div>
                       </div>
@@ -1450,7 +1472,7 @@ export default function AdminWochenplanPage() {
 
             return (
               <details
-                key={row.label}
+                key={rowLabel(row.labelKey)}
                 className="card"
                 style={{
                   padding: 12,
@@ -1466,7 +1488,7 @@ export default function AdminWochenplanPage() {
                       }}
                     >
                       <div style={{ fontWeight: 1000, fontSize: 16, color: "var(--text)" }}>
-                        {row.label}
+                        {rowLabel(row.labelKey)}
                       </div>
                       <div style={{ color: "var(--muted)", fontWeight: 900 }}>▾</div>
                     </div>
@@ -1495,7 +1517,7 @@ export default function AdminWochenplanPage() {
                             onClick={() => openCreateEntry(u.id, row)}
                             style={{ textDecoration: "none" }}
                           >
-                            + Plan
+                            {t("entryCreate")}
                           </button>
                         </div>
 
@@ -1522,7 +1544,7 @@ export default function AdminWochenplanPage() {
                           </div>
                         ) : (
                           <div style={{ marginTop: 10, fontSize: 12, color: "var(--muted)" }}>
-                            Keine Einträge.
+                            {t("noEntries")}
                           </div>
                         )}
                       </div>
@@ -1638,7 +1660,7 @@ export default function AdminWochenplanPage() {
                 const rowKey = row.type === "DAY" ? (rowDayYMD as string) : (row.tag as string);
 
                 return (
-                  <tr key={row.label}>
+                  <tr key={rowLabel(row.labelKey)}>
                     <td
                       style={{
                         borderTop: "1px solid var(--border)",
@@ -1660,7 +1682,7 @@ export default function AdminWochenplanPage() {
                         backdropFilter: "blur(10px)",
                       }}
                     >
-                      {row.label}
+                      {rowLabel(row.labelKey)}
                     </td>
 
                     {users.map((u) => {
@@ -1672,7 +1694,7 @@ export default function AdminWochenplanPage() {
 
                       return (
                         <td
-                          key={`${row.label}_${u.id}`}
+                          key={`${rowLabel(row.labelKey)}_${u.id}`}
                           style={{
                             border: "1px solid var(--border)",
                             padding: 10,
@@ -1692,7 +1714,7 @@ export default function AdminWochenplanPage() {
                                     cursor: "pointer",
                                     color: "var(--text)",
                                   }}
-                                  title="Plan-Eintrag bearbeiten"
+                                  title={t("editPlanEntryTitle")}
                                 >
                                   <div style={{ fontWeight: 900, fontSize: 13 }}>{e.activity}</div>
                                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
@@ -1702,7 +1724,7 @@ export default function AdminWochenplanPage() {
 
                                   {e.noteEmployee ? (
                                     <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-                                      📝 MA: {e.noteEmployee}
+                                      {t("employeeNotePrefix")} {e.noteEmployee}
                                     </div>
                                   ) : null}
                                 </div>
@@ -1716,7 +1738,7 @@ export default function AdminWochenplanPage() {
                                   color: "var(--muted)",
                                 }}
                               >
-                                + Eintrag (Plan)
+                                {t("entryCreate")}
                               </button>
                             </div>
 
@@ -1725,33 +1747,33 @@ export default function AdminWochenplanPage() {
                                 {cellNotes.map((n) => (
                                   <div
                                     key={n.id}
-                                    onClick={() => openEditNote(n, row.label)}
+                                    onClick={() => openEditNote(n, rowLabel(row.labelKey))}
                                     className="tenant-soft-panel-strong"
                                     style={{
                                       padding: "10px 12px",
                                       cursor: "pointer",
                                       color: "var(--text-soft)",
                                     }}
-                                    title="Admin-Notiz bearbeiten"
+                                    title={t("editAdminNoteTitle")}
                                   >
                                     <div style={{ fontWeight: 900, fontSize: 12, color: "var(--muted)" }}>
-                                      🔒 Admin-Notiz
+                                      {t("adminNoteLabel")}
                                     </div>
                                     <div style={{ fontSize: 12, marginTop: 6, color: "var(--muted)" }}>
-                                      {n.note.trim() ? n.note : "(leer)"}
+                                      {n.note.trim() ? n.note : t("emptyValue")}
                                     </div>
                                   </div>
                                 ))}
 
                                 <button
-                                  onClick={() => openCreateNote(u.id, rowDayYMD, row.label)}
+                                  onClick={() => openCreateNote(u.id, rowDayYMD, rowLabel(row.labelKey))}
                                   className="tenant-action-link"
                                   style={{
                                     textAlign: "left",
                                     color: "var(--muted)",
                                   }}
                                 >
-                                  + Notiz (Admin)
+                                  {t("noteCreate")}
                                 </button>
                               </div>
                             ) : null}
@@ -1773,7 +1795,7 @@ export default function AdminWochenplanPage() {
       {/* -------------------- MODAL: PLAN-EINTRAG -------------------- */}
       <Modal
         open={entryModalOpen}
-        title={`${editEntryId ? "Eintrag bearbeiten" : "Eintrag anlegen"} — ${entryForm.rowLabel} · ${
+        title={`${editEntryId ? t("editPlanEntryTitle") : t("createPlanEntryTitle")} — ${entryForm.rowLabel} · ${
           users.find((x) => x.id === entryForm.userId)?.fullName ?? ""
         }`}
         onClose={closeEntryModal}
@@ -1781,17 +1803,17 @@ export default function AdminWochenplanPage() {
           <>
             {editEntryId ? (
               <button className="pill" onClick={deleteEntry} disabled={savingEntry || deletingEntry}>
-                {deletingEntry ? "Lösche…" : "Löschen"}
+                {deletingEntry ? t("deleting") : t("delete")}
               </button>
             ) : (
               <div />
             )}
             <div style={{ display: "flex", gap: 8 }}>
               <button className="pill" onClick={closeEntryModal} disabled={savingEntry || deletingEntry}>
-                Schließen
+                {t("close")}
               </button>
               <button className="pill pill-active" onClick={saveEntry} disabled={savingEntry || deletingEntry}>
-                {savingEntry ? "Speichere…" : "Speichern"}
+                {savingEntry ? t("saving") : t("save")}
               </button>
             </div>
           </>
@@ -1808,7 +1830,7 @@ export default function AdminWochenplanPage() {
           }}
         >
           <div style={{ minWidth: 0, width: "100%" }}>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Datum</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("date")}</div>
             <input
               type="date"
               value={entryForm.dateYMD}
@@ -1828,7 +1850,7 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div style={{ minWidth: 0, width: "100%" }}>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Mitarbeiter</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("employee")}</div>
             <select
               value={entryForm.userId}
               onChange={(e) => setEntryForm((p) => ({ ...p, userId: e.target.value }))}
@@ -1856,7 +1878,7 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div style={{ minWidth: 0, width: "100%" }}>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Start</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("start")}</div>
             <input
               type="time"
               value={entryForm.startHHMM}
@@ -1876,7 +1898,7 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div style={{ minWidth: 0, width: "100%" }}>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Ende</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("end")}</div>
             <input
               type="time"
               value={entryForm.endHHMM}
@@ -1896,7 +1918,7 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Tätigkeit</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("activity")}</div>
             <input
               value={entryForm.activity}
               onChange={(e) => setEntryForm((p) => ({ ...p, activity: e.target.value }))}
@@ -1904,13 +1926,13 @@ export default function AdminWochenplanPage() {
             />
             {entryForm.specialTag ? (
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-                Lass den Prefix <b>{entryForm.specialTag}:</b> stehen, sonst erscheint es nicht in der Spezial-Zeile.
+                {t("keepPrefixHint")} <b>{entryForm.specialTag}:</b>
               </div>
             ) : null}
           </div>
 
           <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Ort</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("location")}</div>
             <input
               value={entryForm.location}
               onChange={(e) => setEntryForm((p) => ({ ...p, location: e.target.value }))}
@@ -1919,7 +1941,7 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Fahrzeit (Minuten)</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("travelMinutes")}</div>
             <input
               type="number"
               min={0}
@@ -1930,7 +1952,7 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Notiz (für Mitarbeiter)</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("employeeNote")}</div>
             <textarea
               value={entryForm.noteEmployee}
               onChange={(e) => setEntryForm((p) => ({ ...p, noteEmployee: e.target.value }))}
@@ -1938,7 +1960,7 @@ export default function AdminWochenplanPage() {
               className="textarea"
             />
             <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-              Diese Notiz sehen Mitarbeiter im Kalender/Modal.
+              {t("employeeNoteHelp")}
             </div>
           </div>
 
@@ -1946,11 +1968,11 @@ export default function AdminWochenplanPage() {
           <div style={{ gridColumn: "1 / -1" }}>
             <div style={{ height: 1, background: "var(--border)", margin: "10px 0", opacity: 0.9 }} />
 
-            <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8 }}>📎 Dokumente (Baustellenzettel etc.)</div>
+            <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8 }}>{t("documentsTitle")}</div>
 
             {!editEntryId ? (
               <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                Speichere zuerst den Plan-Eintrag – danach kannst du Dokumente hochladen.
+                {t("documentsSaveEntryFirst")}
               </div>
             ) : (
               <>
@@ -1962,7 +1984,7 @@ export default function AdminWochenplanPage() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Titel</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("title")}</div>
                     <input
                       value={docTitle}
                       onChange={(e) => setDocTitle(e.target.value)}
@@ -1971,7 +1993,7 @@ export default function AdminWochenplanPage() {
                   </div>
 
                   <div>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Datei</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("file")}</div>
                     <input
                       type="file"
                       accept=".pdf,image/jpeg,image/png,image/webp"
@@ -1986,18 +2008,18 @@ export default function AdminWochenplanPage() {
                 </div>
 
                 <button className="pill pill-active" type="button" onClick={uploadDoc} disabled={uploadingDoc}>
-                  {uploadingDoc ? "Upload..." : "Dokument hochladen"}
+                  {uploadingDoc ? t("uploading") : t("uploadDocument")}
                 </button>
 
                 <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
-                  Erlaubt: PDF, JPG, PNG, WEBP · max. 15 MB
+                  {t("documentAllowedInfo")}
                 </div>
 
                 <div style={{ marginTop: 12 }}>
                   {docsLoading ? (
-                    <div style={{ fontSize: 12, color: "var(--muted)" }}>Lade Dokumente...</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("loadingDocuments")}</div>
                   ) : docs.length === 0 ? (
-                    <div style={{ fontSize: 12, color: "var(--muted)" }}>Noch keine Dokumente.</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("noDocuments")}</div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {docs.map((d) => (
@@ -2045,7 +2067,7 @@ export default function AdminWochenplanPage() {
                                 void previewPlanDocument(d);
                               }}
                             >
-                              In App ansehen
+                              {t("previewInApp")}
                             </button>
 
                             <button
@@ -2055,7 +2077,7 @@ export default function AdminWochenplanPage() {
                                 void sharePlanDocument(d);
                               }}
                             >
-                              Teilen / Sichern
+                              {t("shareOrSave")}
                             </button>
 
                             <button
@@ -2064,7 +2086,7 @@ export default function AdminWochenplanPage() {
                               onClick={() => deleteDoc(d.id)}
                               disabled={deletingDocId === d.id}
                             >
-                              {deletingDocId === d.id ? "Lösche..." : "Löschen"}
+                              {deletingDocId === d.id ? t("deleting") : t("delete")}
                             </button>
                           </div>
                         </div>
@@ -2077,21 +2099,21 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div style={{ gridColumn: "1 / -1", fontSize: 12, color: "var(--muted)" }}>
-            ✅ Admin-Notiz wird <b>nicht</b> hier gespeichert — dafür gibt es separat “+ Notiz (Admin)” im Wochenplan.
+            {t("internalAdminNoteInfo")}
           </div>
         </div>
       </Modal>
 
             <Modal
         open={previewOpen}
-        title={previewDocTitle || "Dokument"}
+        title={previewDocTitle || t("document")}
         onClose={closePreview}
         maxWidth={980}
         zIndex={70}
         footer={
           <div style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
             <button className="pill" onClick={closePreview} type="button">
-              Schließen
+                {t("close")}
             </button>
           </div>
         }
@@ -2123,14 +2145,14 @@ export default function AdminWochenplanPage() {
             </div>
           )
         ) : (
-          <div style={{ color: "var(--muted)" }}>Keine Vorschau verfügbar.</div>
+          <div style={{ color: "var(--muted)" }}>{t("noPreviewAvailable")}</div>
         )}
       </Modal>
 
       {/* -------------------- MODAL: ADMIN-NOTIZ (SEPARAT) -------------------- */}
       <Modal
         open={noteModalOpen}
-        title={`${editNoteId ? "Admin-Notiz bearbeiten" : "Admin-Notiz anlegen"} — ${noteForm.rowLabel} · ${
+        title={`${editNoteId ? t("editAdminNoteTitle") : t("createAdminNoteTitle")} — ${noteForm.rowLabel} · ${
           users.find((x) => x.id === noteForm.userId)?.fullName ?? ""
         }`}
         onClose={closeNoteModal}
@@ -2139,7 +2161,7 @@ export default function AdminWochenplanPage() {
           <>
             {editNoteId ? (
               <button className="pill" onClick={deleteNote} disabled={savingNote || deletingNote}>
-                {deletingNote ? "Lösche…" : "Löschen"}
+                {deletingNote ? t("deleting") : t("delete")}
               </button>
             ) : (
               <div />
@@ -2147,10 +2169,10 @@ export default function AdminWochenplanPage() {
 
             <div style={{ display: "flex", gap: 8 }}>
               <button className="pill" onClick={closeNoteModal} disabled={savingNote || deletingNote}>
-                Schließen
+                {t("close")}
               </button>
               <button className="pill pill-active" onClick={saveNote} disabled={savingNote || deletingNote}>
-                {savingNote ? "Speichere…" : "Speichern"}
+                {savingNote ? t("saving") : t("save")}
               </button>
             </div>
           </>
@@ -2168,7 +2190,7 @@ export default function AdminWochenplanPage() {
             }}
           >
             <div style={{ minWidth: 0, width: "100%" }}>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Datum</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("date")}</div>
               <input
                 type="date"
                 value={noteForm.dateYMD}
@@ -2188,7 +2210,7 @@ export default function AdminWochenplanPage() {
             </div>
 
             <div style={{ minWidth: 0, width: "100%" }}>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Mitarbeiter</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("employee")}</div>
               <select
                 value={noteForm.userId}
                 onChange={(e) => setNoteForm((p) => ({ ...p, userId: e.target.value }))}
@@ -2215,7 +2237,7 @@ export default function AdminWochenplanPage() {
 
           <div>
             <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>
-              Interne Admin-Notiz (nur für Admin)
+              {t("internalAdminNote")}
             </div>
             <textarea
               value={noteForm.note}
@@ -2228,7 +2250,7 @@ export default function AdminWochenplanPage() {
               }}
             />
             <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-              Bleibt intern und wird niemals an Mitarbeiter ausgeliefert.
+              {t("internalAdminNoteHelp")}
             </div>
           </div>
         </div>

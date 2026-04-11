@@ -3509,3 +3509,802 @@ export const ADMIN_USERS_UI_TEXTS: Record<
     KU: "Têbînî: Girêdan tenê carekê tê bikaranîn. Piştî wê nederbasdar dibe.",
   },
 };
+export type AdminWeeklyPlanTextKey =
+  | "activeLabel"
+  | "loading"
+  | "accessDenied"
+  | "pageTitle"
+  | "calendarWeek"
+  | "previousWeek"
+  | "nextWeek"
+  | "appointmentsBack"
+  | "noEntries"
+  | "adminNoteLabel"
+  | "emptyValue"
+  | "entryCreate"
+  | "noteCreate"
+  | "entryEditTitle"
+  | "entryCreateTitle"
+  | "noteEditTitle"
+  | "noteCreateTitle"
+  | "delete"
+  | "deleting"
+  | "close"
+  | "save"
+  | "saving"
+  | "date"
+  | "employee"
+  | "start"
+  | "end"
+  | "activity"
+  | "location"
+  | "travelMinutes"
+  | "employeeNote"
+  | "employeeNoteHelp"
+  | "documentsTitle"
+  | "documentsSaveEntryFirst"
+  | "documentsLoadError"
+  | "documentsNetworkError"
+  | "documentReadError"
+  | "documentPreviewError"
+  | "documentShareUnavailable"
+  | "documentShareError"
+  | "documentMissingFile"
+  | "documentInvalidType"
+  | "documentEmptyFile"
+  | "documentTooLarge"
+  | "documentUploadReadError"
+  | "documentUploadTimeout"
+  | "documentUploadFailed"
+  | "documentUploadNetworkError"
+  | "documentDeleteConfirm"
+  | "documentDeleteFailed"
+  | "title"
+  | "file"
+  | "uploadDocument"
+  | "uploading"
+  | "documentAllowedInfo"
+  | "loadingDocuments"
+  | "noDocuments"
+  | "previewInApp"
+  | "shareOrSave"
+  | "document"
+  | "noPreviewAvailable"
+  | "internalAdminNoteInfo"
+  | "pleaseSelectEmployee"
+  | "pleaseSelectDate"
+  | "pleaseSelectStartEnd"
+  | "saveEntryFailed"
+  | "deleteEntryConfirm"
+  | "deleteEntryFailed"
+  | "saveNoteFailed"
+  | "deleteNoteConfirm"
+  | "deleteNoteFailed"
+  | "adminNoteEdit"
+  | "adminNoteCreate"
+  | "internalAdminNote"
+  | "internalAdminNoteHelp"
+  | "employeeNotePrefix"
+  | "editPlanEntryTitle"
+  | "createPlanEntryTitle"
+  | "editAdminNoteTitle"
+  | "createAdminNoteTitle"
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "repairWork"
+  | "subcontractors"
+  | "keepPrefixHint";
+
+export const ADMIN_WEEKLY_PLAN_UI_TEXTS: Record<
+  AdminWeeklyPlanTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  activeLabel: {
+    DE: "Wochenplan",
+    EN: "Weekly plan",
+    IT: "Piano settimanale",
+    TR: "Haftalık plan",
+    SQ: "Plani javor",
+    KU: "Plana hefteyî",
+  },
+  loading: {
+    DE: "lädt…",
+    EN: "loading…",
+    IT: "caricamento…",
+    TR: "yükleniyor…",
+    SQ: "duke u ngarkuar…",
+    KU: "tê barkirin…",
+  },
+  accessDenied: {
+    DE: "Kein Zugriff (Admin benötigt).",
+    EN: "No access (admin required).",
+    IT: "Nessun accesso (serve admin).",
+    TR: "Erişim yok (yönetici gerekli).",
+    SQ: "Nuk ka qasje (kërkohet admin).",
+    KU: "Gihîştin tune ye (admin pêwîst e).",
+  },
+  pageTitle: {
+    DE: "Wochenplanung",
+    EN: "Weekly planning",
+    IT: "Pianificazione settimanale",
+    TR: "Haftalık planlama",
+    SQ: "Planifikimi javor",
+    KU: "Planandina hefteyî",
+  },
+  calendarWeek: {
+    DE: "KW",
+    EN: "CW",
+    IT: "Sett.",
+    TR: "HF",
+    SQ: "Java",
+    KU: "Heft",
+  },
+  previousWeek: {
+    DE: "← Woche",
+    EN: "← Week",
+    IT: "← Settimana",
+    TR: "← Hafta",
+    SQ: "← Java",
+    KU: "← Heft",
+  },
+  nextWeek: {
+    DE: "Woche →",
+    EN: "Week →",
+    IT: "Settimana →",
+    TR: "Hafta →",
+    SQ: "Java →",
+    KU: "Heft →",
+  },
+  appointmentsBack: {
+    DE: "⟵ Termine",
+    EN: "⟵ Appointments",
+    IT: "⟵ Appuntamenti",
+    TR: "⟵ Randevular",
+    SQ: "⟵ Takimet",
+    KU: "⟵ Civîn",
+  },
+  noEntries: {
+    DE: "Keine Einträge.",
+    EN: "No entries.",
+    IT: "Nessuna voce.",
+    TR: "Kayıt yok.",
+    SQ: "Nuk ka hyrje.",
+    KU: "Ti tomar tune ne.",
+  },
+  adminNoteLabel: {
+    DE: "🔒 Admin-Notiz",
+    EN: "🔒 Admin note",
+    IT: "🔒 Nota admin",
+    TR: "🔒 Yönetici notu",
+    SQ: "🔒 Shënim admini",
+    KU: "🔒 Nîşeya admin",
+  },
+  emptyValue: {
+    DE: "(leer)",
+    EN: "(empty)",
+    IT: "(vuoto)",
+    TR: "(boş)",
+    SQ: "(bosh)",
+    KU: "(vala)",
+  },
+  entryCreate: {
+    DE: "+ Eintrag (Plan)",
+    EN: "+ Entry (plan)",
+    IT: "+ Voce (piano)",
+    TR: "+ Kayıt (plan)",
+    SQ: "+ Hyrje (plan)",
+    KU: "+ Tomar (plan)",
+  },
+  noteCreate: {
+    DE: "+ Notiz (Admin)",
+    EN: "+ Note (admin)",
+    IT: "+ Nota (admin)",
+    TR: "+ Not (yönetici)",
+    SQ: "+ Shënim (admin)",
+    KU: "+ Nîşe (admin)",
+  },
+  entryEditTitle: {
+    DE: "Eintrag bearbeiten",
+    EN: "Edit entry",
+    IT: "Modifica voce",
+    TR: "Kaydı düzenle",
+    SQ: "Ndrysho hyrjen",
+    KU: "Tomarê biguherîne",
+  },
+  entryCreateTitle: {
+    DE: "Eintrag anlegen",
+    EN: "Create entry",
+    IT: "Crea voce",
+    TR: "Kayıt oluştur",
+    SQ: "Krijo hyrje",
+    KU: "Tomar biafirîne",
+  },
+  noteEditTitle: {
+    DE: "Admin-Notiz bearbeiten",
+    EN: "Edit admin note",
+    IT: "Modifica nota admin",
+    TR: "Yönetici notunu düzenle",
+    SQ: "Ndrysho shënimin e adminit",
+    KU: "Nîşeya admin biguherîne",
+  },
+  noteCreateTitle: {
+    DE: "Admin-Notiz anlegen",
+    EN: "Create admin note",
+    IT: "Crea nota admin",
+    TR: "Yönetici notu oluştur",
+    SQ: "Krijo shënim admini",
+    KU: "Nîşeya admin biafirîne",
+  },
+  delete: {
+    DE: "Löschen",
+    EN: "Delete",
+    IT: "Elimina",
+    TR: "Sil",
+    SQ: "Fshij",
+    KU: "Jê bibe",
+  },
+  deleting: {
+    DE: "Lösche…",
+    EN: "Deleting…",
+    IT: "Eliminazione…",
+    TR: "Siliniyor…",
+    SQ: "Duke fshirë…",
+    KU: "Tê jêbirin…",
+  },
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+  },
+  save: {
+    DE: "Speichern",
+    EN: "Save",
+    IT: "Salva",
+    TR: "Kaydet",
+    SQ: "Ruaj",
+    KU: "Tomar bike",
+  },
+  saving: {
+    DE: "Speichere…",
+    EN: "Saving…",
+    IT: "Salvataggio…",
+    TR: "Kaydediliyor…",
+    SQ: "Duke ruajtur…",
+    KU: "Tê tomarkirin…",
+  },
+  date: {
+    DE: "Datum",
+    EN: "Date",
+    IT: "Data",
+    TR: "Tarih",
+    SQ: "Data",
+    KU: "Dîrok",
+  },
+  employee: {
+    DE: "Mitarbeiter",
+    EN: "Employee",
+    IT: "Dipendente",
+    TR: "Çalışan",
+    SQ: "Punonjësi",
+    KU: "Karmend",
+  },
+  start: {
+    DE: "Start",
+    EN: "Start",
+    IT: "Inizio",
+    TR: "Başlangıç",
+    SQ: "Fillimi",
+    KU: "Destpêk",
+  },
+  end: {
+    DE: "Ende",
+    EN: "End",
+    IT: "Fine",
+    TR: "Bitiş",
+    SQ: "Fundi",
+    KU: "Dawî",
+  },
+  activity: {
+    DE: "Tätigkeit",
+    EN: "Activity",
+    IT: "Attività",
+    TR: "Faaliyet",
+    SQ: "Veprimtaria",
+    KU: "Çalakî",
+  },
+  location: {
+    DE: "Ort",
+    EN: "Location",
+    IT: "Luogo",
+    TR: "Konum",
+    SQ: "Vendi",
+    KU: "Cih",
+  },
+  travelMinutes: {
+    DE: "Fahrzeit (Minuten)",
+    EN: "Travel time (minutes)",
+    IT: "Tempo di viaggio (minuti)",
+    TR: "Yol süresi (dakika)",
+    SQ: "Koha e udhëtimit (minuta)",
+    KU: "Dema rêyê (deqîqe)",
+  },
+  employeeNote: {
+    DE: "Notiz (für Mitarbeiter)",
+    EN: "Note (for employees)",
+    IT: "Nota (per i dipendenti)",
+    TR: "Not (çalışanlar için)",
+    SQ: "Shënim (për punonjësit)",
+    KU: "Nîşe (ji bo karmendan)",
+  },
+  employeeNoteHelp: {
+    DE: "Diese Notiz sehen Mitarbeiter im Kalender/Modal.",
+    EN: "Employees can see this note in the calendar/modal.",
+    IT: "I dipendenti vedono questa nota nel calendario/modal.",
+    TR: "Çalışanlar bu notu takvim/modal içinde görür.",
+    SQ: "Punonjësit e shohin këtë shënim në kalendar/modal.",
+    KU: "Karmend ev nîşe di salname/modal de dibînin.",
+  },
+  documentsTitle: {
+    DE: "📎 Dokumente (Baustellenzettel etc.)",
+    EN: "📎 Documents (site sheets etc.)",
+    IT: "📎 Documenti (rapporti di cantiere ecc.)",
+    TR: "📎 Belgeler (şantiye formları vb.)",
+    SQ: "📎 Dokumente (fletë kantieri etj.)",
+    KU: "📎 Belge (pelên cihê karê û hwd.)",
+  },
+  documentsSaveEntryFirst: {
+    DE: "Speichere zuerst den Plan-Eintrag – danach kannst du Dokumente hochladen.",
+    EN: "Save the plan entry first — then you can upload documents.",
+    IT: "Salva prima la voce del piano — poi potrai caricare documenti.",
+    TR: "Önce plan kaydını kaydet — ardından belge yükleyebilirsin.",
+    SQ: "Ruaje fillimisht hyrjen e planit — më pas mund të ngarkosh dokumente.",
+    KU: "Pêşî tomarê planê tomar bike — paşê dikarî belge bar bikî.",
+  },
+  documentsLoadError: {
+    DE: "Dokumente konnten nicht geladen werden.",
+    EN: "Documents could not be loaded.",
+    IT: "Impossibile caricare i documenti.",
+    TR: "Belgeler yüklenemedi.",
+    SQ: "Dokumentet nuk mund të ngarkoheshin.",
+    KU: "Belge nehatin barkirin.",
+  },
+  documentsNetworkError: {
+    DE: "Netzwerkfehler beim Laden der Dokumente.",
+    EN: "Network error while loading documents.",
+    IT: "Errore di rete durante il caricamento dei documenti.",
+    TR: "Belgeler yüklenirken ağ hatası oluştu.",
+    SQ: "Gabim rrjeti gjatë ngarkimit të dokumenteve.",
+    KU: "Dema barkirina belgeyan de xeletiya torê çêbû.",
+  },
+  documentReadError: {
+    DE: "Datei konnte per FileReader nicht gelesen werden.",
+    EN: "File could not be read via FileReader.",
+    IT: "Il file non può essere letto tramite FileReader.",
+    TR: "Dosya FileReader ile okunamadı.",
+    SQ: "Skedari nuk mund të lexohej me FileReader.",
+    KU: "Pel bi FileReader nehate xwendin.",
+  },
+  documentPreviewError: {
+    DE: "Dokument konnte nicht in der App geöffnet werden.",
+    EN: "Document could not be opened in the app.",
+    IT: "Il documento non può essere aperto nell'app.",
+    TR: "Belge uygulamada açılamadı.",
+    SQ: "Dokumenti nuk mund të hapej në aplikacion.",
+    KU: "Belge di appê de venebû.",
+  },
+  documentShareUnavailable: {
+    DE: "Auf diesem Gerät ist 'Teilen / Sichern' hier nicht verfügbar.",
+    EN: "‘Share / Save’ is not available here on this device.",
+    IT: "‘Condividi / Salva’ non è disponibile qui su questo dispositivo.",
+    TR: "Bu cihazda burada ‘Paylaş / Kaydet’ kullanılamıyor.",
+    SQ: "‘Ndaj / Ruaj’ nuk është i disponueshëm këtu në këtë pajisje.",
+    KU: "Li ser vê cîhazê de ‘Parve bike / Tomar bike’ li vir tune ye.",
+  },
+  documentShareError: {
+    DE: "Dokument konnte nicht geteilt bzw. gespeichert werden.",
+    EN: "Document could not be shared or saved.",
+    IT: "Il documento non può essere condiviso o salvato.",
+    TR: "Belge paylaşılamadı veya kaydedilemedi.",
+    SQ: "Dokumenti nuk mund të ndahej ose ruhej.",
+    KU: "Belge nehat parvekirin an tomarkirin.",
+  },
+  documentMissingFile: {
+    DE: "Bitte eine Datei auswählen.",
+    EN: "Please select a file.",
+    IT: "Seleziona un file.",
+    TR: "Lütfen bir dosya seçin.",
+    SQ: "Ju lutem zgjidhni një skedar.",
+    KU: "Ji kerema xwe pelek hilbijêre.",
+  },
+  documentInvalidType: {
+    DE: "Dateityp nicht erlaubt. Erlaubt sind PDF, JPG, PNG und WEBP.",
+    EN: "File type not allowed. Allowed: PDF, JPG, PNG, and WEBP.",
+    IT: "Tipo di file non consentito. Consentiti: PDF, JPG, PNG e WEBP.",
+    TR: "Dosya türüne izin verilmiyor. İzin verilenler: PDF, JPG, PNG ve WEBP.",
+    SQ: "Lloji i skedarit nuk lejohet. Lejohen: PDF, JPG, PNG dhe WEBP.",
+    KU: "Cureyê pelê ne destûr e. PDF, JPG, PNG û WEBP destûr in.",
+  },
+  documentEmptyFile: {
+    DE: "Die gewählte Datei ist leer.",
+    EN: "The selected file is empty.",
+    IT: "Il file selezionato è vuoto.",
+    TR: "Seçilen dosya boş.",
+    SQ: "Skedari i zgjedhur është bosh.",
+    KU: "Pelê hilbijartî vala ye.",
+  },
+  documentTooLarge: {
+    DE: "Datei zu groß",
+    EN: "File too large",
+    IT: "File troppo grande",
+    TR: "Dosya çok büyük",
+    SQ: "Skedari është shumë i madh",
+    KU: "Pel pir mezin e",
+  },
+  documentUploadReadError: {
+    DE: "Die Datei konnte auf diesem Gerät nicht gelesen werden.",
+    EN: "The file could not be read on this device.",
+    IT: "Il file non può essere letto su questo dispositivo.",
+    TR: "Dosya bu cihazda okunamadı.",
+    SQ: "Skedari nuk mund të lexohej në këtë pajisje.",
+    KU: "Pel li ser vê cîhazê nehat xwendin.",
+  },
+  documentUploadTimeout: {
+    DE: "Upload dauert zu lange. Bitte Datei erneut auswählen und erneut versuchen.",
+    EN: "Upload is taking too long. Please reselect the file and try again.",
+    IT: "Il caricamento richiede troppo tempo. Seleziona di nuovo il file e riprova.",
+    TR: "Yükleme çok uzun sürüyor. Lütfen dosyayı tekrar seçip yeniden deneyin.",
+    SQ: "Ngarkimi po zgjat shumë. Ju lutem zgjidhni përsëri skedarin dhe provoni sërish.",
+    KU: "Barkirin pir dirêj dibe. Ji kerema xwe pelê dîsa hilbijêre û dîsa biceribîne.",
+  },
+  documentUploadFailed: {
+    DE: "Upload fehlgeschlagen.",
+    EN: "Upload failed.",
+    IT: "Caricamento non riuscito.",
+    TR: "Yükleme başarısız oldu.",
+    SQ: "Ngarkimi dështoi.",
+    KU: "Barkirin serneket.",
+  },
+  documentUploadNetworkError: {
+    DE: "Netzwerkfehler beim Upload.",
+    EN: "Network error during upload.",
+    IT: "Errore di rete durante il caricamento.",
+    TR: "Yükleme sırasında ağ hatası oluştu.",
+    SQ: "Gabim rrjeti gjatë ngarkimit.",
+    KU: "Dema barkirinê de xeletiya torê çêbû.",
+  },
+  documentDeleteConfirm: {
+    DE: "Dokument wirklich löschen?",
+    EN: "Really delete document?",
+    IT: "Eliminare davvero il documento?",
+    TR: "Belge gerçekten silinsin mi?",
+    SQ: "Të fshihet vërtet dokumenti?",
+    KU: "Belge bi rastî were jêbirin?",
+  },
+  documentDeleteFailed: {
+    DE: "Löschen fehlgeschlagen.",
+    EN: "Delete failed.",
+    IT: "Eliminazione non riuscita.",
+    TR: "Silme başarısız oldu.",
+    SQ: "Fshirja dështoi.",
+    KU: "Jêbirin serneket.",
+  },
+  title: {
+    DE: "Titel",
+    EN: "Title",
+    IT: "Titolo",
+    TR: "Başlık",
+    SQ: "Titulli",
+    KU: "Sernav",
+  },
+  file: {
+    DE: "Datei",
+    EN: "File",
+    IT: "File",
+    TR: "Dosya",
+    SQ: "Skedari",
+    KU: "Pel",
+  },
+  uploadDocument: {
+    DE: "Dokument hochladen",
+    EN: "Upload document",
+    IT: "Carica documento",
+    TR: "Belge yükle",
+    SQ: "Ngarko dokument",
+    KU: "Belge bar bike",
+  },
+  uploading: {
+    DE: "Upload...",
+    EN: "Uploading...",
+    IT: "Caricamento...",
+    TR: "Yükleniyor...",
+    SQ: "Duke ngarkuar...",
+    KU: "Tê barkirin...",
+  },
+  documentAllowedInfo: {
+    DE: "Erlaubt: PDF, JPG, PNG, WEBP · max. 15 MB",
+    EN: "Allowed: PDF, JPG, PNG, WEBP · max. 15 MB",
+    IT: "Consentiti: PDF, JPG, PNG, WEBP · max. 15 MB",
+    TR: "İzin verilenler: PDF, JPG, PNG, WEBP · maks. 15 MB",
+    SQ: "Lejohen: PDF, JPG, PNG, WEBP · maks. 15 MB",
+    KU: "Destûr in: PDF, JPG, PNG, WEBP · herî zêde 15 MB",
+  },
+  loadingDocuments: {
+    DE: "Lade Dokumente...",
+    EN: "Loading documents...",
+    IT: "Caricamento documenti...",
+    TR: "Belgeler yükleniyor...",
+    SQ: "Po ngarkohen dokumentet...",
+    KU: "Belge têne barkirin...",
+  },
+  noDocuments: {
+    DE: "Noch keine Dokumente.",
+    EN: "No documents yet.",
+    IT: "Nessun documento ancora.",
+    TR: "Henüz belge yok.",
+    SQ: "Ende nuk ka dokumente.",
+    KU: "Hêj belge tune ne.",
+  },
+  previewInApp: {
+    DE: "In App ansehen",
+    EN: "View in app",
+    IT: "Visualizza nell'app",
+    TR: "Uygulamada göster",
+    SQ: "Shiko në aplikacion",
+    KU: "Di appê de bibîne",
+  },
+  shareOrSave: {
+    DE: "Teilen / Sichern",
+    EN: "Share / Save",
+    IT: "Condividi / Salva",
+    TR: "Paylaş / Kaydet",
+    SQ: "Ndaj / Ruaj",
+    KU: "Parve bike / Tomar bike",
+  },
+  document: {
+    DE: "Dokument",
+    EN: "Document",
+    IT: "Documento",
+    TR: "Belge",
+    SQ: "Dokument",
+    KU: "Belge",
+  },
+  noPreviewAvailable: {
+    DE: "Keine Vorschau verfügbar.",
+    EN: "No preview available.",
+    IT: "Nessuna anteprima disponibile.",
+    TR: "Önizleme mevcut değil.",
+    SQ: "Nuk ka parashikim.",
+    KU: "Pêşdîtin tune ye.",
+  },
+  internalAdminNoteInfo: {
+    DE: "✅ Admin-Notiz wird nicht hier gespeichert — dafür gibt es separat “+ Notiz (Admin)” im Wochenplan.",
+    EN: "✅ Admin note is not stored here — use the separate “+ Note (admin)” in the weekly plan.",
+    IT: "✅ La nota admin non viene salvata qui — usa il separato “+ Nota (admin)” nel piano settimanale.",
+    TR: "✅ Yönetici notu burada kaydedilmez — bunun için haftalık planda ayrı “+ Not (yönetici)” vardır.",
+    SQ: "✅ Shënimi i adminit nuk ruhet këtu — për këtë përdor “+ Shënim (admin)” te plani javor.",
+    KU: "✅ Nîşeya admin li vir nayê tomarkirin — ji bo vê yekê di plana hefteyî de “+ Nîşe (admin)” heye.",
+  },
+  pleaseSelectEmployee: {
+    DE: "Bitte Mitarbeiter wählen.",
+    EN: "Please select an employee.",
+    IT: "Seleziona un dipendente.",
+    TR: "Lütfen bir çalışan seçin.",
+    SQ: "Ju lutem zgjidhni një punonjës.",
+    KU: "Ji kerema xwe karmendek hilbijêre.",
+  },
+  pleaseSelectDate: {
+    DE: "Bitte Datum wählen.",
+    EN: "Please select a date.",
+    IT: "Seleziona una data.",
+    TR: "Lütfen bir tarih seçin.",
+    SQ: "Ju lutem zgjidhni një datë.",
+    KU: "Ji kerema xwe dîrokek hilbijêre.",
+  },
+  pleaseSelectStartEnd: {
+    DE: "Bitte Start/Ende angeben.",
+    EN: "Please provide start/end.",
+    IT: "Indica inizio/fine.",
+    TR: "Lütfen başlangıç/bitiş girin.",
+    SQ: "Ju lutem jepni fillimin/fundin.",
+    KU: "Ji kerema xwe destpêk/dawî binivîse.",
+  },
+  saveEntryFailed: {
+    DE: "Speichern fehlgeschlagen:",
+    EN: "Saving failed:",
+    IT: "Salvataggio non riuscito:",
+    TR: "Kaydetme başarısız oldu:",
+    SQ: "Ruajtja dështoi:",
+    KU: "Tomarkirin serneket:",
+  },
+  deleteEntryConfirm: {
+    DE: "Plan-Eintrag wirklich löschen?",
+    EN: "Really delete plan entry?",
+    IT: "Eliminare davvero la voce del piano?",
+    TR: "Plan kaydı gerçekten silinsin mi?",
+    SQ: "Të fshihet vërtet hyrja e planit?",
+    KU: "Tomara planê bi rastî were jêbirin?",
+  },
+  deleteEntryFailed: {
+    DE: "Löschen fehlgeschlagen.",
+    EN: "Delete failed.",
+    IT: "Eliminazione non riuscita.",
+    TR: "Silme başarısız oldu.",
+    SQ: "Fshirja dështoi.",
+    KU: "Jêbirin serneket.",
+  },
+  saveNoteFailed: {
+    DE: "Notiz speichern fehlgeschlagen:",
+    EN: "Saving note failed:",
+    IT: "Salvataggio nota non riuscito:",
+    TR: "Not kaydedilemedi:",
+    SQ: "Ruajtja e shënimit dështoi:",
+    KU: "Tomarkirina nîşeyê serneket:",
+  },
+  deleteNoteConfirm: {
+    DE: "Admin-Notiz wirklich löschen?",
+    EN: "Really delete admin note?",
+    IT: "Eliminare davvero la nota admin?",
+    TR: "Yönetici notu gerçekten silinsin mi?",
+    SQ: "Të fshihet vërtet shënimi i adminit?",
+    KU: "Nîşeya admin bi rastî were jêbirin?",
+  },
+  deleteNoteFailed: {
+    DE: "Notiz löschen fehlgeschlagen",
+    EN: "Deleting note failed",
+    IT: "Eliminazione nota non riuscita",
+    TR: "Not silinemedi",
+    SQ: "Fshirja e shënimit dështoi",
+    KU: "Jêbirina nîşeyê serneket",
+  },
+  adminNoteEdit: {
+    DE: "Admin-Notiz bearbeiten",
+    EN: "Edit admin note",
+    IT: "Modifica nota admin",
+    TR: "Yönetici notunu düzenle",
+    SQ: "Ndrysho shënimin e adminit",
+    KU: "Nîşeya admin biguherîne",
+  },
+  adminNoteCreate: {
+    DE: "Admin-Notiz anlegen",
+    EN: "Create admin note",
+    IT: "Crea nota admin",
+    TR: "Yönetici notu oluştur",
+    SQ: "Krijo shënim admini",
+    KU: "Nîşeya admin biafirîne",
+  },
+  internalAdminNote: {
+    DE: "Interne Admin-Notiz (nur für Admin)",
+    EN: "Internal admin note (admin only)",
+    IT: "Nota admin interna (solo admin)",
+    TR: "Dahili yönetici notu (yalnızca yönetici)",
+    SQ: "Shënim i brendshëm i adminit (vetëm për admin)",
+    KU: "Nîşeya hundirîn a admin (tenê ji bo admin)",
+  },
+  internalAdminNoteHelp: {
+    DE: "Bleibt intern und wird niemals an Mitarbeiter ausgeliefert.",
+    EN: "Remains internal and is never shown to employees.",
+    IT: "Rimane interna e non viene mai mostrata ai dipendenti.",
+    TR: "Dahili kalır ve çalışanlara asla gösterilmez.",
+    SQ: "Mbetet e brendshme dhe nuk u shfaqet kurrë punonjësve.",
+    KU: "Hundirîn dimîne û qet ji karmendan re nayê nîşandan.",
+  },
+  employeeNotePrefix: {
+    DE: "📝 MA:",
+    EN: "📝 Emp:",
+    IT: "📝 Dip:",
+    TR: "📝 Çal:",
+    SQ: "📝 Pun:",
+    KU: "📝 Kar:",
+  },
+  editPlanEntryTitle: {
+    DE: "Eintrag bearbeiten",
+    EN: "Edit entry",
+    IT: "Modifica voce",
+    TR: "Kaydı düzenle",
+    SQ: "Ndrysho hyrjen",
+    KU: "Tomarê biguherîne",
+  },
+  createPlanEntryTitle: {
+    DE: "Eintrag anlegen",
+    EN: "Create entry",
+    IT: "Crea voce",
+    TR: "Kayıt oluştur",
+    SQ: "Krijo hyrje",
+    KU: "Tomar biafirîne",
+  },
+  editAdminNoteTitle: {
+    DE: "Admin-Notiz bearbeiten",
+    EN: "Edit admin note",
+    IT: "Modifica nota admin",
+    TR: "Yönetici notunu düzenle",
+    SQ: "Ndrysho shënimin e adminit",
+    KU: "Nîşeya admin biguherîne",
+  },
+  createAdminNoteTitle: {
+    DE: "Admin-Notiz anlegen",
+    EN: "Create admin note",
+    IT: "Crea nota admin",
+    TR: "Yönetici notu oluştur",
+    SQ: "Krijo shënim admini",
+    KU: "Nîşeya admin biafirîne",
+  },
+  monday: {
+    DE: "Montag",
+    EN: "Monday",
+    IT: "Lunedì",
+    TR: "Pazartesi",
+    SQ: "E hënë",
+    KU: "Duşem",
+  },
+  tuesday: {
+    DE: "Dienstag",
+    EN: "Tuesday",
+    IT: "Martedì",
+    TR: "Salı",
+    SQ: "E martë",
+    KU: "Sêşem",
+  },
+  wednesday: {
+    DE: "Mittwoch",
+    EN: "Wednesday",
+    IT: "Mercoledì",
+    TR: "Çarşamba",
+    SQ: "E mërkurë",
+    KU: "Çarşem",
+  },
+  thursday: {
+    DE: "Donnerstag",
+    EN: "Thursday",
+    IT: "Giovedì",
+    TR: "Perşembe",
+    SQ: "E enjte",
+    KU: "Pêncşem",
+  },
+  friday: {
+    DE: "Freitag",
+    EN: "Friday",
+    IT: "Venerdì",
+    TR: "Cuma",
+    SQ: "E premte",
+    KU: "În",
+  },
+  saturday: {
+    DE: "Samstag",
+    EN: "Saturday",
+    IT: "Sabato",
+    TR: "Cumartesi",
+    SQ: "E shtunë",
+    KU: "Şemî",
+  },
+  repairWork: {
+    DE: "Rep. Arbeiten",
+    EN: "Repair work",
+    IT: "Lavori di riparazione",
+    TR: "Tamir işleri",
+    SQ: "Punë riparimi",
+    KU: "Karên tamîrê",
+  },
+  subcontractors: {
+    DE: "Subunternehmer",
+    EN: "Subcontractors",
+    IT: "Subappaltatori",
+    TR: "Taşeronlar",
+    SQ: "Nënkontraktorë",
+    KU: "Binpeymanbar",
+  },
+  keepPrefixHint: {
+    DE: "Lass den Prefix stehen, sonst erscheint es nicht in der Spezial-Zeile.",
+    EN: "Keep the prefix, otherwise it will not appear in the special row.",
+    IT: "Mantieni il prefisso, altrimenti non apparirà nella riga speciale.",
+    TR: "Öneki bırakın, aksi halde özel satırda görünmez.",
+    SQ: "Mbaje prefiksin, përndryshe nuk do të shfaqet në rreshtin special.",
+    KU: "Pêşgirê bihêle, wekî din di rêza taybet de dernakeve.",
+  },
+};

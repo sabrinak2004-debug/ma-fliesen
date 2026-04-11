@@ -513,13 +513,16 @@ function getEditedRequestedVacationUnits(
   return countWeekdaysInclusive(startDate, endDate) * 2;
 }
 
-function requestDurationLabel(item: AbsenceRequestItem): string {
+function requestDurationLabel(
+  item: AbsenceRequestItem,
+  language: AppUiLanguage
+): string {
   if (item.dayPortion === "HALF_DAY") {
-    return `Halber Urlaubstag · ${formatDateDE(item.startDate)} · ${portionLabel(item.dayPortion)}`;
+    return `${translate(language, "halfVacationDay", ADMIN_VACATION_REQUESTS_UI_TEXTS)} · ${formatDateLocalized(item.startDate, language)} · ${portionLabel(item.dayPortion)}`;
   }
 
   const days = countDaysInclusive(item.startDate, item.endDate);
-  return `${rangeLabel(item.startDate, item.endDate)} · ${days} ${days === 1 ? "Tag" : "Tage"}`;
+  return `${rangeLabel(item.startDate, item.endDate, language)} · ${days} ${days === 1 ? translate(language, "day", ADMIN_VACATION_REQUESTS_UI_TEXTS) : translate(language, "days", ADMIN_VACATION_REQUESTS_UI_TEXTS)}`;
 }
 
 function compensationLabel(compensation: AbsenceCompensation): string {
