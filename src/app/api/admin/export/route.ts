@@ -50,6 +50,36 @@ type SessionLike = {
   user?: { id?: string };
 };
 
+type TranslationMap = Partial<
+  Record<"DE" | "EN" | "IT" | "TR" | "SQ" | "KU", string>
+>;
+
+function isTranslationMap(
+  value: Prisma.JsonValue | null | undefined
+): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function getGermanTranslatedText(
+  originalText: string | null | undefined,
+  translations: Prisma.JsonValue | null | undefined
+): string {
+  const fallback = originalText ?? "";
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations.DE;
+  return typeof translated === "string" && translated.trim()
+    ? translated
+    : fallback;
+}
+
 type WorkEntryWithUser = Prisma.WorkEntryGetPayload<{
   include: { user: true };
 }>;
@@ -685,8 +715,8 @@ function buildPayrollCsv(
           isFirstOfDay ? (breakInfo.auto ? "ja" : "nein") : "",
           netMin,
           e.travelMinutes ?? 0,
-          e.activity,
-          e.location,
+          getGermanTranslatedText(e.activity, e.activityTranslations),
+          getGermanTranslatedText(e.location, e.locationTranslations),
           formatGermanDateTime(e.createdAt),
         ],
       });
