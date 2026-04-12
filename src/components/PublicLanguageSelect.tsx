@@ -4,6 +4,7 @@ import React from "react";
 import {
   APP_UI_LANGUAGES,
   getLanguageLabel,
+  normalizeAppUiLanguage,
   type AppUiLanguage,
 } from "@/lib/i18n";
 
@@ -24,7 +25,7 @@ export default function PublicLanguageSelect({
       <select
         className="input"
         value={value}
-        onChange={(event) => onChange(event.target.value as AppUiLanguage)}
+        onChange={(event) => onChange(normalizeAppUiLanguage(event.target.value))}
       >
         {APP_UI_LANGUAGES.map((language) => (
           <option key={language} value={language}>

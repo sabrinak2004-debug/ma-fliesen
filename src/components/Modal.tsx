@@ -1,6 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import {
+  normalizeAppUiLanguage,
+  translate,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 type ModalProps = {
   open: boolean;
@@ -11,7 +16,25 @@ type ModalProps = {
   maxWidth?: number;
   zIndex?: number;
   disableBackdropClose?: boolean;
+  closeAriaLabel?: string;
 };
+
+type ModalTextKey = "close";
+
+const MODAL_UI_TEXTS: Record<ModalTextKey, Record<AppUiLanguage, string>> = {
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+  },
+};
+
+function tModal(language: AppUiLanguage, key: ModalTextKey): string {
+  return translate(language, key, MODAL_UI_TEXTS);
+}
 
 export default function Modal({
   open,
@@ -22,10 +45,18 @@ export default function Modal({
   maxWidth = 920,
   zIndex = 50,
   disableBackdropClose = false,
+  closeAriaLabel,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   const onCloseRef = useRef(onClose);
+
+  const resolvedLanguage = normalizeAppUiLanguage(
+    typeof document !== "undefined" ? document.documentElement.lang.toUpperCase() : "DE"
+  );
+
+  const resolvedCloseAriaLabel =
+    closeAriaLabel ?? tModal(resolvedLanguage, "close");
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -125,7 +156,7 @@ export default function Modal({
           <button
             type="button"
             onClick={() => onCloseRef.current()}
-            aria-label="Schließen"
+            aria-label={resolvedCloseAriaLabel}
             className="app-modal-close-button"
             style={{
               width: 34,
