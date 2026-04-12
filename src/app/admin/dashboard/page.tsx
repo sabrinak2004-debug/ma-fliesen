@@ -364,7 +364,20 @@ function formatDate(iso: string, language: AppUiLanguage): string {
   const [y, m, d] = normalized.split("-").map(Number);
   const date = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
 
-  return new Intl.DateTimeFormat("de-DE", {
+  const locale =
+    language === "EN"
+      ? "en-GB"
+      : language === "IT"
+      ? "it-IT"
+      : language === "TR"
+      ? "tr-TR"
+      : language === "SQ"
+      ? "sq-AL"
+      : language === "KU"
+      ? "ku"
+      : "de-DE";
+
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -934,7 +947,7 @@ export default function AdminDashboardPage() {
         return;
       }
 
-      setRemindSuccess(`${t("pushSuccessPrefix")} ${fullName} gesendet.`);
+      setRemindSuccess(`${t("pushSuccessPrefix")} ${fullName}`);
       setReloadTick((x) => x + 1);
     } catch {
       setRemindErr(t("pushNetworkError"));
@@ -1862,7 +1875,7 @@ export default function AdminDashboardPage() {
             justifyContent: "space-between",
             alignItems: "flex-start",
           }}
-          title="Liste aktiver Mitarbeiter öffnen"
+          title={t("openActiveEmployeesList")}
         >
           <div>
             <div style={{ display: "grid", gap: 6 }}>
@@ -1898,7 +1911,7 @@ export default function AdminDashboardPage() {
             justifyContent: "space-between",
             alignItems: "flex-start",
           }}
-          title="Liste fehlender Einträge öffnen"
+          title={t("openMissingEntriesList")}
         >
           <div>
            <div style={{ display: "grid", gap: 6 }}>
@@ -1934,7 +1947,7 @@ export default function AdminDashboardPage() {
             justifyContent: "space-between",
             alignItems: "flex-start",
           }}
-          title="Liste heutiger Abwesenheiten öffnen"
+          title={t("openAbsencesList")}
         >
           <div>
             <div style={{ display: "grid", gap: 6 }}>
@@ -1969,7 +1982,7 @@ export default function AdminDashboardPage() {
             justifyContent: "space-between",
             alignItems: "flex-start",
           }}
-          title="Liste allgemeiner überfälliger fehlender Arbeitseinträge öffnen"
+          title={t("openGeneralMissingEntriesList")}
         >
           <div>
             <div style={{ display: "grid", gap: 6 }}>
@@ -2096,7 +2109,7 @@ export default function AdminDashboardPage() {
                         fontWeight: 900,
                       }}
                       onClick={() => setOpenUsers((prev) => toggleUser(prev, u.userId))}
-                      title={t("expandCollapse")}
+                      title={t("expandCollapseTitle")}
                     >
                       <div>{open ? "▼ " : "▶ "} {u.fullName}</div>
                       <div style={{ fontWeight: 900, color: "var(--accent)" }}>{formatHM(totalWorkMinutes)}</div>
@@ -2133,7 +2146,7 @@ export default function AdminDashboardPage() {
                                 background: "var(--surface)",
                                 fontWeight: 1000,
                               }}
-                              title="Ein-/Ausklappen"
+                              title={t("expandCollapseTitle")}
                             >
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <span style={{ opacity: 0.9 }}>{cat[key] ? "▼" : "▶"}</span>
@@ -2189,7 +2202,7 @@ export default function AdminDashboardPage() {
                                               border: "1px solid rgba(255,255,255,0.06)",
                                               fontWeight: 1000,
                                             }}
-                                            title={t("expandCollapse")}
+                                            title={t("expandCollapseTitle")}
                                           >
                                             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                               <span>{dayOpen ? "▼" : "▶"}</span>
@@ -2356,9 +2369,9 @@ export default function AdminDashboardPage() {
                               ) : null}
 
                               {sectionHeader(
-                                "VACATION",
-                                t("vacationLabel"),
-                                `${vacationRanges.length} ${vacationRanges.length === 1 ? t("period") : t("periods")}`
+                                "SICK",
+                                t("sickness"),
+                                `${sickRanges.length} ${sickRanges.length === 1 ? t("period") : t("periods")}`
                               )}
                               {cat.SICK ? (
                                 sickRanges.length > 0 ? (

@@ -1180,7 +1180,12 @@ export type AdminDashboardTextKey =
   | "workTimeHours"
   | "vacationHours"
   | "sickHours"
-  | "unpaidVacationHours";
+  | "unpaidVacationHours"
+  | "openActiveEmployeesList"
+  | "openMissingEntriesList"
+  | "openAbsencesList"
+  | "openGeneralMissingEntriesList"
+  | "expandCollapseTitle";
 
 export const ADMIN_DASHBOARD_UI_TEXTS: Record<
   AdminDashboardTextKey,
@@ -2161,6 +2166,46 @@ export const ADMIN_DASHBOARD_UI_TEXTS: Record<
     TR: "Ücretsiz izin",
     SQ: "Pushim i papaguar",
     KU: "Betlaneya bêpere",
+  },
+  openActiveEmployeesList: {
+    DE: "Liste aktiver Mitarbeiter öffnen",
+    EN: "Open list of active employees",
+    IT: "Apri elenco dipendenti attivi",
+    TR: "Aktif çalışan listesini aç",
+    SQ: "Hap listën e punonjësve aktivë",
+    KU: "Lîsteya karmendên çalak veke",
+  },
+  openMissingEntriesList: {
+    DE: "Liste fehlender Einträge öffnen",
+    EN: "Open list of missing entries",
+    IT: "Apri elenco voci mancanti",
+    TR: "Eksik kayıtlar listesini aç",
+    SQ: "Hap listën e hyrjeve që mungojnë",
+    KU: "Lîsteya tomarên winda veke",
+  },
+  openAbsencesList: {
+    DE: "Liste heutiger Abwesenheiten öffnen",
+    EN: "Open list of today's absences",
+    IT: "Apri elenco delle assenze di oggi",
+    TR: "Bugünkü devamsızlık listesini aç",
+    SQ: "Hap listën e mungesave të sotme",
+    KU: "Lîsteya nebûnên îroyê veke",
+  },
+  openGeneralMissingEntriesList: {
+    DE: "Liste allgemeiner überfälliger fehlender Arbeitseinträge öffnen",
+    EN: "Open list of general overdue missing work entries",
+    IT: "Apri elenco generale delle registrazioni di lavoro mancanti e scadute",
+    TR: "Genel gecikmiş eksik çalışma kayıtları listesini aç",
+    SQ: "Hap listën e hyrjeve të përgjithshme të munguar të vonuara të punës",
+    KU: "Lîsteya giştî ya tomarên karê winda yên derengmayî veke",
+  },
+  expandCollapseTitle: {
+    DE: "Ein-/Ausklappen",
+    EN: "Expand/collapse",
+    IT: "Espandi/comprimi",
+    TR: "Genişlet/daralt",
+    SQ: "Hap/mbyll",
+    KU: "Veke/bigire",
   },
 };
 export type AdminVacationRequestsTextKey =
