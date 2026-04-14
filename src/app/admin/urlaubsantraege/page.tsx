@@ -448,31 +448,58 @@ function getRequestedVacationDays(item: AbsenceRequestItem): number {
   return countWeekdaysInclusive(item.startDate, item.endDate);
 }
 
-function compensationSummaryLabel(item: AbsenceRequestItem): string {
+function localizedDayLabel(value: number, language: AppUiLanguage): string {
+  return translate(
+    language,
+    Math.abs(value) === 1 ? "day" : "days",
+    ADMIN_VACATION_REQUESTS_UI_TEXTS
+  );
+}
+
+function localizedLowerCompensationLabel(
+  compensation: AbsenceCompensation,
+  language: AppUiLanguage
+): string {
+  const label = translate(
+    language,
+    compensation === "UNPAID" ? "unpaid" : "paid",
+    ADMIN_VACATION_REQUESTS_UI_TEXTS
+  );
+
+  return label.toLocaleLowerCase(toHtmlLang(language));
+}
+
+function compensationSummaryLabel(
+  item: AbsenceRequestItem,
+  language: AppUiLanguage
+): string {
   const paidDays = item.paidVacationUnits / 2;
   const unpaidDays = item.unpaidVacationUnits / 2;
 
   if (paidDays > 0 && unpaidDays > 0) {
-    return `${formatVacationDays(paidDays)} bezahlt · ${formatVacationDays(unpaidDays)} unbezahlt`;
+    return `${formatVacationDays(paidDays)} ${localizedLowerCompensationLabel("PAID", language)} · ${formatVacationDays(unpaidDays)} ${localizedLowerCompensationLabel("UNPAID", language)}`;
   }
 
   if (paidDays > 0) {
-    return "Bezahlt";
+    return translate(language, "paid", ADMIN_VACATION_REQUESTS_UI_TEXTS);
   }
 
   if (unpaidDays > 0) {
-    return "Unbezahlt";
+    return translate(language, "unpaid", ADMIN_VACATION_REQUESTS_UI_TEXTS);
   }
 
-  return compensationLabel(item.compensation);
+  return compensationLabel(item.compensation, language);
 }
 
-function mixedCompensationHint(item: AbsenceRequestItem): string | null {
+function mixedCompensationHint(
+  item: AbsenceRequestItem,
+  language: AppUiLanguage
+): string | null {
   const paidDays = item.paidVacationUnits / 2;
   const unpaidDays = item.unpaidVacationUnits / 2;
 
   if (paidDays > 0 && unpaidDays > 0) {
-    return `Davon ${formatVacationDays(paidDays)} Tage bezahlt und ${formatVacationDays(unpaidDays)} Tage unbezahlt.`;
+    return `${translate(language, "ofWhich", ADMIN_VACATION_REQUESTS_UI_TEXTS)} ${formatVacationDays(paidDays)} ${localizedDayLabel(paidDays, language)} ${localizedLowerCompensationLabel("PAID", language)} ${translate(language, "and", ADMIN_VACATION_REQUESTS_UI_TEXTS)} ${formatVacationDays(unpaidDays)} ${localizedDayLabel(unpaidDays, language)} ${localizedLowerCompensationLabel("UNPAID", language)}.`;
   }
 
   return null;
@@ -482,20 +509,23 @@ function totalRequestedVacationDays(item: AbsenceRequestItem): number {
   return (item.paidVacationUnits + item.unpaidVacationUnits) / 2;
 }
 
-function compensationBreakdownLabel(item: AbsenceRequestItem): string | null {
+function compensationBreakdownLabel(
+  item: AbsenceRequestItem,
+  language: AppUiLanguage
+): string | null {
   const paidDays = item.paidVacationUnits / 2;
   const unpaidDays = item.unpaidVacationUnits / 2;
 
   if (paidDays > 0 && unpaidDays > 0) {
-    return `${formatVacationDays(paidDays)} Tage davon bezahlt · ${formatVacationDays(unpaidDays)} Tage davon unbezahlt`;
+    return `${formatVacationDays(paidDays)} ${localizedDayLabel(paidDays, language)} ${translate(language, "ofWhich", ADMIN_VACATION_REQUESTS_UI_TEXTS)} ${localizedLowerCompensationLabel("PAID", language)} · ${formatVacationDays(unpaidDays)} ${localizedDayLabel(unpaidDays, language)} ${translate(language, "ofWhich", ADMIN_VACATION_REQUESTS_UI_TEXTS)} ${localizedLowerCompensationLabel("UNPAID", language)}`;
   }
 
   if (paidDays > 0) {
-    return `${formatVacationDays(paidDays)} Tage davon bezahlt`;
+    return `${formatVacationDays(paidDays)} ${localizedDayLabel(paidDays, language)} ${translate(language, "ofWhich", ADMIN_VACATION_REQUESTS_UI_TEXTS)} ${localizedLowerCompensationLabel("PAID", language)}`;
   }
 
   if (unpaidDays > 0) {
-    return `${formatVacationDays(unpaidDays)} Tage davon unbezahlt`;
+    return `${formatVacationDays(unpaidDays)} ${localizedDayLabel(unpaidDays, language)} ${translate(language, "ofWhich", ADMIN_VACATION_REQUESTS_UI_TEXTS)} ${localizedLowerCompensationLabel("UNPAID", language)}`;
   }
 
   return null;
@@ -525,8 +555,15 @@ function requestDurationLabel(
   return `${rangeLabel(item.startDate, item.endDate, language)} · ${days} ${days === 1 ? translate(language, "day", ADMIN_VACATION_REQUESTS_UI_TEXTS) : translate(language, "days", ADMIN_VACATION_REQUESTS_UI_TEXTS)}`;
 }
 
-function compensationLabel(compensation: AbsenceCompensation): string {
-  return compensation === "UNPAID" ? "Unbezahlt" : "Bezahlt";
+function compensationLabel(
+  compensation: AbsenceCompensation,
+  language: AppUiLanguage
+): string {
+  return translate(
+    language,
+    compensation === "UNPAID" ? "unpaid" : "paid",
+    ADMIN_VACATION_REQUESTS_UI_TEXTS
+  );
 }
 
 function countDaysInclusive(startDate: string, endDate: string): number {
@@ -1195,14 +1232,15 @@ useEffect(() => {
 
             {item.type === "VACATION" ? (
               <div className="admin-workflow-breakdown-text">
-                {compensationBreakdownLabel(item) ?? compensationSummaryLabel(item)}
+                {compensationBreakdownLabel(item, language) ??
+                  compensationSummaryLabel(item, language)}
               </div>
-            ) : null}            
+            ) : null}
 
             {item.type === "VACATION" && item.autoUnpaidBecauseNoBalance ? (
               <div className="admin-workflow-mixed-hint">
-                {mixedCompensationHint(item)
-                  ? `${t("mixedCompensationPrefix")} ${mixedCompensationHint(item)}`
+                {mixedCompensationHint(item, language)
+                  ? `${t("mixedCompensationPrefix")} ${mixedCompensationHint(item, language)}`
                   : t("insufficientPaidVacationHint")}
               </div>
             ) : null}
@@ -1340,9 +1378,9 @@ useEffect(() => {
                     {formatVacationDays(totalRequestedVacationDays(item))} {totalRequestedVacationDays(item) === 1 ? t("day") : t("days")} {t("total")}
                   </div>
 
-                  {compensationBreakdownLabel(item) ? (
+                  {compensationBreakdownLabel(item, language) ? (
                     <div className="admin-workflow-breakdown-text">
-                      {compensationBreakdownLabel(item)}
+                      {compensationBreakdownLabel(item, language)}
                     </div>
                   ) : null}
                 </div>

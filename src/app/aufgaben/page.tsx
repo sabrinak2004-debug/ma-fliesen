@@ -1085,7 +1085,9 @@ export default function AufgabenPage() {
     const fromText = formatDateLongLocalized(language, missingWorkEntryAlert.oldestMissingDate);
     const toText = formatDateLongLocalized(language, missingWorkEntryAlert.newestMissingDate);
 
-    return fromText === toText ? fromText : `${fromText} bis ${toText}`;
+    return fromText === toText
+      ? fromText
+      : `${fromText} ${translate(language, "until", AUFGABEN_DICTIONARY)} ${toText}`;
   }, [missingWorkEntryAlert, language]);
 
   async function completeTask(taskId: string): Promise<void> {

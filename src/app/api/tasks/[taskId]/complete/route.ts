@@ -7,12 +7,34 @@ import {
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { sendPushToAdmins } from "@/lib/webpush";
+import {
+  ADMIN_TASKS_UI_TEXTS,
+  translate,
+  type AppUiLanguage,
+  type AdminTasksTextKey,
+} from "@/lib/i18n";
 
 type Params = {
   params: Promise<{
     taskId: string;
   }>;
 };
+
+function translateAdminTaskText(
+  language: AppUiLanguage,
+  key: AdminTasksTextKey
+): string {
+  return translate(language, key, ADMIN_TASKS_UI_TEXTS);
+}
+
+function replaceTemplate(
+  template: string,
+  values: Record<string, string>
+): string {
+  return Object.entries(values).reduce((result, [key, value]) => {
+    return result.replaceAll(`{${key}}`, value);
+  }, template);
+}
 
 function toIsoDateUTC(date: Date): string {
   const y = date.getUTCFullYear();
@@ -220,6 +242,16 @@ export async function POST(
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
   }
 
+  const language: AppUiLanguage =
+    session.language === "DE" ||
+    session.language === "EN" ||
+    session.language === "IT" ||
+    session.language === "TR" ||
+    session.language === "SQ" ||
+    session.language === "KU"
+      ? session.language
+      : "DE";
+
   const { taskId } = await context.params;
 
   const existingTask = await prisma.task.findUnique({
@@ -236,20 +268,29 @@ export async function POST(
   });
 
   if (!existingTask) {
-    return NextResponse.json({ error: "Aufgabe nicht gefunden." }, { status: 404 });
+    return NextResponse.json(
+      { error: translateAdminTaskText(language, "taskNotFound") },
+      { status: 404 }
+    );
   }
 
   if (existingTask.assignedToUser.companyId !== session.companyId) {
-    return NextResponse.json({ error: "Kein Zugriff." }, { status: 403 });
+    return NextResponse.json(
+      { error: translateAdminTaskText(language, "noAccess") },
+      { status: 403 }
+    );
   }
 
   if (existingTask.assignedToUserId !== session.userId) {
-    return NextResponse.json({ error: "Kein Zugriff." }, { status: 403 });
+    return NextResponse.json(
+      { error: translateAdminTaskText(language, "noAccess") },
+      { status: 403 }
+    );
   }
 
   if (existingTask.status === TaskStatus.COMPLETED) {
     return NextResponse.json(
-      { error: "Aufgabe ist bereits erledigt." },
+      { error: translateAdminTaskText(language, "taskAlreadyCompleted") },
       { status: 400 }
     );
   }
@@ -270,22 +311,31 @@ export async function POST(
     });
 
     const referenceLabel = !range
-      ? "ohne Datum"
+      ? translateAdminTaskText(language, "referenceWithoutDate")
       : toIsoDateUTC(range.startDate) === toIsoDateUTC(range.endDate)
       ? toIsoDateUTC(range.startDate)
-      : `${toIsoDateUTC(range.startDate)} bis ${toIsoDateUTC(range.endDate)}`;
+      : `${toIsoDateUTC(range.startDate)} ${translateAdminTaskText(language, "until")} ${toIsoDateUTC(range.endDate)}`;
+
+    const error =
+      existingTask.requiredAction === "WORK_ENTRY_FOR_DATE"
+        ? replaceTemplate(
+            translateAdminTaskText(language, "taskCompleteRequirementWorkTime"),
+            { referenceLabel }
+          )
+        : existingTask.requiredAction === "VACATION_ENTRY_FOR_DATE"
+        ? replaceTemplate(
+            translateAdminTaskText(language, "taskCompleteRequirementVacation"),
+            { referenceLabel }
+          )
+        : existingTask.requiredAction === "SICK_ENTRY_FOR_DATE"
+        ? replaceTemplate(
+            translateAdminTaskText(language, "taskCompleteRequirementSickness"),
+            { referenceLabel }
+          )
+        : translateAdminTaskText(language, "taskCompleteRequirementGeneric");
 
     return NextResponse.json(
-      {
-        error:
-          existingTask.requiredAction === "WORK_ENTRY_FOR_DATE"
-            ? `Die Aufgabe kann erst erledigt werden, wenn für ${referenceLabel} alle erforderlichen Arbeitszeiteinträge vorhanden sind.`
-            : existingTask.requiredAction === "VACATION_ENTRY_FOR_DATE"
-            ? `Die Aufgabe kann erst erledigt werden, wenn für ${referenceLabel} alle erforderlichen Urlaubseinträge oder passenden Urlaubsanträge vorhanden sind.`
-            : existingTask.requiredAction === "SICK_ENTRY_FOR_DATE"
-            ? `Die Aufgabe kann erst erledigt werden, wenn für ${referenceLabel} alle erforderlichen Krankheitseinträge oder passenden Krankheitsanträge vorhanden sind.`
-            : "Die geforderte Aktion wurde noch nicht erfüllt.",
-      },
+      { error },
       { status: 400 }
     );
   }

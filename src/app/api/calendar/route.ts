@@ -17,40 +17,107 @@ type HolidayInfo = {
   type: string;
 };
 
-function getHolidayMapForMonth(year: number, monthOneBased: number): Map<string, HolidayInfo> {
-  const hd = new Holidays("DE", "BW");
-  const holidays = hd.getHolidays(year);
-
-  const monthPrefix = `${year}-${String(monthOneBased).padStart(2, "0")}`;
-  const map = new Map<string, HolidayInfo>();
-
-  for (const holiday of holidays) {
-    const iso = holiday.date.slice(0, 10);
-    if (!iso.startsWith(`${monthPrefix}-`)) continue;
-    if (holiday.type !== "public") continue;
-
-    map.set(iso, {
-      name: holiday.name,
-      type: holiday.type,
-    });
-  }
-
-  return map;
-}
-
-type PlanPreviewItem = {
-  startHHMM: string;
-  endHHMM: string;
-  activity: string;
-  activityTranslations: Prisma.JsonValue | null;
-  location: string;
-  locationTranslations: Prisma.JsonValue | null;
-  noteEmployee: string | null;
-  noteEmployeeTranslations: Prisma.JsonValue | null;
-};
-
 type SupportedLang = "DE" | "EN" | "IT" | "TR" | "SQ" | "KU";
 type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> = {
+  Neujahrstag: {
+    DE: "Neujahrstag",
+    EN: "New Year's Day",
+    IT: "Capodanno",
+    TR: "Yılbaşı",
+    SQ: "Viti i Ri",
+    KU: "Sersal",
+  },
+  "Heilige Drei Könige": {
+    DE: "Heilige Drei Könige",
+    EN: "Epiphany",
+    IT: "Epifania",
+    TR: "Üç Kral Bayramı",
+    SQ: "Dita e Tre Mbretërve",
+    KU: "Cejna Sê Padşahan",
+  },
+  Karfreitag: {
+    DE: "Karfreitag",
+    EN: "Good Friday",
+    IT: "Venerdì Santo",
+    TR: "Kutsal Cuma",
+    SQ: "E Premtja e Madhe",
+    KU: "Înê Pîroz",
+  },
+  Ostermontag: {
+    DE: "Ostermontag",
+    EN: "Easter Monday",
+    IT: "Lunedì di Pasqua",
+    TR: "Paskalya Pazartesisi",
+    SQ: "E Hëna e Pashkëve",
+    KU: "Duşema Paskalyayê",
+  },
+  "Tag der Arbeit": {
+    DE: "Tag der Arbeit",
+    EN: "Labour Day",
+    IT: "Festa dei Lavoratori",
+    TR: "Emek ve Dayanışma Günü",
+    SQ: "Dita e Punës",
+    KU: "Roja Karkeran",
+  },
+  "Christi Himmelfahrt": {
+    DE: "Christi Himmelfahrt",
+    EN: "Ascension Day",
+    IT: "Ascensione",
+    TR: "Göğe Yükseliş Günü",
+    SQ: "Ngjitja e Krishtit në Qiell",
+    KU: "Hilkişîna Mesîh",
+  },
+  Pfingstmontag: {
+    DE: "Pfingstmontag",
+    EN: "Whit Monday",
+    IT: "Lunedì di Pentecoste",
+    TR: "Pentekost Pazartesisi",
+    SQ: "E Hëna e Rrëshajëve",
+    KU: "Duşema Pentekostê",
+  },
+  Fronleichnam: {
+    DE: "Fronleichnam",
+    EN: "Corpus Christi",
+    IT: "Corpus Domini",
+    TR: "Corpus Christi",
+    SQ: "Corpus Christi",
+    KU: "Corpus Christi",
+  },
+  "Tag der Deutschen Einheit": {
+    DE: "Tag der Deutschen Einheit",
+    EN: "German Unity Day",
+    IT: "Giorno dell'Unità Tedesca",
+    TR: "Alman Birliği Günü",
+    SQ: "Dita e Bashkimit Gjerman",
+    KU: "Roja Yekîtiya Almanyayê",
+  },
+  Allerheiligen: {
+    DE: "Allerheiligen",
+    EN: "All Saints' Day",
+    IT: "Ognissanti",
+    TR: "Azizler Günü",
+    SQ: "Dita e të Gjithë Shenjtorëve",
+    KU: "Roja Hemû Pîrozan",
+  },
+  "1. Weihnachtstag": {
+    DE: "1. Weihnachtstag",
+    EN: "Christmas Day",
+    IT: "Natale",
+    TR: "Noel'in 1. Günü",
+    SQ: "Dita e parë e Krishtlindjes",
+    KU: "Roja yekem a Noelê",
+  },
+  "2. Weihnachtstag": {
+    DE: "2. Weihnachtstag",
+    EN: "Boxing Day",
+    IT: "Santo Stefano",
+    TR: "Noel'in 2. Günü",
+    SQ: "Dita e dytë e Krishtlindjes",
+    KU: "Roja duyem a Noelê",
+  },
+};
 
 function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -75,6 +142,56 @@ function toSupportedLang(language: string | null | undefined): SupportedLang {
   return "DE";
 }
 
+function getTranslatedHolidayName(
+  holidayName: string,
+  language: string | null | undefined
+): string {
+  const targetLanguage = toSupportedLang(language);
+  const translations = HOLIDAY_NAME_TRANSLATIONS[holidayName];
+
+  if (!translations) {
+    return holidayName;
+  }
+
+  return translations[targetLanguage] ?? translations.DE;
+}
+
+function getHolidayMapForMonth(
+  year: number,
+  monthOneBased: number,
+  language: string | null | undefined
+): Map<string, HolidayInfo> {
+  const hd = new Holidays("DE", "BW");
+  const holidays = hd.getHolidays(year);
+
+  const monthPrefix = `${year}-${String(monthOneBased).padStart(2, "0")}`;
+  const map = new Map<string, HolidayInfo>();
+
+  for (const holiday of holidays) {
+    const iso = holiday.date.slice(0, 10);
+    if (!iso.startsWith(`${monthPrefix}-`)) continue;
+    if (holiday.type !== "public") continue;
+
+    map.set(iso, {
+      name: getTranslatedHolidayName(holiday.name, language),
+      type: holiday.type,
+    });
+  }
+
+  return map;
+}
+
+type PlanPreviewItem = {
+  startHHMM: string;
+  endHHMM: string;
+  activity: string;
+  activityTranslations: Prisma.JsonValue | null;
+  location: string;
+  locationTranslations: Prisma.JsonValue | null;
+  noteEmployee: string | null;
+  noteEmployeeTranslations: Prisma.JsonValue | null;
+};
+
 function getTranslatedText(
   originalText: string | null | undefined,
   translations: Prisma.JsonValue | null | undefined,
@@ -95,26 +212,32 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const userIdParam = searchParams.get("userId");
   const session = await getSession();
-  if (!session?.userId) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+  if (!session?.userId) {
+    return NextResponse.json({ error: "NOT_AUTHENTICATED" }, { status: 401 });
+  }
 
   const month = searchParams.get("month"); // YYYY-MM
-  if (!month) return NextResponse.json({ error: "month fehlt" }, { status: 400 });
+  if (!month) {
+      return NextResponse.json({ error: "MONTH_REQUIRED" }, { status: 400 });
+    }
 
   if (!/^\d{4}-\d{2}$/.test(month)) {
-    return NextResponse.json({ error: "month Format muss YYYY-MM sein" }, { status: 400 });
+    return NextResponse.json({ error: "INVALID_MONTH_FORMAT" }, { status: 400 });
   }
 
   const [y, m] = month.split("-").map(Number);
   const from = new Date(Date.UTC(y, m - 1, 1));
   const to = new Date(Date.UTC(y, m, 1));
-  const holidayMap = getHolidayMapForMonth(y, m);
+  const holidayMap = getHolidayMapForMonth(y, m, session.language);
 
   const me = await prisma.appUser.findUnique({
     where: { id: session.userId },
     select: { role: true, isActive: true, companyId: true },
   });
 
-  if (!me || !me.isActive) return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
+  if (!me || !me.isActive) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  }
 
   // ✅ ADMIN: nur Termine (CalendarEvent) – keine Abwesenheiten / PlanEntries etc.
   // ✅ ADMIN: ohne userIdParam = eigene Termine (CalendarEvent)
@@ -186,7 +309,7 @@ if (me.role === Role.ADMIN && userIdParam) {
   });
 
   if (!target || !target.isActive || target.role !== Role.EMPLOYEE) {
-    return NextResponse.json({ ok: false, error: "Mitarbeiter nicht gefunden" }, { status: 404 });
+    return NextResponse.json({ ok: false, error: "EMPLOYEE_NOT_FOUND" }, { status: 404 });
   }
 }
   const userWhere = { userId: targetUserId };

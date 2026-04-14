@@ -67,7 +67,7 @@ async function getIdFromCtx(ctx: Ctx): Promise<string> {
 export async function PUT(req: Request, ctx: Ctx) {
   const session = await getSession();
   if (!session?.userId || !session.companyId) {
-    return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+    return NextResponse.json({ ok: false, error: "NOT_AUTHENTICATED" }, { status: 401 });
   }
 
   const admin = await requireAdmin(session.userId, session.companyId);
@@ -214,7 +214,7 @@ export async function PUT(req: Request, ctx: Ctx) {
 export async function DELETE(_req: Request, ctx: Ctx) {
   const session = await getSession();
   if (!session?.userId || !session.companyId) {
-    return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+    return NextResponse.json({ ok: false, error: "NOT_AUTHENTICATED" }, { status: 401 });
   }
 
   const admin = await requireAdmin(session.userId, session.companyId);

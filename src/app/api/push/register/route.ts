@@ -27,11 +27,11 @@ export async function POST(req: Request): Promise<Response> {
   });
 
   if (!me || !me.isActive) {
-    return NextResponse.json({ ok: false, error: "Keine Berechtigung." }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
   }
 
   if (me.companyId !== session.companyId) {
-    return NextResponse.json({ ok: false, error: "Keine Berechtigung." }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
   }
 
   let body: unknown = {};

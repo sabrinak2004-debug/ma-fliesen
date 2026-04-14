@@ -133,7 +133,7 @@ export async function GET(req: Request) {
   const admin = await requireAdmin();
   if (!admin) {
     return NextResponse.json(
-      { ok: false, error: "Keine Berechtigung." },
+      { ok: false, error: "FORBIDDEN" },
       { status: 403 }
     );
   }
@@ -168,7 +168,7 @@ export async function GET(req: Request) {
   if (typeParam) {
     if (!isAbsenceType(typeParam)) {
       return NextResponse.json(
-        { ok: false, error: "Ungültiger Typ." },
+        { ok: false, error: "INVALID_TYPE" },
         { status: 400 }
       );
     }
@@ -178,7 +178,7 @@ export async function GET(req: Request) {
   if (statusParam) {
     if (!isAbsenceRequestStatus(statusParam)) {
       return NextResponse.json(
-        { ok: false, error: "Ungültiger Status." },
+        { ok: false, error: "INVALID_STATUS" },
         { status: 400 }
       );
     }
@@ -192,7 +192,7 @@ export async function GET(req: Request) {
   if (monthParam) {
     if (!/^\d{4}-\d{2}$/.test(monthParam)) {
       return NextResponse.json(
-        { ok: false, error: "month muss YYYY-MM sein." },
+        { ok: false, error: "INVALID_MONTH_FORMAT" },
         { status: 400 }
       );
     }

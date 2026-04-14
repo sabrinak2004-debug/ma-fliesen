@@ -757,7 +757,7 @@ export default function AdminTasksPage() {
           {loading ? (
             <div style={{ color: "var(--muted)" }}>{t("loading")}</div>
           ) : completedTasks.length === 0 ? (
-            <div style={{ color: "var(--muted)" }}>Keine erledigten Aufgaben vorhanden.</div>
+            <div style={{ color: "var(--muted)" }}>{t("noCompletedTasks")}</div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {completedTasks.map((task) => (

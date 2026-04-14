@@ -119,6 +119,2616 @@ export const LEGAL_UI_TEXTS: Record<LegalTextKey, Record<AppUiLanguage, string>>
     KU: "Dawiya nûkirinê: 30.03.2026",
   },
 };
+
+export type KalenderTextKey =
+  | "unexpectedResponse"
+  | "statusOpen"
+  | "statusApproved"
+  | "statusRejected"
+  | "paid"
+  | "unpaid"
+  | "daysPaidDaysUnpaid"
+  | "ofWhichPaidUnpaid"
+  | "vacationRequestHalfDay"
+  | "vacationRequest"
+  | "sicknessRequest"
+  | "customer"
+  | "site"
+  | "internal"
+  | "private"
+  | "today"
+  | "month"
+  | "week"
+  | "myAdminAppointments"
+  | "employeeReadonlyCalendarHint"
+  | "connectGoogleCalendar"
+  | "appointments"
+  | "holiday"
+  | "vacation"
+  | "sick"
+  | "noEntries"
+  | "loadingCalendar"
+  | "work"
+  | "newAppointment"
+  | "day"
+  | "loadingAppointments"
+  | "noAppointmentsForDay"
+  | "edit"
+  | "delete"
+  | "editAppointment"
+  | "enterAppointment"
+  | "cancel"
+  | "date"
+  | "start"
+  | "end"
+  | "categoryUiOnly"
+  | "title"
+  | "titlePlaceholder"
+  | "locationOptional"
+  | "locationPlaceholder"
+  | "noteOptional"
+  | "notePlaceholder"
+  | "saving"
+  | "saveChanges"
+  | "save"
+  | "viewingEmployeeCalendar"
+  | "viewingEmployeeCalendarHint"
+  | "employeeSchedule"
+  | "loadingPlan"
+  | "noScheduleForDay"
+  | "noLocationGiven"
+  | "travelMinutes"
+  | "dayStatus"
+  | "scheduleExists"
+  | "paidVacation"
+  | "noEntriesForDay"
+  | "yourSchedule"
+  | "syncToEntry"
+  | "documents"
+  | "syncPlanHint"
+  | "publicHoliday"
+  | "confirmedAbsence"
+  | "noConfirmedAbsence"
+  | "alreadyConfirmedRegistered"
+  | "compensation"
+  | "myRequests"
+  | "noRequestForDay"
+  | "status"
+  | "scope"
+  | "total"
+  | "processedBy"
+  | "details"
+  | "requestDetails"
+  | "requestAbsence"
+  | "wholeDayOnlyForSick"
+  | "halfDaysOnlyVacation"
+  | "halfDaySingleDateOnly"
+  | "vacationNoWeekdays"
+  | "sickCannotBeUnpaid"
+  | "requestCouldNotBeSaved"
+  | "networkSaveError"
+  | "pleaseSelectStartEnd"
+  | "endBeforeStart"
+  | "holidayMarked"
+  | "adminHolidayMarked"
+  | "startNewRequest"
+  | "absenceTypeVacation"
+  | "absenceTypeSick"
+  | "scopeLabel"
+  | "scopeHint"
+  | "fullVacationDay"
+  | "halfVacationDay"
+  | "compensationLabel"
+  | "compensationLockedHint"
+  | "compensationFlexibleHint"
+  | "noteToAdmin"
+  | "requestNotePlaceholder"
+  | "close"
+  | "newRequest"
+  | "sendRequest"
+  | "calendarLoadingFallback"
+  | "weekShortMon"
+  | "weekShortTue"
+  | "weekShortWed"
+  | "weekShortThu"
+  | "weekShortFri"
+  | "weekShortSat"
+  | "weekShortSun"
+  | "calendarWeekLabel"
+  | "loadingAbsencesRequests"
+  | "for"
+  | "selectDate"
+  | "pleaseEnterTitle"
+  | "timeMustBeHHMM"
+  | "savingFailed"
+  | "deletingFailed"
+  | "networkDeleteError"
+  | "employeePlanCouldNotBeLoaded"
+  | "planCouldNotBeLoaded"
+  | "networkPlanLoadError"
+  | "networkEmployeePlanLoadError"
+  | "appointmentsCouldNotBeLoaded"
+  | "networkAppointmentsLoadError"
+  | "publicHolidayDefault"
+  | "daysLabel"
+  | "dayLabel"
+  | "vacationConfirmedSingleDay"
+  | "sickConfirmedHalfDay"
+  | "sickConfirmedFullDay"
+  | "january"
+  | "february"
+  | "march"
+  | "april"
+  | "may"
+  | "june"
+  | "july"
+  | "august"
+  | "september"
+  | "october"
+  | "november"
+  | "december"
+  | "mondayLong"
+  | "tuesdayLong"
+  | "wednesdayLong"
+  | "thursdayLong"
+  | "fridayLong"
+  | "saturdayLong"
+  | "sundayLong"
+  | "dayMarkedAsHoliday"
+  | "dashOnly"
+
+export const KALENDER_DICTIONARY: Record<KalenderTextKey, Record<AppUiLanguage, string>> = {
+  unexpectedResponse: {
+    DE: "Unerwartete Antwort.",
+    EN: "Unexpected response.",
+    IT: "Risposta inattesa.",
+    TR: "Beklenmeyen yanıt.",
+    SQ: "Përgjigje e papritur.",
+    KU: "Bersiva neçaverêkirî.",
+  },
+  weekShortMon: {
+    DE: "Mo",
+    EN: "Mon",
+    IT: "Lun",
+    TR: "Pzt",
+    SQ: "Hën",
+    KU: "Dş",
+  },
+  weekShortTue: {
+    DE: "Di",
+    EN: "Tue",
+    IT: "Mar",
+    TR: "Sal",
+    SQ: "Mar",
+    KU: "Sê",
+  },
+  weekShortWed: {
+    DE: "Mi",
+    EN: "Wed",
+    IT: "Mer",
+    TR: "Çar",
+    SQ: "Mër",
+    KU: "Çr",
+  },
+  weekShortThu: {
+    DE: "Do",
+    EN: "Thu",
+    IT: "Gio",
+    TR: "Per",
+    SQ: "Enj",
+    KU: "Pnc",
+  },
+  weekShortFri: {
+    DE: "Fr",
+    EN: "Fri",
+    IT: "Ven",
+    TR: "Cum",
+    SQ: "Pre",
+    KU: "În",
+  },
+  weekShortSat: {
+    DE: "Sa",
+    EN: "Sat",
+    IT: "Sab",
+    TR: "Cmt",
+    SQ: "Sht",
+    KU: "Şem",
+  },
+  weekShortSun: {
+    DE: "So",
+    EN: "Sun",
+    IT: "Dom",
+    TR: "Paz",
+    SQ: "Die",
+    KU: "Yek",
+  },
+  calendarWeekLabel: {
+    DE: "KW",
+    EN: "CW",
+    IT: "Sett.",
+    TR: "HF",
+    SQ: "JV",
+    KU: "HJ",
+  },
+  loadingAbsencesRequests: {
+    DE: "Abwesenheiten/Anträge laden…",
+    EN: "Loading absences/requests…",
+    IT: "Caricamento assenze/richieste…",
+    TR: "Devamsızlıklar/talepler yükleniyor…",
+    SQ: "Mungesat/kërkesat po ngarkohen…",
+    KU: "Nebûn/daxwaz têne barkirin…",
+  },
+  for: {
+    DE: "für",
+    EN: "for",
+    IT: "per",
+    TR: "için",
+    SQ: "për",
+    KU: "ji bo",
+  },
+  selectDate: {
+    DE: "Datum auswählen.",
+    EN: "Please select a date.",
+    IT: "Seleziona una data.",
+    TR: "Lütfen bir tarih seçin.",
+    SQ: "Ju lutem zgjidhni një datë.",
+    KU: "Ji kerema xwe dîrokek hilbijêre.",
+  },
+  pleaseEnterTitle: {
+    DE: "Bitte Titel eingeben.",
+    EN: "Please enter a title.",
+    IT: "Inserisci un titolo.",
+    TR: "Lütfen bir başlık girin.",
+    SQ: "Ju lutem shkruani një titull.",
+    KU: "Ji kerema xwe sernavek binivîse.",
+  },
+  timeMustBeHHMM: {
+    DE: "Start/Ende muss HH:MM sein.",
+    EN: "Start/end must be HH:MM.",
+    IT: "Inizio/fine deve essere HH:MM.",
+    TR: "Başlangıç/bitiş HH:MM olmalı.",
+    SQ: "Fillimi/fundi duhet të jetë HH:MM.",
+    KU: "Destpêk/dawî divê HH:MM be.",
+  },
+  savingFailed: {
+    DE: "Speichern fehlgeschlagen.",
+    EN: "Saving failed.",
+    IT: "Salvataggio non riuscito.",
+    TR: "Kaydetme başarısız oldu.",
+    SQ: "Ruajtja dështoi.",
+    KU: "Tomarkirin têk çû.",
+  },
+  deletingFailed: {
+    DE: "Löschen fehlgeschlagen.",
+    EN: "Deleting failed.",
+    IT: "Eliminazione non riuscita.",
+    TR: "Silme başarısız oldu.",
+    SQ: "Fshirja dështoi.",
+    KU: "Jêbirin têk çû.",
+  },
+  networkDeleteError: {
+    DE: "Netzwerkfehler beim Löschen.",
+    EN: "Network error while deleting.",
+    IT: "Errore di rete durante l'eliminazione.",
+    TR: "Silme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë fshirjes.",
+    KU: "Di jêbirinê de çewtiya torê.",
+  },
+  employeePlanCouldNotBeLoaded: {
+    DE: "Plan des Mitarbeiters konnte nicht geladen werden.",
+    EN: "Employee schedule could not be loaded.",
+    IT: "Impossibile caricare il piano del dipendente.",
+    TR: "Çalışan planı yüklenemedi.",
+    SQ: "Plani i punonjësit nuk mund të ngarkohej.",
+    KU: "Plana karmend nehat barkirin.",
+  },
+  planCouldNotBeLoaded: {
+    DE: "Plan konnte nicht geladen werden.",
+    EN: "Schedule could not be loaded.",
+    IT: "Impossibile caricare il piano.",
+    TR: "Plan yüklenemedi.",
+    SQ: "Plani nuk mund të ngarkohej.",
+    KU: "Plan nehat barkirin.",
+  },
+  networkPlanLoadError: {
+    DE: "Netzwerkfehler beim Laden des Plans.",
+    EN: "Network error while loading the schedule.",
+    IT: "Errore di rete durante il caricamento del piano.",
+    TR: "Plan yüklenirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ngarkimit të planit.",
+    KU: "Di barkirina planê de çewtiya torê.",
+  },
+  networkEmployeePlanLoadError: {
+    DE: "Netzwerkfehler beim Laden des Mitarbeiter-Plans.",
+    EN: "Network error while loading the employee schedule.",
+    IT: "Errore di rete durante il caricamento del piano del dipendente.",
+    TR: "Çalışan planı yüklenirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ngarkimit të planit të punonjësit.",
+    KU: "Di barkirina plana karmend de çewtiya torê.",
+  },
+  appointmentsCouldNotBeLoaded: {
+    DE: "Termine konnten nicht geladen werden.",
+    EN: "Appointments could not be loaded.",
+    IT: "Impossibile caricare gli appuntamenti.",
+    TR: "Randevular yüklenemedi.",
+    SQ: "Takimet nuk mund të ngarkoheshin.",
+    KU: "Hevdîtin nehatin barkirin.",
+  },
+  networkAppointmentsLoadError: {
+    DE: "Netzwerkfehler beim Laden der Termine.",
+    EN: "Network error while loading appointments.",
+    IT: "Errore di rete durante il caricamento degli appuntamenti.",
+    TR: "Randevular yüklenirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ngarkimit të takimeve.",
+    KU: "Di barkirina hevdîtinan de çewtiya torê.",
+  },
+  publicHolidayDefault: {
+    DE: "Gesetzlicher Feiertag",
+    EN: "Public holiday",
+    IT: "Festività legale",
+    TR: "Resmî tatil",
+    SQ: "Festë zyrtare",
+    KU: "Cejna fermî",
+  },
+  daysLabel: {
+    DE: "Tage",
+    EN: "days",
+    IT: "giorni",
+    TR: "gün",
+    SQ: "ditë",
+    KU: "roj",
+  },
+  dayLabel: {
+    DE: "Tag",
+    EN: "day",
+    IT: "giorno",
+    TR: "gün",
+    SQ: "ditë",
+    KU: "roj",
+  },
+  vacationConfirmedSingleDay: {
+    DE: "🌴 Urlaub ({date})",
+    EN: "🌴 Vacation ({date})",
+    IT: "🌴 Ferie ({date})",
+    TR: "🌴 İzin ({date})",
+    SQ: "🌴 Pushim ({date})",
+    KU: "🌴 Bêhnvedan ({date})",
+  },
+  sickConfirmedHalfDay: {
+    DE: "🤒 Krank (0,5 Tag)",
+    EN: "🤒 Sick (0.5 day)",
+    IT: "🤒 Malattia (0,5 giorno)",
+    TR: "🤒 Hasta (0,5 gün)",
+    SQ: "🤒 I sëmurë (0,5 ditë)",
+    KU: "🤒 Nexweş (0.5 roj)",
+  },
+  sickConfirmedFullDay: {
+    DE: "🤒 Krank (1 Tag)",
+    EN: "🤒 Sick (1 day)",
+    IT: "🤒 Malattia (1 giorno)",
+    TR: "🤒 Hasta (1 gün)",
+    SQ: "🤒 I sëmurë (1 ditë)",
+    KU: "🤒 Nexweş (1 roj)",
+  },
+  statusOpen: {
+    DE: "Offen",
+    EN: "Open",
+    IT: "Aperta",
+    TR: "Açık",
+    SQ: "Hapur",
+    KU: "Vekirî",
+  },
+  statusApproved: {
+    DE: "Genehmigt",
+    EN: "Approved",
+    IT: "Approvata",
+    TR: "Onaylandı",
+    SQ: "Miratuar",
+    KU: "Pejirandî",
+  },
+  statusRejected: {
+    DE: "Abgelehnt",
+    EN: "Rejected",
+    IT: "Rifiutata",
+    TR: "Reddedildi",
+    SQ: "Refuzuar",
+    KU: "Redkirî",
+  },
+  paid: {
+    DE: "Bezahlt",
+    EN: "Paid",
+    IT: "Pagato",
+    TR: "Ücretli",
+    SQ: "I paguar",
+    KU: "Bi mûçe",
+  },
+  unpaid: {
+    DE: "Unbezahlt",
+    EN: "Unpaid",
+    IT: "Non retribuito",
+    TR: "Ücretsiz",
+    SQ: "I papaguar",
+    KU: "Bê mûçe",
+  },
+  daysPaidDaysUnpaid: {
+    DE: "{paid} Tage bezahlt · {unpaid} Tage unbezahlt",
+    EN: "{paid} days paid · {unpaid} days unpaid",
+    IT: "{paid} giorni pagati · {unpaid} giorni non retribuiti",
+    TR: "{paid} gün ücretli · {unpaid} gün ücretsiz",
+    SQ: "{paid} ditë të paguara · {unpaid} ditë të papaguara",
+    KU: "{paid} roj bi mûçe · {unpaid} roj bê mûçe",
+  },
+  ofWhichPaidUnpaid: {
+    DE: "Davon {paid} Tage bezahlt und {unpaid} Tage unbezahlt.",
+    EN: "Of which {paid} days paid and {unpaid} days unpaid.",
+    IT: "Di cui {paid} giorni pagati e {unpaid} giorni non retribuiti.",
+    TR: "Bunun {paid} günü ücretli ve {unpaid} günü ücretsiz.",
+    SQ: "Prej tyre {paid} ditë të paguara dhe {unpaid} ditë të papaguara.",
+    KU: "Ji wan {paid} roj bi mûçe û {unpaid} roj bê mûçe ne.",
+  },
+  vacationRequestHalfDay: {
+    DE: "🌴 Urlaubsantrag (halber Tag · {date})",
+    EN: "🌴 Vacation request (half day · {date})",
+    IT: "🌴 Richiesta ferie (mezza giornata · {date})",
+    TR: "🌴 İzin talebi (yarım gün · {date})",
+    SQ: "🌴 Kërkesë pushimi (gjysmë dite · {date})",
+    KU: "🌴 Daxwaza bêhnvedanê (nîv roj · {date})",
+  },
+  vacationRequest: {
+    DE: "Urlaubsantrag",
+    EN: "Vacation request",
+    IT: "Richiesta ferie",
+    TR: "İzin talebi",
+    SQ: "Kërkesë pushimi",
+    KU: "Daxwaza bêhnvedanê",
+  },
+  sicknessRequest: {
+    DE: "Krankheitsantrag",
+    EN: "Sickness request",
+    IT: "Richiesta malattia",
+    TR: "Hastalık talebi",
+    SQ: "Kërkesë sëmundjeje",
+    KU: "Daxwaza nexweşiyê",
+  },
+  customer: {
+    DE: "Kunde",
+    EN: "Customer",
+    IT: "Cliente",
+    TR: "Müşteri",
+    SQ: "Klient",
+    KU: "Müşterî",
+  },
+  site: {
+    DE: "Baustelle",
+    EN: "Site",
+    IT: "Cantiere",
+    TR: "Şantiye",
+    SQ: "Kantier",
+    KU: "Şantiye",
+  },
+  internal: {
+    DE: "Intern",
+    EN: "Internal",
+    IT: "Interno",
+    TR: "Dahili",
+    SQ: "I brendshëm",
+    KU: "Navxweyî",
+  },
+  private: {
+    DE: "Privat",
+    EN: "Private",
+    IT: "Privato",
+    TR: "Özel",
+    SQ: "Privat",
+    KU: "Taybet",
+  },
+  today: {
+    DE: "Heute",
+    EN: "Today",
+    IT: "Oggi",
+    TR: "Bugün",
+    SQ: "Sot",
+    KU: "Îro",
+  },
+  month: {
+    DE: "Monat",
+    EN: "Month",
+    IT: "Mese",
+    TR: "Ay",
+    SQ: "Muaji",
+    KU: "Meh",
+  },
+  week: {
+    DE: "Woche",
+    EN: "Week",
+    IT: "Settimana",
+    TR: "Hafta",
+    SQ: "Java",
+    KU: "Hefte",
+  },
+  myAdminAppointments: {
+    DE: "Meine Admin-Termine",
+    EN: "My admin appointments",
+    IT: "I miei appuntamenti admin",
+    TR: "Yönetici randevularım",
+    SQ: "Takimet e mia si admin",
+    KU: "Hevdîtinên min yên admin",
+  },
+  employeeReadonlyCalendarHint: {
+    DE: "Mitarbeiteransicht (read-only): Kalender zeigt Plan/Urlaub/Krank des Mitarbeiters.",
+    EN: "Employee view (read-only): calendar shows the employee's schedule/vacation/sick days.",
+    IT: "Vista dipendente (sola lettura): il calendario mostra piano/ferie/malattia del dipendente.",
+    TR: "Çalışan görünümü (salt okunur): takvim çalışanın planını/iznini/hastalığını gösterir.",
+    SQ: "Pamja e punonjësit (vetëm lexim): kalendari tregon planin/pushimin/sëmundjen e punonjësit.",
+    KU: "Dîtina karmend (tenê-xwendin): salname plana/bêhnvedana/nexweşiya karmend nîşan dide.",
+  },
+  connectGoogleCalendar: {
+    DE: "Google Kalender verbinden",
+    EN: "Connect Google Calendar",
+    IT: "Collega Google Calendar",
+    TR: "Google Takvim bağla",
+    SQ: "Lidhu me Google Calendar",
+    KU: "Google Calendar girêde",
+  },
+  appointments: {
+    DE: "Termine",
+    EN: "Appointments",
+    IT: "Appuntamenti",
+    TR: "Randevular",
+    SQ: "Takime",
+    KU: "Hevdîtin",
+  },
+  holiday: {
+    DE: "Feiertag",
+    EN: "Holiday",
+    IT: "Festività",
+    TR: "Resmî tatil",
+    SQ: "Festë zyrtare",
+    KU: "Cejna fermî",
+  },
+  vacation: {
+    DE: "Urlaub",
+    EN: "Vacation",
+    IT: "Ferie",
+    TR: "İzin",
+    SQ: "Pushim",
+    KU: "Bêhnvedan",
+  },
+  sick: {
+    DE: "Krank",
+    EN: "Sick",
+    IT: "Malattia",
+    TR: "Hasta",
+    SQ: "I sëmurë",
+    KU: "Nexweş",
+  },
+  noEntries: {
+    DE: "Keine Einträge",
+    EN: "No entries",
+    IT: "Nessuna voce",
+    TR: "Kayıt yok",
+    SQ: "Nuk ka regjistrime",
+    KU: "Tomar tune ne",
+  },
+  loadingCalendar: {
+    DE: "Lade Kalender...",
+    EN: "Loading calendar...",
+    IT: "Caricamento calendario...",
+    TR: "Takvim yükleniyor...",
+    SQ: "Kalendari po ngarkohet...",
+    KU: "Salname tê barkirin...",
+  },
+  work: {
+    DE: "Arbeit",
+    EN: "Work",
+    IT: "Lavoro",
+    TR: "İş",
+    SQ: "Punë",
+    KU: "Kar",
+  },
+  newAppointment: {
+    DE: "Neuer Termin",
+    EN: "New appointment",
+    IT: "Nuovo appuntamento",
+    TR: "Yeni randevu",
+    SQ: "Takim i ri",
+    KU: "Hevdîtina nû",
+  },
+  day: {
+    DE: "Tag",
+    EN: "Day",
+    IT: "Giorno",
+    TR: "Gün",
+    SQ: "Ditë",
+    KU: "Roj",
+  },
+  loadingAppointments: {
+    DE: "Lädt Termine...",
+    EN: "Loading appointments...",
+    IT: "Caricamento appuntamenti...",
+    TR: "Randevular yükleniyor...",
+    SQ: "Takimet po ngarkohen...",
+    KU: "Hevdîtin têne barkirin...",
+  },
+  noAppointmentsForDay: {
+    DE: "Keine Termine für diesen Tag.",
+    EN: "No appointments for this day.",
+    IT: "Nessun appuntamento per questo giorno.",
+    TR: "Bu gün için randevu yok.",
+    SQ: "Nuk ka takime për këtë ditë.",
+    KU: "Ji bo vê rojê hevdîtin tune ne.",
+  },
+  edit: {
+    DE: "Bearbeiten",
+    EN: "Edit",
+    IT: "Modifica",
+    TR: "Düzenle",
+    SQ: "Ndrysho",
+    KU: "Sererast bike",
+  },
+  delete: {
+    DE: "Löschen",
+    EN: "Delete",
+    IT: "Elimina",
+    TR: "Sil",
+    SQ: "Fshij",
+    KU: "Jê bibe",
+  },
+  editAppointment: {
+    DE: "Termin bearbeiten",
+    EN: "Edit appointment",
+    IT: "Modifica appuntamento",
+    TR: "Randevuyu düzenle",
+    SQ: "Ndrysho takimin",
+    KU: "Hevdîtinê sererast bike",
+  },
+  enterAppointment: {
+    DE: "Termin eintragen",
+    EN: "Create appointment",
+    IT: "Inserisci appuntamento",
+    TR: "Randevu gir",
+    SQ: "Shto takim",
+    KU: "Hevdîtinê tomar bike",
+  },
+  cancel: {
+    DE: "Abbrechen",
+    EN: "Cancel",
+    IT: "Annulla",
+    TR: "İptal",
+    SQ: "Anulo",
+    KU: "Betal bike",
+  },
+  date: {
+    DE: "Datum",
+    EN: "Date",
+    IT: "Data",
+    TR: "Tarih",
+    SQ: "Data",
+    KU: "Dîrok",
+  },
+  start: {
+    DE: "Start",
+    EN: "Start",
+    IT: "Inizio",
+    TR: "Başlangıç",
+    SQ: "Fillimi",
+    KU: "Destpêk",
+  },
+  end: {
+    DE: "Ende",
+    EN: "End",
+    IT: "Fine",
+    TR: "Bitiş",
+    SQ: "Fundi",
+    KU: "Dawî",
+  },
+  categoryUiOnly: {
+    DE: "Kategorie (UI-only)",
+    EN: "Category (UI-only)",
+    IT: "Categoria (solo UI)",
+    TR: "Kategori (yalnızca arayüz)",
+    SQ: "Kategoria (vetëm UI)",
+    KU: "Kategorî (tenê UI)",
+  },
+  title: {
+    DE: "Titel",
+    EN: "Title",
+    IT: "Titolo",
+    TR: "Başlık",
+    SQ: "Titulli",
+    KU: "Sernav",
+  },
+  titlePlaceholder: {
+    DE: "z. B. Kundentermin",
+    EN: "e.g. customer appointment",
+    IT: "es. appuntamento cliente",
+    TR: "örn. müşteri randevusu",
+    SQ: "p.sh. takim me klientin",
+    KU: "mînak: hevdîtina müşterî",
+  },
+  locationOptional: {
+    DE: "Ort (optional)",
+    EN: "Location (optional)",
+    IT: "Luogo (opzionale)",
+    TR: "Yer (isteğe bağlı)",
+    SQ: "Vendi (opsionale)",
+    KU: "Cih (vebijarkî)",
+  },
+  locationPlaceholder: {
+    DE: "z. B. Baustelle / Adresse",
+    EN: "e.g. site / address",
+    IT: "es. cantiere / indirizzo",
+    TR: "örn. şantiye / adres",
+    SQ: "p.sh. kantier / adresë",
+    KU: "mînak: şantiye / navnîşan",
+  },
+  noteOptional: {
+    DE: "Notiz (optional)",
+    EN: "Note (optional)",
+    IT: "Nota (opzionale)",
+    TR: "Not (isteğe bağlı)",
+    SQ: "Shënim (opsionale)",
+    KU: "Nîşe (vebijarkî)",
+  },
+  notePlaceholder: {
+    DE: "z. B. Ansprechpartner, Material, …",
+    EN: "e.g. contact person, material, ...",
+    IT: "es. referente, materiale, ...",
+    TR: "örn. ilgili kişi, malzeme, ...",
+    SQ: "p.sh. person kontakti, material, ...",
+    KU: "mînak: kesê têkiliyê, materyal, ...",
+  },
+  saving: {
+    DE: "Speichert...",
+    EN: "Saving...",
+    IT: "Salvataggio...",
+    TR: "Kaydediliyor...",
+    SQ: "Duke ruajtur...",
+    KU: "Tê tomarkirin...",
+  },
+  saveChanges: {
+    DE: "Änderungen speichern",
+    EN: "Save changes",
+    IT: "Salva modifiche",
+    TR: "Değişiklikleri kaydet",
+    SQ: "Ruaj ndryshimet",
+    KU: "Guherînan tomar bike",
+  },
+  save: {
+    DE: "Eintragen",
+    EN: "Save",
+    IT: "Salva",
+    TR: "Kaydet",
+    SQ: "Ruaj",
+    KU: "Tomar bike",
+  },
+  viewingEmployeeCalendar: {
+    DE: "Du siehst gerade den Kalender eines Mitarbeiters.",
+    EN: "You are currently viewing an employee's calendar.",
+    IT: "Stai visualizzando il calendario di un dipendente.",
+    TR: "Şu anda bir çalışanın takvimini görüntülüyorsunuz.",
+    SQ: "Po shihni kalendarin e një punonjësi.",
+    KU: "Tu niha salnameya karmendekî dibînî.",
+  },
+  viewingEmployeeCalendarHint: {
+    DE: "Bearbeitung und eigene Admin-Termine sind in dieser Ansicht deaktiviert.",
+    EN: "Editing and your own admin appointments are disabled in this view.",
+    IT: "La modifica e i tuoi appuntamenti admin sono disattivati in questa vista.",
+    TR: "Bu görünümde düzenleme ve kendi yönetici randevularınız devre dışıdır.",
+    SQ: "Ndryshimi dhe takimet tuaja si admin janë çaktivizuar në këtë pamje.",
+    KU: "Li vê dîtinê de sererastkirin û hevdîtinên te yên admin neçalak in.",
+  },
+  employeeSchedule: {
+    DE: "Einsatzplan des Mitarbeiters",
+    EN: "Employee schedule",
+    IT: "Piano del dipendente",
+    TR: "Çalışan planı",
+    SQ: "Plani i punonjësit",
+    KU: "Plana karmend",
+  },
+  loadingPlan: {
+    DE: "Lädt Plan...",
+    EN: "Loading schedule...",
+    IT: "Caricamento piano...",
+    TR: "Plan yükleniyor...",
+    SQ: "Plani po ngarkohet...",
+    KU: "Plan tê barkirin...",
+  },
+  noScheduleForDay: {
+    DE: "Kein Einsatz für diesen Tag geplant.",
+    EN: "No assignment planned for this day.",
+    IT: "Nessun incarico previsto per questo giorno.",
+    TR: "Bu gün için planlanmış görev yok.",
+    SQ: "Nuk ka angazhim të planifikuar për këtë ditë.",
+    KU: "Ji bo vê rojê planek tune ye.",
+  },
+  noLocationGiven: {
+    DE: "📍 (kein Ort angegeben)",
+    EN: "📍 (no location provided)",
+    IT: "📍 (nessun luogo indicato)",
+    TR: "📍 (yer belirtilmedi)",
+    SQ: "📍 (nuk është dhënë vendi)",
+    KU: "📍 (cih nehatiye dayîn)",
+  },
+  travelMinutes: {
+    DE: "Min Fahrzeit",
+    EN: "min travel time",
+    IT: "min di viaggio",
+    TR: "dk yol süresi",
+    SQ: "min udhëtim",
+    KU: "deq rê",
+  },
+  dayStatus: {
+    DE: "Tagesstatus",
+    EN: "Day status",
+    IT: "Stato del giorno",
+    TR: "Gün durumu",
+    SQ: "Statusi i ditës",
+    KU: "Rewşa rojê",
+  },
+  scheduleExists: {
+    DE: "Plan vorhanden",
+    EN: "Schedule available",
+    IT: "Piano disponibile",
+    TR: "Plan mevcut",
+    SQ: "Plani ekziston",
+    KU: "Plan heye",
+  },
+  paidVacation: {
+    DE: "Bezahlter Urlaub",
+    EN: "Paid vacation",
+    IT: "Ferie retribuite",
+    TR: "Ücretli izin",
+    SQ: "Pushim i paguar",
+    KU: "Bêhnvedana bi mûçe",
+  },
+  noEntriesForDay: {
+    DE: "Keine Einträge für diesen Tag vorhanden.",
+    EN: "No entries available for this day.",
+    IT: "Nessuna voce disponibile per questo giorno.",
+    TR: "Bu gün için kayıt yok.",
+    SQ: "Nuk ka regjistrime për këtë ditë.",
+    KU: "Ji bo vê rojê tomar tune ne.",
+  },
+  yourSchedule: {
+    DE: "Dein Einsatzplan",
+    EN: "Your schedule",
+    IT: "Il tuo piano",
+    TR: "Planın",
+    SQ: "Plani yt",
+    KU: "Plana te",
+  },
+  syncToEntry: {
+    DE: "↪️ In Eintrag syncen",
+    EN: "↪️ Sync to entry",
+    IT: "↪️ Sincronizza in registrazione",
+    TR: "↪️ Kayda aktar",
+    SQ: "↪️ Sinkronizo te regjistrimi",
+    KU: "↪️ Bi tomarê re hevrêz bike",
+  },
+  documents: {
+    DE: "📎 Dokumente",
+    EN: "📎 Documents",
+    IT: "📎 Documenti",
+    TR: "📎 Belgeler",
+    SQ: "📎 Dokumente",
+    KU: "📎 Belge",
+  },
+  syncPlanHint: {
+    DE: "Übernimmt Datum, Tätigkeit und Einsatzort. Uhrzeiten und Fahrtminuten bitte in der Erfassung ergänzen.",
+    EN: "Transfers date, activity, and location. Please complete times and travel minutes in the entry form.",
+    IT: "Trasferisce data, attività e luogo. Completa orari e minuti di viaggio nella registrazione.",
+    TR: "Tarih, faaliyet ve konumu aktarır. Saatleri ve yol dakikalarını lütfen kayıtta tamamlayın.",
+    SQ: "Merr datën, aktivitetin dhe vendin. Ju lutem plotësoni oraret dhe minutat e udhëtimit te regjistrimi.",
+    KU: "Dîrok, çalakî û cih digire. Ji kerema xwe dem û deqeyên rê di tomarê de temam bike.",
+  },
+  publicHoliday: {
+    DE: "Gesetzlicher Feiertag",
+    EN: "Public holiday",
+    IT: "Festività legale",
+    TR: "Resmî tatil",
+    SQ: "Festë zyrtare",
+    KU: "Cejna fermî",
+  },
+  confirmedAbsence: {
+    DE: "Bestätigte Abwesenheit",
+    EN: "Confirmed absence",
+    IT: "Assenza confermata",
+    TR: "Onaylanmış devamsızlık",
+    SQ: "Mungesë e konfirmuar",
+    KU: "Nebûna pejirandî",
+  },
+  noConfirmedAbsence: {
+    DE: "Keine bestätigte Abwesenheit eingetragen.",
+    EN: "No confirmed absence recorded.",
+    IT: "Nessuna assenza confermata registrata.",
+    TR: "Onaylanmış devamsızlık kaydı yok.",
+    SQ: "Nuk ka mungesë të konfirmuar të regjistruar.",
+    KU: "Nebûna pejirandî nehatiye tomar kirin.",
+  },
+  alreadyConfirmedRegistered: {
+    DE: "Bereits vom Admin bestätigt und im Kalender registriert.",
+    EN: "Already confirmed by admin and registered in the calendar.",
+    IT: "Già confermata dall'admin e registrata nel calendario.",
+    TR: "Zaten yönetici tarafından onaylandı ve takvime işlendi.",
+    SQ: "Tashmë e konfirmuar nga admini dhe e regjistruar në kalendar.",
+    KU: "Berê ji aliyê admin ve pejirandî û di salnameyê de tomar kirî ye.",
+  },
+  compensation: {
+    DE: "Vergütung:",
+    EN: "Compensation:",
+    IT: "Retribuzione:",
+    TR: "Ücretlendirme:",
+    SQ: "Kompensimi:",
+    KU: "Mûçe:",
+  },
+  myRequests: {
+    DE: "Meine Anträge",
+    EN: "My requests",
+    IT: "Le mie richieste",
+    TR: "Taleplerim",
+    SQ: "Kërkesat e mia",
+    KU: "Daxwazên min",
+  },
+  noRequestForDay: {
+    DE: "Kein Antrag für diesen Tag vorhanden.",
+    EN: "No request exists for this day.",
+    IT: "Non esiste alcuna richiesta per questo giorno.",
+    TR: "Bu gün için talep yok.",
+    SQ: "Nuk ka kërkesë për këtë ditë.",
+    KU: "Ji bo vê rojê daxwaz tune ye.",
+  },
+  status: {
+    DE: "Status:",
+    EN: "Status:",
+    IT: "Stato:",
+    TR: "Durum:",
+    SQ: "Statusi:",
+    KU: "Rewş:",
+  },
+  scope: {
+    DE: "Umfang:",
+    EN: "Scope:",
+    IT: "Entità:",
+    TR: "Kapsam:",
+    SQ: "Shtrirja:",
+    KU: "Berfirehî:",
+  },
+  total: {
+    DE: "Gesamt:",
+    EN: "Total:",
+    IT: "Totale:",
+    TR: "Toplam:",
+    SQ: "Totali:",
+    KU: "Tevahî:",
+  },
+  processedBy: {
+    DE: "Bearbeitet von:",
+    EN: "Processed by:",
+    IT: "Elaborato da:",
+    TR: "İşleyen:",
+    SQ: "Përpunuar nga:",
+    KU: "Ji aliyê vê kesê ve hate xebitandin:",
+  },
+  details: {
+    DE: "Details",
+    EN: "Details",
+    IT: "Dettagli",
+    TR: "Detaylar",
+    SQ: "Detaje",
+    KU: "Hûrgulî",
+  },
+  requestDetails: {
+    DE: "Antragsdetails",
+    EN: "Request details",
+    IT: "Dettagli richiesta",
+    TR: "Talep detayları",
+    SQ: "Detajet e kërkesës",
+    KU: "Hûrguliyên daxwazê",
+  },
+  requestAbsence: {
+    DE: "Abwesenheit beantragen",
+    EN: "Request absence",
+    IT: "Richiedi assenza",
+    TR: "Devamsızlık talep et",
+    SQ: "Kërko mungesë",
+    KU: "Nebûnê daxwaz bike",
+  },
+  wholeDayOnlyForSick: {
+    DE: "Krankheit kann nur ganztägig beantragt werden.",
+    EN: "Sickness can only be requested as a full day.",
+    IT: "La malattia può essere richiesta solo per l'intera giornata.",
+    TR: "Hastalık sadece tam gün olarak talep edilebilir.",
+    SQ: "Sëmundja mund të kërkohet vetëm për gjithë ditën.",
+    KU: "Nexweşî tenê dikare wekî rojek tam were daxwaz kirin.",
+  },
+  halfDaysOnlyVacation: {
+    DE: "Halbe Tage sind nur für Urlaub erlaubt.",
+    EN: "Half days are only allowed for vacation.",
+    IT: "I mezzi giorni sono consentiti solo per ferie.",
+    TR: "Yarım gün sadece izin için kullanılabilir.",
+    SQ: "Gjysmë ditët lejohen vetëm për pushim.",
+    KU: "Nîv roj tenê ji bo bêhnvedanê tên destûrkirin.",
+  },
+  halfDaySingleDateOnly: {
+    DE: "Ein halber Urlaubstag darf nur für genau ein Datum beantragt werden.",
+    EN: "A half vacation day may only be requested for exactly one date.",
+    IT: "Una mezza giornata di ferie può essere richiesta solo per una sola data.",
+    TR: "Yarım gün izin yalnızca tek bir tarih için talep edilebilir.",
+    SQ: "Një gjysmë dite pushimi mund të kërkohet vetëm për një datë të vetme.",
+    KU: "Nîv roj bêhnvedanê tenê ji bo tenê yek dîrokê dikare were daxwaz kirin.",
+  },
+  vacationNoWeekdays: {
+    DE: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+    EN: "There are no workdays for vacation in the selected period. Weekends are automatically excluded.",
+    IT: "Nel periodo selezionato non ci sono giorni lavorativi per ferie. I fine settimana vengono esclusi automaticamente.",
+    TR: "Seçilen aralıkta izin için iş günü yok. Hafta sonları otomatik olarak hariç tutulur.",
+    SQ: "Në periudhën e zgjedhur nuk ka ditë pune për pushim. Fundjavat përjashtohen automatikisht.",
+    KU: "Di navbera hilbijartî de rojên karê ji bo bêhnvedanê tune ne. Dawiya hefteyê bixweber nayê hesibandin.",
+  },
+  sickCannotBeUnpaid: {
+    DE: "Krankheit darf nicht als unbezahlt beantragt werden.",
+    EN: "Sickness must not be requested as unpaid.",
+    IT: "La malattia non può essere richiesta come non retribuita.",
+    TR: "Hastalık ücretsiz olarak talep edilemez.",
+    SQ: "Sëmundja nuk mund të kërkohet si e papaguar.",
+    KU: "Nexweşî nikare wekî bê mûçe were daxwaz kirin.",
+  },
+  requestCouldNotBeSaved: {
+    DE: "Antrag konnte nicht gespeichert werden.",
+    EN: "Request could not be saved.",
+    IT: "Impossibile salvare la richiesta.",
+    TR: "Talep kaydedilemedi.",
+    SQ: "Kërkesa nuk mund të ruhej.",
+    KU: "Daxwaz nehat tomarkirin.",
+  },
+  networkSaveError: {
+    DE: "Netzwerkfehler beim Speichern.",
+    EN: "Network error while saving.",
+    IT: "Errore di rete durante il salvataggio.",
+    TR: "Kaydetme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ruajtjes.",
+    KU: "Di tomarkirinê de şaşiya torê.",
+  },
+  pleaseSelectStartEnd: {
+    DE: "Bitte Start- und Enddatum auswählen.",
+    EN: "Please select start and end date.",
+    IT: "Seleziona data di inizio e fine.",
+    TR: "Lütfen başlangıç ve bitiş tarihini seçin.",
+    SQ: "Ju lutem zgjidhni datën e fillimit dhe të mbarimit.",
+    KU: "Ji kerema xwe dîroka destpêk û dawiyê hilbijêre.",
+  },
+  endBeforeStart: {
+    DE: "Ende darf nicht vor Start liegen.",
+    EN: "End must not be before start.",
+    IT: "La fine non può essere prima dell'inizio.",
+    TR: "Bitiş başlangıçtan önce olamaz.",
+    SQ: "Mbarimi nuk mund të jetë para fillimit.",
+    KU: "Dawî nikare berî destpêkê be.",
+  },
+  holidayMarked: {
+    DE: "Dieser Tag ist als gesetzlicher Feiertag im Kalender markiert.",
+    EN: "This day is marked as a public holiday in the calendar.",
+    IT: "Questo giorno è contrassegnato come festività legale nel calendario.",
+    TR: "Bu gün takvimde resmî tatil olarak işaretlenmiştir.",
+    SQ: "Kjo ditë është shënuar si festë zyrtare në kalendar.",
+    KU: "Ev roj di salnameyê de wekî cejna fermî hatiye nîşankirin.",
+  },
+  adminHolidayMarked: {
+    DE: "Dieser Tag ist als gesetzlicher Feiertag im Kalender markiert.",
+    EN: "This day is marked as a public holiday in the calendar.",
+    IT: "Questo giorno è contrassegnato come festività legale nel calendario.",
+    TR: "Bu gün takvimde resmî tatil olarak işaretlenmiştir.",
+    SQ: "Kjo ditë është shënuar si festë zyrtare në kalendar.",
+    KU: "Ev roj di salnameyê de wekî cejna fermî hatiye nîşankirin.",
+  },
+  startNewRequest: {
+    DE: "Neuer Antrag",
+    EN: "New request",
+    IT: "Nuova richiesta",
+    TR: "Yeni talep",
+    SQ: "Kërkesë e re",
+    KU: "Daxwaza nû",
+  },
+  absenceTypeVacation: {
+    DE: "🌴 Urlaub",
+    EN: "🌴 Vacation",
+    IT: "🌴 Ferie",
+    TR: "🌴 İzin",
+    SQ: "🌴 Pushim",
+    KU: "🌴 Bêhnvedan",
+  },
+  absenceTypeSick: {
+    DE: "🤒 Krank",
+    EN: "🤒 Sick",
+    IT: "🤒 Malattia",
+    TR: "🤒 Hasta",
+    SQ: "🤒 I sëmurë",
+    KU: "🤒 Nexweş",
+  },
+  scopeLabel: {
+    DE: "Umfang",
+    EN: "Scope",
+    IT: "Entità",
+    TR: "Kapsam",
+    SQ: "Shtrirja",
+    KU: "Berfirehî",
+  },
+  scopeHint: {
+    DE: "Bei mehrtägigem Urlaub werden Samstage und Sonntage automatisch nicht mitgezählt.",
+    EN: "For multi-day vacation, Saturdays and Sundays are automatically not counted.",
+    IT: "Per ferie di più giorni, sabato e domenica non vengono conteggiati automaticamente.",
+    TR: "Birden fazla günlük izinlerde cumartesi ve pazar otomatik olarak sayılmaz.",
+    SQ: "Për pushimet disa ditore, të shtunat dhe të dielat nuk llogariten automatikisht.",
+    KU: "Di bêhnvedanên pirrojan de şemî û yekşem bixweber nayên hesibandin.",
+  },
+  fullVacationDay: {
+    DE: "Ganzer Urlaubstag",
+    EN: "Full vacation day",
+    IT: "Intera giornata di ferie",
+    TR: "Tam gün izin",
+    SQ: "Ditë e plotë pushimi",
+    KU: "Rojek bêhnvedanê ya tam",
+  },
+  halfVacationDay: {
+    DE: "Halber Urlaubstag",
+    EN: "Half vacation day",
+    IT: "Mezza giornata di ferie",
+    TR: "Yarım gün izin",
+    SQ: "Gjysmë dite pushimi",
+    KU: "Nîv roj bêhnvedanê",
+  },
+  compensationLabel: {
+    DE: "Vergütung",
+    EN: "Compensation",
+    IT: "Retribuzione",
+    TR: "Ücretlendirme",
+    SQ: "Kompensimi",
+    KU: "Mûçe",
+  },
+  compensationLockedHint: {
+    DE: "Für diesen Antrag ist aktuell nicht genug bezahlter Urlaub verfügbar. Der Antrag wird deshalb vorläufig als unbezahlt eingereicht. Bei der Prüfung kann der Admin den Antrag ganz oder teilweise in bezahlten und unbezahlten Urlaub aufteilen.",
+    EN: "There is currently not enough paid vacation available for this request. Therefore, the request is submitted temporarily as unpaid. During review, the admin can split it fully or partially into paid and unpaid vacation.",
+    IT: "Al momento non c'è abbastanza ferie pagate disponibili per questa richiesta. Per questo la richiesta viene inviata temporaneamente come non retribuita. Durante la revisione, l'admin può suddividerla in ferie pagate e non retribuite.",
+    TR: "Bu talep için şu anda yeterli ücretli izin mevcut değil. Bu nedenle talep geçici olarak ücretsiz olarak gönderilir. İnceleme sırasında yönetici talebi tamamen veya kısmen ücretli ve ücretsiz izin olarak ayırabilir.",
+    SQ: "Aktualisht nuk ka mjaftueshëm pushim të paguar për këtë kërkesë. Prandaj kërkesa dërgohet përkohësisht si e papaguar. Gjatë shqyrtimit, admini mund ta ndajë plotësisht ose pjesërisht në pushim të paguar dhe të papaguar.",
+    KU: "Ji bo vê daxwazê niha bêhnvedana bi mûçe têr nîne. Ji ber vê yekê daxwaz demkî wekî bê mûçe tê şandin. Di dema vekolînê de admin dikare wê bi tevahî an beşekî bike bêhnvedana bi mûçe û bê mûçe.",
+  },
+  compensationFlexibleHint: {
+    DE: "Falls bezahlter Resturlaub nicht vollständig ausreicht, kann der Antrag bei der Prüfung ganz oder teilweise in bezahlten und unbezahlten Urlaub aufgeteilt werden.",
+    EN: "If the remaining paid vacation is not fully sufficient, the request can be split during review fully or partially into paid and unpaid vacation.",
+    IT: "Se il residuo di ferie pagate non è sufficiente, la richiesta può essere suddivisa durante la revisione in ferie pagate e non retribuite.",
+    TR: "Kalan ücretli izin tamamen yeterli değilse, talep inceleme sırasında tamamen veya kısmen ücretli ve ücretsiz izin olarak ayrılabilir.",
+    SQ: "Nëse pushimi i mbetur i paguar nuk mjafton plotësisht, kërkesa mund të ndahet gjatë shqyrtimit në pushim të paguar dhe të papaguar.",
+    KU: "Heke bêhnvedana mayî ya bi mûçe bi tevahî têr nebe, daxwaz di dema vekolînê de dikare bi tevahî an beşekî bibe bêhnvedana bi mûçe û bê mûçe.",
+  },
+  noteToAdmin: {
+    DE: "Notiz an Admin",
+    EN: "Note to admin",
+    IT: "Nota per admin",
+    TR: "Yöneticiye not",
+    SQ: "Shënim për adminin",
+    KU: "Nîşe ji bo admin",
+  },
+  requestNotePlaceholder: {
+    DE: "Optional: Hinweis zum Antrag",
+    EN: "Optional: note for the request",
+    IT: "Opzionale: nota sulla richiesta",
+    TR: "İsteğe bağlı: talep notu",
+    SQ: "Opsionale: shënim për kërkesën",
+    KU: "Vebijarkî: nîşe ji bo daxwazê",
+  },
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+  },
+  newRequest: {
+    DE: "Neuer Antrag",
+    EN: "New request",
+    IT: "Nuova richiesta",
+    TR: "Yeni talep",
+    SQ: "Kërkesë e re",
+    KU: "Daxwaza nû",
+  },
+  sendRequest: {
+    DE: "Antrag senden",
+    EN: "Send request",
+    IT: "Invia richiesta",
+    TR: "Talebi gönder",
+    SQ: "Dërgo kërkesën",
+    KU: "Daxwazê bişîne",
+  },
+  calendarLoadingFallback: {
+    DE: "Kalender lädt...",
+    EN: "Calendar is loading...",
+    IT: "Il calendario si sta caricando...",
+    TR: "Takvim yükleniyor...",
+    SQ: "Kalendari po ngarkohet...",
+    KU: "Salname tê barkirin...",
+  },
+  january: {
+    DE: "Januar",
+    EN: "January",
+    IT: "Gennaio",
+    TR: "Ocak",
+    SQ: "Janar",
+    KU: "Rêbendan",
+  },
+  february: {
+    DE: "Februar",
+    EN: "February",
+    IT: "Febbraio",
+    TR: "Şubat",
+    SQ: "Shkurt",
+    KU: "Reşemî",
+  },
+  march: {
+    DE: "März",
+    EN: "March",
+    IT: "Marzo",
+    TR: "Mart",
+    SQ: "Mars",
+    KU: "Adar",
+  },
+  april: {
+    DE: "April",
+    EN: "April",
+    IT: "Aprile",
+    TR: "Nisan",
+    SQ: "Prill",
+    KU: "Nîsan",
+  },
+  may: {
+    DE: "Mai",
+    EN: "May",
+    IT: "Maggio",
+    TR: "Mayıs",
+    SQ: "Maj",
+    KU: "Gulan",
+  },
+  june: {
+    DE: "Juni",
+    EN: "June",
+    IT: "Giugno",
+    TR: "Haziran",
+    SQ: "Qershor",
+    KU: "Hezîran",
+  },
+  july: {
+    DE: "Juli",
+    EN: "July",
+    IT: "Luglio",
+    TR: "Temmuz",
+    SQ: "Korrik",
+    KU: "Tîrmeh",
+  },
+  august: {
+    DE: "August",
+    EN: "August",
+    IT: "Agosto",
+    TR: "Ağustos",
+    SQ: "Gusht",
+    KU: "Tebax",
+  },
+  september: {
+    DE: "September",
+    EN: "September",
+    IT: "Settembre",
+    TR: "Eylül",
+    SQ: "Shtator",
+    KU: "Îlon",
+  },
+  october: {
+    DE: "Oktober",
+    EN: "October",
+    IT: "Ottobre",
+    TR: "Ekim",
+    SQ: "Tetor",
+    KU: "Cotmeh",
+  },
+  november: {
+    DE: "November",
+    EN: "November",
+    IT: "Novembre",
+    TR: "Kasım",
+    SQ: "Nëntor",
+    KU: "Mijdar",
+  },
+  december: {
+    DE: "Dezember",
+    EN: "December",
+    IT: "Dicembre",
+    TR: "Aralık",
+    SQ: "Dhjetor",
+    KU: "Kanûn",
+  },
+  mondayLong: {
+    DE: "Montag",
+    EN: "Monday",
+    IT: "Lunedì",
+    TR: "Pazartesi",
+    SQ: "E hënë",
+    KU: "Duşem",
+  },
+  tuesdayLong: {
+    DE: "Dienstag",
+    EN: "Tuesday",
+    IT: "Martedì",
+    TR: "Salı",
+    SQ: "E martë",
+    KU: "Sêşem",
+  },
+  wednesdayLong: {
+    DE: "Mittwoch",
+    EN: "Wednesday",
+    IT: "Mercoledì",
+    TR: "Çarşamba",
+    SQ: "E mërkurë",
+    KU: "Çarşem",
+  },
+  thursdayLong: {
+    DE: "Donnerstag",
+    EN: "Thursday",
+    IT: "Giovedì",
+    TR: "Perşembe",
+    SQ: "E enjte",
+    KU: "Pêncşem",
+  },
+  fridayLong: {
+    DE: "Freitag",
+    EN: "Friday",
+    IT: "Venerdì",
+    TR: "Cuma",
+    SQ: "E premte",
+    KU: "În",
+  },
+  saturdayLong: {
+    DE: "Samstag",
+    EN: "Saturday",
+    IT: "Sabato",
+    TR: "Cumartesi",
+    SQ: "E shtunë",
+    KU: "Şemî",
+  },
+  sundayLong: {
+    DE: "Sonntag",
+    EN: "Sunday",
+    IT: "Domenica",
+    TR: "Pazar",
+    SQ: "E diel",
+    KU: "Yekşem",
+  },
+  dayMarkedAsHoliday: {
+    DE: "Dieser Tag ist als gesetzlicher Feiertag im Kalender markiert.",
+    EN: "This day is marked as a public holiday in the calendar.",
+    IT: "Questo giorno è contrassegnato come festività legale nel calendario.",
+    TR: "Bu gün takvimde resmî tatil olarak işaretlenmiştir.",
+    SQ: "Kjo ditë është shënuar si festë zyrtare në kalendar.",
+    KU: "Ev roj di salnameyê de wekî cejna fermî hatiye nîşankirin.",
+  },
+  dashOnly: {
+    DE: "—",
+    EN: "—",
+    IT: "—",
+    TR: "—",
+    SQ: "—",
+    KU: "—",
+  },
+};
+
+export type ErfassungTextKey =
+  | "loading"
+  | "details"
+  | "cancel"
+  | "enterActivity"
+  | "loginAgain"
+  | "saveFailed"
+  | "networkSaveError"
+  | "unknown"
+  | "saveBreakIncomplete"
+  | "saveBreakFailed"
+  | "networkBreakSaveError"
+  | "correctionPastOnly"
+  | "correctionUnlockAlreadyExists"
+  | "correctionPendingAlreadyExists"
+  | "correctionCreateFailed"
+  | "correctionSentSuccess"
+  | "networkCorrectionError"
+  | "syncTaskTaken"
+  | "syncDateTaken"
+  | "syncPlanTaken"
+  | "createEntry"
+  | "employee"
+  | "entryAssignedAutomatically"
+  | "date"
+  | "selectDate"
+  | "selectedPastDay"
+  | "statusLoading"
+  | "noCorrectionBecauseAdminTask"
+  | "directEntryPossible"
+  | "releasedRangeFromTo"
+  | "adminReleasedDay"
+  | "approvedRange"
+  | "pendingCorrectionExists"
+  | "pendingRange"
+  | "lastCorrectionRejected"
+  | "lastDecisionFor"
+  | "sendNewCorrectionRequest"
+  | "correctionRequiredNow"
+  | "correctionNotRequiredNow"
+  | "sendCorrectionRequest"
+  | "start"
+  | "end"
+  | "workTimeCalculated"
+  | "gross"
+  | "legalBreak"
+  | "net"
+  | "activityPerformed"
+  | "activityPlaceholder"
+  | "location"
+  | "locationPlaceholder"
+  | "noteForAdmin"
+  | "notePlaceholder"
+  | "noteOptionalVisibleToAdmin"
+  | "travelMinutes"
+  | "reset"
+  | "saveEntry"
+  | "saving"
+  | "saveBreak"
+  | "breakCapture"
+  | "breakFrom"
+  | "breakTo"
+  | "breakCalculation"
+  | "breakRuleInfo"
+  | "allEntries"
+  | "year"
+  | "allYears"
+  | "loadingEntries"
+  | "noEntriesForYear"
+  | "expandCollapse"
+  | "entry"
+  | "entries"
+  | "break"
+  | "showBreakDetails"
+  | "oClock"
+  | "noActivityStored"
+  | "noLocationStored"
+  | "travelTime"
+  | "showDetails"
+  | "showNote"
+  | "edit"
+  | "delete"
+  | "workTimeDetails"
+  | "close"
+  | "dateAndTime"
+  | "netWorkTime"
+  | "siteOrAddress"
+  | "breakDetails"
+  | "manualBreak"
+  | "noManualBreak"
+  | "legallyRequired"
+  | "autoCompleted"
+  | "noAutoCompletion"
+  | "effectiveBreakTotal"
+  | "note"
+  | "noNote"
+  | "selectedDate"
+  | "serverDeterminesCorrectionRange"
+  | "existingCorrectionInfoLoading"
+  | "activeUnlockAlreadyExists"
+  | "correctionRequired"
+  | "missingDaysUntilLock"
+  | "sendRequest"
+  | "editEntry"
+  | "saveChanges"
+  | "assignmentManagedServerSide"
+  | "performedActivity"
+  | "travelTimeMin"
+  | "changesSaveFailed"
+  | "dateStartEndMissing"
+  | "sending"
+  | "to"
+  | "optionalReasonPlaceholder"
+  | "existingCorrectionHint"
+  | "currentMissingDaysNeedsRequest"
+  | "currentMissingDaysUntilLock"
+  | "employeeManagedServerSide"
+  | "dayGrossBreakNet"
+  | "monthJanuary"
+  | "monthFebruary"
+  | "monthMarch"
+  | "monthApril"
+  | "monthMay"
+  | "monthJune"
+  | "monthJuly"
+  | "monthAugust"
+  | "monthSeptember"
+  | "monthOctober"
+  | "monthNovember"
+  | "monthDecember"
+  | "weekdaySundayShort"
+  | "weekdayMondayShort"
+  | "weekdayTuesdayShort"
+  | "weekdayWednesdayShort"
+  | "weekdayThursdayShort"
+  | "weekdayFridayShort"
+  | "weekdaySaturdayShort"
+  | "legalBreakHeadline"
+  | "legalBreakAfterSixHours"
+  | "legalBreakAfterNineHours"
+  | "legalBreakAutoApplied";
+
+export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage, string>> = {
+  loading: {
+    DE: "Lade...",
+    EN: "Loading...",
+    IT: "Caricamento...",
+    TR: "Yükleniyor...",
+    SQ: "Duke u ngarkuar...",
+    KU: "Tê barkirin...",
+  },
+  monthJanuary: {
+    DE: "Januar",
+    EN: "January",
+    IT: "Gennaio",
+    TR: "Ocak",
+    SQ: "Janar",
+    KU: "Rêbendan",
+  },
+  monthFebruary: {
+    DE: "Februar",
+    EN: "February",
+    IT: "Febbraio",
+    TR: "Şubat",
+    SQ: "Shkurt",
+    KU: "Reşemî",
+  },
+  monthMarch: {
+    DE: "März",
+    EN: "March",
+    IT: "Marzo",
+    TR: "Mart",
+    SQ: "Mars",
+    KU: "Adar",
+  },
+  monthApril: {
+    DE: "April",
+    EN: "April",
+    IT: "Aprile",
+    TR: "Nisan",
+    SQ: "Prill",
+    KU: "Nîsan",
+  },
+  monthMay: {
+    DE: "Mai",
+    EN: "May",
+    IT: "Maggio",
+    TR: "Mayıs",
+    SQ: "Maj",
+    KU: "Gulan",
+  },
+  monthJune: {
+    DE: "Juni",
+    EN: "June",
+    IT: "Giugno",
+    TR: "Haziran",
+    SQ: "Qershor",
+    KU: "Hezîran",
+  },
+  monthJuly: {
+    DE: "Juli",
+    EN: "July",
+    IT: "Luglio",
+    TR: "Temmuz",
+    SQ: "Korrik",
+    KU: "Tîrmeh",
+  },
+  monthAugust: {
+    DE: "August",
+    EN: "August",
+    IT: "Agosto",
+    TR: "Ağustos",
+    SQ: "Gusht",
+    KU: "Tebax",
+  },
+  monthSeptember: {
+    DE: "September",
+    EN: "September",
+    IT: "Settembre",
+    TR: "Eylül",
+    SQ: "Shtator",
+    KU: "Îlon",
+  },
+  monthOctober: {
+    DE: "Oktober",
+    EN: "October",
+    IT: "Ottobre",
+    TR: "Ekim",
+    SQ: "Tetor",
+    KU: "Cotmeh",
+  },
+  monthNovember: {
+    DE: "November",
+    EN: "November",
+    IT: "Novembre",
+    TR: "Kasım",
+    SQ: "Nëntor",
+    KU: "Mijdar",
+  },
+  monthDecember: {
+    DE: "Dezember",
+    EN: "December",
+    IT: "Dicembre",
+    TR: "Aralık",
+    SQ: "Dhjetor",
+    KU: "Kanûn",
+  },
+  weekdaySundayShort: {
+    DE: "So.",
+    EN: "Sun",
+    IT: "Dom",
+    TR: "Paz",
+    SQ: "Die",
+    KU: "Yek",
+  },
+  weekdayMondayShort: {
+    DE: "Mo.",
+    EN: "Mon",
+    IT: "Lun",
+    TR: "Pzt",
+    SQ: "Hën",
+    KU: "Duş",
+  },
+  weekdayTuesdayShort: {
+    DE: "Di.",
+    EN: "Tue",
+    IT: "Mar",
+    TR: "Sal",
+    SQ: "Mar",
+    KU: "Sêş",
+  },
+  weekdayWednesdayShort: {
+    DE: "Mi.",
+    EN: "Wed",
+    IT: "Mer",
+    TR: "Çar",
+    SQ: "Mër",
+    KU: "Çar",
+  },
+  weekdayThursdayShort: {
+    DE: "Do.",
+    EN: "Thu",
+    IT: "Gio",
+    TR: "Per",
+    SQ: "Enj",
+    KU: "Pênc",
+  },
+  weekdayFridayShort: {
+    DE: "Fr.",
+    EN: "Fri",
+    IT: "Ven",
+    TR: "Cum",
+    SQ: "Pre",
+    KU: "În",
+  },
+  weekdaySaturdayShort: {
+    DE: "Sa.",
+    EN: "Sat",
+    IT: "Sab",
+    TR: "Cmt",
+    SQ: "Sht",
+    KU: "Şem",
+  },
+  legalBreakHeadline: {
+    DE: "Gesetzliche Pausen:",
+    EN: "Legal breaks:",
+    IT: "Pause legali:",
+    TR: "Yasal molalar:",
+    SQ: "Pushimet ligjore:",
+    KU: "Navberên qanûnî:",
+  },
+  legalBreakAfterSixHours: {
+    DE: "ab mehr als 6h: 30 Min",
+    EN: "more than 6h: 30 min",
+    IT: "oltre 6h: 30 min",
+    TR: "6 saatten fazla: 30 dk",
+    SQ: "mbi 6 orë: 30 min",
+    KU: "zêdetirî 6 saetan: 30 deq",
+  },
+  legalBreakAfterNineHours: {
+    DE: "ab mehr als 9h: 45 Min",
+    EN: "more than 9h: 45 min",
+    IT: "oltre 9h: 45 min",
+    TR: "9 saatten fazla: 45 dk",
+    SQ: "mbi 9 orë: 45 min",
+    KU: "zêdetirî 9 saetan: 45 deq",
+  },
+  legalBreakAutoApplied: {
+    DE: "Gesetzliche Pause automatisch eingetragen:",
+    EN: "Legal break applied automatically:",
+    IT: "Pausa legale applicata automaticamente:",
+    TR: "Yasal mola otomatik uygulandı:",
+    SQ: "Pushimi ligjor u zbatua automatikisht:",
+    KU: "Navbera qanûnî bixweber hate sepandin:",
+  },
+  to: {
+    DE: "bis",
+    EN: "to",
+    IT: "fino a",
+    TR: "ile",
+    SQ: "deri",
+    KU: "heta",
+  },
+  dateStartEndMissing: {
+    DE: "Datum / Beginn / Ende fehlt.",
+    EN: "Date / start / end is missing.",
+    IT: "Manca data / inizio / fine.",
+    TR: "Tarih / başlangıç / bitiş eksik.",
+    SQ: "Mungon data / fillimi / fundi.",
+    KU: "Dîrok / destpêk / dawî kêm e.",
+  },
+  sending: {
+    DE: "Sendet...",
+    EN: "Sending...",
+    IT: "Invio...",
+    TR: "Gönderiliyor...",
+    SQ: "Duke dërguar...",
+    KU: "Tê şandin...",
+  },
+  optionalReasonPlaceholder: {
+    DE: "Optional: kurze Begründung oder Hinweis",
+    EN: "Optional: short reason or note",
+    IT: "Opzionale: breve motivazione o nota",
+    TR: "İsteğe bağlı: kısa açıklama veya not",
+    SQ: "Opsionale: arsye ose shënim i shkurtër",
+    KU: "Vebijarkî: ravekirinek kurt an nîşe",
+  },
+  existingCorrectionHint: {
+    DE: "Hinweis: Für {range} existiert bereits ein offener Antrag.",
+    EN: "Note: There is already an open request for {range}.",
+    IT: "Nota: esiste già una richiesta aperta per {range}.",
+    TR: "Not: {range} için zaten açık bir talep var.",
+    SQ: "Shënim: për {range} ekziston tashmë një kërkesë e hapur.",
+    KU: "Têbînî: ji bo {range} daxwazek vekirî heye.",
+  },
+  currentMissingDaysNeedsRequest: {
+    DE: "Aktuell: {current}/{limit} fehlende Arbeitstage. Ein Nachtragsantrag ist erforderlich.",
+    EN: "Current: {current}/{limit} missing workdays. A correction request is required.",
+    IT: "Attuale: {current}/{limit} giorni lavorativi mancanti. È richiesta una domanda di integrazione.",
+    TR: "Şu an: {current}/{limit} eksik iş günü. Düzeltme talebi gereklidir.",
+    SQ: "Aktualisht: {current}/{limit} ditë pune të munguara. Kërkohet një kërkesë korrigjimi.",
+    KU: "Niha: {current}/{limit} rojên karê yên wenda. Daxwaza rastkirinê pêwist e.",
+  },
+  currentMissingDaysUntilLock: {
+    DE: "Aktuell: {current}/{limit} fehlende Arbeitstage bis zur Sperrung.",
+    EN: "Current: {current}/{limit} missing workdays until lock.",
+    IT: "Attuale: {current}/{limit} giorni lavorativi mancanti fino al blocco.",
+    TR: "Şu an: kilide kadar {current}/{limit} eksik iş günü.",
+    SQ: "Aktualisht: {current}/{limit} ditë pune të munguara deri në bllokim.",
+    KU: "Niha: heta girtinê {current}/{limit} rojên karê yên wenda.",
+  },
+  employeeManagedServerSide: {
+    DE: "Zuordnung wird serverseitig automatisch verwaltet.",
+    EN: "Assignment is managed automatically on the server side.",
+    IT: "L'assegnazione è gestita automaticamente dal server.",
+    TR: "Atama sunucu tarafında otomatik olarak yönetilir.",
+    SQ: "Caktimi menaxhohet automatikisht nga serveri.",
+    KU: "Girêdan li aliyê serverê bixweber tê rêvebirin.",
+  },
+  dayGrossBreakNet: {
+    DE: "Tag: Brutto {gross} · Wirksame Pause {breakValue} · Netto {netValue}",
+    EN: "Day: Gross {gross} · Effective break {breakValue} · Net {netValue}",
+    IT: "Giorno: Lordo {gross} · Pausa effettiva {breakValue} · Netto {netValue}",
+    TR: "Gün: Brüt {gross} · Etkili mola {breakValue} · Net {netValue}",
+    SQ: "Dita: Bruto {gross} · Pushimi efektiv {breakValue} · Neto {netValue}",
+    KU: "Roj: Berî derxistin {gross} · Navbera bi bandor {breakValue} · Safî {netValue}",
+  },
+  details: {
+    DE: "Details anzeigen",
+    EN: "Show details",
+    IT: "Mostra dettagli",
+    TR: "Detayları göster",
+    SQ: "Trego detajet",
+    KU: "Xalqên nîşan bide",
+  },
+  cancel: {
+    DE: "Abbrechen",
+    EN: "Cancel",
+    IT: "Annulla",
+    TR: "İptal",
+    SQ: "Anulo",
+    KU: "Betal bike",
+  },
+  enterActivity: {
+    DE: "Bitte Tätigkeit eingeben.",
+    EN: "Please enter an activity.",
+    IT: "Inserisci un'attività.",
+    TR: "Lütfen bir faaliyet girin.",
+    SQ: "Ju lutem vendosni aktivitetin.",
+    KU: "Ji kerema xwe çalakiyek binivîse.",
+  },
+  loginAgain: {
+    DE: "Bitte neu einloggen.",
+    EN: "Please log in again.",
+    IT: "Effettua nuovamente l'accesso.",
+    TR: "Lütfen tekrar giriş yapın.",
+    SQ: "Ju lutem hyni përsëri.",
+    KU: "Ji kerema xwe dîsa têkeve.",
+  },
+  saveFailed: {
+    DE: "Speichern fehlgeschlagen.",
+    EN: "Saving failed.",
+    IT: "Salvataggio non riuscito.",
+    TR: "Kaydetme başarısız oldu.",
+    SQ: "Ruajtja dështoi.",
+    KU: "Tomarkirin bi ser neket.",
+  },
+  networkSaveError: {
+    DE: "Netzwerkfehler beim Speichern.",
+    EN: "Network error while saving.",
+    IT: "Errore di rete durante il salvataggio.",
+    TR: "Kaydetme sırasında ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ruajtjes.",
+    KU: "Di tomarkirinê de şaşiya torê.",
+  },
+  unknown: {
+    DE: "Unbekannt",
+    EN: "Unknown",
+    IT: "Sconosciuto",
+    TR: "Bilinmiyor",
+    SQ: "I panjohur",
+    KU: "Nenas",
+  },
+  saveBreakIncomplete: {
+    DE: "Bitte Pause von und bis vollständig eingeben.",
+    EN: "Please enter both break start and end.",
+    IT: "Inserisci in modo completo inizio e fine pausa.",
+    TR: "Lütfen mola başlangıç ve bitişini tam girin.",
+    SQ: "Ju lutem vendosni plotësisht fillimin dhe fundin e pushimit.",
+    KU: "Ji kerema xwe destpêk û dawiya navberê bi tevahî binivîse.",
+  },
+  saveBreakFailed: {
+    DE: "Pause speichern fehlgeschlagen.",
+    EN: "Saving the break failed.",
+    IT: "Salvataggio pausa non riuscito.",
+    TR: "Mola kaydedilemedi.",
+    SQ: "Ruajtja e pushimit dështoi.",
+    KU: "Tomarkirina navberê bi ser neket.",
+  },
+  networkBreakSaveError: {
+    DE: "Netzwerkfehler beim Speichern der Pause.",
+    EN: "Network error while saving the break.",
+    IT: "Errore di rete durante il salvataggio della pausa.",
+    TR: "Mola kaydedilirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë ruajtjes së pushimit.",
+    KU: "Di tomarkirina navberê de şaşiya torê.",
+  },
+  correctionPastOnly: {
+    DE: "Ein Nachtragsantrag ist nur für vergangene Tage möglich.",
+    EN: "A correction request is only possible for past days.",
+    IT: "Una richiesta di integrazione è possibile solo per giorni passati.",
+    TR: "Düzeltme talebi yalnızca geçmiş günler için mümkündür.",
+    SQ: "Kërkesa për korrigjim lejohet vetëm për ditët e kaluara.",
+    KU: "Daxwaza rastkirinê tenê ji bo rojên borî gengaz e.",
+  },
+  correctionUnlockAlreadyExists: {
+    DE: "Für diesen Tag existiert bereits eine aktive Freigabe.",
+    EN: "An active approval already exists for this day.",
+    IT: "Per questo giorno esiste già un'approvazione attiva.",
+    TR: "Bu gün için zaten aktif bir onay var.",
+    SQ: "Për këtë ditë ekziston tashmë një miratim aktiv.",
+    KU: "Ji bo vê rojê berê xweşandinê çalak heye.",
+  },
+  correctionPendingAlreadyExists: {
+    DE: "Für diesen Tag existiert bereits ein offener Nachtragsantrag.",
+    EN: "There is already an open correction request for this day.",
+    IT: "Esiste già una richiesta aperta per questo giorno.",
+    TR: "Bu gün için zaten açık bir düzeltme talebi var.",
+    SQ: "Për këtë ditë ekziston tashmë një kërkesë e hapur.",
+    KU: "Ji bo vê rojê daxwazek vekirî ya rastkirinê heye.",
+  },
+  correctionCreateFailed: {
+    DE: "Nachtragsantrag konnte nicht erstellt werden.",
+    EN: "The correction request could not be created.",
+    IT: "Non è stato possibile creare la richiesta.",
+    TR: "Düzeltme talebi oluşturulamadı.",
+    SQ: "Kërkesa për korrigjim nuk mund të krijohej.",
+    KU: "Daxwaza rastkirinê nehat afirandin.",
+  },
+  correctionSentSuccess: {
+    DE: "Nachtragsantrag wurde erfolgreich gesendet.",
+    EN: "The correction request was sent successfully.",
+    IT: "La richiesta è stata inviata con successo.",
+    TR: "Düzeltme talebi başarıyla gönderildi.",
+    SQ: "Kërkesa për korrigjim u dërgua me sukses.",
+    KU: "Daxwaza rastkirinê bi serkeftî hate şandin.",
+  },
+  networkCorrectionError: {
+    DE: "Netzwerkfehler beim Senden des Nachtragsantrags.",
+    EN: "Network error while sending the correction request.",
+    IT: "Errore di rete durante l'invio della richiesta.",
+    TR: "Düzeltme talebi gönderilirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë dërgimit të kërkesës.",
+    KU: "Di şandina daxwaza rastkirinê de şaşiya torê.",
+  },
+  syncTaskTaken: {
+    DE: "Aufgabe übernommen. Bitte Start- und Endzeit ergänzen.",
+    EN: "Task imported. Please add start and end time.",
+    IT: "Attività importata. Aggiungi ora di inizio e fine.",
+    TR: "Görev aktarıldı. Lütfen başlangıç ve bitiş saatini ekleyin.",
+    SQ: "Detyra u mor. Ju lutem shtoni orën e fillimit dhe përfundimit.",
+    KU: "Erk hate standin. Ji kerema xwe dema destpêk û dawiyê zêde bike.",
+  },
+  syncDateTaken: {
+    DE: "Datum aus der Benachrichtigung übernommen. Bitte Start- und Endzeit ergänzen.",
+    EN: "Date imported from the notification. Please add start and end time.",
+    IT: "Data importata dalla notifica. Aggiungi ora di inizio e fine.",
+    TR: "Tarih bildirimden alındı. Lütfen başlangıç ve bitiş saatini ekleyin.",
+    SQ: "Data u mor nga njoftimi. Ju lutem shtoni orën e fillimit dhe përfundimit.",
+    KU: "Dîrok ji hişyariyê hate standin. Ji kerema xwe dema destpêk û dawiyê zêde bike.",
+  },
+  syncPlanTaken: {
+    DE: "Planeintrag übernommen. Bitte Start- und Endzeit ergänzen.",
+    EN: "Schedule entry imported. Please add start and end time.",
+    IT: "Voce pianificata importata. Aggiungi ora di inizio e fine.",
+    TR: "Plan kaydı aktarıldı. Lütfen başlangıç ve bitiş saatini ekleyin.",
+    SQ: "Regjistrimi i planit u mor. Ju lutem shtoni orën e fillimit dhe përfundimit.",
+    KU: "Tomara planê hate standin. Ji kerema xwe dema destpêk û dawiyê zêde bike.",
+  },
+  createEntry: {
+    DE: "Stunden erfassen",
+    EN: "Record hours",
+    IT: "Registra ore",
+    TR: "Saat gir",
+    SQ: "Regjistro orët",
+    KU: "Demjimêran tomar bike",
+  },
+  employee: {
+    DE: "Mitarbeiter",
+    EN: "Employee",
+    IT: "Dipendente",
+    TR: "Çalışan",
+    SQ: "Punonjësi",
+    KU: "Karmend",
+  },
+  entryAssignedAutomatically: {
+    DE: "Der Eintrag wird automatisch deinem Konto zugeordnet.",
+    EN: "The entry is automatically assigned to your account.",
+    IT: "La voce viene assegnata automaticamente al tuo account.",
+    TR: "Kayıt otomatik olarak hesabınıza atanır.",
+    SQ: "Regjistrimi i caktohet automatikisht llogarisë suaj.",
+    KU: "Tomar bixweber bi hesabê te ve tê girêdan.",
+  },
+  date: {
+    DE: "Datum",
+    EN: "Date",
+    IT: "Data",
+    TR: "Tarih",
+    SQ: "Data",
+    KU: "Dîrok",
+  },
+  selectDate: {
+    DE: "Datum auswählen",
+    EN: "Select date",
+    IT: "Seleziona data",
+    TR: "Tarih seçin",
+    SQ: "Zgjidh datën",
+    KU: "Dîrok hilbijêre",
+  },
+  selectedPastDay: {
+    DE: "Vergangener Tag ausgewählt",
+    EN: "Past day selected",
+    IT: "Giorno passato selezionato",
+    TR: "Geçmiş gün seçildi",
+    SQ: "U zgjodh një ditë e kaluar",
+    KU: "Rojeke borî hate hilbijartin",
+  },
+  statusLoading: {
+    DE: "Status für den ausgewählten Tag wird geladen...",
+    EN: "Loading status for the selected day...",
+    IT: "Caricamento stato per il giorno selezionato...",
+    TR: "Seçilen günün durumu yükleniyor...",
+    SQ: "Po ngarkohet statusi për ditën e zgjedhur...",
+    KU: "Rewşa roja hilbijartî tê barkirin...",
+  },
+  noCorrectionBecauseAdminTask: {
+    DE: "Für diesen Tag ist kein Nachtragsantrag erforderlich, weil du ihn über eine Admin-Aufgabe geöffnet hast.",
+    EN: "No correction request is required for this day because you opened it through an admin task.",
+    IT: "Per questo giorno non è necessaria una richiesta perché è stato aperto tramite un'attività admin.",
+    TR: "Bu gün için düzeltme talebi gerekmez çünkü günü yönetici görevi üzerinden açtınız.",
+    SQ: "Për këtë ditë nuk kërkohet kërkesë korrigjimi sepse e hapët përmes një detyre të adminit.",
+    KU: "Ji bo vê rojê daxwaza rastkirinê ne pêwist e, çimkî tu bi erkek admin ve vebûyî.",
+  },
+  directEntryPossible: {
+    DE: "Du kannst den Eintrag für",
+    EN: "You can enter the record for",
+    IT: "Puoi registrare la voce per",
+    TR: "Şu gün için kayıt yapabilirsiniz:",
+    SQ: "Mund ta regjistroni hyrjen për",
+    KU: "Tu dikarî tomara vê rojê bike ji bo",
+  },
+  releasedRangeFromTo: {
+    DE: "Der freigegebene Zeitraum reicht von",
+    EN: "The approved range goes from",
+    IT: "L'intervallo approvato va da",
+    TR: "Onaylanan aralık:",
+    SQ: "Periudha e miratuar shkon nga",
+    KU: "Navbera pejirandî ji ... heta ... ye",
+  },
+  adminReleasedDay: {
+    DE: "Dieser Tag wurde vom Admin für den Nachtrag freigegeben. Du kannst ihn jetzt bearbeiten.",
+    EN: "This day was approved by the admin for correction. You can edit it now.",
+    IT: "Questo giorno è stato approvato dall'admin per l'integrazione. Ora puoi modificarlo.",
+    TR: "Bu gün düzeltme için yönetici tarafından açıldı. Artık düzenleyebilirsiniz.",
+    SQ: "Kjo ditë u miratua nga admini për korrigjim. Tani mund ta ndryshoni.",
+    KU: "Ev roj ji aliyê admin ve ji bo rastkirinê hate vekirin. Naha tu dikarî sererast bikî.",
+  },
+  approvedRange: {
+    DE: "Genehmigter Zeitraum:",
+    EN: "Approved range:",
+    IT: "Intervallo approvato:",
+    TR: "Onaylanan aralık:",
+    SQ: "Periudha e miratuar:",
+    KU: "Navbera pejirandî:",
+  },
+  pendingCorrectionExists: {
+    DE: "Für diesen Tag existiert bereits ein offener Nachtragsantrag.",
+    EN: "There is already an open correction request for this day.",
+    IT: "Esiste già una richiesta aperta per questo giorno.",
+    TR: "Bu gün için zaten açık bir düzeltme talebi var.",
+    SQ: "Për këtë ditë ekziston tashmë një kërkesë e hapur.",
+    KU: "Ji bo vê rojê daxwazek vekirî ya rastkirinê heye.",
+  },
+  pendingRange: {
+    DE: "Offener Zeitraum:",
+    EN: "Open range:",
+    IT: "Intervallo aperto:",
+    TR: "Açık aralık:",
+    SQ: "Periudha e hapur:",
+    KU: "Navbera vekirî:",
+  },
+  lastCorrectionRejected: {
+    DE: "Der letzte Nachtragsantrag für diesen Zeitraum wurde abgelehnt.",
+    EN: "The last correction request for this period was rejected.",
+    IT: "L'ultima richiesta per questo periodo è stata rifiutata.",
+    TR: "Bu dönem için son düzeltme talebi reddedildi.",
+    SQ: "Kërkesa e fundit për këtë periudhë u refuzua.",
+    KU: "Daxwaza dawî ya rastkirinê ji bo vê navberê hat redkirin.",
+  },
+  lastDecisionFor: {
+    DE: "Letzte Entscheidung für:",
+    EN: "Last decision for:",
+    IT: "Ultima decisione per:",
+    TR: "Son karar:",
+    SQ: "Vendimi i fundit për:",
+    KU: "Biryara dawî ji bo:",
+  },
+  sendNewCorrectionRequest: {
+    DE: "Neuen Nachtragsantrag senden",
+    EN: "Send new correction request",
+    IT: "Invia nuova richiesta",
+    TR: "Yeni düzeltme talebi gönder",
+    SQ: "Dërgo kërkesë të re korrigjimi",
+    KU: "Daxwaza nû ya rastkirinê bişîne",
+  },
+  correctionRequiredNow: {
+    DE: "Für den ausgewählten Tag ist jetzt ein Nachtragsantrag erforderlich.",
+    EN: "A correction request is now required for the selected day.",
+    IT: "Per il giorno selezionato è ora richiesta una richiesta di integrazione.",
+    TR: "Seçilen gün için artık düzeltme talebi gereklidir.",
+    SQ: "Për ditën e zgjedhur tani kërkohet kërkesë korrigjimi.",
+    KU: "Ji bo roja hilbijartî niha daxwaza rastkirinê pêwist e.",
+  },
+  correctionNotRequiredNow: {
+    DE: "Für den ausgewählten Tag ist aktuell noch kein Nachtragsantrag erforderlich.",
+    EN: "No correction request is currently required for the selected day.",
+    IT: "Al momento non è richiesta una richiesta per il giorno selezionato.",
+    TR: "Seçilen gün için şu anda düzeltme talebi gerekli değil.",
+    SQ: "Aktualisht nuk kërkohet kërkesë korrigjimi për ditën e zgjedhur.",
+    KU: "Ji bo roja hilbijartî hêj daxwaza rastkirinê pêwist nîne.",
+  },
+  sendCorrectionRequest: {
+    DE: "Nachtragsantrag senden",
+    EN: "Send correction request",
+    IT: "Invia richiesta",
+    TR: "Düzeltme talebi gönder",
+    SQ: "Dërgo kërkesën për korrigjim",
+    KU: "Daxwaza rastkirinê bişîne",
+  },
+  start: { DE: "Beginn", EN: "Start", IT: "Inizio", TR: "Başlangıç", SQ: "Fillimi", KU: "Destpêk" },
+  end: { DE: "Ende", EN: "End", IT: "Fine", TR: "Bitiş", SQ: "Fundi", KU: "Dawî" },
+  workTimeCalculated: {
+    DE: "Arbeitszeit (Tag berechnet)",
+    EN: "Work time (day calculated)",
+    IT: "Orario di lavoro (giorno calcolato)",
+    TR: "Çalışma süresi (gün hesaplandı)",
+    SQ: "Koha e punës (dita e llogaritur)",
+    KU: "Dema karê (roj hate hesibandin)",
+  },
+  gross: { DE: "Brutto", EN: "Gross", IT: "Lordo", TR: "Brüt", SQ: "Bruto", KU: "Berî derxistin" },
+  legalBreak: {
+    DE: "Gesetzliche Pause",
+    EN: "Legal break",
+    IT: "Pausa legale",
+    TR: "Yasal mola",
+    SQ: "Pushimi ligjor",
+    KU: "Navbera qanûnî",
+  },
+  net: { DE: "Netto", EN: "Net", IT: "Netto", TR: "Net", SQ: "Neto", KU: "Safî" },
+  activityPerformed: {
+    DE: "Ausgeführte Tätigkeit",
+    EN: "Performed activity",
+    IT: "Attività svolta",
+    TR: "Yapılan faaliyet",
+    SQ: "Aktiviteti i kryer",
+    KU: "Çalakiya pêk hatî",
+  },
+  activityPlaceholder: {
+    DE: "z.B. Fliesen verlegen, Verfugen...",
+    EN: "e.g. laying tiles, grouting...",
+    IT: "es. posa piastrelle, stuccatura...",
+    TR: "örn. fayans döşeme, derz dolgu...",
+    SQ: "p.sh. shtrim pllakash, fugim...",
+    KU: "mînak: danîna tileyan, dagirtina derzan...",
+  },
+  location: {
+    DE: "Einsatzort",
+    EN: "Location",
+    IT: "Luogo di lavoro",
+    TR: "Çalışma yeri",
+    SQ: "Vendndodhja e punës",
+    KU: "Cihê karê",
+  },
+  locationPlaceholder: {
+    DE: "z.B. Musterstraße 5, München",
+    EN: "e.g. Musterstraße 5, Munich",
+    IT: "es. Musterstraße 5, Monaco",
+    TR: "örn. Musterstraße 5, Münih",
+    SQ: "p.sh. Musterstraße 5, Mynih",
+    KU: "mînak: Musterstraße 5, Munich",
+  },
+  noteForAdmin: {
+    DE: "Notiz für Admin",
+    EN: "Note for admin",
+    IT: "Nota per admin",
+    TR: "Yönetici için not",
+    SQ: "Shënim për adminin",
+    KU: "Nîşe ji bo admin",
+  },
+  notePlaceholder: {
+    DE: "Optional: Hinweise zum Einsatz, Material, Besonderheiten...",
+    EN: "Optional: notes about the assignment, material, special cases...",
+    IT: "Opzionale: note su incarico, materiale, particolarità...",
+    TR: "İsteğe bağlı: görev, malzeme, özel durumlarla ilgili notlar...",
+    SQ: "Opsionale: shënime për detyrën, materialin, veçoritë...",
+    KU: "Vebijarkî: têbînî li ser kar, materyal, taybetî...",
+  },
+  noteOptionalVisibleToAdmin: {
+    DE: "Diese Notiz ist optional und wird dem Admin beim Eintrag angezeigt.",
+    EN: "This note is optional and will be shown to the admin with the entry.",
+    IT: "Questa nota è facoltativa e sarà visibile all'admin.",
+    TR: "Bu not isteğe bağlıdır ve kayıtla birlikte yöneticiye gösterilir.",
+    SQ: "Ky shënim është opsional dhe do t'i shfaqet adminit te regjistrimi.",
+    KU: "Ev nîşe vebijarkî ye û bi tomarê re ji admin re tê nîşandan.",
+  },
+  travelMinutes: {
+    DE: "Fahrzeit (Min.)",
+    EN: "Travel time (min.)",
+    IT: "Tempo di viaggio (min.)",
+    TR: "Yol süresi (dk.)",
+    SQ: "Koha e udhëtimit (min.)",
+    KU: "Dema rê (deq.)",
+  },
+  reset: {
+    DE: "Zurücksetzen",
+    EN: "Reset",
+    IT: "Reimposta",
+    TR: "Sıfırla",
+    SQ: "Rivendos",
+    KU: "Vesaz bike",
+  },
+  saveEntry: {
+    DE: "Eintrag speichern",
+    EN: "Save entry",
+    IT: "Salva voce",
+    TR: "Kaydı kaydet",
+    SQ: "Ruaj regjistrimin",
+    KU: "Tomarê tomar bike",
+  },
+  saving: {
+    DE: "Speichert...",
+    EN: "Saving...",
+    IT: "Salvataggio...",
+    TR: "Kaydediliyor...",
+    SQ: "Duke ruajtur...",
+    KU: "Tê tomarkirin...",
+  },
+  saveBreak: {
+    DE: "Pause speichern",
+    EN: "Save break",
+    IT: "Salva pausa",
+    TR: "Molayı kaydet",
+    SQ: "Ruaj pushimin",
+    KU: "Navberê tomar bike",
+  },
+  breakCapture: {
+    DE: "Pause erfassen",
+    EN: "Record break",
+    IT: "Registra pausa",
+    TR: "Mola gir",
+    SQ: "Regjistro pushimin",
+    KU: "Navberê tomar bike",
+  },
+  breakFrom: {
+    DE: "Pause von",
+    EN: "Break from",
+    IT: "Pausa da",
+    TR: "Mola başlangıcı",
+    SQ: "Pushimi nga",
+    KU: "Navberê ji",
+  },
+  breakTo: {
+    DE: "Pause bis",
+    EN: "Break to",
+    IT: "Pausa fino a",
+    TR: "Mola bitişi",
+    SQ: "Pushimi deri",
+    KU: "Navberê heta",
+  },
+  breakCalculation: {
+    DE: "Pausenberechnung",
+    EN: "Break calculation",
+    IT: "Calcolo pausa",
+    TR: "Mola hesaplaması",
+    SQ: "Llogaritja e pushimit",
+    KU: "Hesabkirina navberê",
+  },
+  breakRuleInfo: {
+    DE: "Die gesetzliche Pause richtet sich nach der gesamten Arbeitszeit des Tages. Falls du zu wenig Pause einträgst, ergänzt die App die fehlende Differenz automatisch.",
+    EN: "The legal break depends on the total working time of the day. If you enter too little break time, the app automatically adds the missing difference.",
+    IT: "La pausa legale dipende dal totale delle ore lavorate nel giorno. Se inserisci una pausa troppo breve, l'app aggiunge automaticamente la differenza mancante.",
+    TR: "Yasal mola günün toplam çalışma süresine bağlıdır. Çok az mola girerseniz uygulama eksik farkı otomatik ekler.",
+    SQ: "Pushimi ligjor varet nga koha totale e punës së ditës. Nëse vendosni shumë pak pushim, aplikacioni e plotëson automatikisht diferencën që mungon.",
+    KU: "Navbera qanûnî li gorî tevahiya dema karê ya rojê ye. Heke tu navberek kêm binivîsî, sepan cudahiya mayî bixweber zêde dike.",
+  },
+  allEntries: {
+    DE: "Alle Einträge",
+    EN: "All entries",
+    IT: "Tutte le voci",
+    TR: "Tüm kayıtlar",
+    SQ: "Të gjitha regjistrimet",
+    KU: "Hemû tomar",
+  },
+  year: { DE: "Jahr", EN: "Year", IT: "Anno", TR: "Yıl", SQ: "Viti", KU: "Sal" },
+  allYears: {
+    DE: "Alle Jahre",
+    EN: "All years",
+    IT: "Tutti gli anni",
+    TR: "Tüm yıllar",
+    SQ: "Të gjitha vitet",
+    KU: "Hemû sal",
+  },
+  loadingEntries: {
+    DE: "Lade Einträge...",
+    EN: "Loading entries...",
+    IT: "Caricamento voci...",
+    TR: "Kayıtlar yükleniyor...",
+    SQ: "Po ngarkohen regjistrimet...",
+    KU: "Tomar têne barkirin...",
+  },
+  noEntriesForYear: {
+    DE: "Keine Einträge für das ausgewählte Jahr vorhanden.",
+    EN: "No entries available for the selected year.",
+    IT: "Nessuna voce disponibile per l'anno selezionato.",
+    TR: "Seçilen yıl için kayıt yok.",
+    SQ: "Nuk ka regjistrime për vitin e zgjedhur.",
+    KU: "Ji bo sala hilbijartî tomar tune ne.",
+  },
+  expandCollapse: {
+    DE: "Ein-/Ausklappen",
+    EN: "Expand/collapse",
+    IT: "Espandi/comprimi",
+    TR: "Aç/kapat",
+    SQ: "Hap/mbyll",
+    KU: "Veke/bigire",
+  },
+  entry: { DE: "Eintrag", EN: "entry", IT: "voce", TR: "kayıt", SQ: "regjistrim", KU: "tomar" },
+  entries: { DE: "Einträge", EN: "entries", IT: "voci", TR: "kayıt", SQ: "regjistrime", KU: "tomar" },
+  break: { DE: "Pause", EN: "break", IT: "pausa", TR: "mola", SQ: "pushim", KU: "navber" },
+  showBreakDetails: {
+    DE: "Pausen-Details anzeigen",
+    EN: "Show break details",
+    IT: "Mostra dettagli pausa",
+    TR: "Mola detaylarını göster",
+    SQ: "Shfaq detajet e pushimit",
+    KU: "Hûrguliyên navberê nîşan bide",
+  },
+  oClock: {
+    DE: "Uhr",
+    EN: "",
+    IT: "",
+    TR: "",
+    SQ: "",
+    KU: "",
+  },
+  noActivityStored: {
+    DE: "Keine Tätigkeit hinterlegt",
+    EN: "No activity stored",
+    IT: "Nessuna attività salvata",
+    TR: "Kayıtlı faaliyet yok",
+    SQ: "Nuk ka aktivitet të ruajtur",
+    KU: "Çalakî nehatiye tomar kirin",
+  },
+  noLocationStored: {
+    DE: "Keine Baustelle / Adresse hinterlegt",
+    EN: "No site / address stored",
+    IT: "Nessun cantiere / indirizzo salvato",
+    TR: "Kayıtlı şantiye / adres yok",
+    SQ: "Nuk ka kantier / adresë të ruajtur",
+    KU: "Cihê şantiyê / navnîşan nehatiye tomar kirin",
+  },
+  travelTime: {
+    DE: "Fahrtzeit:",
+    EN: "Travel time:",
+    IT: "Tempo di viaggio:",
+    TR: "Yol süresi:",
+    SQ: "Koha e udhëtimit:",
+    KU: "Dema rê:",
+  },
+  showDetails: {
+    DE: "Details anzeigen",
+    EN: "Show details",
+    IT: "Mostra dettagli",
+    TR: "Detayları göster",
+    SQ: "Shfaq detajet",
+    KU: "Hûrguliyan nîşan bide",
+  },
+  showNote: {
+    DE: "Notiz anzeigen",
+    EN: "Show note",
+    IT: "Mostra nota",
+    TR: "Notu göster",
+    SQ: "Shfaq shënimin",
+    KU: "Nîşeyê nîşan bide",
+  },
+  edit: {
+    DE: "Bearbeiten",
+    EN: "Edit",
+    IT: "Modifica",
+    TR: "Düzenle",
+    SQ: "Ndrysho",
+    KU: "Sererast bike",
+  },
+  delete: {
+    DE: "Löschen",
+    EN: "Delete",
+    IT: "Elimina",
+    TR: "Sil",
+    SQ: "Fshij",
+    KU: "Jê bibe",
+  },
+  workTimeDetails: {
+    DE: "Arbeitszeit-Details",
+    EN: "Work time details",
+    IT: "Dettagli orario di lavoro",
+    TR: "Çalışma süresi detayları",
+    SQ: "Detajet e kohës së punës",
+    KU: "Hûrguliyên dema karê",
+  },
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+  },
+  dateAndTime: {
+    DE: "Datum & Zeit",
+    EN: "Date & time",
+    IT: "Data e ora",
+    TR: "Tarih ve saat",
+    SQ: "Data dhe ora",
+    KU: "Dîrok û dem",
+  },
+  netWorkTime: {
+    DE: "Netto-Arbeitszeit",
+    EN: "Net work time",
+    IT: "Orario netto",
+    TR: "Net çalışma süresi",
+    SQ: "Koha neto e punës",
+    KU: "Dema safî ya karê",
+  },
+  siteOrAddress: {
+    DE: "Baustelle / Adresse",
+    EN: "Site / address",
+    IT: "Cantiere / indirizzo",
+    TR: "Şantiye / adres",
+    SQ: "Kantieri / adresa",
+    KU: "Cihê karê / navnîşan",
+  },
+  breakDetails: {
+    DE: "Pausen-Details",
+    EN: "Break details",
+    IT: "Dettagli pausa",
+    TR: "Mola detayları",
+    SQ: "Detajet e pushimit",
+    KU: "Hûrguliyên navberê",
+  },
+  manualBreak: {
+    DE: "Manuell eingetragene Pause",
+    EN: "Manually entered break",
+    IT: "Pausa inserita manualmente",
+    TR: "Elle girilen mola",
+    SQ: "Pushimi i futur manualisht",
+    KU: "Navbera bi destan hatiye nivîsîn",
+  },
+  noManualBreak: {
+    DE: "Keine manuelle Pause eingetragen",
+    EN: "No manual break entered",
+    IT: "Nessuna pausa manuale inserita",
+    TR: "Elle girilmiş mola yok",
+    SQ: "Nuk ka pushim manual të futur",
+    KU: "Navbera bi destan nehatiye nivîsîn",
+  },
+  legallyRequired: {
+    DE: "Gesetzlich erforderlich",
+    EN: "Legally required",
+    IT: "Legalmente richiesto",
+    TR: "Yasal olarak gerekli",
+    SQ: "E kërkuar ligjërisht",
+    KU: "Ji hêla qanûnê ve pêwist",
+  },
+  autoCompleted: {
+    DE: "Automatisch ergänzt",
+    EN: "Automatically added",
+    IT: "Aggiunto automaticamente",
+    TR: "Otomatik eklendi",
+    SQ: "Plotësuar automatikisht",
+    KU: "Bixweber hate zêdekirin",
+  },
+  noAutoCompletion: {
+    DE: "Keine automatische Ergänzung",
+    EN: "No automatic addition",
+    IT: "Nessuna integrazione automatica",
+    TR: "Otomatik ekleme yok",
+    SQ: "Nuk ka plotësim automatik",
+    KU: "Zêdekirina bixweber tune ye",
+  },
+  effectiveBreakTotal: {
+    DE: "Wirksame Pause gesamt",
+    EN: "Effective break total",
+    IT: "Pausa effettiva totale",
+    TR: "Toplam geçerli mola",
+    SQ: "Pushimi efektiv total",
+    KU: "Tevahiya navbera bi bandor",
+  },
+  note: {
+    DE: "Notiz",
+    EN: "Note",
+    IT: "Nota",
+    TR: "Not",
+    SQ: "Shënim",
+    KU: "Nîşe",
+  },
+  noNote: {
+    DE: "Keine Notiz vorhanden.",
+    EN: "No note available.",
+    IT: "Nessuna nota disponibile.",
+    TR: "Not yok.",
+    SQ: "Nuk ka shënim.",
+    KU: "Nîşe tune ye.",
+  },
+  selectedDate: {
+    DE: "Ausgewähltes Datum",
+    EN: "Selected date",
+    IT: "Data selezionata",
+    TR: "Seçilen tarih",
+    SQ: "Data e zgjedhur",
+    KU: "Dîroka hilbijartî",
+  },
+  serverDeterminesCorrectionRange: {
+    DE: "Der Server ermittelt automatisch den ältesten fehlenden Arbeitstag bis zu diesem Datum und erstellt daraus den passenden Nachtragszeitraum.",
+    EN: "The server automatically determines the oldest missing workday up to this date and creates the matching correction period.",
+    IT: "Il server determina automaticamente il giorno lavorativo mancante più vecchio fino a questa data e crea l'intervallo corretto.",
+    TR: "Sunucu bu tarihe kadar en eski eksik iş gününü otomatik belirler ve uygun düzeltme aralığını oluşturur.",
+    SQ: "Serveri përcakton automatikisht ditën më të vjetër të munguar të punës deri në këtë datë dhe krijon periudhën përkatëse.",
+    KU: "Server bixweber roja karê ya herî kevn a wenda heta vê dîrokê diyar dike û navbera guncaw çêdike.",
+  },
+  existingCorrectionInfoLoading: {
+    DE: "Bestehende Nachtragsinformationen werden geladen...",
+    EN: "Loading existing correction information...",
+    IT: "Caricamento informazioni esistenti...",
+    TR: "Mevcut düzeltme bilgileri yükleniyor...",
+    SQ: "Po ngarkohen informacionet ekzistuese të korrigjimit...",
+    KU: "Agahiyên rastkirinê yên heyî têne barkirin...",
+  },
+  activeUnlockAlreadyExists: {
+    DE: "Für den ausgewählten Tag existiert bereits eine aktive Freigabe. Ein neuer Antrag ist aktuell nicht nötig.",
+    EN: "An active approval already exists for the selected day. A new request is not needed right now.",
+    IT: "Per il giorno selezionato esiste già un'approvazione attiva. Una nuova richiesta non è necessaria al momento.",
+    TR: "Seçilen gün için zaten aktif bir onay var. Şu anda yeni bir talep gerekli değil.",
+    SQ: "Për ditën e zgjedhur ekziston tashmë një miratim aktiv. Një kërkesë e re nuk nevojitet tani.",
+    KU: "Ji bo roja hilbijartî berê xweşandinê çalak heye. Naha daxwazek nû ne pêwist e.",
+  },
+  correctionRequired: {
+    DE: "Ein Nachtragsantrag ist erforderlich.",
+    EN: "A correction request is required.",
+    IT: "È richiesta una richiesta di integrazione.",
+    TR: "Düzeltme talebi gereklidir.",
+    SQ: "Kërkohet një kërkesë korrigjimi.",
+    KU: "Daxwaza rastkirinê pêwist e.",
+  },
+  missingDaysUntilLock: {
+    DE: "fehlende Arbeitstage bis zur Sperrung.",
+    EN: "missing workdays until lock.",
+    IT: "giorni lavorativi mancanti fino al blocco.",
+    TR: "kilide kadar eksik iş günü.",
+    SQ: "ditë pune të munguara deri në bllokim.",
+    KU: "rojên karê yên wenda heta girtinê.",
+  },
+  sendRequest: {
+    DE: "Antrag senden",
+    EN: "Send request",
+    IT: "Invia richiesta",
+    TR: "Talep gönder",
+    SQ: "Dërgo kërkesën",
+    KU: "Daxwazê bişîne",
+  },
+  editEntry: {
+    DE: "Eintrag bearbeiten",
+    EN: "Edit entry",
+    IT: "Modifica voce",
+    TR: "Kaydı düzenle",
+    SQ: "Ndrysho regjistrimin",
+    KU: "Tomarê sererast bike",
+  },
+  saveChanges: {
+    DE: "Änderungen speichern",
+    EN: "Save changes",
+    IT: "Salva modifiche",
+    TR: "Değişiklikleri kaydet",
+    SQ: "Ruaj ndryshimet",
+    KU: "Guherînan tomar bike",
+  },
+  assignmentManagedServerSide: {
+    DE: "Zuordnung wird serverseitig automatisch verwaltet.",
+    EN: "Assignment is managed automatically on the server side.",
+    IT: "L'assegnazione è gestita automaticamente dal server.",
+    TR: "Atama sunucu tarafında otomatik yönetilir.",
+    SQ: "Caktimi menaxhohet automatikisht nga serveri.",
+    KU: "Girêdan li aliyê serverê bixweber tê rêvebirin.",
+  },
+  performedActivity: {
+    DE: "Ausgeführte Tätigkeit",
+    EN: "Performed activity",
+    IT: "Attività svolta",
+    TR: "Yapılan faaliyet",
+    SQ: "Aktiviteti i kryer",
+    KU: "Çalakiya pêk hatî",
+  },
+  travelTimeMin: {
+    DE: "Fahrzeit (Min.)",
+    EN: "Travel time (min.)",
+    IT: "Tempo di viaggio (min.)",
+    TR: "Yol süresi (dk.)",
+    SQ: "Koha e udhëtimit (min.)",
+    KU: "Dema rê (deq.)",
+  },
+  changesSaveFailed: {
+    DE: "Bearbeiten fehlgeschlagen.",
+    EN: "Editing failed.",
+    IT: "Modifica non riuscita.",
+    TR: "Düzenleme başarısız oldu.",
+    SQ: "Ndryshimi dështoi.",
+    KU: "Sererastkirin bi ser neket.",
+  },
+};
+
 export type AdminTasksTextKey =
   | "adminTasksActiveLabel"
   | "loading"
@@ -161,7 +2771,15 @@ export type AdminTasksTextKey =
   | "categorySickness"
   | "categoryGeneral"
   | "until"
-  | "dash";
+  | "dash"
+  | "taskNotFound"
+  | "noAccess"
+  | "taskAlreadyCompleted"
+  | "referenceWithoutDate"
+  | "taskCompleteRequirementWorkTime"
+  | "taskCompleteRequirementVacation"
+  | "taskCompleteRequirementSickness"
+  | "taskCompleteRequirementGeneric";
 
 export const ADMIN_TASKS_UI_TEXTS: Record<
   AdminTasksTextKey,
@@ -502,6 +3120,70 @@ export const ADMIN_TASKS_UI_TEXTS: Record<
     TR: "—",
     SQ: "—",
     KU: "—",
+  },
+  taskNotFound: {
+    DE: "Aufgabe nicht gefunden.",
+    EN: "Task not found.",
+    IT: "Attività non trovata.",
+    TR: "Görev bulunamadı.",
+    SQ: "Detyra nuk u gjet.",
+    KU: "Erk nehat dîtin.",
+  },
+  noAccess: {
+    DE: "Kein Zugriff.",
+    EN: "No access.",
+    IT: "Nessun accesso.",
+    TR: "Erişim yok.",
+    SQ: "Nuk ka qasje.",
+    KU: "Gihiştin tune ye.",
+  },
+  taskAlreadyCompleted: {
+    DE: "Aufgabe ist bereits erledigt.",
+    EN: "Task is already completed.",
+    IT: "L'attività è già completata.",
+    TR: "Görev zaten tamamlandı.",
+    SQ: "Detyra është tashmë e kryer.",
+    KU: "Erk jixwe qediya ye.",
+  },
+  referenceWithoutDate: {
+    DE: "ohne Datum",
+    EN: "without date",
+    IT: "senza data",
+    TR: "tarihsiz",
+    SQ: "pa datë",
+    KU: "bê dîrok",
+  },
+  taskCompleteRequirementWorkTime: {
+    DE: "Die Aufgabe kann erst erledigt werden, wenn für {referenceLabel} alle erforderlichen Arbeitszeiteinträge vorhanden sind.",
+    EN: "The task can only be completed once all required work time entries exist for {referenceLabel}.",
+    IT: "L'attività può essere completata solo quando per {referenceLabel} sono presenti tutte le registrazioni richieste dell'orario di lavoro.",
+    TR: "Görev ancak {referenceLabel} için gerekli tüm çalışma süresi kayıtları موجود olduğunda tamamlanabilir.",
+    SQ: "Detyra mund të përfundohet vetëm kur për {referenceLabel} ekzistojnë të gjitha regjistrimet e kërkuara të kohës së punës.",
+    KU: "Erk tenê dema ku ji bo {referenceLabel} hemû tomarên pêwîst ên dema karê hene dikare were temamkirin.",
+  },
+  taskCompleteRequirementVacation: {
+    DE: "Die Aufgabe kann erst erledigt werden, wenn für {referenceLabel} alle erforderlichen Urlaubseinträge oder passenden Urlaubsanträge vorhanden sind.",
+    EN: "The task can only be completed once all required vacation entries or matching vacation requests exist for {referenceLabel}.",
+    IT: "L'attività può essere completata solo quando per {referenceLabel} sono presenti tutte le registrazioni ferie richieste o le richieste ferie corrispondenti.",
+    TR: "Görev ancak {referenceLabel} için gerekli tüm izin kayıtları veya uygun izin talepleri mevcut olduğunda tamamlanabilir.",
+    SQ: "Detyra mund të përfundohet vetëm kur për {referenceLabel} ekzistojnë të gjitha regjistrimet e kërkuara të pushimit ose kërkesat përkatëse për pushim.",
+    KU: "Erk tenê dema ku ji bo {referenceLabel} hemû tomarên pêwîst ên betlaneyê an daxwazên guncaw ên betlaneyê hene dikare were temamkirin.",
+  },
+  taskCompleteRequirementSickness: {
+    DE: "Die Aufgabe kann erst erledigt werden, wenn für {referenceLabel} alle erforderlichen Krankheitseinträge oder passenden Krankheitsanträge vorhanden sind.",
+    EN: "The task can only be completed once all required sickness entries or matching sickness requests exist for {referenceLabel}.",
+    IT: "L'attività può essere completata solo quando per {referenceLabel} sono presenti tutte le registrazioni di malattia richieste o le richieste corrispondenti.",
+    TR: "Görev ancak {referenceLabel} için gerekli tüm hastalık kayıtları veya uygun hastalık talepleri mevcut olduğunda tamamlanabilir.",
+    SQ: "Detyra mund të përfundohet vetëm kur për {referenceLabel} ekzistojnë të gjitha regjistrimet e kërkuara të sëmundjes ose kërkesat përkatëse.",
+    KU: "Erk tenê dema ku ji bo {referenceLabel} hemû tomarên pêwîst ên nexweşiyê an daxwazên guncaw ên nexweşiyê hene dikare were temamkirin.",
+  },
+  taskCompleteRequirementGeneric: {
+    DE: "Die geforderte Aktion wurde noch nicht erfüllt.",
+    EN: "The required action has not been fulfilled yet.",
+    IT: "L'azione richiesta non è stata ancora completata.",
+    TR: "Gerekli işlem henüz yerine getirilmedi.",
+    SQ: "Veprimi i kërkuar nuk është përmbushur ende.",
+    KU: "Çalakiya pêwîst hîn nehatiye cîbicîkirin.",
   },
 };
 
@@ -2285,7 +4967,9 @@ export type AdminVacationRequestsTextKey =
   | "halfVacationDay"
   | "total"
   | "mixedCompensationPrefix"
-  | "insufficientPaidVacationHint";
+  | "insufficientPaidVacationHint"
+  | "ofWhich"
+  | "and";
 
 export const ADMIN_VACATION_REQUESTS_UI_TEXTS: Record<
   AdminVacationRequestsTextKey,
@@ -2906,6 +5590,22 @@ export const ADMIN_VACATION_REQUESTS_UI_TEXTS: Record<
     TR: "Bu talep için şu anda ücretsiz izin öngörülüyor çünkü yeterli ücretli izin mevcut değildi.",
     SQ: "Për këtë kërkesë aktualisht është parashikuar pushim i papaguar, sepse nuk kishte mjaftueshëm pushim të paguar në dispozicion.",
     KU: "Ji bo vê daxwazê niha betlaneya bêpere hatî plan kirin, ji ber ku têra betlaneya bi pere tunebû.",
+  },
+  ofWhich: {
+    DE: "davon",
+    EN: "of which",
+    IT: "di cui",
+    TR: "bunların",
+    SQ: "prej tyre",
+    KU: "ji wan",
+  },
+  and: {
+    DE: "und",
+    EN: "and",
+    IT: "e",
+    TR: "ve",
+    SQ: "dhe",
+    KU: "û",
   },
 };
 

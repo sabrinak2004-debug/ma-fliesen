@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   }
 
   if (session.role !== Role.ADMIN) {
-    return NextResponse.json({ ok: false, error: "Keine Berechtigung." }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
   }
 
   let body: unknown = null;

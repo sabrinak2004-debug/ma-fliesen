@@ -54,7 +54,7 @@ async function requireAdmin(sessionUserId: string, sessionCompanyId: string) {
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session?.userId || !session.companyId) {
-    return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+    return NextResponse.json({ ok: false, error: "NOT_AUTHENTICATED" }, { status: 401 });
   }
 
   const admin = await requireAdmin(session.userId, session.companyId);
@@ -119,7 +119,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session?.userId || !session.companyId) {
-    return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+    return NextResponse.json({ ok: false, error: "NOT_AUTHENTICATED" }, { status: 401 });
   }
 
   const admin = await requireAdmin(session.userId, session.companyId);

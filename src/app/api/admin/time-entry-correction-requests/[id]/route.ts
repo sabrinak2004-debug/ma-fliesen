@@ -13,7 +13,7 @@ export async function DELETE(_req: Request, context: RouteContext) {
   const admin = await requireAdmin();
   if (!admin) {
     return NextResponse.json(
-      { ok: false, error: "Keine Berechtigung." },
+      { ok: false, error: "FORBIDDEN" },
       { status: 403 }
     );
   }
@@ -50,7 +50,7 @@ export async function DELETE(_req: Request, context: RouteContext) {
 
   if (existing.user.companyId !== admin.companyId) {
     return NextResponse.json(
-      { ok: false, error: "Keine Berechtigung." },
+      { ok: false, error: "FORBIDDEN" },
       { status: 403 }
     );
   }

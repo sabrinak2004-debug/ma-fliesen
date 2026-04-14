@@ -121,7 +121,7 @@ export async function GET(req: Request) {
     : null;
   if (!admin) {
     return NextResponse.json(
-      { ok: false, error: "Keine Berechtigung." },
+      { ok: false, error: "FORBIDDEN" },
       { status: 403 }
     );
   }
@@ -149,7 +149,7 @@ export async function GET(req: Request) {
   if (statusParam) {
     if (!isTimeEntryCorrectionRequestStatus(statusParam)) {
       return NextResponse.json(
-        { ok: false, error: "Ungültiger Status." },
+        { ok: false, error: "INVALID_STATUS" },
         { status: 400 }
       );
     }
@@ -163,7 +163,7 @@ export async function GET(req: Request) {
   if (monthParam) {
     if (!/^\d{4}-\d{2}$/.test(monthParam)) {
       return NextResponse.json(
-        { ok: false, error: "month muss YYYY-MM sein." },
+        { ok: false, error: "INVALID_MONTH_FORMAT" },
         { status: 400 }
       );
     }

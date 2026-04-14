@@ -783,7 +783,7 @@ export async function GET(req: Request) {
   if (monthParam) {
     if (!isYYYYMM(monthParam)) {
       return NextResponse.json(
-        { ok: false, error: "month muss YYYY-MM sein." },
+        { ok: false, error: "INVALID_MONTH_FORMAT" },
         { status: 400 }
       );
     }

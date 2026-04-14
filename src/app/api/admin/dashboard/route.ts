@@ -236,11 +236,11 @@ function getTranslatedText(
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) {
-    return NextResponse.json({ ok: false, error: "Nicht eingeloggt" }, { status: 401 });
+    return NextResponse.json({ ok: false, error: "NOT_AUTHENTICATED" }, { status: 401 });
   }
 
   if (session.role !== Role.ADMIN) {
-    return NextResponse.json({ ok: false, error: "Kein Zugriff" }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
   }
 
   const now = new Date();
@@ -249,7 +249,7 @@ export async function GET(req: Request) {
   const monthParam = url.searchParams.get("month") ?? todayIso.slice(0, 7);
 
   if (!/^\d{4}-\d{2}$/.test(monthParam)) {
-    return NextResponse.json({ ok: false, error: "Ungültiger Monat." }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "INVALID_MONTH" }, { status: 400 });
   }
 
   const monthStartIso = `${monthParam}-01`;

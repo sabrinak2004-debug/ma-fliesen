@@ -489,6 +489,26 @@ export default function AdminWochenplanPage() {
     translate(language, key, ADMIN_WEEKLY_PLAN_UI_TEXTS);
 
   useEffect(() => {
+    setDocTitle((current) => {
+      if (
+        current === "" ||
+        current === "Baustellenzettel" ||
+        current === "Dokument" ||
+        current === translate("DE", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
+        current === translate("EN", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
+        current === translate("IT", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
+        current === translate("TR", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
+        current === translate("SQ", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
+        current === translate("KU", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS)
+      ) {
+        return t("document");
+      }
+
+      return current;
+    });
+  }, [language]);
+
+  useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
     const onChange = () => setIsDesktop(mq.matches);
     onChange();
@@ -543,7 +563,7 @@ export default function AdminWochenplanPage() {
   const [docs, setDocs] = useState<PlanEntryDocument[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
   const [docsError, setDocsError] = useState<string | null>(null);
-  const [docTitle, setDocTitle] = useState<string>("Baustellenzettel");
+  const [docTitle, setDocTitle] = useState<string>(t("document"));
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
@@ -855,7 +875,7 @@ export default function AdminWochenplanPage() {
 
       const fd = new FormData();
       fd.append("planEntryId", editEntryId);
-      fd.append("title", docTitle.trim() || "Dokument");
+      fd.append("title", docTitle.trim() || t("document"));
       fd.append("file", normalizedFile, normalizedFile.name);
 
       const r = await fetch("/api/admin/plan-entry-documents", {
@@ -934,7 +954,7 @@ export default function AdminWochenplanPage() {
     setSelectedFile(null);
     setUploadingDoc(false);
     setDeletingDocId(null);
-    setDocTitle("Baustellenzettel");
+    setDocTitle(t("document"));
   }
 
   function closeNoteModal() {
@@ -966,7 +986,7 @@ export default function AdminWochenplanPage() {
     setDocs([]);
     setDocsError(null);
     setSelectedFile(null);
-    setDocTitle("Baustellenzettel");
+    setDocTitle(t("document"));
 
     setEntryModalOpen(true);
   }
@@ -1437,10 +1457,10 @@ export default function AdminWochenplanPage() {
                               }}
                             >
                               <div style={{ fontWeight: 1000, fontSize: 12, color: "var(--muted)" }}>
-                                🔒 Admin-Notiz
+                                {t("adminNoteLabel")}
                               </div>
                               <div style={{ fontSize: 12, marginTop: 6, color: "var(--muted)" }}>
-                                {n.note.trim() ? n.note : "(leer)"}
+                                {n.note.trim() ? n.note : t("emptyValue")}
                               </div>
                             </div>
                           ))}
