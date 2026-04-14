@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { translate, type AppUiLanguage } from "@/lib/i18n";
 
 type MeSession = {
   userId: string;
@@ -27,6 +28,147 @@ type PushPublicKeyResponse =
       error: string;
     };
 
+type PushOnboardingTextKey =
+  | "invalidResponse"
+  | "missingPublicKey"
+  | "unknownError"
+  | "subscriptionIncomplete"
+  | "saveFailed"
+  | "permissionDenied"
+  | "sessionLoadFailed"
+  | "activated"
+  | "activationFailed"
+  | "title"
+  | "description"
+  | "activating"
+  | "activateNow"
+  | "companyName";
+
+const PUSH_ONBOARDING_TEXTS: Record<
+  PushOnboardingTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  invalidResponse: {
+    DE: "Ungültige Antwort.",
+    EN: "Invalid response.",
+    IT: "Risposta non valida.",
+    TR: "Geçersiz yanıt.",
+    SQ: "Përgjigje e pavlefshme.",
+    KU: "Bersiva nederbasdar.",
+  },
+  missingPublicKey: {
+    DE: "Public Key fehlt.",
+    EN: "Public key is missing.",
+    IT: "Manca la public key.",
+    TR: "Public key eksik.",
+    SQ: "Mungon public key.",
+    KU: "Public key tune ye.",
+  },
+  unknownError: {
+    DE: "Unbekannter Fehler.",
+    EN: "Unknown error.",
+    IT: "Errore sconosciuto.",
+    TR: "Bilinmeyen hata.",
+    SQ: "Gabim i panjohur.",
+    KU: "Çewtiya nenas.",
+  },
+  subscriptionIncomplete: {
+    DE: "Subscription unvollständig.",
+    EN: "Subscription is incomplete.",
+    IT: "La sottoscrizione è incompleta.",
+    TR: "Abonelik eksik.",
+    SQ: "Abonimi është i paplotë.",
+    KU: "Abonetî ne temam e.",
+  },
+  saveFailed: {
+    DE: "Push konnte nicht gespeichert werden.",
+    EN: "Push could not be saved.",
+    IT: "Impossibile salvare il push.",
+    TR: "Push kaydedilemedi.",
+    SQ: "Push nuk mund të ruhej.",
+    KU: "Push nehat tomar kirin.",
+  },
+  permissionDenied: {
+    DE: "Push wurde nicht erlaubt.",
+    EN: "Push was not allowed.",
+    IT: "Il push non è stato consentito.",
+    TR: "Push izni verilmedi.",
+    SQ: "Push nuk u lejua.",
+    KU: "Destûra pushê nehat dayîn.",
+  },
+  sessionLoadFailed: {
+    DE: "Session konnte nicht geladen werden.",
+    EN: "Session could not be loaded.",
+    IT: "Impossibile caricare la sessione.",
+    TR: "Oturum yüklenemedi.",
+    SQ: "Sesioni nuk mund të ngarkohej.",
+    KU: "Danûstendin nehat barkirin.",
+  },
+  activated: {
+    DE: "Push ist jetzt aktiviert.",
+    EN: "Push is now enabled.",
+    IT: "Il push è ora attivato.",
+    TR: "Push artık etkin.",
+    SQ: "Push tani është aktivizuar.",
+    KU: "Push niha çalak e.",
+  },
+  activationFailed: {
+    DE: "Push konnte nicht aktiviert werden.",
+    EN: "Push could not be enabled.",
+    IT: "Impossibile attivare il push.",
+    TR: "Push etkinleştirilemedi.",
+    SQ: "Push nuk mund të aktivizohej.",
+    KU: "Push nehat çalak kirin.",
+  },
+  title: {
+    DE: "Push-Benachrichtigungen aktivieren",
+    EN: "Enable push notifications",
+    IT: "Attiva notifiche push",
+    TR: "Push bildirimlerini etkinleştir",
+    SQ: "Aktivizo njoftimet push",
+    KU: "Agahdariyên pushê çalak bike",
+  },
+  description: {
+    DE: "Aktiviere Push, damit du Erinnerungen zu fehlenden Einträgen, Anträgen und Aufgaben direkt auf diesem Gerät erhältst.",
+    EN: "Enable push so you receive reminders about missing entries, requests and tasks directly on this device.",
+    IT: "Attiva il push per ricevere direttamente su questo dispositivo i promemoria relativi a inserimenti mancanti, richieste e attività.",
+    TR: "Eksik kayıtlar, talepler ve görevlerle ilgili hatırlatmaları doğrudan bu cihazda almak için push'u etkinleştir.",
+    SQ: "Aktivizo push që të marrësh kujtesa për regjistrime që mungojnë, kërkesa dhe detyra direkt në këtë pajisje.",
+    KU: "Pushê çalak bike da ku hişyariyên derbarê tomarkirinên kêm, daxwaz û erkan de rasterast li ser vê cîhazê bistînî.",
+  },
+  activating: {
+    DE: "Aktiviere...",
+    EN: "Enabling...",
+    IT: "Attivazione...",
+    TR: "Etkinleştiriliyor...",
+    SQ: "Po aktivizohet...",
+    KU: "Tê çalak kirin...",
+  },
+  activateNow: {
+    DE: "Push jetzt aktivieren",
+    EN: "Enable push now",
+    IT: "Attiva push ora",
+    TR: "Push'u şimdi etkinleştir",
+    SQ: "Aktivizo push tani",
+    KU: "Pushê niha çalak bike",
+  },
+  companyName: {
+    DE: "Firmenname:",
+    EN: "Company name:",
+    IT: "Nome azienda:",
+    TR: "Şirket adı:",
+    SQ: "Emri i kompanisë:",
+    KU: "Navê pargîdaniyê:",
+  },
+};
+
+function tPushOnboarding(
+  language: AppUiLanguage,
+  key: PushOnboardingTextKey
+): string {
+  return translate(language, key, PUSH_ONBOARDING_TEXTS);
+}
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
@@ -48,9 +190,12 @@ function isMeSession(v: unknown): v is MeSession {
   );
 }
 
-function parseMeResponse(v: unknown): MeResponse {
+function parseMeResponse(
+  v: unknown,
+  language: AppUiLanguage
+): MeResponse {
   if (!isRecord(v)) {
-    return { ok: false, error: "Ungültige Antwort." };
+    return { ok: false, error: tPushOnboarding(language, "invalidResponse") };
   }
 
   if (v["ok"] === true) {
@@ -67,19 +212,24 @@ function parseMeResponse(v: unknown): MeResponse {
 
   return {
     ok: false,
-    error: getStringField(v, "error") ?? "Ungültige Antwort.",
+    error:
+      getStringField(v, "error") ??
+      tPushOnboarding(language, "invalidResponse"),
   };
 }
 
-function parsePushPublicKeyResponse(v: unknown): PushPublicKeyResponse {
+function parsePushPublicKeyResponse(
+  v: unknown,
+  language: AppUiLanguage
+): PushPublicKeyResponse {
   if (!isRecord(v)) {
-    return { ok: false, error: "Ungültige Antwort." };
+    return { ok: false, error: tPushOnboarding(language, "invalidResponse") };
   }
 
   if (v["ok"] === true) {
     const publicKey = getStringField(v, "publicKey");
     if (!publicKey) {
-      return { ok: false, error: "Public Key fehlt." };
+      return { ok: false, error: tPushOnboarding(language, "missingPublicKey") };
     }
 
     return { ok: true, publicKey };
@@ -87,7 +237,8 @@ function parsePushPublicKeyResponse(v: unknown): PushPublicKeyResponse {
 
   return {
     ok: false,
-    error: getStringField(v, "error") ?? "Unbekannter Fehler.",
+    error:
+      getStringField(v, "error") ?? tPushOnboarding(language, "unknownError"),
   };
 }
 
@@ -117,14 +268,15 @@ type SubscriptionJson = {
 
 async function sendSubscriptionToBackend(
   subscriptionJson: SubscriptionJson,
-  companySubdomain: string
+  companySubdomain: string,
+  language: AppUiLanguage
 ): Promise<void> {
   if (
     !subscriptionJson.endpoint ||
     !subscriptionJson.keys?.p256dh ||
     !subscriptionJson.keys?.auth
   ) {
-    throw new Error("Subscription unvollständig.");
+    throw new Error(tPushOnboarding(language, "subscriptionIncomplete"));
   }
 
   const response = await fetch("/api/push/register", {
@@ -149,12 +301,16 @@ async function sendSubscriptionToBackend(
     const message =
       isRecord(json) && typeof json["error"] === "string"
         ? json["error"]
-        : "Push konnte nicht gespeichert werden.";
+        : tPushOnboarding(language, "saveFailed");
     throw new Error(message);
   }
 }
 
-export default function PushOnboarding() {
+export default function PushOnboarding({
+  language,
+}: {
+  language: AppUiLanguage;
+}) {
   const [companySubdomain, setCompanySubdomain] = useState<string>("");
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<
@@ -194,7 +350,7 @@ export default function PushOnboarding() {
         });
 
         const meJson: unknown = await meResponse.json().catch(() => ({}));
-        const parsedMe = parseMeResponse(meJson);
+        const parsedMe = parseMeResponse(meJson, language);
 
         if (!alive) return;
 
@@ -253,7 +409,7 @@ export default function PushOnboarding() {
       setPermission(permissionResult);
 
       if (permissionResult !== "granted") {
-        setMessage("Push wurde nicht erlaubt.");
+        setMessage(tPushOnboarding(language, "permissionDenied"));
         return;
       }
 
@@ -264,10 +420,10 @@ export default function PushOnboarding() {
       });
 
       const meJson: unknown = await meResponse.json().catch(() => ({}));
-      const parsedMe = parseMeResponse(meJson);
+      const parsedMe = parseMeResponse(meJson, language);
 
       if (!meResponse.ok || !parsedMe.ok || !parsedMe.session) {
-        throw new Error("Session konnte nicht geladen werden.");
+        throw new Error(tPushOnboarding(language, "sessionLoadFailed"));
       }
 
       const normalizedSubdomain = parsedMe.session.companySubdomain
@@ -284,10 +440,14 @@ export default function PushOnboarding() {
       const publicKeyJson: unknown = await publicKeyResponse
         .json()
         .catch(() => ({}));
-      const parsedKey = parsePushPublicKeyResponse(publicKeyJson);
+      const parsedKey = parsePushPublicKeyResponse(publicKeyJson, language);
 
       if (!publicKeyResponse.ok || !parsedKey.ok) {
-        throw new Error(parsedKey.ok ? "Public Key fehlt." : parsedKey.error);
+        throw new Error(
+          parsedKey.ok
+            ? tPushOnboarding(language, "missingPublicKey")
+            : parsedKey.error
+        );
       }
 
       const registration = await navigator.serviceWorker.register("/sw.js");
@@ -297,11 +457,12 @@ export default function PushOnboarding() {
       if (existingSubscription) {
         await sendSubscriptionToBackend(
           existingSubscription.toJSON(),
-          normalizedSubdomain
+          normalizedSubdomain,
+          language
         );
         setHasSubscription(true);
         setResolved(true);
-        setMessage("Push ist jetzt aktiviert.");
+        setMessage(tPushOnboarding(language, "activated"));
         return;
       }
 
@@ -314,17 +475,18 @@ export default function PushOnboarding() {
 
       await sendSubscriptionToBackend(
         subscription.toJSON(),
-        normalizedSubdomain
+        normalizedSubdomain,
+        language
       );
 
       setHasSubscription(true);
       setResolved(true);
-      setMessage("Push ist jetzt aktiviert.");
+      setMessage(tPushOnboarding(language, "activated"));
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Push konnte nicht aktiviert werden.";
+          : tPushOnboarding(language, "activationFailed");
       setMessage(errorMessage);
     } finally {
       setLoading(false);
@@ -338,12 +500,11 @@ export default function PushOnboarding() {
   return (
     <div className="card push-onboarding-card">
       <div className="push-onboarding-title">
-        Push-Benachrichtigungen aktivieren
+        {tPushOnboarding(language, "title")}
       </div>
 
       <div className="push-onboarding-text">
-        Aktiviere Push, damit du Erinnerungen zu fehlenden Einträgen, Anträgen
-        und Aufgaben direkt auf diesem Gerät erhältst.
+        {tPushOnboarding(language, "description")}
       </div>
 
       <div className="push-onboarding-actions">
@@ -353,7 +514,9 @@ export default function PushOnboarding() {
           onClick={() => void enablePush()}
           disabled={loading}
         >
-          {loading ? "Aktiviere..." : "Push jetzt aktivieren"}
+          {loading
+            ? tPushOnboarding(language, "activating")
+            : tPushOnboarding(language, "activateNow")}
         </button>
       </div>
 
@@ -361,7 +524,7 @@ export default function PushOnboarding() {
 
       {companySubdomain ? (
         <div className="push-onboarding-company">
-          Firmenname: {companySubdomain}
+          {tPushOnboarding(language, "companyName")} {companySubdomain}
         </div>
       ) : null}
     </div>

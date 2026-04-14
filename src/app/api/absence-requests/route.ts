@@ -10,6 +10,12 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildPushUrl, sendPushToAdmins } from "@/lib/webpush";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
+import {
+  ADMIN_TASKS_UI_TEXTS,
+  translate,
+  type AdminTasksTextKey,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 type CreateAbsenceRequestBody = {
   startDate?: unknown;
@@ -368,6 +374,28 @@ function toPrismaNullableJsonInput(
   }
 
   return value as Prisma.InputJsonValue;
+}
+
+function toAppUiLanguage(value: string | null | undefined): AppUiLanguage {
+  if (
+    value === "DE" ||
+    value === "EN" ||
+    value === "IT" ||
+    value === "TR" ||
+    value === "SQ" ||
+    value === "KU"
+  ) {
+    return value;
+  }
+
+  return "DE";
+}
+
+function translateAbsenceRequestText(
+  language: AppUiLanguage,
+  key: AdminTasksTextKey
+): string {
+  return translate(language, key, ADMIN_TASKS_UI_TEXTS);
 }
 
 export async function rebalanceAutoUnpaidVacationRequestsForYear(
@@ -762,9 +790,11 @@ function mapRequest(
 
 export async function GET(req: Request) {
   const session = await getSession();
+  const language = toAppUiLanguage(session?.language);
+
   if (!session) {
     return NextResponse.json(
-      { ok: false, error: "Nicht eingeloggt." },
+      { ok: false, error: translateAbsenceRequestText(language, "notLoggedInWithPeriod") },
       { status: 401 }
     );
   }
@@ -852,9 +882,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await getSession();
+  const language = toAppUiLanguage(session?.language);
+
   if (!session) {
     return NextResponse.json(
-      { ok: false, error: "Nicht eingeloggt." },
+      { ok: false, error: translateAbsenceRequestText(language, "notLoggedInWithPeriod") },
       { status: 401 }
     );
   }
@@ -873,14 +905,14 @@ export async function POST(req: Request) {
 
   if (!isYYYYMMDD(startDate) || !isYYYYMMDD(endDate)) {
     return NextResponse.json(
-      { ok: false, error: "Start- und Enddatum müssen YYYY-MM-DD sein." },
+      { ok: false, error: translateAbsenceRequestText(language, "dateMustBeYmd") },
       { status: 400 }
     );
   }
 
   if (!isAbsenceType(typeRaw)) {
     return NextResponse.json(
-      { ok: false, error: "Ungültiger Abwesenheitstyp." },
+      { ok: false, error: translateAbsenceRequestText(language, "invalidAbsenceType") },
       { status: 400 }
     );
   }
@@ -902,7 +934,7 @@ export async function POST(req: Request) {
 
   if (end < start) {
     return NextResponse.json(
-      { ok: false, error: "Ende darf nicht vor Start liegen." },
+      { ok: false, error: translateAbsenceRequestText(language, "endBeforeStart") },
       { status: 400 }
     );
   }
@@ -911,7 +943,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         ok: false,
-        error: "Jahresübergreifende Urlaubs- oder Krankheitsanträge werden aktuell noch nicht unterstützt. Bitte je Kalenderjahr einen separaten Antrag stellen.",
+        error: translateAbsenceRequestText(language, "crossYearRequestsNotSupported"),
       },
       { status: 400 }
     );
@@ -919,14 +951,14 @@ export async function POST(req: Request) {
 
   if (typeRaw === "SICK" && dayPortion !== AbsenceDayPortion.FULL_DAY) {
     return NextResponse.json(
-      { ok: false, error: "Krankheit kann nur ganztägig beantragt werden." },
+      { ok: false, error: translateAbsenceRequestText(language, "sickOnlyFullDayRequested") },
       { status: 400 }
     );
   }
 
   if (typeRaw === "SICK" && finalCompensation !== AbsenceCompensation.PAID) {
     return NextResponse.json(
-      { ok: false, error: "Krankheit darf nicht als unbezahlt beantragt werden." },
+      { ok: false, error: translateAbsenceRequestText(language, "sickCannotBeRequestedUnpaid") },
       { status: 400 }
     );
   }
@@ -936,7 +968,7 @@ export async function POST(req: Request) {
     typeRaw !== "VACATION"
   ) {
     return NextResponse.json(
-      { ok: false, error: "Halbe Tage sind nur für Urlaub erlaubt." },
+      { ok: false, error: translateAbsenceRequestText(language, "halfDaysOnlyForVacation") },
       { status: 400 }
     );
   }
@@ -946,7 +978,7 @@ export async function POST(req: Request) {
     startDate !== endDate
   ) {
     return NextResponse.json(
-      { ok: false, error: "Ein halber Urlaubstag darf nur für genau ein Datum beantragt werden." },
+      { ok: false, error: translateAbsenceRequestText(language, "halfVacationOnlySingleDateRequest") },
       { status: 400 }
     );
   }
@@ -965,7 +997,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           ok: false,
-          error: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+        error: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
         },
         { status: 400 }
       );
@@ -1015,7 +1047,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         ok: false,
-        error: "Im gewünschten Zeitraum existiert bereits eine bestätigte Abwesenheit.",
+        error: translateAbsenceRequestText(language, "approvedAbsenceAlreadyExists"),
       },
       { status: 409 }
     );
@@ -1041,7 +1073,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         ok: false,
-        error: "Für diesen Zeitraum existiert bereits ein offener Antrag.",
+        error: translateAbsenceRequestText(language, "pendingRequestAlreadyExists"),
       },
       { status: 409 }
     );
@@ -1059,7 +1091,7 @@ export async function POST(req: Request) {
         translationResult.translations
       );
     } catch (error) {
-      console.error("Übersetzung noteEmployee fehlgeschlagen:", error);
+      console.error("Translation for noteEmployee failed:", error);
     }
   }
 
@@ -1096,20 +1128,20 @@ export async function POST(req: Request) {
     },
   });
 
-  const typeLabel = typeRaw === "VACATION" ? "Urlaub" : "Krankheit";
+  const typeLabel = typeRaw === "VACATION" ? "VACATION" : "SICK";
   const compensationLabel =
     typeRaw === "VACATION"
       ? finalCompensation === AbsenceCompensation.UNPAID
-        ? "unbezahlt"
-        : "bezahlt"
+        ? "UNPAID"
+        : "PAID"
       : "";
 
   const dateLabel =
     dayPortion === AbsenceDayPortion.HALF_DAY
-      ? `halber Urlaubstag am ${startDate}`
+      ? `${startDate} (HALF_DAY)`
       : startDate === endDate
         ? startDate
-        : `${startDate} bis ${endDate}`;
+        : `${startDate} - ${endDate}`;
 
   const adminTargetUrl =
     typeRaw === "VACATION"
@@ -1118,8 +1150,8 @@ export async function POST(req: Request) {
 
   await sendPushToAdmins({
     companyId: session.companyId,
-    title: "Neuer Abwesenheitsantrag",
-    body: `${session.fullName} hat ${typeLabel.toLowerCase()} beantragt (${dateLabel}${typeRaw === "VACATION" ? `, ${compensationLabel}` : ""}).`,
+    title: translateAbsenceRequestText(language, "newAbsenceRequestPushTitle"),
+    body: `${session.fullName}: ${typeLabel} (${dateLabel}${typeRaw === "VACATION" ? `, ${compensationLabel}` : ""})`,
     url: adminTargetUrl,
   });
 

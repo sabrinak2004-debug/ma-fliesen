@@ -19,9 +19,25 @@ type HolidayInfo = {
 
 type SupportedLang = "DE" | "EN" | "IT" | "TR" | "SQ" | "KU";
 type TranslationMap = Partial<Record<SupportedLang, string>>;
+type HolidayTranslationKey =
+  | "NEW_YEAR"
+  | "EPIPHANY"
+  | "GOOD_FRIDAY"
+  | "EASTER_MONDAY"
+  | "LABOUR_DAY"
+  | "ASCENSION_DAY"
+  | "WHIT_MONDAY"
+  | "CORPUS_CHRISTI"
+  | "GERMAN_UNITY_DAY"
+  | "ALL_SAINTS_DAY"
+  | "CHRISTMAS_DAY"
+  | "BOXING_DAY";
 
-const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> = {
-  Neujahrstag: {
+const HOLIDAY_NAME_TRANSLATIONS: Record<
+  HolidayTranslationKey,
+  Record<SupportedLang, string>
+> = {
+  NEW_YEAR: {
     DE: "Neujahrstag",
     EN: "New Year's Day",
     IT: "Capodanno",
@@ -29,7 +45,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> =
     SQ: "Viti i Ri",
     KU: "Sersal",
   },
-  "Heilige Drei Könige": {
+  EPIPHANY: {
     DE: "Heilige Drei Könige",
     EN: "Epiphany",
     IT: "Epifania",
@@ -37,7 +53,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> =
     SQ: "Dita e Tre Mbretërve",
     KU: "Cejna Sê Padşahan",
   },
-  Karfreitag: {
+  GOOD_FRIDAY: {
     DE: "Karfreitag",
     EN: "Good Friday",
     IT: "Venerdì Santo",
@@ -45,7 +61,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> =
     SQ: "E Premtja e Madhe",
     KU: "Înê Pîroz",
   },
-  Ostermontag: {
+  EASTER_MONDAY: {
     DE: "Ostermontag",
     EN: "Easter Monday",
     IT: "Lunedì di Pasqua",
@@ -53,7 +69,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> =
     SQ: "E Hëna e Pashkëve",
     KU: "Duşema Paskalyayê",
   },
-  "Tag der Arbeit": {
+  LABOUR_DAY: {
     DE: "Tag der Arbeit",
     EN: "Labour Day",
     IT: "Festa dei Lavoratori",
@@ -61,7 +77,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> =
     SQ: "Dita e Punës",
     KU: "Roja Karkeran",
   },
-  "Christi Himmelfahrt": {
+  ASCENSION_DAY: {
     DE: "Christi Himmelfahrt",
     EN: "Ascension Day",
     IT: "Ascensione",
@@ -69,7 +85,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> =
     SQ: "Ngjitja e Krishtit në Qiell",
     KU: "Hilkişîna Mesîh",
   },
-  Pfingstmontag: {
+  WHIT_MONDAY: {
     DE: "Pfingstmontag",
     EN: "Whit Monday",
     IT: "Lunedì di Pentecoste",
@@ -77,7 +93,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> =
     SQ: "E Hëna e Rrëshajëve",
     KU: "Duşema Pentekostê",
   },
-  Fronleichnam: {
+  CORPUS_CHRISTI: {
     DE: "Fronleichnam",
     EN: "Corpus Christi",
     IT: "Corpus Domini",
@@ -85,7 +101,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> =
     SQ: "Corpus Christi",
     KU: "Corpus Christi",
   },
-  "Tag der Deutschen Einheit": {
+  GERMAN_UNITY_DAY: {
     DE: "Tag der Deutschen Einheit",
     EN: "German Unity Day",
     IT: "Giorno dell'Unità Tedesca",
@@ -93,7 +109,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> =
     SQ: "Dita e Bashkimit Gjerman",
     KU: "Roja Yekîtiya Almanyayê",
   },
-  Allerheiligen: {
+  ALL_SAINTS_DAY: {
     DE: "Allerheiligen",
     EN: "All Saints' Day",
     IT: "Ognissanti",
@@ -101,7 +117,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> =
     SQ: "Dita e të Gjithë Shenjtorëve",
     KU: "Roja Hemû Pîrozan",
   },
-  "1. Weihnachtstag": {
+  CHRISTMAS_DAY: {
     DE: "1. Weihnachtstag",
     EN: "Christmas Day",
     IT: "Natale",
@@ -109,7 +125,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> =
     SQ: "Dita e parë e Krishtlindjes",
     KU: "Roja yekem a Noelê",
   },
-  "2. Weihnachtstag": {
+  BOXING_DAY: {
     DE: "2. Weihnachtstag",
     EN: "Boxing Day",
     IT: "Santo Stefano",
@@ -119,7 +135,26 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<string, Record<SupportedLang, string>> =
   },
 };
 
-function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+const HOLIDAY_NAME_ALIASES: Record<string, HolidayTranslationKey> = {
+  neujahrstag: "NEW_YEAR",
+  "heilige drei könige": "EPIPHANY",
+  karfreitag: "GOOD_FRIDAY",
+  ostermontag: "EASTER_MONDAY",
+  "tag der arbeit": "LABOUR_DAY",
+  "christi himmelfahrt": "ASCENSION_DAY",
+  pfingstmontag: "WHIT_MONDAY",
+  fronleichnam: "CORPUS_CHRISTI",
+  "tag der deutschen einheit": "GERMAN_UNITY_DAY",
+  allerheiligen: "ALL_SAINTS_DAY",
+  "1. weihnachtstag": "CHRISTMAS_DAY",
+  "erster weihnachtstag": "CHRISTMAS_DAY",
+  "2. weihnachtstag": "BOXING_DAY",
+  "zweiter weihnachtstag": "BOXING_DAY",
+};
+
+function isTranslationMap(
+  value: Prisma.JsonValue | null | undefined
+): value is TranslationMap {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }
@@ -142,17 +177,29 @@ function toSupportedLang(language: string | null | undefined): SupportedLang {
   return "DE";
 }
 
+function normalizeHolidayName(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function getHolidayTranslationKey(
+  holidayName: string
+): HolidayTranslationKey | null {
+  const normalizedHolidayName = normalizeHolidayName(holidayName);
+  return HOLIDAY_NAME_ALIASES[normalizedHolidayName] ?? null;
+}
+
 function getTranslatedHolidayName(
   holidayName: string,
   language: string | null | undefined
 ): string {
   const targetLanguage = toSupportedLang(language);
-  const translations = HOLIDAY_NAME_TRANSLATIONS[holidayName];
+  const translationKey = getHolidayTranslationKey(holidayName);
 
-  if (!translations) {
+  if (!translationKey) {
     return holidayName;
   }
 
+  const translations = HOLIDAY_NAME_TRANSLATIONS[translationKey];
   return translations[targetLanguage] ?? translations.DE;
 }
 
@@ -239,9 +286,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  // ✅ ADMIN: nur Termine (CalendarEvent) – keine Abwesenheiten / PlanEntries etc.
-  // ✅ ADMIN: ohne userIdParam = eigene Termine (CalendarEvent)
-// ✅ ADMIN: mit userIdParam = Mitarbeiter-Kalender (Work/Absence/Plan)
+  // ✅ ADMIN: only appointments (CalendarEvent) – no absences / plan entries etc.
+  // ✅ ADMIN: without userIdParam = own appointments (CalendarEvent)
+  // ✅ ADMIN: with userIdParam = employee calendar (work/absence/plan)
 if (me.role === Role.ADMIN && !userIdParam) {
     const events = await prisma.calendarEvent.findMany({
       where: { userId: session.userId, startAt: { gte: from, lt: to } },

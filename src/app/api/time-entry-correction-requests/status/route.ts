@@ -6,6 +6,11 @@ import {
   TimeEntryCorrectionRequestStatus,
 } from "@prisma/client";
 import { getSession } from "@/lib/auth";
+import {
+  normalizeAppUiLanguage,
+  TIME_ENTRY_CORRECTION_API_TEXTS,
+  translate,
+} from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 import {
   berlinTodayYMD,
@@ -92,14 +97,17 @@ function toIsoDateUTC(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-  const GRACE_WORKDAYS_LIMIT = 5;
+const GRACE_WORKDAYS_LIMIT = 5;
 
 export async function GET(req: Request) {
   const session = await getSession();
+  const language = normalizeAppUiLanguage(session?.language);
+  const t = (key: keyof typeof TIME_ENTRY_CORRECTION_API_TEXTS) =>
+    translate(language, key, TIME_ENTRY_CORRECTION_API_TEXTS);
 
   if (!session) {
     return NextResponse.json(
-      { ok: false, error: "Nicht eingeloggt." },
+      { ok: false, error: t("notLoggedIn") },
       { status: 401 }
     );
   }
@@ -110,7 +118,7 @@ export async function GET(req: Request) {
 
   if (!isYYYYMMDD(workDate)) {
     return NextResponse.json(
-      { ok: false, error: "workDate muss YYYY-MM-DD sein." },
+      { ok: false, error: t("invalidWorkDate") },
       { status: 400 }
     );
   }

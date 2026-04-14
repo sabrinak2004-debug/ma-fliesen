@@ -2,8 +2,18 @@ import { NextResponse } from "next/server";
 import { Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { assertEmployeeMayEditDate, berlinTodayYMD, consumeTimeEntryUnlock } from "@/lib/timesheetLock";
+import {
+  assertEmployeeMayEditDate,
+  berlinTodayYMD,
+  consumeTimeEntryUnlock,
+} from "@/lib/timesheetLock";
 import { computeDayBreakFromGross, minutesBetweenHHMM } from "@/lib/breaks";
+import {
+  ADMIN_TASKS_UI_TEXTS,
+  translate,
+  type AdminTasksTextKey,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 function dateOnly(yyyyMmDd: string) {
   return new Date(`${yyyyMmDd}T00:00:00.000Z`);
@@ -41,6 +51,28 @@ type DayBreakDTO = {
   autoSupplementMinutes: number;
   effectiveMinutes: number;
 };
+
+function translateDayBreakText(
+  language: AppUiLanguage,
+  key: AdminTasksTextKey
+): string {
+  return translate(language, key, ADMIN_TASKS_UI_TEXTS);
+}
+
+function toAppUiLanguage(value: string | null | undefined): AppUiLanguage {
+  if (
+    value === "DE" ||
+    value === "EN" ||
+    value === "IT" ||
+    value === "TR" ||
+    value === "SQ" ||
+    value === "KU"
+  ) {
+    return value;
+  }
+
+  return "DE";
+}
 
 async function findActiveCompanyUser(userId: string, companyId: string) {
   return prisma.appUser.findFirst({
@@ -139,8 +171,13 @@ async function syncDailyBreakAllocation(userId: string, workDateYMD: string) {
 
 export async function GET(req: Request) {
   const session = await getSession();
+  const language = toAppUiLanguage(session?.language);
+
   if (!session) {
-    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+    return NextResponse.json(
+      { error: translateDayBreakText(language, "notLoggedIn") },
+      { status: 401 }
+    );
   }
 
   const isAdmin = session.role === Role.ADMIN;
@@ -190,8 +227,13 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await getSession();
+  const language = toAppUiLanguage(session?.language);
+
   if (!session) {
-    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+    return NextResponse.json(
+      { error: translateDayBreakText(language, "notLoggedIn") },
+      { status: 401 }
+    );
   }
 
   const isAdmin = session.role === Role.ADMIN;
@@ -203,19 +245,31 @@ export async function POST(req: Request) {
   const breakEndHHMM = getString(body.breakEndHHMM).trim();
 
   if (!workDate || !/^\d{4}-\d{2}-\d{2}$/.test(workDate)) {
-    return NextResponse.json({ error: "Ungültiges Datum." }, { status: 400 });
+    return NextResponse.json(
+      { error: translateDayBreakText(language, "invalidDate") },
+      { status: 400 }
+    );
   }
 
   if ((breakStartHHMM && !breakEndHHMM) || (!breakStartHHMM && breakEndHHMM)) {
-    return NextResponse.json({ error: "Bitte Pause von und bis vollständig eingeben." }, { status: 400 });
+    return NextResponse.json(
+      { error: translateDayBreakText(language, "breakRangeIncomplete") },
+      { status: 400 }
+    );
   }
 
   if (breakStartHHMM && !/^\d{2}:\d{2}$/.test(breakStartHHMM)) {
-    return NextResponse.json({ error: "Pause-Beginn ist ungültig." }, { status: 400 });
+    return NextResponse.json(
+      { error: translateDayBreakText(language, "invalidBreakStart") },
+      { status: 400 }
+    );
   }
 
   if (breakEndHHMM && !/^\d{2}:\d{2}$/.test(breakEndHHMM)) {
-    return NextResponse.json({ error: "Pause-Ende ist ungültig." }, { status: 400 });
+    return NextResponse.json(
+      { error: translateDayBreakText(language, "invalidBreakEnd") },
+      { status: 400 }
+    );
   }
 
   try {
@@ -226,7 +280,11 @@ export async function POST(req: Request) {
       companyId: session.companyId,
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Nicht erlaubt";
+    const message =
+      error instanceof Error
+        ? error.message
+        : translateDayBreakText(language, "notAllowed");
+
     return NextResponse.json({ error: message }, { status: 403 });
   }
 
@@ -237,7 +295,10 @@ export async function POST(req: Request) {
     if (requestedUserId) {
       const user = await findActiveCompanyUser(requestedUserId, session.companyId);
       if (!user) {
-        return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
+        return NextResponse.json(
+          { error: translateDayBreakText(language, "employeeNotFoundOrInactive") },
+          { status: 400 }
+        );
       }
       targetUserId = user.id;
     }
@@ -288,7 +349,10 @@ export async function POST(req: Request) {
   });
 
   if (!fresh) {
-    return NextResponse.json({ error: "Trage erst deine Arbeitzeit für diesen Tag ein" }, { status: 500 });
+    return NextResponse.json(
+      { error: translateDayBreakText(language, "workTimeEntryRequiredFirst") },
+      { status: 500 }
+    );
   }
 
   const dayBreak: DayBreakDTO = {

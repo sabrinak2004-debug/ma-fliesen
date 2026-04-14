@@ -359,7 +359,7 @@ export async function POST(
 
   await sendPushToAdmins({
     companyId: session.companyId,
-    title: "Aufgabe erledigt",
+    title: translateAdminTaskText(language, "taskCompletedPushTitle"),
     body: `${task.assignedToUser.fullName}: ${task.title}`,
     url: "/admin/tasks",
   });

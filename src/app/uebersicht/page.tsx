@@ -189,7 +189,19 @@ type OverviewTextKey =
   | "daysUsed"
   | "daysLabel"
   | "untilMonthlyTarget"
-  | "monthlyProgressDetails";
+  | "monthlyProgressDetails"
+  | "january"
+  | "february"
+  | "march"
+  | "april"
+  | "may"
+  | "june"
+  | "july"
+  | "august"
+  | "september"
+  | "october"
+  | "november"
+  | "december";
 
 const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>> = {
   tasks: {
@@ -255,6 +267,102 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Aylık ilerleme detayları",
     SQ: "Detajet e progresit mujor",
     KU: "Hûrguliyên pêşveçûna mehane",
+  },
+  january: {
+    DE: "Januar",
+    EN: "January",
+    IT: "Gennaio",
+    TR: "Ocak",
+    SQ: "Janar",
+    KU: "Rêbendan",
+  },
+  february: {
+    DE: "Februar",
+    EN: "February",
+    IT: "Febbraio",
+    TR: "Şubat",
+    SQ: "Shkurt",
+    KU: "Reşemî",
+  },
+  march: {
+    DE: "März",
+    EN: "March",
+    IT: "Marzo",
+    TR: "Mart",
+    SQ: "Mars",
+    KU: "Adar",
+  },
+  april: {
+    DE: "April",
+    EN: "April",
+    IT: "Aprile",
+    TR: "Nisan",
+    SQ: "Prill",
+    KU: "Nîsan",
+  },
+  may: {
+    DE: "Mai",
+    EN: "May",
+    IT: "Maggio",
+    TR: "Mayıs",
+    SQ: "Maj",
+    KU: "Gulan",
+  },
+  june: {
+    DE: "Juni",
+    EN: "June",
+    IT: "Giugno",
+    TR: "Haziran",
+    SQ: "Qershor",
+    KU: "Hezîran",
+  },
+  july: {
+    DE: "Juli",
+    EN: "July",
+    IT: "Luglio",
+    TR: "Temmuz",
+    SQ: "Korrik",
+    KU: "Tîrmeh",
+  },
+  august: {
+    DE: "August",
+    EN: "August",
+    IT: "Agosto",
+    TR: "Ağustos",
+    SQ: "Gusht",
+    KU: "Tebax",
+  },
+  september: {
+    DE: "September",
+    EN: "September",
+    IT: "Settembre",
+    TR: "Eylül",
+    SQ: "Shtator",
+    KU: "Îlon",
+  },
+  october: {
+    DE: "Oktober",
+    EN: "October",
+    IT: "Ottobre",
+    TR: "Ekim",
+    SQ: "Tetor",
+    KU: "Cotmeh",
+  },
+  november: {
+    DE: "November",
+    EN: "November",
+    IT: "Novembre",
+    TR: "Kasım",
+    SQ: "Nëntor",
+    KU: "Mijdar",
+  },
+  december: {
+    DE: "Dezember",
+    EN: "December",
+    IT: "Dicembre",
+    TR: "Aralık",
+    SQ: "Dhjetor",
+    KU: "Kanûn",
   },
   myTasks: {
     DE: "Meine Aufgaben",
@@ -811,27 +919,48 @@ function buildYm(year: string, month: string): string {
   return `${year}-${month}`;
 }
 
-const MONTH_OPTIONS: Array<{ value: MonthOption; label: string }> = [
-  { value: "01", label: "Januar" },
-  { value: "02", label: "Februar" },
-  { value: "03", label: "März" },
-  { value: "04", label: "April" },
-  { value: "05", label: "Mai" },
-  { value: "06", label: "Juni" },
-  { value: "07", label: "Juli" },
-  { value: "08", label: "August" },
-  { value: "09", label: "September" },
-  { value: "10", label: "Oktober" },
-  { value: "11", label: "November" },
-  { value: "12", label: "Dezember" },
+const MONTH_OPTIONS: Array<{ value: MonthOption; labelKey: OverviewTextKey }> = [
+  { value: "01", labelKey: "january" },
+  { value: "02", labelKey: "february" },
+  { value: "03", labelKey: "march" },
+  { value: "04", labelKey: "april" },
+  { value: "05", labelKey: "may" },
+  { value: "06", labelKey: "june" },
+  { value: "07", labelKey: "july" },
+  { value: "08", labelKey: "august" },
+  { value: "09", labelKey: "september" },
+  { value: "10", labelKey: "october" },
+  { value: "11", labelKey: "november" },
+  { value: "12", labelKey: "december" },
 ];
 
 type ExportMode = "MONTH" | "YEAR" | "RANGE";
 
-function formatDateDE(yyyyMmDd: string) {
+function formatDateLocalized(language: AppUiLanguage, yyyyMmDd: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(yyyyMmDd)) return yyyyMmDd;
-  const [y, m, d] = yyyyMmDd.split("-");
-  return `${d}.${m}.${y}`;
+
+  const [year, month, day] = yyyyMmDd.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  const locale =
+    language === "DE"
+      ? "de-DE"
+      : language === "EN"
+        ? "en-GB"
+        : language === "IT"
+          ? "it-IT"
+          : language === "TR"
+            ? "tr-TR"
+            : language === "SQ"
+              ? "sq-AL"
+              : "ku";
+
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
 }
 
 function typeLabel(
@@ -1012,6 +1141,8 @@ export default function UebersichtPage() {
   const router = useRouter();
   const [language, setLanguage] = useState<AppUiLanguage>("DE");
   const t = (key: OverviewTextKey): string => translate(language, key, OVERVIEW_DICTIONARY);
+  const selectedMonthLabel =
+  t(MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.labelKey ?? "january");
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [absences, setAbsences] = useState<Absence[]>([]);
   const [absenceSummaryByUser, setAbsenceSummaryByUser] = useState<AbsenceUserSummary[]>([]);
@@ -1355,7 +1486,7 @@ export default function UebersichtPage() {
     }
 
     return Array.from(map.values()).sort((x, y) => y.minutes - x.minutes);
-  }, [monthEntries, monthAbsences, absenceSummaryByUser]);
+  }, [monthEntries, monthAbsences, absenceSummaryByUser, t]);
 
   const showByEmployee = byEmployee.length > 1;
 
@@ -1512,9 +1643,9 @@ const resetAbsFilters = (): void => {
         <div style={{ display: "grid", gap: 12 }}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {([
-              { key: "MONTH", label: "Monat (CSV)" },
-              { key: "YEAR", label: "Jahr (ZIP)" },
-              { key: "RANGE", label: "Zeitraum (CSV)" },
+              { key: "MONTH", label: t("exportMonthCsv") },
+              { key: "YEAR", label: t("exportYearZip") },
+              { key: "RANGE", label: t("exportRangeCsv") },
             ] as Array<{ key: ExportMode; label: string }>).map((m) => (
               <button
                 key={m.key}
@@ -1722,7 +1853,7 @@ const resetAbsFilters = (): void => {
             >
               {t("dataFor")}{" "}
               <span style={{ fontWeight: 900, color: "rgba(255,255,255,0.92)" }}>
-                {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+                {selectedMonthLabel} {selectedYear}
               </span>
             </div>
           </div>
@@ -1763,7 +1894,7 @@ const resetAbsFilters = (): void => {
               >
                 {MONTH_OPTIONS.map((m) => (
                   <option key={m.value} value={m.value} style={{ color: "black" }}>
-                    {m.label}
+                    {t(m.labelKey)}
                   </option>
                 ))}
               </select>
@@ -1777,7 +1908,7 @@ const resetAbsFilters = (): void => {
         <div className="card kpi">
           <div>
             <div className="small">
-              {t("workHours")} · {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+              {t("workHours")} · {selectedMonthLabel} {selectedYear}
             </div>
             <div className="big">{formatMinutesAsHM(totalMinutes)}</div>
             <div
@@ -1807,7 +1938,7 @@ const resetAbsFilters = (): void => {
         <div className="card kpi">
           <div>
             <div className="small">
-              {t("vacationDays")} · {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+              {t("vacationDays")} · {selectedMonthLabel} {selectedYear}
             </div>
               <div className="big">{String(vacDays).replace(".", ",")}</div>
               {unpaidVacationDaysValue > 0 ? (
@@ -1844,7 +1975,7 @@ const resetAbsFilters = (): void => {
 
       {/* Progress */}
       <div className="card card-olive" style={{ padding: 18, marginBottom: 14 }}>
-        {t("monthProgress")} – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+        {t("monthProgress")} – {selectedMonthLabel} {selectedYear}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ color: "var(--muted)" }}>
             {t("stillUntilTarget")} {formatMinutesAsHM(Math.max(0, netTargetMinutes - totalMinutes))} {t("untilMonthlyTarget")}
@@ -1897,7 +2028,7 @@ const resetAbsFilters = (): void => {
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
           <div className="section-title">
-            {t("absences")} – {MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} {selectedYear}
+            {t("absences")} – {selectedMonthLabel} {selectedYear}
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1961,7 +2092,10 @@ const resetAbsFilters = (): void => {
         ) : (
           <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
             {filteredBlocks.map((b) => {
-              const title = b.from === b.to ? formatDateDE(b.from) : `${formatDateDE(b.from)} – ${formatDateDE(b.to)}`;
+              const title =
+                b.from === b.to
+                  ? formatDateLocalized(language, b.from)
+                  : `${formatDateLocalized(language, b.from)} – ${formatDateLocalized(language, b.to)}`;
 
               return (
                 <div

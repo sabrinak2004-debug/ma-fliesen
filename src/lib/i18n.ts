@@ -70,6 +70,195 @@ export function translate<Key extends string>(
 
   return entry[language] ?? entry.DE;
 }
+
+export type TimeEntryCorrectionApiTextKey =
+  | "notLoggedIn"
+  | "employeeOnlyCreate"
+  | "invalidTargetDate"
+  | "pastDaysOnly"
+  | "noLockedMissingEntries"
+  | "requestNotRequiredForDate"
+  | "existingPendingForPeriod"
+  | "invalidWorkDate"
+  | "missingRequestId"
+  | "correctionRequestNotFound"
+  | "requestNotFound"
+  | "employeeInactive"
+  | "onlyPendingCanBeApproved"
+  | "onlyPendingCanBeRejected"
+  | "newCorrectionRequestPushTitle"
+  | "newCorrectionRequestPushBody"
+  | "approvedPushTitle"
+  | "approvedPushBody"
+  | "rejectedPushTitle"
+  | "rejectedPushBody";
+
+export const TIME_ENTRY_CORRECTION_API_TEXTS: Record<
+  TimeEntryCorrectionApiTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  notLoggedIn: {
+    DE: "Nicht eingeloggt.",
+    EN: "Not logged in.",
+    IT: "Accesso non effettuato.",
+    TR: "Giriş yapılmadı.",
+    SQ: "Nuk je i identifikuar.",
+    KU: "Têketin nehatiye kirin.",
+  },
+  employeeOnlyCreate: {
+    DE: "Nur Mitarbeiter können Nachtragsanträge stellen.",
+    EN: "Only employees can submit correction requests.",
+    IT: "Solo i dipendenti possono inviare richieste di correzione.",
+    TR: "Yalnızca çalışanlar düzeltme talebi oluşturabilir.",
+    SQ: "Vetëm punonjësit mund të paraqesin kërkesa për korrigjim.",
+    KU: "Tenê karmend dikarin daxwaza rastkirinê bişînin.",
+  },
+  invalidTargetDate: {
+    DE: "targetDate muss YYYY-MM-DD sein.",
+    EN: "targetDate must be in YYYY-MM-DD format.",
+    IT: "targetDate deve essere nel formato YYYY-MM-DD.",
+    TR: "targetDate YYYY-MM-DD formatında olmalıdır.",
+    SQ: "targetDate duhet të jetë në formatin YYYY-MM-DD.",
+    KU: "targetDate divê di formatê YYYY-MM-DD de be.",
+  },
+  pastDaysOnly: {
+    DE: "Ein Nachtragsantrag ist nur für vergangene Tage möglich.",
+    EN: "A correction request is only possible for past days.",
+    IT: "Una richiesta di correzione è possibile solo per giorni passati.",
+    TR: "Düzeltme talebi yalnızca geçmiş günler için mümkündür.",
+    SQ: "Një kërkesë për korrigjim është e mundur vetëm për ditët e kaluara.",
+    KU: "Daxwaza rastkirinê tenê ji bo rojên borî gengaz e.",
+  },
+  noLockedMissingEntries: {
+    DE: "Aktuell gibt es keine gesperrten fehlenden Arbeitseinträge.",
+    EN: "There are currently no locked missing work entries.",
+    IT: "Attualmente non ci sono registrazioni di lavoro mancanti bloccate.",
+    TR: "Şu anda kilitli eksik çalışma kayıtları yok.",
+    SQ: "Aktualisht nuk ka hyrje pune të munguara të bllokuara.",
+    KU: "Niha qeydkirinên karê winda yên girtî tune ne.",
+  },
+  requestNotRequiredForDate: {
+    DE: "Für dieses Datum ist aktuell noch kein Nachtragsantrag erforderlich oder das Datum gehört nicht zu den gesperrten fehlenden Arbeitstagen.",
+    EN: "No correction request is currently required for this date, or the date is not part of the locked missing workdays.",
+    IT: "Per questa data al momento non è richiesta alcuna richiesta di correzione oppure la data non rientra tra i giorni lavorativi mancanti bloccati.",
+    TR: "Bu tarih için şu anda bir düzeltme talebi gerekmiyor veya tarih kilitli eksik iş günleri arasında yer almıyor.",
+    SQ: "Për këtë datë aktualisht nuk kërkohet ende një kërkesë për korrigjim ose data nuk bën pjesë në ditët e bllokuara me mungesë hyrjeje pune.",
+    KU: "Ji bo vê dîrokê niha daxwaza rastkirinê ne pêwîst e an jî ev dîrok di nav rojên karê winda yên girtî de nayê.",
+  },
+  existingPendingForPeriod: {
+    DE: "Für diesen Zeitraum existiert bereits ein offener Nachtragsantrag.",
+    EN: "An open correction request already exists for this period.",
+    IT: "Esiste già una richiesta di correzione aperta per questo periodo.",
+    TR: "Bu dönem için zaten açık bir düzeltme talebi mevcut.",
+    SQ: "Për këtë periudhë ekziston tashmë një kërkesë e hapur për korrigjim.",
+    KU: "Ji bo vê demê jixwe daxwazek rastkirinê ya vekirî heye.",
+  },
+  invalidWorkDate: {
+    DE: "workDate muss YYYY-MM-DD sein.",
+    EN: "workDate must be in YYYY-MM-DD format.",
+    IT: "workDate deve essere nel formato YYYY-MM-DD.",
+    TR: "workDate YYYY-MM-DD formatında olmalıdır.",
+    SQ: "workDate duhet të jetë në formatin YYYY-MM-DD.",
+    KU: "workDate divê di formatê YYYY-MM-DD de be.",
+  },
+  missingRequestId: {
+    DE: "Fehlende Request-ID.",
+    EN: "Missing request ID.",
+    IT: "ID richiesta mancante.",
+    TR: "İstek kimliği eksik.",
+    SQ: "Mungon ID-ja e kërkesës.",
+    KU: "Nasnameya daxwazê kêm e.",
+  },
+  correctionRequestNotFound: {
+    DE: "Nachtragsanfrage nicht gefunden.",
+    EN: "Correction request not found.",
+    IT: "Richiesta di correzione non trovata.",
+    TR: "Düzeltme talebi bulunamadı.",
+    SQ: "Kërkesa për korrigjim nuk u gjet.",
+    KU: "Daxwaza rastkirinê nehat dîtin.",
+  },
+  requestNotFound: {
+    DE: "Antrag nicht gefunden.",
+    EN: "Request not found.",
+    IT: "Richiesta non trovata.",
+    TR: "Talep bulunamadı.",
+    SQ: "Kërkesa nuk u gjet.",
+    KU: "Daxwaz nehat dîtin.",
+  },
+  employeeInactive: {
+    DE: "Mitarbeiter ist nicht aktiv.",
+    EN: "Employee is not active.",
+    IT: "Il dipendente non è attivo.",
+    TR: "Çalışan aktif değil.",
+    SQ: "Punonjësi nuk është aktiv.",
+    KU: "Karmend çalak nîne.",
+  },
+  onlyPendingCanBeApproved: {
+    DE: "Nur offene Anträge können genehmigt werden.",
+    EN: "Only open requests can be approved.",
+    IT: "Solo le richieste aperte possono essere approvate.",
+    TR: "Yalnızca açık talepler onaylanabilir.",
+    SQ: "Vetëm kërkesat e hapura mund të miratohen.",
+    KU: "Tenê daxwazên vekirî dikarin bêne pejirandin.",
+  },
+  onlyPendingCanBeRejected: {
+    DE: "Nur offene Anträge können abgelehnt werden.",
+    EN: "Only open requests can be rejected.",
+    IT: "Solo le richieste aperte possono essere rifiutate.",
+    TR: "Yalnızca açık talepler reddedilebilir.",
+    SQ: "Vetëm kërkesat e hapura mund të refuzohen.",
+    KU: "Tenê daxwazên vekirî dikarin bêne redkirin.",
+  },
+  newCorrectionRequestPushTitle: {
+    DE: "Neuer Nachtragsantrag",
+    EN: "New correction request",
+    IT: "Nuova richiesta di correzione",
+    TR: "Yeni düzeltme talebi",
+    SQ: "Kërkesë e re për korrigjim",
+    KU: "Daxwaza rastkirinê ya nû",
+  },
+  newCorrectionRequestPushBody: {
+    DE: "{name} hat einen Nachtragsantrag für {dateLabel} gestellt.",
+    EN: "{name} submitted a correction request for {dateLabel}.",
+    IT: "{name} ha inviato una richiesta di correzione per {dateLabel}.",
+    TR: "{name}, {dateLabel} için bir düzeltme talebi gönderdi.",
+    SQ: "{name} paraqiti një kërkesë për korrigjim për {dateLabel}.",
+    KU: "{name} ji bo {dateLabel} daxwaza rastkirinê şand.",
+  },
+  approvedPushTitle: {
+    DE: "Nachtragsantrag genehmigt",
+    EN: "Correction request approved",
+    IT: "Richiesta di correzione approvata",
+    TR: "Düzeltme talebi onaylandı",
+    SQ: "Kërkesa për korrigjim u miratua",
+    KU: "Daxwaza rastkirinê hate pejirandin",
+  },
+  approvedPushBody: {
+    DE: "Dein Nachtragsantrag wurde genehmigt ({dateLabel}).",
+    EN: "Your correction request was approved ({dateLabel}).",
+    IT: "La tua richiesta di correzione è stata approvata ({dateLabel}).",
+    TR: "Düzeltme talebin onaylandı ({dateLabel}).",
+    SQ: "Kërkesa jote për korrigjim u miratua ({dateLabel}).",
+    KU: "Daxwaza te ya rastkirinê hate pejirandin ({dateLabel}).",
+  },
+  rejectedPushTitle: {
+    DE: "Nachtragsantrag abgelehnt",
+    EN: "Correction request rejected",
+    IT: "Richiesta di correzione rifiutata",
+    TR: "Düzeltme talebi reddedildi",
+    SQ: "Kërkesa për korrigjim u refuzua",
+    KU: "Daxwaza rastkirinê hate redkirin",
+  },
+  rejectedPushBody: {
+    DE: "Dein Nachtragsantrag wurde abgelehnt.",
+    EN: "Your correction request was rejected.",
+    IT: "La tua richiesta di correzione è stata rifiutata.",
+    TR: "Düzeltme talebin reddedildi.",
+    SQ: "Kërkesa jote për korrigjim u refuzua.",
+    KU: "Daxwaza te ya rastkirinê hate redkirin.",
+  },
+};
+
 export type LegalTextKey =
   | "back"
   | "privacyTitle"
@@ -275,7 +464,7 @@ export type KalenderTextKey =
   | "saturdayLong"
   | "sundayLong"
   | "dayMarkedAsHoliday"
-  | "dashOnly"
+  | "dashOnly";
 
 export const KALENDER_DICTIONARY: Record<KalenderTextKey, Record<AppUiLanguage, string>> = {
   unexpectedResponse: {
@@ -2779,7 +2968,53 @@ export type AdminTasksTextKey =
   | "taskCompleteRequirementWorkTime"
   | "taskCompleteRequirementVacation"
   | "taskCompleteRequirementSickness"
-  | "taskCompleteRequirementGeneric";
+  | "taskCompleteRequirementGeneric"
+  | "notLoggedIn"
+  | "invalidDate"
+  | "breakRangeIncomplete"
+  | "invalidBreakStart"
+  | "invalidBreakEnd"
+  | "notAllowed"
+  | "employeeNotFoundOrInactive"
+  | "workTimeEntryRequiredFirst"
+  | "taskCompletedPushTitle"
+  | "invalidData"
+  | "entryNotFound"
+  | "idMissing"
+  | "notFound"
+  | "sickOnlyFullDayRecorded"
+  | "sickCannotBeUnpaidRecorded"
+  | "halfDaysOnlyForVacation"
+  | "halfVacationOnlySingleDateCreate"
+  | "endDateBeforeStartDate"
+  | "crossYearAbsencesNotSupportedCreate"
+  | "employeesCannotCreateFinalAbsencesDirectly"
+  | "noVacationWorkdaysInRange"
+  | "toBeforeFrom"
+  | "sickOnlyFullDay"
+  | "sickCannotBeUnpaid"
+  | "halfVacationOnlySingleDateEdit"
+  | "newEndBeforeNewStart"
+  | "crossYearAbsencesNotSupportedEdit"
+  | "oldPaidVacationUnitsInvalid"
+  | "oldUnpaidVacationUnitsInvalid"
+  | "newPaidVacationUnitsInvalid"
+  | "newUnpaidVacationUnitsInvalid"
+  | "employeesCannotEditFinalAbsencesDirectly"
+  | "vacationUnitsSplitMismatch"
+  | "employeesCannotDeleteFinalAbsencesDirectly"
+  | "idOrRangeRequired"
+  | "notLoggedInWithPeriod"
+  | "dateMustBeYmd"
+  | "invalidAbsenceType"
+  | "endBeforeStart"
+  | "crossYearRequestsNotSupported"
+  | "sickOnlyFullDayRequested"
+  | "sickCannotBeRequestedUnpaid"
+  | "halfVacationOnlySingleDateRequest"
+  | "approvedAbsenceAlreadyExists"
+  | "pendingRequestAlreadyExists"
+  | "newAbsenceRequestPushTitle";
 
 export const ADMIN_TASKS_UI_TEXTS: Record<
   AdminTasksTextKey,
@@ -3157,7 +3392,7 @@ export const ADMIN_TASKS_UI_TEXTS: Record<
     DE: "Die Aufgabe kann erst erledigt werden, wenn für {referenceLabel} alle erforderlichen Arbeitszeiteinträge vorhanden sind.",
     EN: "The task can only be completed once all required work time entries exist for {referenceLabel}.",
     IT: "L'attività può essere completata solo quando per {referenceLabel} sono presenti tutte le registrazioni richieste dell'orario di lavoro.",
-    TR: "Görev ancak {referenceLabel} için gerekli tüm çalışma süresi kayıtları موجود olduğunda tamamlanabilir.",
+    TR: "Görev ancak {referenceLabel} için gerekli tüm çalışma süresi kayıtları mevcut olduğunda tamamlanabilir.",
     SQ: "Detyra mund të përfundohet vetëm kur për {referenceLabel} ekzistojnë të gjitha regjistrimet e kërkuara të kohës së punës.",
     KU: "Erk tenê dema ku ji bo {referenceLabel} hemû tomarên pêwîst ên dema karê hene dikare were temamkirin.",
   },
@@ -3184,6 +3419,374 @@ export const ADMIN_TASKS_UI_TEXTS: Record<
     TR: "Gerekli işlem henüz yerine getirilmedi.",
     SQ: "Veprimi i kërkuar nuk është përmbushur ende.",
     KU: "Çalakiya pêwîst hîn nehatiye cîbicîkirin.",
+  },
+  notLoggedIn: {
+    DE: "Nicht eingeloggt.",
+    EN: "Not logged in.",
+    IT: "Accesso non effettuato.",
+    TR: "Giriş yapılmadı.",
+    SQ: "Nuk jeni i identifikuar.",
+    KU: "Têketin nehatiye kirin.",
+  },
+  invalidDate: {
+    DE: "Ungültiges Datum.",
+    EN: "Invalid date.",
+    IT: "Data non valida.",
+    TR: "Geçersiz tarih.",
+    SQ: "Datë e pavlefshme.",
+    KU: "Dîroka nederbasdar.",
+  },
+  breakRangeIncomplete: {
+    DE: "Bitte Pause von und bis vollständig eingeben.",
+    EN: "Please enter both break start and break end.",
+    IT: "Inserisci sia l'inizio sia la fine della pausa.",
+    TR: "Lütfen mola başlangıcı ve bitişini eksiksiz girin.",
+    SQ: "Ju lutem plotësoni fillimin dhe mbarimin e pushimit.",
+    KU: "Ji kerema xwe destpêk û dawiya navberê bi temamî binivîse.",
+  },
+  invalidBreakStart: {
+    DE: "Pause-Beginn ist ungültig.",
+    EN: "Break start is invalid.",
+    IT: "L'inizio della pausa non è valido.",
+    TR: "Mola başlangıcı geçersiz.",
+    SQ: "Fillimi i pushimit është i pavlefshëm.",
+    KU: "Destpêka navberê nederbasdar e.",
+  },
+  invalidBreakEnd: {
+    DE: "Pause-Ende ist ungültig.",
+    EN: "Break end is invalid.",
+    IT: "La fine della pausa non è valida.",
+    TR: "Mola bitişi geçersiz.",
+    SQ: "Mbarimi i pushimit është i pavlefshëm.",
+    KU: "Dawiya navberê nederbasdar e.",
+  },
+  notAllowed: {
+    DE: "Nicht erlaubt.",
+    EN: "Not allowed.",
+    IT: "Non consentito.",
+    TR: "İzin verilmiyor.",
+    SQ: "Nuk lejohet.",
+    KU: "Destûr nayê dayîn.",
+  },
+  employeeNotFoundOrInactive: {
+    DE: "Mitarbeiter nicht gefunden oder inaktiv.",
+    EN: "Employee not found or inactive.",
+    IT: "Dipendente non trovato o inattivo.",
+    TR: "Çalışan bulunamadı veya pasif.",
+    SQ: "Punonjësi nuk u gjet ose është joaktiv.",
+    KU: "Karmend nehate dîtin an neçalak e.",
+  },
+  workTimeEntryRequiredFirst: {
+    DE: "Trage erst deine Arbeitszeit für diesen Tag ein.",
+    EN: "Please enter your work time for this day first.",
+    IT: "Inserisci prima il tuo orario di lavoro per questo giorno.",
+    TR: "Lütfen önce bu gün için çalışma süreni gir.",
+    SQ: "Ju lutem fillimisht regjistroni orarin e punës për këtë ditë.",
+    KU: "Ji kerema xwe pêşî ji bo vê rojê dema karê xwe binivîse.",
+  },
+  taskCompletedPushTitle: {
+    DE: "Aufgabe erledigt",
+    EN: "Task completed",
+    IT: "Attività completata",
+    TR: "Görev tamamlandı",
+    SQ: "Detyra u përfundua",
+    KU: "Erk hate temamkirin",
+  },
+  invalidData: {
+    DE: "Ungültige Daten.",
+    EN: "Invalid data.",
+    IT: "Dati non validi.",
+    TR: "Geçersiz veriler.",
+    SQ: "Të dhëna të pavlefshme.",
+    KU: "Daneyên nederbasdar.",
+  },
+  entryNotFound: {
+    DE: "Eintrag nicht gefunden.",
+    EN: "Entry not found.",
+    IT: "Voce non trovata.",
+    TR: "Kayıt bulunamadı.",
+    SQ: "Regjistrimi nuk u gjet.",
+    KU: "Tomar nehate dîtin.",
+  },
+  idMissing: {
+    DE: "ID fehlt.",
+    EN: "ID is missing.",
+    IT: "Manca l'ID.",
+    TR: "Kimlik eksik.",
+    SQ: "ID mungon.",
+    KU: "ID tune ye.",
+  },
+  notFound: {
+    DE: "Nicht gefunden.",
+    EN: "Not found.",
+    IT: "Non trovato.",
+    TR: "Bulunamadı.",
+    SQ: "Nuk u gjet.",
+    KU: "Nehate dîtin.",
+  },
+  sickOnlyFullDayRecorded: {
+    DE: "Krankheit kann nur ganztägig erfasst werden.",
+    EN: "Sickness can only be recorded as a full day.",
+    IT: "La malattia può essere registrata solo per l'intera giornata.",
+    TR: "Hastalık sadece tam gün olarak kaydedilebilir.",
+    SQ: "Sëmundja mund të regjistrohet vetëm si ditë e plotë.",
+    KU: "Nexweşî tenê dikare wekî rojek tevahî were tomar kirin.",
+  },
+  sickCannotBeUnpaidRecorded: {
+    DE: "Krankheit darf nicht als unbezahlt erfasst werden.",
+    EN: "Sickness cannot be recorded as unpaid.",
+    IT: "La malattia non può essere registrata come non retribuita.",
+    TR: "Hastalık ücretsiz olarak kaydedilemez.",
+    SQ: "Sëmundja nuk mund të regjistrohet si e papaguar.",
+    KU: "Nexweşî nikare wekî bêpere were tomar kirin.",
+  },
+  halfDaysOnlyForVacation: {
+    DE: "Halbe Tage sind nur für Urlaub erlaubt.",
+    EN: "Half days are only allowed for vacation.",
+    IT: "Le mezze giornate sono consentite solo per le ferie.",
+    TR: "Yarım günler yalnızca izin için geçerlidir.",
+    SQ: "Gjysmë ditët lejohen vetëm për pushim.",
+    KU: "Nîvroj tenê ji bo betlaneyê destûr heye.",
+  },
+  halfVacationOnlySingleDateCreate: {
+    DE: "Ein halber Urlaubstag darf nur für genau ein Datum angelegt werden.",
+    EN: "A half vacation day can only be created for exactly one date.",
+    IT: "Una mezza giornata di ferie può essere creata solo per una singola data.",
+    TR: "Yarım izin günü yalnızca tek bir tarih için oluşturulabilir.",
+    SQ: "Një gjysmë dite pushimi mund të krijohet vetëm për një datë të vetme.",
+    KU: "Nîvroj betlaneyê tenê ji bo yek dîrokê dikare were afirandin.",
+  },
+  endDateBeforeStartDate: {
+    DE: "Enddatum darf nicht vor Startdatum liegen.",
+    EN: "End date must not be before start date.",
+    IT: "La data di fine non può essere precedente alla data di inizio.",
+    TR: "Bitiş tarihi başlangıç tarihinden önce olamaz.",
+    SQ: "Data e mbarimit nuk mund të jetë para datës së fillimit.",
+    KU: "Dîroka dawiyê nikare berî dîroka destpêkê be.",
+  },
+  crossYearAbsencesNotSupportedCreate: {
+    DE: "Jahresübergreifende Abwesenheiten werden aktuell noch nicht unterstützt. Bitte je Kalenderjahr separat anlegen.",
+    EN: "Absences spanning multiple years are not supported yet. Please create them separately for each calendar year.",
+    IT: "Le assenze su più anni non sono ancora supportate. Creale separatamente per ogni anno solare.",
+    TR: "Yıllar arası devreden devamsızlıklar henüz desteklenmiyor. Lütfen her takvim yılı için ayrı oluşturun.",
+    SQ: "Mungesat që përfshijnë disa vite ende nuk mbështeten. Ju lutem krijojini veçmas për çdo vit kalendarik.",
+    KU: "Nebûna ku li ser çend salan dirêj dibin hêj nayên piştgirî kirin. Ji kerema xwe ji bo her sala salnameyê cuda biafirînin.",
+  },
+  employeesCannotCreateFinalAbsencesDirectly: {
+    DE: "Mitarbeiter dürfen keine finalen Abwesenheiten direkt anlegen. Bitte Antrag stellen.",
+    EN: "Employees cannot create final absences directly. Please submit a request.",
+    IT: "I dipendenti non possono creare assenze definitive direttamente. Invia invece una richiesta.",
+    TR: "Çalışanlar kesin devamsızlıkları doğrudan oluşturamaz. Lütfen talep oluşturun.",
+    SQ: "Punonjësit nuk mund të krijojnë drejtpërdrejt mungesa përfundimtare. Ju lutem paraqisni një kërkesë.",
+    KU: "Karmend nikarin nebûnên dawî rasterast biafirînin. Ji kerema xwe daxwazek bişînin.",
+  },
+  noVacationWorkdaysInRange: {
+    DE: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+    EN: "There are no workdays for vacation in the selected period. Weekends are excluded automatically.",
+    IT: "Nel periodo selezionato non ci sono giorni lavorativi per le ferie. I fine settimana vengono esclusi automaticamente.",
+    TR: "Seçilen aralıkta izin için iş günü yok. Hafta sonları otomatik olarak hariç tutulur.",
+    SQ: "Në periudhën e zgjedhur nuk ka ditë pune për pushim. Fundjavat përjashtohen automatikisht.",
+    KU: "Di navbera hilbijartî de ji bo betlaneyê rojên kar tune ne. Dawiyên hefteyê bixweber nayên jimartin.",
+  },
+  toBeforeFrom: {
+    DE: "Bis-Datum darf nicht vor Von-Datum liegen.",
+    EN: "End date must not be before start date.",
+    IT: "La data di fine non può essere precedente alla data di inizio.",
+    TR: "Bitiş tarihi başlangıç tarihinden önce olamaz.",
+    SQ: "Data e mbarimit nuk mund të jetë para datës së fillimit.",
+    KU: "Dîroka dawiyê nikare berî dîroka destpêkê be.",
+  },
+  sickOnlyFullDay: {
+    DE: "Krankheit kann nur ganztägig sein.",
+    EN: "Sickness can only be full day.",
+    IT: "La malattia può essere solo a giornata intera.",
+    TR: "Hastalık yalnızca tam gün olabilir.",
+    SQ: "Sëmundja mund të jetë vetëm me ditë të plotë.",
+    KU: "Nexweşî tenê dikare tevahî rojekê be.",
+  },
+  sickCannotBeUnpaid: {
+    DE: "Krankheit darf nicht unbezahlt sein.",
+    EN: "Sickness cannot be unpaid.",
+    IT: "La malattia non può essere non retribuita.",
+    TR: "Hastalık ücretsiz olamaz.",
+    SQ: "Sëmundja nuk mund të jetë e papaguar.",
+    KU: "Nexweşî nikare bêpere be.",
+  },
+  halfVacationOnlySingleDateEdit: {
+    DE: "Ein halber Urlaubstag darf nur für genau ein Datum bestehen.",
+    EN: "A half vacation day can only exist for exactly one date.",
+    IT: "Una mezza giornata di ferie può valere solo per una singola data.",
+    TR: "Yarım izin günü yalnızca tek bir tarih için geçerli olabilir.",
+    SQ: "Një gjysmë dite pushimi mund të vlejë vetëm për një datë të vetme.",
+    KU: "Nîvroj betlaneyê tenê dikare ji bo yek dîrokê hebe.",
+  },
+  newEndBeforeNewStart: {
+    DE: "Neues Enddatum darf nicht vor neuem Startdatum liegen.",
+    EN: "New end date must not be before new start date.",
+    IT: "La nuova data di fine non può essere precedente alla nuova data di inizio.",
+    TR: "Yeni bitiş tarihi yeni başlangıç tarihinden önce olamaz.",
+    SQ: "Data e re e mbarimit nuk mund të jetë para datës së re të fillimit.",
+    KU: "Dîroka dawiyê ya nû nikare berî dîroka destpêkê ya nû be.",
+  },
+  crossYearAbsencesNotSupportedEdit: {
+    DE: "Jahresübergreifende Abwesenheiten werden aktuell noch nicht unterstützt. Bitte je Kalenderjahr separat bearbeiten.",
+    EN: "Absences spanning multiple years are not supported yet. Please edit them separately for each calendar year.",
+    IT: "Le assenze su più anni non sono ancora supportate. Modificale separatamente per ogni anno solare.",
+    TR: "Yıllar arası devreden devamsızlıklar henüz desteklenmiyor. Lütfen her takvim yılı için ayrı düzenleyin.",
+    SQ: "Mungesat që përfshijnë disa vite ende nuk mbështeten. Ju lutem ndryshojini veçmas për çdo vit kalendarik.",
+    KU: "Nebûna ku li ser çend salan dirêj dibin hêj nayên piştgirî kirin. Ji kerema xwe ji bo her sala salnameyê cuda biguherînin.",
+  },
+  oldPaidVacationUnitsInvalid: {
+    DE: "Alte bezahlte Urlaubseinheiten sind ungültig.",
+    EN: "Old paid vacation units are invalid.",
+    IT: "Le vecchie unità di ferie retribuite non sono valide.",
+    TR: "Eski ücretli izin birimleri geçersiz.",
+    SQ: "Njësitë e vjetra të pushimit të paguar janë të pavlefshme.",
+    KU: "Yekeyên kevn ên betlaneya bi pere nederbasdar in.",
+  },
+  oldUnpaidVacationUnitsInvalid: {
+    DE: "Alte unbezahlte Urlaubseinheiten sind ungültig.",
+    EN: "Old unpaid vacation units are invalid.",
+    IT: "Le vecchie unità di ferie non retribuite non sono valide.",
+    TR: "Eski ücretsiz izin birimleri geçersiz.",
+    SQ: "Njësitë e vjetra të pushimit të papaguar janë të pavlefshme.",
+    KU: "Yekeyên kevn ên betlaneya bêpere nederbasdar in.",
+  },
+  newPaidVacationUnitsInvalid: {
+    DE: "Neue bezahlte Urlaubseinheiten sind ungültig.",
+    EN: "New paid vacation units are invalid.",
+    IT: "Le nuove unità di ferie retribuite non sono valide.",
+    TR: "Yeni ücretli izin birimleri geçersiz.",
+    SQ: "Njësitë e reja të pushimit të paguar janë të pavlefshme.",
+    KU: "Yekeyên nû ên betlaneya bi pere nederbasdar in.",
+  },
+  newUnpaidVacationUnitsInvalid: {
+    DE: "Neue unbezahlte Urlaubseinheiten sind ungültig.",
+    EN: "New unpaid vacation units are invalid.",
+    IT: "Le nuove unità di ferie non retribuite non sono valide.",
+    TR: "Yeni ücretsiz izin birimleri geçersiz.",
+    SQ: "Njësitë e reja të pushimit të papaguar janë të pavlefshme.",
+    KU: "Yekeyên nû ên betlaneya bêpere nederbasdar in.",
+  },
+  employeesCannotEditFinalAbsencesDirectly: {
+    DE: "Mitarbeiter dürfen finale Abwesenheiten nicht direkt bearbeiten.",
+    EN: "Employees cannot edit final absences directly.",
+    IT: "I dipendenti non possono modificare direttamente le assenze definitive.",
+    TR: "Çalışanlar kesin devamsızlıkları doğrudan düzenleyemez.",
+    SQ: "Punonjësit nuk mund të ndryshojnë drejtpërdrejt mungesat përfundimtare.",
+    KU: "Karmend nikarin nebûnên dawî rasterast biguherînin.",
+  },
+  vacationUnitsSplitMismatch: {
+    DE: "Die neue Aufteilung in bezahlte und unbezahlte Urlaubseinheiten passt nicht zum Zeitraum.",
+    EN: "The new split of paid and unpaid vacation units does not match the selected period.",
+    IT: "La nuova suddivisione tra unità di ferie retribuite e non retribuite non corrisponde al periodo selezionato.",
+    TR: "Ücretli ve ücretsiz izin birimlerinin yeni dağılımı seçilen döneme uymuyor.",
+    SQ: "Ndarja e re e njësive të pushimit të paguar dhe të papaguar nuk përputhet me periudhën e zgjedhur.",
+    KU: "Parvekirina nû ya yekeyên betlaneya bi pere û bêpere bi navbera hilbijartî re nagunce.",
+  },
+  employeesCannotDeleteFinalAbsencesDirectly: {
+    DE: "Mitarbeiter dürfen finale Abwesenheiten nicht direkt löschen.",
+    EN: "Employees cannot delete final absences directly.",
+    IT: "I dipendenti non possono eliminare direttamente le assenze definitive.",
+    TR: "Çalışanlar kesin devamsızlıkları doğrudan silemez.",
+    SQ: "Punonjësit nuk mund të fshijnë drejtpërdrejt mungesat përfundimtare.",
+    KU: "Karmend nikarin nebûnên dawî rasterast jêbibin.",
+  },
+  idOrRangeRequired: {
+    DE: "Entweder eine ID oder ein gültiger Bereich mit von, bis und Typ ist erforderlich.",
+    EN: "Either an ID or a valid range with from, to, and type is required.",
+    IT: "È richiesta un'ID oppure un intervallo valido con da, a e tipo.",
+    TR: "Kimlik ya da from, to ve type içeren geçerli bir aralık gerekli.",
+    SQ: "Kërkohet një ID ose një interval i vlefshëm me from, to dhe type.",
+    KU: "Yan ID an jî navberek derbasdar bi from, to û type pêwîst e.",
+  },
+  notLoggedInWithPeriod: {
+    DE: "Nicht eingeloggt.",
+    EN: "Not logged in.",
+    IT: "Accesso non effettuato.",
+    TR: "Giriş yapılmadı.",
+    SQ: "Nuk jeni i identifikuar.",
+    KU: "Têketin nehatiye kirin.",
+  },
+  dateMustBeYmd: {
+    DE: "Start- und Enddatum müssen im Format YYYY-MM-DD angegeben werden.",
+    EN: "Start and end date must be in YYYY-MM-DD format.",
+    IT: "La data di inizio e di fine devono essere nel formato YYYY-MM-DD.",
+    TR: "Başlangıç ve bitiş tarihi YYYY-MM-DD formatında olmalıdır.",
+    SQ: "Data e fillimit dhe e mbarimit duhet të jenë në formatin YYYY-MM-DD.",
+    KU: "Dîroka destpêk û dawiyê divê di forma YYYY-MM-DD de bin.",
+  },
+  invalidAbsenceType: {
+    DE: "Ungültiger Abwesenheitstyp.",
+    EN: "Invalid absence type.",
+    IT: "Tipo di assenza non valido.",
+    TR: "Geçersiz devamsızlık türü.",
+    SQ: "Lloj mungese i pavlefshëm.",
+    KU: "Cureya nebûnê nederbasdar.",
+  },
+  endBeforeStart: {
+    DE: "Ende darf nicht vor Start liegen.",
+    EN: "End must not be before start.",
+    IT: "La fine non può essere precedente all'inizio.",
+    TR: "Bitiş başlangıçtan önce olamaz.",
+    SQ: "Mbarimi nuk mund të jetë para fillimit.",
+    KU: "Dawî nikare berî destpêkê be.",
+  },
+  crossYearRequestsNotSupported: {
+    DE: "Jahresübergreifende Urlaubs- oder Krankheitsanträge werden aktuell noch nicht unterstützt. Bitte je Kalenderjahr einen separaten Antrag stellen.",
+    EN: "Vacation or sickness requests spanning multiple years are not supported yet. Please submit a separate request for each calendar year.",
+    IT: "Le richieste di ferie o malattia su più anni non sono ancora supportate. Invia una richiesta separata per ogni anno solare.",
+    TR: "Yıllar arası devreden izin veya hastalık talepleri henüz desteklenmiyor. Lütfen her takvim yılı için ayrı bir talep gönderin.",
+    SQ: "Kërkesat për pushim ose sëmundje që përfshijnë disa vite ende nuk mbështeten. Ju lutem dërgoni një kërkesë të veçantë për çdo vit kalendarik.",
+    KU: "Daxwazên betlane an nexweşiyê ku li ser çend salan dirêj dibin hêj nayên piştgirî kirin. Ji kerema xwe ji bo her sala salnameyê daxwazek cuda bişînin.",
+  },
+  sickOnlyFullDayRequested: {
+    DE: "Krankheit kann nur ganztägig beantragt werden.",
+    EN: "Sickness can only be requested as a full day.",
+    IT: "La malattia può essere richiesta solo per l'intera giornata.",
+    TR: "Hastalık yalnızca tam gün olarak talep edilebilir.",
+    SQ: "Sëmundja mund të kërkohet vetëm si ditë e plotë.",
+    KU: "Nexweşî tenê dikare wekî rojek tevahî were daxwaz kirin.",
+  },
+  sickCannotBeRequestedUnpaid: {
+    DE: "Krankheit darf nicht als unbezahlt beantragt werden.",
+    EN: "Sickness cannot be requested as unpaid.",
+    IT: "La malattia non può essere richiesta come non retribuita.",
+    TR: "Hastalık ücretsiz olarak talep edilemez.",
+    SQ: "Sëmundja nuk mund të kërkohet si e papaguar.",
+    KU: "Nexweşî nikare wekî bêpere were daxwaz kirin.",
+  },
+  halfVacationOnlySingleDateRequest: {
+    DE: "Ein halber Urlaubstag darf nur für genau ein Datum beantragt werden.",
+    EN: "A half vacation day can only be requested for exactly one date.",
+    IT: "Una mezza giornata di ferie può essere richiesta solo per una singola data.",
+    TR: "Yarım izin günü yalnızca tek bir tarih için talep edilebilir.",
+    SQ: "Një gjysmë dite pushimi mund të kërkohet vetëm për një datë të vetme.",
+    KU: "Nîvroj betlaneyê tenê ji bo yek dîrokê dikare were daxwaz kirin.",
+  },
+  approvedAbsenceAlreadyExists: {
+    DE: "Im gewünschten Zeitraum existiert bereits eine bestätigte Abwesenheit.",
+    EN: "A confirmed absence already exists in the selected period.",
+    IT: "Nel periodo desiderato esiste già un'assenza confermata.",
+    TR: "Seçilen dönemde zaten onaylanmış bir devamsızlık var.",
+    SQ: "Në periudhën e zgjedhur ekziston tashmë një mungesë e konfirmuar.",
+    KU: "Di navbera xwestî de jixwe nebûnek pejirandî heye.",
+  },
+  pendingRequestAlreadyExists: {
+    DE: "Für diesen Zeitraum existiert bereits ein offener Antrag.",
+    EN: "An open request already exists for this period.",
+    IT: "Per questo periodo esiste già una richiesta aperta.",
+    TR: "Bu dönem için zaten açık bir talep mevcut.",
+    SQ: "Për këtë periudhë ekziston tashmë një kërkesë e hapur.",
+    KU: "Ji bo vê navberê jixwe daxwazek vekirî heye.",
+  },
+  newAbsenceRequestPushTitle: {
+    DE: "Neuer Abwesenheitsantrag",
+    EN: "New absence request",
+    IT: "Nuova richiesta di assenza",
+    TR: "Yeni devamsızlık talebi",
+    SQ: "Kërkesë e re për mungesë",
+    KU: "Daxwaza nû ya nebûnê",
   },
 };
 

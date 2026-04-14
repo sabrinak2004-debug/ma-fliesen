@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { translate, type AppUiLanguage } from "@/lib/i18n";
 
 type PushPublicKeyResponse =
   | {
@@ -12,6 +13,57 @@ type PushPublicKeyResponse =
       ok: false;
       error: string;
     };
+
+type PushBootstrapTextKey =
+  | "invalidResponse"
+  | "missingPublicKey"
+  | "unknownError"
+  | "setupFailed";
+
+const PUSH_BOOTSTRAP_TEXTS: Record<
+  PushBootstrapTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  invalidResponse: {
+    DE: "Ungültige Antwort.",
+    EN: "Invalid response.",
+    IT: "Risposta non valida.",
+    TR: "Geçersiz yanıt.",
+    SQ: "Përgjigje e pavlefshme.",
+    KU: "Bersiva nederbasdar.",
+  },
+  missingPublicKey: {
+    DE: "Public Key fehlt.",
+    EN: "Public key is missing.",
+    IT: "Manca la public key.",
+    TR: "Public key eksik.",
+    SQ: "Mungon public key.",
+    KU: "Public key tune ye.",
+  },
+  unknownError: {
+    DE: "Unbekannter Fehler.",
+    EN: "Unknown error.",
+    IT: "Errore sconosciuto.",
+    TR: "Bilinmeyen hata.",
+    SQ: "Gabim i panjohur.",
+    KU: "Çewtiya nenas.",
+  },
+  setupFailed: {
+    DE: "Push-Setup fehlgeschlagen:",
+    EN: "Push setup failed:",
+    IT: "Configurazione push non riuscita:",
+    TR: "Push kurulumu başarısız oldu:",
+    SQ: "Konfigurimi i push dështoi:",
+    KU: "Sazkirina pushê serneket:",
+  },
+};
+
+function tPushBootstrap(
+  language: AppUiLanguage,
+  key: PushBootstrapTextKey
+): string {
+  return translate(language, key, PUSH_BOOTSTRAP_TEXTS);
+}
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -25,15 +77,18 @@ function getStringField(
   return typeof value === "string" ? value : null;
 }
 
-function parsePushPublicKeyResponse(v: unknown): PushPublicKeyResponse {
+function parsePushPublicKeyResponse(
+  v: unknown,
+  language: AppUiLanguage
+): PushPublicKeyResponse {
   if (!isRecord(v)) {
-    return { ok: false, error: "Ungültige Antwort." };
+    return { ok: false, error: tPushBootstrap(language, "invalidResponse") };
   }
 
   if (v["ok"] === true) {
     const publicKey = getStringField(v, "publicKey");
     if (!publicKey) {
-      return { ok: false, error: "Public Key fehlt." };
+      return { ok: false, error: tPushBootstrap(language, "missingPublicKey") };
     }
 
     return { ok: true, publicKey };
@@ -41,7 +96,8 @@ function parsePushPublicKeyResponse(v: unknown): PushPublicKeyResponse {
 
   return {
     ok: false,
-    error: getStringField(v, "error") ?? "Unbekannter Fehler.",
+    error:
+      getStringField(v, "error") ?? tPushBootstrap(language, "unknownError"),
   };
 }
 
@@ -95,9 +151,12 @@ function isMeSession(v: unknown): v is MeSession {
   );
 }
 
-function parseMeResponse(v: unknown): MeResponse {
+function parseMeResponse(
+  v: unknown,
+  language: AppUiLanguage
+): MeResponse {
   if (!isRecord(v)) {
-    return { ok: false, error: "Ungültige Antwort." };
+    return { ok: false, error: tPushBootstrap(language, "invalidResponse") };
   }
 
   if (v["ok"] === true) {
@@ -114,7 +173,8 @@ function parseMeResponse(v: unknown): MeResponse {
 
   return {
     ok: false,
-    error: getStringField(v, "error") ?? "Ungültige Antwort.",
+    error:
+      getStringField(v, "error") ?? tPushBootstrap(language, "invalidResponse"),
   };
 }
 
@@ -173,7 +233,11 @@ async function sendSubscriptionToBackend(
   });
 }
 
-export default function PushBootstrap() {
+export default function PushBootstrap({
+  language,
+}: {
+  language: AppUiLanguage;
+}) {
   const pathname = usePathname();
 
   useEffect(() => {
@@ -197,7 +261,7 @@ export default function PushBootstrap() {
         });
 
         const meJson: unknown = await meResponse.json().catch(() => ({}));
-        const parsedMe = parseMeResponse(meJson);
+        const parsedMe = parseMeResponse(meJson, language);
 
         if (!meResponse.ok || !parsedMe.ok || !parsedMe.session) {
           return;
@@ -220,7 +284,7 @@ export default function PushBootstrap() {
         const publicKeyJson: unknown = await publicKeyResponse
           .json()
           .catch(() => ({}));
-        const parsed = parsePushPublicKeyResponse(publicKeyJson);
+        const parsed = parsePushPublicKeyResponse(publicKeyJson, language);
 
         if (!publicKeyResponse.ok || !parsed.ok) {
           return;
@@ -256,7 +320,7 @@ export default function PushBootstrap() {
         );
       } catch (error: unknown) {
         if (cancelled) return;
-        console.error("Push-Setup fehlgeschlagen:", error);
+        console.error(tPushBootstrap(language, "setupFailed"), error);
       }
     }
 

@@ -7,14 +7,19 @@ import {
   TimeEntryCorrectionRequestStatus,
 } from "@prisma/client";
 import { getSession } from "@/lib/auth";
+import {
+  normalizeAppUiLanguage,
+  TIME_ENTRY_CORRECTION_API_TEXTS,
+  translate,
+} from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
-import { buildPushUrl, sendPushToAdmins } from "@/lib/webpush";
 import {
   berlinTodayYMD,
   getLockedMissingRequiredWorkDates,
   getMissingRequiredWorkDates,
 } from "@/lib/timesheetLock";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
+import { buildPushUrl, sendPushToAdmins } from "@/lib/webpush";
 
 type CreateTimeEntryCorrectionRequestBody = {
   targetDate?: unknown;
@@ -43,12 +48,6 @@ function toIsoDateUTC(d: Date): string {
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
-}
-
-function addUtcDays(d: Date, days: number): Date {
-  const copy = new Date(d.getTime());
-  copy.setUTCDate(copy.getUTCDate() + days);
-  return copy;
 }
 
 type TranslationMap = Partial<Record<SupportedLang, string>>;
@@ -197,9 +196,13 @@ function mapRequest(
 
 export async function GET() {
   const session = await getSession();
+  const language = normalizeAppUiLanguage(session?.language);
+  const t = (key: keyof typeof TIME_ENTRY_CORRECTION_API_TEXTS) =>
+    translate(language, key, TIME_ENTRY_CORRECTION_API_TEXTS);
+
   if (!session) {
     return NextResponse.json(
-      { ok: false, error: "Nicht eingeloggt." },
+      { ok: false, error: t("notLoggedIn") },
       { status: 401 }
     );
   }
@@ -236,16 +239,20 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getSession();
+  const language = normalizeAppUiLanguage(session?.language);
+  const t = (key: keyof typeof TIME_ENTRY_CORRECTION_API_TEXTS) =>
+    translate(language, key, TIME_ENTRY_CORRECTION_API_TEXTS);
+
   if (!session) {
     return NextResponse.json(
-      { ok: false, error: "Nicht eingeloggt." },
+      { ok: false, error: t("notLoggedIn") },
       { status: 401 }
     );
   }
 
   if (session.role !== Role.EMPLOYEE) {
     return NextResponse.json(
-      { ok: false, error: "Nur Mitarbeiter können Nachtragsanträge stellen." },
+      { ok: false, error: t("employeeOnlyCreate") },
       { status: 403 }
     );
   }
@@ -259,7 +266,7 @@ export async function POST(req: Request) {
 
   if (!isYYYYMMDD(targetDate)) {
     return NextResponse.json(
-      { ok: false, error: "targetDate muss YYYY-MM-DD sein." },
+      { ok: false, error: t("invalidTargetDate") },
       { status: 400 }
     );
   }
@@ -275,18 +282,10 @@ export async function POST(req: Request) {
 
   if (targetDate >= today) {
     return NextResponse.json(
-      { ok: false, error: "Ein Nachtragsantrag ist nur für vergangene Tage möglich." },
+      { ok: false, error: t("pastDaysOnly") },
       { status: 400 }
     );
   }
-
-  const missingDates = await getMissingRequiredWorkDates(
-    session.userId,
-    today,
-    {
-      companyId: session.companyId,
-    }
-  );
 
   const lockedMissingDates = await getLockedMissingRequiredWorkDates(
     session.userId,
@@ -298,7 +297,7 @@ export async function POST(req: Request) {
 
   if (lockedMissingDates.length === 0) {
     return NextResponse.json(
-      { ok: false, error: "Aktuell gibt es keine gesperrten fehlenden Arbeitseinträge." },
+      { ok: false, error: t("noLockedMissingEntries") },
       { status: 409 }
     );
   }
@@ -310,8 +309,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         ok: false,
-        error:
-          "Für dieses Datum ist aktuell noch kein Nachtragsantrag erforderlich oder das Datum gehört nicht zu den gesperrten fehlenden Arbeitstagen.",
+        error: t("requestNotRequiredForDate"),
       },
       { status: 409 }
     );
@@ -341,7 +339,7 @@ export async function POST(req: Request) {
 
   if (existingPending) {
     return NextResponse.json(
-      { ok: false, error: "Für diesen Zeitraum existiert bereits ein offener Nachtragsantrag." },
+      { ok: false, error: t("existingPendingForPeriod") },
       { status: 409 }
     );
   }
@@ -425,8 +423,10 @@ export async function POST(req: Request) {
   if (!adminTaskForAutoApproval) {
     await sendPushToAdmins({
       companyId: session.companyId,
-      title: "Neuer Nachtragsantrag",
-      body: `${session.fullName} hat einen Nachtragsantrag für ${dateLabel} gestellt.`,
+      title: t("newCorrectionRequestPushTitle"),
+      body: translate(language, "newCorrectionRequestPushBody", TIME_ENTRY_CORRECTION_API_TEXTS)
+        .replace("{name}", session.fullName)
+        .replace("{dateLabel}", dateLabel),
       url: buildPushUrl("/admin/nachtragsanfragen"),
     });
   }

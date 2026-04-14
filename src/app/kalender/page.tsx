@@ -141,8 +141,6 @@ type EventCategory = "KUNDE" | "BAUSTELLE" | "INTERN" | "PRIVAT";
 type AdminApptMode = "create-global" | "create-from-day" | "edit";
 type CalendarViewMode = "MONTH" | "WEEK";
 
-
-
 function replaceTemplate(
   template: string,
   values: Record<string, string | number>

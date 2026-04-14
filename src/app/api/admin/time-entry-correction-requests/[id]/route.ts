@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { TimeEntryCorrectionRequestStatus } from "@prisma/client";
+import {
+  normalizeAppUiLanguage,
+  TIME_ENTRY_CORRECTION_API_TEXTS,
+  translate,
+} from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 
@@ -11,6 +16,16 @@ type RouteContext = {
 
 export async function DELETE(_req: Request, context: RouteContext) {
   const admin = await requireAdmin();
+  const adminUser = admin
+    ? await prisma.appUser.findUnique({
+        where: { id: admin.id },
+        select: { language: true },
+      })
+    : null;
+  const language = normalizeAppUiLanguage(adminUser?.language);
+  const t = (key: keyof typeof TIME_ENTRY_CORRECTION_API_TEXTS) =>
+    translate(language, key, TIME_ENTRY_CORRECTION_API_TEXTS);
+
   if (!admin) {
     return NextResponse.json(
       { ok: false, error: "FORBIDDEN" },
@@ -23,7 +38,7 @@ export async function DELETE(_req: Request, context: RouteContext) {
 
   if (!requestId) {
     return NextResponse.json(
-      { ok: false, error: "Fehlende Request-ID." },
+      { ok: false, error: t("missingRequestId") },
       { status: 400 }
     );
   }
@@ -43,7 +58,7 @@ export async function DELETE(_req: Request, context: RouteContext) {
 
   if (!existing) {
     return NextResponse.json(
-      { ok: false, error: "Nachtragsanfrage nicht gefunden." },
+      { ok: false, error: t("correctionRequestNotFound") },
       { status: 404 }
     );
   }

@@ -1150,7 +1150,7 @@ export default function AppShell({
 
         {/* MOBILE CONTENT */}
         <div className="md:hidden" style={{ minWidth: 0 }}>
-          <PushOnboarding/>
+          <PushOnboarding language={currentLanguage} />
           {children}
         </div>
 
@@ -1431,7 +1431,7 @@ export default function AppShell({
               </div>
             </div>
 
-            <PushOnboarding />
+            <PushOnboarding language={currentLanguage} />
             {children}
           </div>
         </div>

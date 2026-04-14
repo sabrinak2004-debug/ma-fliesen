@@ -7,6 +7,12 @@ import {
   AbsenceType,
   Role,
 } from "@prisma/client";
+import {
+  ADMIN_TASKS_UI_TEXTS,
+  translate,
+  type AdminTasksTextKey,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 type AbsenceBody = {
   startDate?: unknown;
@@ -265,10 +271,38 @@ async function findActiveCompanyUser(userId: string, companyId: string) {
   });
 }
 
+function toAppUiLanguage(value: string | null | undefined): AppUiLanguage {
+  if (
+    value === "DE" ||
+    value === "EN" ||
+    value === "IT" ||
+    value === "TR" ||
+    value === "SQ" ||
+    value === "KU"
+  ) {
+    return value;
+  }
+
+  return "DE";
+}
+
+function translateAbsenceText(
+  language: AppUiLanguage,
+  key: AdminTasksTextKey
+): string {
+  return translate(language, key, ADMIN_TASKS_UI_TEXTS);
+}
 
 export async function GET(req: Request) {
   const session = await getSession();
-  if (!session) return okJson({ error: "Nicht eingeloggt" }, { status: 401 });
+  const language = toAppUiLanguage(session?.language);
+
+  if (!session) {
+    return okJson(
+      { error: translateAbsenceText(language, "notLoggedIn") },
+      { status: 401 }
+    );
+  }
 
   const url = new URL(req.url);
   const month = (url.searchParams.get("month") ?? "").trim();
@@ -310,7 +344,10 @@ export async function GET(req: Request) {
     const fromD = dateOnlyUTC(fromQ);
     const toD = dateOnlyUTC(toQ);
     if (toD < fromD) {
-      return okJson({ error: "to darf nicht vor from liegen" }, { status: 400 });
+      return okJson(
+        { error: translateAbsenceText(language, "toBeforeFrom") },
+        { status: 400 }
+      );
     }
 
     from = fromD;
@@ -417,7 +454,14 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await getSession();
-  if (!session) return okJson({ error: "Nicht eingeloggt" }, { status: 401 });
+  const language = toAppUiLanguage(session?.language);
+
+  if (!session) {
+    return okJson(
+      { error: translateAbsenceText(language, "notLoggedIn") },
+      { status: 401 }
+    );
+  }
 
   const raw = (await req.json().catch(() => null)) as unknown;
   const body: AbsenceBody = isRecord(raw) ? raw : {};
@@ -437,7 +481,10 @@ export async function POST(req: Request) {
     !isYYYYMMDD(endDate) ||
     !isAbsenceType(typeStr)
   ) {
-    return okJson({ error: "Ungültige Daten" }, { status: 400 });
+    return okJson(
+      { error: translateAbsenceText(language, "invalidData") },
+      { status: 400 }
+    );
   }
 
   const dayPortion: AbsenceDayPortion = isAbsenceDayPortion(dayPortionStr)
@@ -449,14 +496,14 @@ export async function POST(req: Request) {
 
   if (typeStr === "SICK" && dayPortion !== AbsenceDayPortion.FULL_DAY) {
     return okJson(
-      { error: "Krankheit kann nur ganztägig erfasst werden." },
+      { error: translateAbsenceText(language, "sickOnlyFullDayRecorded") },
       { status: 400 }
     );
   }
 
   if (typeStr === "SICK" && compensation !== AbsenceCompensation.PAID) {
     return okJson(
-      { error: "Krankheit darf nicht als unbezahlt erfasst werden." },
+      { error: translateAbsenceText(language, "sickCannotBeUnpaidRecorded") },
       { status: 400 }
     );
   }
@@ -466,7 +513,7 @@ export async function POST(req: Request) {
     typeStr !== "VACATION"
   ) {
     return okJson(
-      { error: "Halbe Tage sind nur für Urlaub erlaubt." },
+      { error: translateAbsenceText(language, "halfDaysOnlyForVacation") },
       { status: 400 }
     );
   }
@@ -476,7 +523,7 @@ export async function POST(req: Request) {
     startDate !== endDate
   ) {
     return okJson(
-      { error: "Ein halber Urlaubstag darf nur für genau ein Datum angelegt werden." },
+      { error: translateAbsenceText(language, "halfVacationOnlySingleDateCreate") },
       { status: 400 }
     );
   }
@@ -485,7 +532,7 @@ export async function POST(req: Request) {
   const end = dateOnlyUTC(endDate);
   if (end < start) {
     return okJson(
-      { error: "Enddatum darf nicht vor Startdatum liegen." },
+      { error: translateAbsenceText(language, "endDateBeforeStartDate") },
       { status: 400 }
     );
   }
@@ -493,7 +540,7 @@ export async function POST(req: Request) {
   if (start.getUTCFullYear() !== end.getUTCFullYear()) {
     return okJson(
       {
-        error: "Jahresübergreifende Abwesenheiten werden aktuell noch nicht unterstützt. Bitte je Kalenderjahr separat anlegen.",
+        error: translateAbsenceText(language, "crossYearAbsencesNotSupportedCreate"),
       },
       { status: 400 }
     );
@@ -505,7 +552,10 @@ export async function POST(req: Request) {
   if (isAdmin && userIdFromBody) {
     const targetUser = await findActiveCompanyUser(userIdFromBody, session.companyId);
     if (!targetUser) {
-      return okJson({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
+      return okJson(
+        { error: translateAbsenceText(language, "employeeNotFoundOrInactive") },
+        { status: 400 }
+      );
     }
     targetUserId = targetUser.id;
   }
@@ -513,8 +563,7 @@ export async function POST(req: Request) {
   if (!isAdmin) {
     return okJson(
       {
-        error:
-          "Mitarbeiter dürfen keine finalen Abwesenheiten direkt anlegen. Bitte Antrag stellen.",
+        error: translateAbsenceText(language, "employeesCannotCreateFinalAbsencesDirectly"),
       },
       { status: 403 }
     );
@@ -529,7 +578,7 @@ export async function POST(req: Request) {
   ) {
     return okJson(
       {
-        error: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+        error: translateAbsenceText(language, "noVacationWorkdaysInRange"),
       },
       { status: 400 }
     );
@@ -559,7 +608,14 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   const session = await getSession();
-  if (!session) return okJson({ error: "Nicht eingeloggt" }, { status: 401 });
+  const language = toAppUiLanguage(session?.language);
+
+  if (!session) {
+    return okJson(
+      { error: translateAbsenceText(language, "notLoggedIn") },
+      { status: 401 }
+    );
+  }
 
   const raw = (await req.json().catch(() => null)) as unknown;
   const body: AbsencePatchBody = isRecord(raw) ? raw : {};
@@ -593,7 +649,10 @@ export async function PATCH(req: Request) {
     !isYYYYMMDD(newEndStr) ||
     !isAbsenceType(newTypeStr)
   ) {
-    return okJson({ error: "Ungültige Daten" }, { status: 400 });
+    return okJson(
+      { error: translateAbsenceText(language, "invalidData") },
+      { status: 400 }
+    );
   }
 
   const oldDayPortion: AbsenceDayPortion = isAbsenceDayPortion(dayPortionStr)
@@ -614,14 +673,14 @@ export async function PATCH(req: Request) {
 
   if (newTypeStr === "SICK" && newDayPortion !== AbsenceDayPortion.FULL_DAY) {
     return okJson(
-      { error: "Krankheit kann nur ganztägig sein." },
+      { error: translateAbsenceText(language, "sickOnlyFullDay") },
       { status: 400 }
     );
   }
 
   if (newTypeStr === "SICK" && newCompensation !== AbsenceCompensation.PAID) {
     return okJson(
-      { error: "Krankheit darf nicht unbezahlt sein." },
+      { error: translateAbsenceText(language, "sickCannotBeUnpaid") },
       { status: 400 }
     );
   }
@@ -631,7 +690,7 @@ export async function PATCH(req: Request) {
     newTypeStr !== "VACATION"
   ) {
     return okJson(
-      { error: "Halbe Tage sind nur für Urlaub erlaubt." },
+      { error: translateAbsenceText(language, "halfDaysOnlyForVacation") },
       { status: 400 }
     );
   }
@@ -641,7 +700,7 @@ export async function PATCH(req: Request) {
     newStartStr !== newEndStr
   ) {
     return okJson(
-      { error: "Ein halber Urlaubstag darf nur für genau ein Datum bestehen." },
+      { error: translateAbsenceText(language, "halfVacationOnlySingleDateEdit") },
       { status: 400 }
     );
   }
@@ -649,14 +708,17 @@ export async function PATCH(req: Request) {
   const from = dateOnlyUTC(fromStr);
   const to = dateOnlyUTC(toStr);
   if (to < from) {
-    return okJson({ error: "to darf nicht vor from liegen" }, { status: 400 });
+    return okJson(
+      { error: translateAbsenceText(language, "toBeforeFrom") },
+      { status: 400 }
+    );
   }
 
   const newStart = dateOnlyUTC(newStartStr);
   const newEnd = dateOnlyUTC(newEndStr);
   if (newEnd < newStart) {
     return okJson(
-      { error: "newEndDate darf nicht vor newStartDate liegen" },
+      { error: translateAbsenceText(language, "newEndBeforeNewStart") },
       { status: 400 }
     );
   }
@@ -664,7 +726,7 @@ export async function PATCH(req: Request) {
   if (newStart.getUTCFullYear() !== newEnd.getUTCFullYear()) {
     return okJson(
       {
-        error: "Jahresübergreifende Abwesenheiten werden aktuell noch nicht unterstützt. Bitte je Kalenderjahr separat bearbeiten.",
+        error: translateAbsenceText(language, "crossYearAbsencesNotSupportedEdit"),
       },
       { status: 400 }
     );
@@ -674,7 +736,7 @@ export async function PATCH(req: Request) {
     (!Number.isInteger(oldPaidVacationUnitsRaw) || oldPaidVacationUnitsRaw < 0)
   ) {
     return okJson(
-      { error: "oldPaidVacationUnits ist ungültig." },
+      { error: translateAbsenceText(language, "oldPaidVacationUnitsInvalid") },
       { status: 400 }
     );
   }
@@ -684,7 +746,7 @@ export async function PATCH(req: Request) {
     (!Number.isInteger(oldUnpaidVacationUnitsRaw) || oldUnpaidVacationUnitsRaw < 0)
   ) {
     return okJson(
-      { error: "oldUnpaidVacationUnits ist ungültig." },
+      { error: translateAbsenceText(language, "oldUnpaidVacationUnitsInvalid") },
       { status: 400 }
     );
   }
@@ -694,7 +756,7 @@ export async function PATCH(req: Request) {
     (!Number.isInteger(newPaidVacationUnitsRaw) || newPaidVacationUnitsRaw < 0)
   ) {
     return okJson(
-      { error: "newPaidVacationUnits ist ungültig." },
+      { error: translateAbsenceText(language, "newPaidVacationUnitsInvalid") },
       { status: 400 }
     );
   }
@@ -704,7 +766,7 @@ export async function PATCH(req: Request) {
     (!Number.isInteger(newUnpaidVacationUnitsRaw) || newUnpaidVacationUnitsRaw < 0)
   ) {
     return okJson(
-      { error: "newUnpaidVacationUnits ist ungültig." },
+      { error: translateAbsenceText(language, "newUnpaidVacationUnitsInvalid") },
       { status: 400 }
     );
   }
@@ -715,14 +777,17 @@ export async function PATCH(req: Request) {
   if (isAdmin && userIdFromBody) {
     const targetUser = await findActiveCompanyUser(userIdFromBody, session.companyId);
     if (!targetUser) {
-      return okJson({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
+      return okJson(
+        { error: translateAbsenceText(language, "employeeNotFoundOrInactive") },
+        { status: 400 }
+      );
     }
     targetUserId = targetUser.id;
   }
 
   if (!isAdmin) {
     return okJson(
-      { error: "Mitarbeiter dürfen finale Abwesenheiten nicht direkt bearbeiten." },
+      { error: translateAbsenceText(language, "employeesCannotEditFinalAbsencesDirectly") },
       { status: 403 }
     );
   }
@@ -745,7 +810,7 @@ export async function PATCH(req: Request) {
   ) {
     return okJson(
       {
-        error: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+        error: translateAbsenceText(language, "noVacationWorkdaysInRange"),
       },
       { status: 400 }
     );
@@ -796,7 +861,7 @@ export async function PATCH(req: Request) {
     if (newPaidVacationUnits + newUnpaidVacationUnits !== newRequestedVacationUnits) {
       return okJson(
         {
-          error: "Die neue Aufteilung in bezahlte und unbezahlte Urlaubseinheiten passt nicht zum Zeitraum.",
+          error: translateAbsenceText(language, "vacationUnitsSplitMismatch"),
         },
         { status: 400 }
       );
@@ -901,7 +966,14 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: Request) {
   const session = await getSession();
-  if (!session) return okJson({ error: "Nicht eingeloggt" }, { status: 401 });
+  const language = toAppUiLanguage(session?.language);
+
+  if (!session) {
+    return okJson(
+      { error: translateAbsenceText(language, "notLoggedIn") },
+      { status: 401 }
+    );
+  }
 
   const url = new URL(req.url);
   const id = (url.searchParams.get("id") ?? "").trim();
@@ -917,16 +989,24 @@ export async function DELETE(req: Request) {
         },
       },
     });
-    if (!a) return okJson({ error: "Nicht gefunden" }, { status: 404 });
+    if (!a) {
+      return okJson(
+        { error: translateAbsenceText(language, "notFound") },
+        { status: 404 }
+      );
+    }
 
     if (a.user.companyId !== session.companyId) {
-      return okJson({ error: "Nicht erlaubt" }, { status: 403 });
+      return okJson(
+        { error: translateAbsenceText(language, "notAllowed") },
+        { status: 403 }
+      );
     }
 
     const isAdmin = session.role === Role.ADMIN;
     if (!isAdmin) {
       return okJson(
-        { error: "Mitarbeiter dürfen finale Abwesenheiten nicht direkt löschen." },
+        { error: translateAbsenceText(language, "employeesCannotDeleteFinalAbsencesDirectly") },
         { status: 403 }
       );
     }
@@ -950,7 +1030,7 @@ export async function DELETE(req: Request) {
     !isAbsenceType(typeStr)
   ) {
     return okJson(
-      { error: "id oder (from,to,type) erforderlich" },
+      { error: translateAbsenceText(language, "idOrRangeRequired") },
       { status: 400 }
     );
   }
@@ -966,13 +1046,16 @@ export async function DELETE(req: Request) {
   const from = dateOnlyUTC(fromStr);
   const to = dateOnlyUTC(toStr);
   if (to < from) {
-    return okJson({ error: "to darf nicht vor from liegen" }, { status: 400 });
+    return okJson(
+      { error: translateAbsenceText(language, "toBeforeFrom") },
+      { status: 400 }
+    );
   }
 
   const isAdmin = session.role === Role.ADMIN;
   if (!isAdmin) {
     return okJson(
-      { error: "Mitarbeiter dürfen finale Abwesenheiten nicht direkt löschen." },
+      { error: translateAbsenceText(language, "employeesCannotDeleteFinalAbsencesDirectly") },
       { status: 403 }
     );
   }
@@ -983,7 +1066,10 @@ export async function DELETE(req: Request) {
   if (requestedUserId) {
     const targetUser = await findActiveCompanyUser(requestedUserId, session.companyId);
     if (!targetUser) {
-      return okJson({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
+      return okJson(
+        { error: translateAbsenceText(language, "employeeNotFoundOrInactive") },
+        { status: 400 }
+      );
     }
     targetUserId = targetUser.id;
   }

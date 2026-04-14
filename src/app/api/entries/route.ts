@@ -2,9 +2,19 @@ import { NextResponse } from "next/server";
 import { Prisma, Role, TaskRequiredAction, TaskStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { assertEmployeeMayEditDate, berlinTodayYMD, consumeTimeEntryUnlock } from "@/lib/timesheetLock";
+import {
+  assertEmployeeMayEditDate,
+  berlinTodayYMD,
+  consumeTimeEntryUnlock,
+} from "@/lib/timesheetLock";
 import { computeDayBreakFromGross } from "@/lib/breaks";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
+import {
+  ADMIN_TASKS_UI_TEXTS,
+  translate,
+  type AdminTasksTextKey,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 function dateOnly(yyyyMmDd: string) {
   const [year, month, day] = yyyyMmDd.split("-").map(Number);
@@ -94,6 +104,28 @@ function toPrismaNullableJsonInput(
   }
 
   return value as Prisma.InputJsonValue;
+}
+
+function toAppUiLanguage(value: string | null | undefined): AppUiLanguage {
+  if (
+    value === "DE" ||
+    value === "EN" ||
+    value === "IT" ||
+    value === "TR" ||
+    value === "SQ" ||
+    value === "KU"
+  ) {
+    return value;
+  }
+
+  return "DE";
+}
+
+function translateEntryText(
+  language: AppUiLanguage,
+  key: AdminTasksTextKey
+): string {
+  return translate(language, key, ADMIN_TASKS_UI_TEXTS);
 }
 
 type EntryBody = {
@@ -431,8 +463,13 @@ function buildPatchedEntries(rows: WorkEntryRow[], dayBreakMap: Map<string, DayB
 
 export async function GET(req: Request) {
   const session = await getSession();
+  const language = toAppUiLanguage(session?.language);
+
   if (!session) {
-    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "notLoggedIn") },
+      { status: 401 }
+    );
   }
   const isAdmin = session.role === Role.ADMIN;
   const userWhere = isAdmin
@@ -563,8 +600,13 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await getSession();
+  const language = toAppUiLanguage(session?.language);
+
   if (!session) {
-    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "notLoggedIn") },
+      { status: 401 }
+    );
   }
 
   const isAdmin = session.role === Role.ADMIN;
@@ -580,7 +622,10 @@ export async function POST(req: Request) {
   const sourceTaskId = getString(body.sourceTaskId).trim();
 
   if (!workDate || !startTime || !endTime || !activity) {
-    return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "invalidData") },
+      { status: 400 }
+    );
   }
 
   const adminTaskBypass = !isAdmin
@@ -607,7 +652,11 @@ export async function POST(req: Request) {
         companyId: session.companyId,
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Nicht erlaubt";
+      const message =
+        error instanceof Error
+          ? error.message
+          : translateEntryText(language, "notAllowed");
+
       return NextResponse.json({ error: message }, { status: 403 });
     }
   }
@@ -624,7 +673,10 @@ export async function POST(req: Request) {
     if (requestedUserId) {
       const user = await findActiveCompanyUser(requestedUserId, session.companyId);
       if (!user) {
-        return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
+        return NextResponse.json(
+          { error: translateEntryText(language, "employeeNotFoundOrInactive") },
+          { status: 400 }
+        );
       }
       targetUserId = user.id;
     }
@@ -642,7 +694,7 @@ export async function POST(req: Request) {
         translationResult.translations
       );
     } catch (error) {
-      console.error("Übersetzung noteEmployee fehlgeschlagen:", error);
+      console.error("Translation for noteEmployee failed:", error);
     }
   }
 
@@ -658,7 +710,7 @@ if (activity) {
       translationResult.translations
     );
   } catch (error) {
-    console.error("Übersetzung activity fehlgeschlagen:", error);
+    console.error("Translation for activity failed:", error);
   }
 }
 
@@ -674,7 +726,7 @@ if (location) {
       translationResult.translations
     );
   } catch (error) {
-    console.error("Übersetzung location fehlgeschlagen:", error);
+    console.error("Translation for location failed:", error);
   }
 }
 
@@ -728,7 +780,10 @@ if (location) {
   });
 
   if (!createdFresh) {
-    return NextResponse.json({ error: "Eintrag nicht gefunden." }, { status: 500 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "entryNotFound") },
+      { status: 500 }
+    );
   }
 
   const entry: EntryDTO = {
@@ -764,8 +819,13 @@ if (location) {
 
 export async function PATCH(req: Request) {
   const session = await getSession();
+  const language = toAppUiLanguage(session?.language);
+
   if (!session) {
-    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "notLoggedIn") },
+      { status: 401 }
+    );
   }
 
   const isAdmin = session.role === Role.ADMIN;
@@ -774,7 +834,10 @@ export async function PATCH(req: Request) {
 
   const id = getString(body.id).trim();
   if (!id) {
-    return NextResponse.json({ error: "id fehlt" }, { status: 400 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "idMissing") },
+      { status: 400 }
+    );
   }
 
   const existing = await prisma.workEntry.findUnique({
@@ -792,15 +855,24 @@ export async function PATCH(req: Request) {
   });
 
   if (!existing) {
-    return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "notFound") },
+      { status: 404 }
+    );
   }
 
   if (existing.user.companyId !== session.companyId) {
-    return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "notAllowed") },
+      { status: 403 }
+    );
   }
 
   if (!isAdmin && existing.userId !== session.userId) {
-    return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "notAllowed") },
+      { status: 403 }
+    );
   }
 
   if (!isAdmin) {
@@ -813,7 +885,11 @@ export async function PATCH(req: Request) {
         companyId: session.companyId,
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Nicht erlaubt";
+      const message =
+        error instanceof Error
+          ? error.message
+          : translateEntryText(language, "notAllowed");
+
       return NextResponse.json({ error: message }, { status: 403 });
     }
   }
@@ -835,7 +911,10 @@ export async function PATCH(req: Request) {
     : getString(body.noteEmployee).trim();
 
   if (!isAdmin && (!workDate || !startTime || !endTime || !activity)) {
-    return NextResponse.json({ error: "Ungültige Daten" }, { status: 400 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "invalidData") },
+      { status: 400 }
+    );
   }
 
   if (!isAdmin) {
@@ -847,7 +926,11 @@ export async function PATCH(req: Request) {
         companyId: session.companyId,
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Nicht erlaubt";
+      const message =
+        error instanceof Error
+          ? error.message
+          : translateEntryText(language, "notAllowed");
+
       return NextResponse.json({ error: message }, { status: 403 });
     }
   }
@@ -864,7 +947,10 @@ export async function PATCH(req: Request) {
     if (requestedUserId) {
       const user = await findActiveCompanyUser(requestedUserId, session.companyId);
       if (!user) {
-        return NextResponse.json({ error: "Mitarbeiter nicht gefunden oder inaktiv." }, { status: 400 });
+        return NextResponse.json(
+          { error: translateEntryText(language, "employeeNotFoundOrInactive") },
+          { status: 400 }
+        );
       }
       targetUserId = user.id;
     }
@@ -892,7 +978,7 @@ export async function PATCH(req: Request) {
           translationResult.translations
         );
       } catch (error) {
-        console.error("Übersetzung noteEmployee fehlgeschlagen:", error);
+        console.error("Translation for noteEmployee failed:", error);
       }
     } else {
       nextNoteEmployeeSourceLanguage = null;
@@ -918,7 +1004,7 @@ export async function PATCH(req: Request) {
         translationResult.translations
       );
     } catch (error) {
-      console.error("Übersetzung activity fehlgeschlagen:", error);
+      console.error("Translation for activity failed:", error);
     }
   } else {
     nextActivitySourceLanguage = null;
@@ -943,7 +1029,7 @@ export async function PATCH(req: Request) {
         translationResult.translations
       );
     } catch (error) {
-      console.error("Übersetzung location fehlgeschlagen:", error);
+      console.error("Translation for location failed:", error);
     }
   } else {
     nextLocationSourceLanguage = null;
@@ -1005,7 +1091,10 @@ export async function PATCH(req: Request) {
   });
 
   if (!updatedFresh) {
-    return NextResponse.json({ error: "Eintrag nicht gefunden." }, { status: 500 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "entryNotFound") },
+      { status: 500 }
+    );
   }
 
   const entry: EntryDTO = {
@@ -1041,8 +1130,13 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: Request) {
   const session = await getSession();
+  const language = toAppUiLanguage(session?.language);
+
   if (!session) {
-    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "notLoggedIn") },
+      { status: 401 }
+    );
   }
 
   const isAdmin = session.role === Role.ADMIN;
@@ -1050,7 +1144,10 @@ export async function DELETE(req: Request) {
   const id = url.searchParams.get("id");
 
   if (!id) {
-    return NextResponse.json({ error: "id fehlt" }, { status: 400 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "idMissing") },
+      { status: 400 }
+    );
   }
 
   const entry = await prisma.workEntry.findUnique({
@@ -1066,15 +1163,24 @@ export async function DELETE(req: Request) {
   });
 
   if (!entry) {
-    return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "notFound") },
+      { status: 404 }
+    );
   }
 
   if (entry.user.companyId !== session.companyId) {
-    return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "notAllowed") },
+      { status: 403 }
+    );
   }
 
   if (!isAdmin && entry.userId !== session.userId) {
-    return NextResponse.json({ error: "Nicht erlaubt" }, { status: 403 });
+    return NextResponse.json(
+      { error: translateEntryText(language, "notAllowed") },
+      { status: 403 }
+    );
   }
 
   if (!isAdmin) {
@@ -1087,7 +1193,11 @@ export async function DELETE(req: Request) {
         companyId: session.companyId,
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Nicht erlaubt";
+      const message =
+        error instanceof Error
+          ? error.message
+          : translateEntryText(language, "notAllowed");
+
       return NextResponse.json({ error: message }, { status: 403 });
     }
   }

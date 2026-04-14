@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { TimeEntryCorrectionRequestStatus } from "@prisma/client";
+import {
+  normalizeAppUiLanguage,
+  TIME_ENTRY_CORRECTION_API_TEXTS,
+  translate,
+} from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { buildPushUrl, sendPushToUser } from "@/lib/webpush";
@@ -12,6 +17,16 @@ type RouteContext = {
 
 export async function POST(_req: Request, context: RouteContext) {
   const admin = await requireAdmin();
+  const adminUser = admin
+    ? await prisma.appUser.findUnique({
+        where: { id: admin.id },
+        select: { language: true },
+      })
+    : null;
+  const language = normalizeAppUiLanguage(adminUser?.language);
+  const t = (key: keyof typeof TIME_ENTRY_CORRECTION_API_TEXTS) =>
+    translate(language, key, TIME_ENTRY_CORRECTION_API_TEXTS);
+
   if (!admin) {
     return NextResponse.json(
       { ok: false, error: "FORBIDDEN" },
@@ -24,7 +39,7 @@ export async function POST(_req: Request, context: RouteContext) {
 
   if (!requestId) {
     return NextResponse.json(
-      { ok: false, error: "Fehlende Request-ID." },
+      { ok: false, error: t("missingRequestId") },
       { status: 400 }
     );
   }
@@ -45,7 +60,7 @@ export async function POST(_req: Request, context: RouteContext) {
 
   if (!existing) {
     return NextResponse.json(
-      { ok: false, error: "Antrag nicht gefunden." },
+      { ok: false, error: t("requestNotFound") },
       { status: 404 }
     );
   }
@@ -59,14 +74,14 @@ export async function POST(_req: Request, context: RouteContext) {
 
   if (!existing.user.isActive) {
     return NextResponse.json(
-      { ok: false, error: "Mitarbeiter ist nicht aktiv." },
+      { ok: false, error: t("employeeInactive") },
       { status: 409 }
     );
   }
 
   if (existing.status !== TimeEntryCorrectionRequestStatus.PENDING) {
     return NextResponse.json(
-      { ok: false, error: "Nur offene Anträge können abgelehnt werden." },
+      { ok: false, error: t("onlyPendingCanBeRejected") },
       { status: 409 }
     );
   }
@@ -81,9 +96,11 @@ export async function POST(_req: Request, context: RouteContext) {
   });
 
   await sendPushToUser(existing.userId, {
-    title: "Nachtragsantrag abgelehnt",
-    body: "Dein Nachtragsantrag wurde abgelehnt.",
-    url: buildPushUrl(`/erfassung?syncDate=${encodeURIComponent(existing.startDate.toISOString().slice(0, 10))}`),
+    title: t("rejectedPushTitle"),
+    body: t("rejectedPushBody"),
+    url: buildPushUrl(
+      `/erfassung?syncDate=${encodeURIComponent(existing.startDate.toISOString().slice(0, 10))}`
+    ),
   });
 
   return NextResponse.json({

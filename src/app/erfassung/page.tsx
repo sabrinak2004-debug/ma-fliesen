@@ -534,11 +534,18 @@ function isPastWorkDate(dateYMD: string): boolean {
   return dateYMD < toIsoDateLocal(new Date());
 }
 
-function formatCorrectionRange(startDate: string, endDate: string): string {
-  return startDate === endDate ? startDate : `${startDate} bis ${endDate}`;
+function formatCorrectionRange(
+  language: AppUiLanguage,
+  startDate: string,
+  endDate: string
+): string {
+  const formattedStart = formatDateLocalized(language, startDate);
+  const formattedEnd = formatDateLocalized(language, endDate);
+
+  return startDate === endDate
+    ? formattedStart
+    : `${formattedStart} ${translate(language, "to", ERFASSUNG_DICTIONARY)} ${formattedEnd}`;
 }
-
-
 
 export default function Page() {
   return (
@@ -1492,17 +1499,15 @@ useEffect(() => {
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>
                     {t("directEntryPossible")} {formatDateLocalized(language, workDate)}.
                     {selectedCorrectionStatus?.adminTaskBypass?.startDate &&
-                    selectedCorrectionStatus?.adminTaskBypass?.endDate &&
-                    selectedCorrectionStatus.adminTaskBypass.startDate !==
-                      selectedCorrectionStatus.adminTaskBypass.endDate
-                      ? ` ${t("releasedRangeFromTo")} ${formatDateLocalized(
-                          language,
-                          selectedCorrectionStatus.adminTaskBypass.startDate
-                        )} ${t("to")} ${formatDateLocalized(
-                          language,
-                          selectedCorrectionStatus.adminTaskBypass.endDate
-                        )}.`
-                      : ""}
+                      selectedCorrectionStatus?.adminTaskBypass?.endDate &&
+                      selectedCorrectionStatus.adminTaskBypass.startDate !==
+                        selectedCorrectionStatus.adminTaskBypass.endDate
+                        ? ` ${t("releasedRangeFromTo")} ${formatCorrectionRange(
+                            language,
+                            selectedCorrectionStatus.adminTaskBypass.startDate,
+                            selectedCorrectionStatus.adminTaskBypass.endDate
+                          )}.`
+                        : ""}
                   </div>
                 </>
               ) : hasActiveUnlockForSelectedDate ? (
@@ -1515,6 +1520,7 @@ useEffect(() => {
                     <div style={{ fontSize: 12, color: "var(--muted)" }}>
                       {t("approvedRange")}{" "}
                       {formatCorrectionRange(
+                        language,
                         latestDecisionRequestForSelectedDate.startDate,
                         latestDecisionRequestForSelectedDate.endDate
                       )}
@@ -1528,8 +1534,9 @@ useEffect(() => {
                   </div>
 
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                    Offener Zeitraum:{" "}
+                    {t("pendingRange")}{" "}
                     {formatCorrectionRange(
+                      language,
                       pendingCorrectionRequestForSelectedDate.startDate,
                       pendingCorrectionRequestForSelectedDate.endDate
                     )}
@@ -1544,6 +1551,7 @@ useEffect(() => {
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>
                     {t("lastDecisionFor")}{" "}
                     {formatCorrectionRange(
+                      language,
                       latestDecisionRequestForSelectedDate.startDate,
                       latestDecisionRequestForSelectedDate.endDate
                     )}
@@ -2307,6 +2315,7 @@ useEffect(() => {
               : pendingCorrectionRequestForSelectedDate
               ? replaceTemplate(t("existingCorrectionHint"), {
                   range: formatCorrectionRange(
+                    language,
                     pendingCorrectionRequestForSelectedDate.startDate,
                     pendingCorrectionRequestForSelectedDate.endDate
                   ),

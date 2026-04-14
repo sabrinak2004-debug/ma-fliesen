@@ -32,7 +32,7 @@ export default async function RootLayout({
             minHeight: "100vh",
           }}
         >
-          <PushBootstrap />
+          <PushBootstrap language={language} />
           {children}
         </div>
       </body>
