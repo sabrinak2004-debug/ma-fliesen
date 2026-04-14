@@ -18,7 +18,8 @@ type PushBootstrapTextKey =
   | "invalidResponse"
   | "missingPublicKey"
   | "unknownError"
-  | "setupFailed";
+  | "setupFailed"
+  | "notAuthenticated";
 
 const PUSH_BOOTSTRAP_TEXTS: Record<
   PushBootstrapTextKey,
@@ -39,6 +40,14 @@ const PUSH_BOOTSTRAP_TEXTS: Record<
     TR: "Public key eksik.",
     SQ: "Mungon public key.",
     KU: "Public key tune ye.",
+  },
+  notAuthenticated: {
+    DE: "Nicht eingeloggt.",
+    EN: "Not logged in.",
+    IT: "Non hai effettuato l'accesso.",
+    TR: "Giriş yapılmadı.",
+    SQ: "Nuk je i identifikuar.",
+    KU: "Têketin nekiriye.",
   },
   unknownError: {
     DE: "Unbekannter Fehler.",
@@ -94,11 +103,19 @@ function parsePushPublicKeyResponse(
     return { ok: true, publicKey };
   }
 
-  return {
-    ok: false,
-    error:
-      getStringField(v, "error") ?? tPushBootstrap(language, "unknownError"),
-  };
+  const backendError = getStringField(v, "error");
+
+  switch (backendError) {
+    case "PUSH_NOT_AUTHENTICATED":
+      return { ok: false, error: tPushBootstrap(language, "notAuthenticated") };
+    case "PUSH_PUBLIC_KEY_MISSING":
+      return { ok: false, error: tPushBootstrap(language, "missingPublicKey") };
+    default:
+      return {
+        ok: false,
+        error: backendError ?? tPushBootstrap(language, "unknownError"),
+      };
+  }
 }
 
 function base64UrlToArrayBuffer(base64Url: string): ArrayBuffer {
@@ -329,7 +346,7 @@ export default function PushBootstrap({
     return () => {
       cancelled = true;
     };
-  }, [pathname]);
+  }, [pathname, language]);
 
   return null;
 }

@@ -498,6 +498,25 @@ function extractErrorMessage(j: unknown, fallback: string): string {
   return typeof e === "string" && e.trim() ? e : fallback;
 }
 
+function mapPlanEntriesError(
+  language: AppUiLanguage,
+  error: string | null | undefined,
+  fallback: string
+): string {
+  switch (error) {
+    case "PLAN_ENTRIES_UNAUTHORIZED":
+      return translate(language, "planEntriesUnauthorized", KALENDER_DICTIONARY);
+    case "PLAN_ENTRIES_FORBIDDEN":
+      return translate(language, "planEntriesForbidden", KALENDER_DICTIONARY);
+    case "PLAN_ENTRIES_FROM_TO_MISSING":
+      return translate(language, "planEntriesFromToMissing", KALENDER_DICTIONARY);
+    case "PLAN_ENTRIES_EMPLOYEE_NOT_FOUND":
+      return translate(language, "planEntriesEmployeeNotFound", KALENDER_DICTIONARY);
+    default:
+      return fallback;
+  }
+}
+
 function monthKey(d: Date): string {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -1383,7 +1402,13 @@ function KalenderPageInner({
 
       if (!r.ok) {
         setDayPlans([]);
-        setPlansError(extractErrorMessage(j, t("planCouldNotBeLoaded")));
+        setPlansError(
+          mapPlanEntriesError(
+            language,
+            isRecord(j) && typeof j["error"] === "string" ? j["error"] : null,
+            t("planCouldNotBeLoaded")
+          )
+        );
         return;
       }
 
@@ -1394,7 +1419,7 @@ function KalenderPageInner({
     } finally {
       setPlansLoading(false);
     }
-  }, [t]);
+  }, [language, t]);
 
   const loadAdminEmployeePlansForDay = useCallback(async (date: string): Promise<void> => {
     if (!selectedUserId) {
@@ -1421,8 +1446,9 @@ function KalenderPageInner({
       if (!r.ok) {
         setAdminEmployeeDayPlans([]);
         setAdminEmployeePlansError(
-          extractErrorMessage(
-            j,
+          mapPlanEntriesError(
+            language,
+            isRecord(j) && typeof j["error"] === "string" ? j["error"] : null,
             t("employeePlanCouldNotBeLoaded")
           )
         );
@@ -1438,7 +1464,7 @@ function KalenderPageInner({
     } finally {
       setAdminEmployeePlansLoading(false);
     }
-  }, [selectedUserId, t]);
+  }, [language, selectedUserId, t]);
 
   const loadAppointmentsForDay = useCallback(async (date: string): Promise<void> => {
     setApptLoading(true);

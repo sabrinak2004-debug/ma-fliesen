@@ -76,9 +76,8 @@ export async function GET(req: Request) {
   if (!companySubdomain && matchingUsers.length > 1) {
     return NextResponse.json(
       {
-        ok: true,
-        allowed: false,
-        error: "Name ist mehrfach vorhanden. Bitte melde dich über den Firmenzugang an.",
+        ok: false,
+        error: "AUTH_PRECHECK_AMBIGUOUS_NAME",
       },
       { status: 200 }
     );

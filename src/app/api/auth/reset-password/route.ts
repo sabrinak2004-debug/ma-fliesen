@@ -44,12 +44,12 @@ export async function POST(req: Request): Promise<Response> {
 
 
   if (!token) {
-    return NextResponse.json({ ok: false, error: "Token fehlt" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "RESET_TOKEN_MISSING" }, { status: 400 });
   }
 
   if (newPassword.length < 8) {
     return NextResponse.json(
-      { ok: false, error: "Passwort muss mindestens 8 Zeichen haben" },
+      { ok: false, error: "RESET_PASSWORD_TOO_SHORT" },
       { status: 400 }
     );
   }
@@ -79,26 +79,26 @@ export async function POST(req: Request): Promise<Response> {
   });
 
   if (!prt) {
-    return NextResponse.json({ ok: false, error: "Ungültiger Token" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "RESET_TOKEN_INVALID" }, { status: 400 });
   }
 
   if (prt.usedAt) {
     return NextResponse.json(
-      { ok: false, error: "Token wurde bereits verwendet" },
+      { ok: false, error: "RESET_TOKEN_ALREADY_USED" },
       { status: 400 }
     );
   }
 
   if (prt.expiresAt && prt.expiresAt.getTime() < now.getTime()) {
     return NextResponse.json(
-      { ok: false, error: "Token ist abgelaufen" },
+      { ok: false, error: "RESET_TOKEN_EXPIRED" },
       { status: 400 }
     );
   }
 
   if (!prt.user.isActive) {
     return NextResponse.json(
-      { ok: false, error: "Benutzer ist nicht aktiv" },
+      { ok: false, error: "RESET_USER_INACTIVE" },
       { status: 400 }
     );
   }
@@ -108,7 +108,7 @@ export async function POST(req: Request): Promise<Response> {
     prt.user.company.subdomain !== companySubdomain
   ) {
     return NextResponse.json(
-      { ok: false, error: "Token gehört nicht zu diesem Firmenzugang" },
+      { ok: false, error: "RESET_TOKEN_WRONG_COMPANY" },
       { status: 400 }
     );
   }

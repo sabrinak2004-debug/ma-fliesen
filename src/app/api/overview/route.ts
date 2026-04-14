@@ -108,7 +108,7 @@ export async function GET(req: Request) {
   const session = await getSession();
 
   if (!session) {
-    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+    return NextResponse.json({ error: "OVERVIEW_NOT_AUTHENTICATED" }, { status: 401 });
   }
 
   const isAdmin = session.role === Role.ADMIN;
@@ -117,7 +117,7 @@ export async function GET(req: Request) {
   const month = url.searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
 
   if (!/^\d{4}-\d{2}$/.test(month)) {
-    return NextResponse.json({ error: "month Format muss YYYY-MM sein" }, { status: 400 });
+    return NextResponse.json({ error: "OVERVIEW_MONTH_INVALID_FORMAT" }, { status: 400 });
   }
 
   const [year, monthNumber] = month.split("-").map(Number);

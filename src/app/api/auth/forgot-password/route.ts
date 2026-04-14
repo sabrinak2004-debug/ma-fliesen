@@ -23,7 +23,7 @@ export async function POST(req: Request): Promise<Response> {
     ? getString(body.companySubdomain).trim().toLowerCase()
     : "";
   if (fullName.length < 3) {
-    return NextResponse.json({ ok: false, error: "Name fehlt/zu kurz" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "AUTH_FORGOT_NAME_TOO_SHORT" }, { status: 400 });
   }
 
   const matchingUsers = await prisma.appUser.findMany({

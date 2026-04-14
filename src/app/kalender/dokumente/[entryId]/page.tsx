@@ -150,7 +150,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     EN: "Documents",
     IT: "Documenti",
     TR: "Belgeler",
-    SQ: "Dokumente",
+    SQ: "Dokumentet",
     KU: "Belge",
   },
   backToCalendar: {
@@ -174,7 +174,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     EN: "No documents available.",
     IT: "Nessun documento disponibile.",
     TR: "Belge yok.",
-    SQ: "Nuk ka dokumente.",
+    SQ: "Nuk ka dokumente të disponueshme.",
     KU: "Belge tune ne.",
   },
   previewInApp: {
@@ -542,63 +542,63 @@ export default function KalenderDokumentePage() {
   }, [entryId]);
 
   useEffect(() => {
-  function updatePdfRenderWidth(): void {
-    const viewportWidth = window.innerWidth;
-    const nextWidth =
-      viewportWidth < 768
-        ? Math.max(360, Math.min(viewportWidth - 24, 760))
-        : Math.min(1400, viewportWidth - 120);
+    function updatePdfRenderWidth(): void {
+      const viewportWidth = window.innerWidth;
+      const nextWidth =
+        viewportWidth < 768
+          ? Math.max(360, Math.min(viewportWidth - 24, 760))
+          : Math.min(1400, viewportWidth - 120);
 
-    const nextDevicePixelRatio = Math.min(
-      Math.max(window.devicePixelRatio || 1, 2),
-      5
-    );
+      const nextDevicePixelRatio = Math.min(
+        Math.max(window.devicePixelRatio || 1, 2),
+        5
+      );
 
-    setPdfRenderWidth(nextWidth);
-    setPdfDevicePixelRatio(nextDevicePixelRatio);
-  }
+      setPdfRenderWidth(nextWidth);
+      setPdfDevicePixelRatio(nextDevicePixelRatio);
+    }
 
-  updatePdfRenderWidth();
-  window.addEventListener("resize", updatePdfRenderWidth);
+    updatePdfRenderWidth();
+    window.addEventListener("resize", updatePdfRenderWidth);
 
-  return () => {
-    window.removeEventListener("resize", updatePdfRenderWidth);
-  };
-}, []);
+    return () => {
+      window.removeEventListener("resize", updatePdfRenderWidth);
+    };
+  }, []);
 
-    useEffect(() => {
-      let active = true;
+  useEffect(() => {
+    let active = true;
 
-      async function loadReactPdf(): Promise<void> {
-        try {
-          const mod = await import("react-pdf");
+    async function loadReactPdf(): Promise<void> {
+      try {
+        const mod = await import("react-pdf");
 
-          mod.pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-            "pdfjs-dist/build/pdf.worker.min.mjs",
-            import.meta.url
-          ).toString();
+        mod.pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+          "pdfjs-dist/build/pdf.worker.min.mjs",
+          import.meta.url
+        ).toString();
 
-          if (active) {
-            setReactPdfModule(mod);
-          }
-            } catch (error) {
-          if (active) {
-            const message = error instanceof Error ? error.message : t("unknownError");
-            setErr(
-              replaceTemplate(t("pdfViewerLoadError"), {
-                message,
-              })
-            );
-          }
+        if (active) {
+          setReactPdfModule(mod);
+        }
+      } catch (error) {
+        if (active) {
+          const message = error instanceof Error ? error.message : t("unknownError");
+          setErr(
+            replaceTemplate(t("pdfViewerLoadError"), {
+              message,
+            })
+          );
         }
       }
+    }
 
-      void loadReactPdf();
+    void loadReactPdf();
 
-      return () => {
-        active = false;
-      };
-    }, []);
+    return () => {
+      active = false;
+    };
+  }, [language]);
 
   useEffect(() => {
     return () => {
@@ -612,7 +612,7 @@ export default function KalenderDokumentePage() {
   const PdfPage = reactPdfModule?.Page;
 
   return (
-    <AppShell activeLabel="#wirkönnendas">
+    <AppShell activeLabel={t("documents")}>
       <div className="card card-olive" style={{ padding: 18 }}>
         <div
           style={{
@@ -732,7 +732,11 @@ export default function KalenderDokumentePage() {
                     }}
                     onLoadError={(error: Error) => {
                       setPreviewLoading(false);
-                      setErr(`PDF konnte nicht geladen werden: ${error.message}`);
+                      setErr(
+                        replaceTemplate(t("pdfViewerLoadError"), {
+                          message: error.message,
+                        })
+                      );
                     }}
                   >
                     {Array.from({ length: previewPdfPages }, (_, index) => (

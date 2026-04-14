@@ -14,7 +14,7 @@ export async function POST(req: Request): Promise<Response> {
   const session = await getSession();
 
   if (!session?.userId) {
-    return NextResponse.json({ ok: false, error: "Nicht eingeloggt." }, { status: 401 });
+    return NextResponse.json({ ok: false, error: "PUSH_NOT_AUTHENTICATED" }, { status: 401 });
   }
 
   const me = await prisma.appUser.findUnique({
@@ -27,22 +27,22 @@ export async function POST(req: Request): Promise<Response> {
   });
 
   if (!me || !me.isActive) {
-    return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "PUSH_FORBIDDEN" }, { status: 403 });
   }
 
   if (me.companyId !== session.companyId) {
-    return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "PUSH_FORBIDDEN" }, { status: 403 });
   }
 
   let body: unknown = {};
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ ok: false, error: "Ungültiger Body." }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "PUSH_INVALID_BODY" }, { status: 400 });
   }
 
   if (!isRecord(body)) {
-    return NextResponse.json({ ok: false, error: "Ungültiger Body." }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "PUSH_INVALID_BODY" }, { status: 400 });
   }
 
   const endpoint = getString(body["endpoint"]).trim();
@@ -54,7 +54,7 @@ export async function POST(req: Request): Promise<Response> {
   const auth = getString(keys["auth"]).trim();
 
   if (!endpoint || !p256dh || !auth) {
-    return NextResponse.json({ ok: false, error: "Subscription unvollständig." }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "PUSH_SUBSCRIPTION_INCOMPLETE" }, { status: 400 });
   }
 
   if (
@@ -62,7 +62,7 @@ export async function POST(req: Request): Promise<Response> {
     requestedCompanySubdomain !== session.companySubdomain.trim().toLowerCase()
   ) {
     return NextResponse.json(
-      { ok: false, error: "Falscher Firmenkontext." },
+      { ok: false, error: "PUSH_WRONG_COMPANY_CONTEXT" },
       { status: 403 }
     );
   }

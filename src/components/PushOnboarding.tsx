@@ -42,7 +42,9 @@ type PushOnboardingTextKey =
   | "description"
   | "activating"
   | "activateNow"
-  | "companyName";
+  | "companyName"
+  | "notAuthenticated"
+  | "wrongCompanyContext";
 
 const PUSH_ONBOARDING_TEXTS: Record<
   PushOnboardingTextKey,
@@ -87,6 +89,22 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Push kaydedilemedi.",
     SQ: "Push nuk mund të ruhej.",
     KU: "Push nehat tomar kirin.",
+  },
+  notAuthenticated: {
+    DE: "Nicht eingeloggt.",
+    EN: "Not logged in.",
+    IT: "Non hai effettuato l'accesso.",
+    TR: "Giriş yapılmadı.",
+    SQ: "Nuk je i identifikuar.",
+    KU: "Têketin nekiriye.",
+  },
+  wrongCompanyContext: {
+    DE: "Falscher Firmenkontext.",
+    EN: "Wrong company context.",
+    IT: "Contesto aziendale errato.",
+    TR: "Yanlış şirket bağlamı.",
+    SQ: "Kontekst i gabuar i kompanisë.",
+    KU: "Konteksta şirketa şaş e.",
   },
   permissionDenied: {
     DE: "Push wurde nicht erlaubt.",
@@ -235,11 +253,19 @@ function parsePushPublicKeyResponse(
     return { ok: true, publicKey };
   }
 
-  return {
-    ok: false,
-    error:
-      getStringField(v, "error") ?? tPushOnboarding(language, "unknownError"),
-  };
+  const backendError = getStringField(v, "error");
+
+  switch (backendError) {
+    case "PUSH_NOT_AUTHENTICATED":
+      return { ok: false, error: tPushOnboarding(language, "notAuthenticated") };
+    case "PUSH_PUBLIC_KEY_MISSING":
+      return { ok: false, error: tPushOnboarding(language, "missingPublicKey") };
+    default:
+      return {
+        ok: false,
+        error: backendError ?? tPushOnboarding(language, "unknownError"),
+      };
+  }
 }
 
 function base64UrlToArrayBuffer(base64Url: string): ArrayBuffer {
@@ -298,11 +324,21 @@ async function sendSubscriptionToBackend(
 
   if (!response.ok) {
     const json: unknown = await response.json().catch(() => ({}));
-    const message =
+    const backendError =
       isRecord(json) && typeof json["error"] === "string"
         ? json["error"]
-        : tPushOnboarding(language, "saveFailed");
-    throw new Error(message);
+        : "";
+
+    switch (backendError) {
+      case "PUSH_NOT_AUTHENTICATED":
+        throw new Error(tPushOnboarding(language, "notAuthenticated"));
+      case "PUSH_SUBSCRIPTION_INCOMPLETE":
+        throw new Error(tPushOnboarding(language, "subscriptionIncomplete"));
+      case "PUSH_WRONG_COMPANY_CONTEXT":
+        throw new Error(tPushOnboarding(language, "wrongCompanyContext"));
+      default:
+        throw new Error(tPushOnboarding(language, "saveFailed"));
+    }
   }
 }
 
@@ -391,7 +427,7 @@ export default function PushOnboarding({
     return () => {
       alive = false;
     };
-  }, []);
+  }, [language]);
 
   const shouldShow = useMemo(() => {
     if (!resolved) return false;

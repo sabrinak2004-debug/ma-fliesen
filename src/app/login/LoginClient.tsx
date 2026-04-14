@@ -28,7 +28,7 @@ type Role = "ADMIN" | "EMPLOYEE";
 
 type PrecheckResponse =
   | { ok: true; allowed: true; role: Role; needsPasswordSetup: boolean }
-  | { ok: false; allowed: false }
+  | { ok: true; allowed: false }
   | { ok: false; error: string };
 
 type LoginResponse = { ok: true; role?: Role } | { ok: false; error: string };
@@ -72,7 +72,15 @@ type LoginTextKey =
   | "login"
   | "privacy"
   | "terms"
-  | "loginFootnote";
+  | "loginFootnote"
+  | "ambiguousName"
+  | "userLoadFailed"
+  | "userInactive"
+  | "passwordSetupRequired"
+  | "passwordNotInitialized"
+  | "adminPasswordNotInitialized"
+  | "wrongPassword"
+  | "forgotNameTooShort";
 
 const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
   language: {
@@ -154,6 +162,70 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Erişim yok. İsim kayıtlı değil.",
     SQ: "Nuk ka qasje. Emri nuk është i regjistruar.",
     KU: "Gihîştin tune. Nav tomar nekiriye.",
+  },
+  ambiguousName: {
+    DE: "Name ist mehrfach vorhanden. Bitte melde dich über den richtigen Firmenzugang an.",
+    EN: "This name exists more than once. Please sign in through the correct company access.",
+    IT: "Questo nome esiste più volte. Accedi tramite il corretto accesso aziendale.",
+    TR: "Bu isim birden fazla kez mevcut. Lütfen doğru şirket erişimi üzerinden giriş yapın.",
+    SQ: "Ky emër ekziston më shumë se një herë. Ju lutem hyni përmes qasjes së saktë të kompanisë.",
+    KU: "Ev nav gelek caran heye. Ji kerema xwe bi gihîştina rast a şirketê têkeve.",
+  },
+  userLoadFailed: {
+    DE: "Benutzer konnte nicht geladen werden.",
+    EN: "User could not be loaded.",
+    IT: "Impossibile caricare l'utente.",
+    TR: "Kullanıcı yüklenemedi.",
+    SQ: "Përdoruesi nuk mund të ngarkohej.",
+    KU: "Bikarhêner nehat barkirin.",
+  },
+  userInactive: {
+    DE: "Dieser Benutzer ist nicht aktiv.",
+    EN: "This user is not active.",
+    IT: "Questo utente non è attivo.",
+    TR: "Bu kullanıcı aktif değil.",
+    SQ: "Ky përdorues nuk është aktiv.",
+    KU: "Ev bikarhêner çalak nîne.",
+  },
+  passwordSetupRequired: {
+    DE: "Für diesen Benutzer muss zuerst ein Passwort festgelegt werden.",
+    EN: "A password must be set first for this user.",
+    IT: "Per questo utente deve essere prima impostata una password.",
+    TR: "Bu kullanıcı için önce bir şifre belirlenmelidir.",
+    SQ: "Për këtë përdorues duhet së pari të vendoset një fjalëkalim.",
+    KU: "Ji bo vî bikarhênerî pêşî divê şîfre were danîn.",
+  },
+  passwordNotInitialized: {
+    DE: "Das Passwort ist noch nicht initialisiert.",
+    EN: "The password is not initialized yet.",
+    IT: "La password non è ancora inizializzata.",
+    TR: "Şifre henüz başlatılmadı.",
+    SQ: "Fjalëkalimi ende nuk është inicializuar.",
+    KU: "Şîfre hêj nehatî destpêkirin.",
+  },
+  adminPasswordNotInitialized: {
+    DE: "Das Admin-Passwort ist noch nicht initialisiert.",
+    EN: "The admin password is not initialized yet.",
+    IT: "La password admin non è ancora inizializzata.",
+    TR: "Yönetici şifresi henüz başlatılmadı.",
+    SQ: "Fjalëkalimi i administratorit ende nuk është inicializuar.",
+    KU: "Şîfreya rêvebir hêj nehatî destpêkirin.",
+  },
+  wrongPassword: {
+    DE: "Das Passwort ist falsch.",
+    EN: "The password is incorrect.",
+    IT: "La password non è corretta.",
+    TR: "Şifre yanlış.",
+    SQ: "Fjalëkalimi është i gabuar.",
+    KU: "Şîfre şaş e.",
+  },
+  forgotNameTooShort: {
+    DE: "Bitte gib deinen Namen vollständig ein.",
+    EN: "Please enter your full name.",
+    IT: "Inserisci il tuo nome completo.",
+    TR: "Lütfen adınızı tam olarak girin.",
+    SQ: "Ju lutem shkruani emrin tuaj të plotë.",
+    KU: "Ji kerema xwe navê xwe bi tevahî binivîse.",
   },
   waitForCheck: {
     DE: "Bitte kurz warten – Zugriff wird geprüft.",
@@ -377,12 +449,70 @@ function tLogin(language: AppUiLanguage, key: LoginTextKey): string {
   return translate(language, key, LOGIN_TEXTS);
 }
 
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
+}
+
+function getPrecheckErrorMessage(
+  language: AppUiLanguage,
+  error?: string
+): string {
+  switch (error) {
+    case "AUTH_PRECHECK_AMBIGUOUS_NAME":
+      return tLogin(language, "ambiguousName");
+    default:
+      return tLogin(language, "noAccess");
+  }
+}
+
+function getLoginErrorMessage(
+  language: AppUiLanguage,
+  error?: string
+): string {
+  switch (error) {
+    case "AUTH_LOGIN_NAME_MISSING":
+      return tLogin(language, "enterName");
+    case "AUTH_LOGIN_NAME_NOT_ALLOWED":
+      return tLogin(language, "noAccess");
+    case "AUTH_LOGIN_AMBIGUOUS_NAME":
+      return tLogin(language, "ambiguousName");
+    case "AUTH_LOGIN_USER_LOAD_FAILED":
+      return tLogin(language, "userLoadFailed");
+    case "AUTH_LOGIN_USER_INACTIVE":
+      return tLogin(language, "userInactive");
+    case "AUTH_LOGIN_PASSWORD_SETUP_REQUIRED":
+      return tLogin(language, "passwordSetupRequired");
+    case "AUTH_LOGIN_PASSWORD_TOO_SHORT":
+      return tLogin(language, "passwordTooShort");
+    case "AUTH_LOGIN_PASSWORD_MISSING":
+      return tLogin(language, "enterPassword");
+    case "AUTH_LOGIN_PASSWORD_NOT_INITIALIZED":
+      return tLogin(language, "passwordNotInitialized");
+    case "AUTH_LOGIN_ADMIN_PASSWORD_NOT_INITIALIZED":
+      return tLogin(language, "adminPasswordNotInitialized");
+    case "AUTH_LOGIN_WRONG_PASSWORD":
+      return tLogin(language, "wrongPassword");
+    default:
+      return tLogin(language, "loginFailed");
+  }
+}
+
+function getForgotPasswordErrorMessage(
+  language: AppUiLanguage,
+  error?: string
+): string {
+  switch (error) {
+    case "AUTH_FORGOT_NAME_TOO_SHORT":
+      return tLogin(language, "forgotNameTooShort");
+    default:
+      return tLogin(language, "forgotRequestFailed");
+  }
 }
 
 type PublicBrand = {
@@ -590,19 +720,57 @@ export default function LoginClient({
         }
 
         const response = await fetch(`/api/auth/precheck?${params.toString()}`);
-        const json = (await response.json()) as PrecheckResponse;
+        const json: unknown = await response.json().catch(() => null);
 
         if (reqIdRef.current !== myId) {
           return;
         }
 
-        if (typeof json === "object" && json !== null && "ok" in json && json.ok === true) {
-          setAllowed(true);
-          setRole(json.role);
-          setNeedsSetup(json.needsPasswordSetup);
-        } else {
+        if (!isRecord(json) || typeof json["ok"] !== "boolean") {
           setAllowed(false);
+          setError(tLogin(language, "unexpectedServerResponse"));
+          return;
         }
+
+        if (json["ok"] === true) {
+          const allowedValue = json["allowed"];
+
+          if (allowedValue === true) {
+            const roleValue = json["role"];
+            const needsPasswordSetupValue = json["needsPasswordSetup"];
+
+            if (
+              (roleValue === "ADMIN" || roleValue === "EMPLOYEE") &&
+              typeof needsPasswordSetupValue === "boolean"
+            ) {
+              setAllowed(true);
+              setRole(roleValue);
+              setNeedsSetup(needsPasswordSetupValue);
+              return;
+            }
+
+            setAllowed(false);
+            setError(tLogin(language, "unexpectedServerResponse"));
+            return;
+          }
+
+          if (allowedValue === false) {
+            setAllowed(false);
+            return;
+          }
+
+          setAllowed(false);
+          setError(tLogin(language, "unexpectedServerResponse"));
+          return;
+        }
+
+        const errorMessage =
+          typeof json["error"] === "string"
+            ? getPrecheckErrorMessage(language, json["error"])
+            : tLogin(language, "unexpectedServerResponse");
+
+        setAllowed(false);
+        setError(errorMessage);
       } catch {
         if (reqIdRef.current !== myId) {
           return;
@@ -615,7 +783,7 @@ export default function LoginClient({
         }
       }
     })();
-  }, [nameTrim, companySubdomain]);
+  }, [nameTrim, companySubdomain, language]);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -678,20 +846,24 @@ export default function LoginClient({
         ),
       });
 
-      const data = (await res.json()) as unknown;
+      const data: unknown = await res.json().catch(() => null);
 
-      const parsed: LoginResponse =
-        typeof data === "object" && data !== null && "ok" in data
-          ? (data as LoginResponse)
-          : { ok: false, error: tLogin(language, "unexpectedServerResponse") };
-
-      if (!res.ok || !parsed.ok) {
-        setError(!parsed.ok ? parsed.error : tLogin(language, "loginFailed"));
+      if (!isRecord(data) || typeof data["ok"] !== "boolean") {
+        setError(tLogin(language, "unexpectedServerResponse"));
         return;
       }
 
+      if (data["ok"] !== true) {
+        const backendError =
+          typeof data["error"] === "string" ? data["error"] : undefined;
+        setError(getLoginErrorMessage(language, backendError));
+        return;
+      }
+
+      const roleValue = data["role"];
+
       window.location.replace(
-        parsed.role === "ADMIN" ? "/admin/dashboard" : "/erfassung"
+        roleValue === "ADMIN" ? "/admin/dashboard" : "/erfassung"
       );
     } catch {
       setError(tLogin(language, "loginNetworkError"));
@@ -726,17 +898,17 @@ export default function LoginClient({
         }),
       });
 
-      const data = (await res.json()) as unknown;
+      const data: unknown = await res.json().catch(() => null);
 
-      const parsed: ForgotResponse =
-        isRecord(data) && typeof data.ok === "boolean"
-          ? (data as ForgotResponse)
-          : { ok: false, error: tLogin(language, "unexpectedServerResponse") };
+      if (!isRecord(data) || typeof data["ok"] !== "boolean") {
+        setForgotInfo(tLogin(language, "unexpectedServerResponse"));
+        return;
+      }
 
-      if (!res.ok || !parsed.ok) {
-        setForgotInfo(
-          !parsed.ok ? parsed.error : tLogin(language, "forgotRequestFailed")
-        );
+      if (data["ok"] !== true) {
+        const backendError =
+          typeof data["error"] === "string" ? data["error"] : undefined;
+        setForgotInfo(getForgotPasswordErrorMessage(language, backendError));
         return;
       }
 

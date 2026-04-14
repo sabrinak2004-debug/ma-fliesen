@@ -1141,8 +1141,6 @@ export default function UebersichtPage() {
   const router = useRouter();
   const [language, setLanguage] = useState<AppUiLanguage>("DE");
   const t = (key: OverviewTextKey): string => translate(language, key, OVERVIEW_DICTIONARY);
-  const selectedMonthLabel =
-  t(MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.labelKey ?? "january");
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [absences, setAbsences] = useState<Absence[]>([]);
   const [absenceSummaryByUser, setAbsenceSummaryByUser] = useState<AbsenceUserSummary[]>([]);
@@ -1167,6 +1165,9 @@ export default function UebersichtPage() {
   const [selectedMonth, setSelectedMonth] = useState<MonthOption>(currentMonth());
 
   const ym = useMemo(() => buildYm(selectedYear, selectedMonth), [selectedYear, selectedMonth]);
+  const selectedMonthLabel = t(
+    MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.labelKey ?? "january"
+  );
   // ===== Export Modal State =====
   const [exportOpen, setExportOpen] = useState(false);
   const [exportMode, setExportMode] = useState<ExportMode>("MONTH");

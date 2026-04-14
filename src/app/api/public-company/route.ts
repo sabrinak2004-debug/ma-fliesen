@@ -19,7 +19,7 @@ export async function GET(req: Request): Promise<Response> {
 
   if (!query) {
     return NextResponse.json(
-      { ok: false, error: "Fehlender Suchbegriff." },
+      { ok: false, error: "PUBLIC_COMPANY_QUERY_MISSING" },
       { status: 400 }
     );
   }
@@ -63,7 +63,7 @@ export async function GET(req: Request): Promise<Response> {
 
   if (!companyByName) {
     return NextResponse.json(
-      { ok: false, error: "Firma nicht gefunden." },
+      { ok: false, error: "PUBLIC_COMPANY_NOT_FOUND" },
       { status: 404 }
     );
   }

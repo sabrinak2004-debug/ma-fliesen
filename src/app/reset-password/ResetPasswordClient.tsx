@@ -33,7 +33,12 @@ type ResetPasswordTextKey =
   | "passwordTooShort"
   | "passwordMismatch"
   | "resetFailed"
-  | "resetSuccess";
+  | "resetSuccess"
+  | "tokenInvalid"
+  | "tokenAlreadyUsed"
+  | "tokenExpired"
+  | "userInactive"
+  | "wrongCompany";
 
 const RESET_PASSWORD_TEXTS: Record<
   ResetPasswordTextKey,
@@ -119,6 +124,46 @@ const RESET_PASSWORD_TEXTS: Record<
     SQ: "Token mungon (linku është i pavlefshëm).",
     KU: "Token tune (lînk nederbasdar e).",
   },
+  tokenInvalid: {
+    DE: "Der Link ist ungültig.",
+    EN: "The link is invalid.",
+    IT: "Il link non è valido.",
+    TR: "Bağlantı geçersiz.",
+    SQ: "Linku është i pavlefshëm.",
+    KU: "Lînk nederbasdar e.",
+  },
+  tokenAlreadyUsed: {
+    DE: "Der Link wurde bereits verwendet.",
+    EN: "The link has already been used.",
+    IT: "Il link è già stato utilizzato.",
+    TR: "Bağlantı zaten kullanıldı.",
+    SQ: "Linku është përdorur tashmë.",
+    KU: "Lînk berê hatî bikaranîn.",
+  },
+  tokenExpired: {
+    DE: "Der Link ist abgelaufen.",
+    EN: "The link has expired.",
+    IT: "Il link è scaduto.",
+    TR: "Bağlantının süresi doldu.",
+    SQ: "Linku ka skaduar.",
+    KU: "Demê lînkê derbas bûye.",
+  },
+  userInactive: {
+    DE: "Dieser Benutzer ist nicht aktiv.",
+    EN: "This user is not active.",
+    IT: "Questo utente non è attivo.",
+    TR: "Bu kullanıcı aktif değil.",
+    SQ: "Ky përdorues nuk është aktiv.",
+    KU: "Ev bikarhêner çalak nîne.",
+  },
+  wrongCompany: {
+    DE: "Der Link gehört nicht zu diesem Firmenzugang.",
+    EN: "The link does not belong to this company access.",
+    IT: "Il link non appartiene a questo accesso aziendale.",
+    TR: "Bağlantı bu şirket erişimine ait değil.",
+    SQ: "Linku nuk i përket kësaj qasjeje të kompanisë.",
+    KU: "Lînk ne a vê gihîştina şirketê ye.",
+  },
   passwordTooShort: {
     DE: "Passwort muss mindestens 8 Zeichen haben.",
     EN: "Password must be at least 8 characters.",
@@ -180,6 +225,30 @@ function parseApiResponse(value: unknown): ApiResponse | null {
   return null;
 }
 
+function getResetPasswordApiErrorMessage(
+  language: AppUiLanguage,
+  error?: string
+): string {
+  switch (error) {
+    case "RESET_TOKEN_MISSING":
+      return tResetPassword(language, "tokenMissingInvalid");
+    case "RESET_PASSWORD_TOO_SHORT":
+      return tResetPassword(language, "passwordTooShort");
+    case "RESET_TOKEN_INVALID":
+      return tResetPassword(language, "tokenInvalid");
+    case "RESET_TOKEN_ALREADY_USED":
+      return tResetPassword(language, "tokenAlreadyUsed");
+    case "RESET_TOKEN_EXPIRED":
+      return tResetPassword(language, "tokenExpired");
+    case "RESET_USER_INACTIVE":
+      return tResetPassword(language, "userInactive");
+    case "RESET_TOKEN_WRONG_COMPANY":
+      return tResetPassword(language, "wrongCompany");
+    default:
+      return tResetPassword(language, "resetFailed");
+  }
+}
+
 export default function ResetPasswordClient({
   token,
   companySubdomain,
@@ -236,7 +305,9 @@ export default function ResetPasswordClient({
 
       if (!response.ok || !data || !data.ok) {
         setMsg(
-          data && !data.ok ? data.error : tResetPassword(language, "resetFailed")
+          data && !data.ok
+            ? getResetPasswordApiErrorMessage(language, data.error)
+            : tResetPassword(language, "resetFailed")
         );
         return;
       }

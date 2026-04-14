@@ -438,6 +438,10 @@ export type KalenderTextKey =
   | "networkEmployeePlanLoadError"
   | "appointmentsCouldNotBeLoaded"
   | "networkAppointmentsLoadError"
+  | "planEntriesUnauthorized"
+  | "planEntriesForbidden"
+  | "planEntriesFromToMissing"
+  | "planEntriesEmployeeNotFound"
   | "publicHolidayDefault"
   | "daysLabel"
   | "dayLabel"
@@ -650,6 +654,38 @@ export const KALENDER_DICTIONARY: Record<KalenderTextKey, Record<AppUiLanguage, 
     TR: "Randevular yüklenirken ağ hatası.",
     SQ: "Gabim rrjeti gjatë ngarkimit të takimeve.",
     KU: "Di barkirina hevdîtinan de çewtiya torê.",
+  },
+  planEntriesUnauthorized: {
+    DE: "Nicht autorisiert.",
+    EN: "Not authorized.",
+    IT: "Non autorizzato.",
+    TR: "Yetkiniz yok.",
+    SQ: "I paautorizuar.",
+    KU: "Destûr tune ye.",
+  },
+  planEntriesForbidden: {
+    DE: "Kein Zugriff auf den Plan.",
+    EN: "No access to the schedule.",
+    IT: "Nessun accesso al piano.",
+    TR: "Plana erişim yok.",
+    SQ: "Nuk ka qasje në plan.",
+    KU: "Gihîştin bi planê tune ye.",
+  },
+  planEntriesFromToMissing: {
+    DE: "Start- oder Enddatum fehlt.",
+    EN: "Start or end date is missing.",
+    IT: "Manca la data di inizio o di fine.",
+    TR: "Başlangıç veya bitiş tarihi eksik.",
+    SQ: "Mungon data e fillimit ose e mbarimit.",
+    KU: "Dîroka destpêkê an dawiyê tune ye.",
+  },
+  planEntriesEmployeeNotFound: {
+    DE: "Mitarbeiter wurde nicht gefunden.",
+    EN: "Employee was not found.",
+    IT: "Dipendente non trovato.",
+    TR: "Çalışan bulunamadı.",
+    SQ: "Punonjësi nuk u gjet.",
+    KU: "Karmend nehat dîtin.",
   },
   publicHolidayDefault: {
     DE: "Gesetzlicher Feiertag",
@@ -7396,7 +7432,7 @@ export const ADMIN_WEEKLY_PLAN_UI_TEXTS: Record<
     EN: "No documents yet.",
     IT: "Nessun documento ancora.",
     TR: "Henüz belge yok.",
-    SQ: "Ende nuk ka dokumente.",
+    SQ: "Nuk ka ende dokumente.",
     KU: "Hêj belge tune ne.",
   },
   previewInApp: {

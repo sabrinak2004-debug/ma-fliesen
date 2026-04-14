@@ -99,7 +99,8 @@ type TenantEntryTextKey =
   | "terms"
   | "enterCompany"
   | "companyNotFound"
-  | "companyCheckFailed";
+  | "companyCheckFailed"
+  | "queryMissing";
 
 const TENANT_ENTRY_TEXTS: Record<
   TenantEntryTextKey,
@@ -201,6 +202,14 @@ const TENANT_ENTRY_TEXTS: Record<
     SQ: "Ju lutem shkruani emrin e kompanisë ose nën-domenin.",
     KU: "Ji kerema xwe navê şirketê an bin-domenê binivîse.",
   },
+  queryMissing: {
+    DE: "Bitte gib deinen Firmennamen oder die Subdomain ein.",
+    EN: "Please enter your company name or subdomain.",
+    IT: "Inserisci il nome della tua azienda o il sottodominio.",
+    TR: "Lütfen şirket adınızı veya alt alan adınızı girin.",
+    SQ: "Ju lutem shkruani emrin e kompanisë ose nën-domenin.",
+    KU: "Ji kerema xwe navê şirketê an bin-domenê binivîse.",
+  },
   companyNotFound: {
     DE: "Die Firma wurde nicht gefunden. Bitte prüfe deine Eingabe.",
     EN: "Company not found. Please check your input.",
@@ -224,6 +233,20 @@ function tTenantEntry(
   key: TenantEntryTextKey
 ): string {
   return translate(language, key, TENANT_ENTRY_TEXTS);
+}
+
+function getTenantEntryApiErrorMessage(
+  language: AppUiLanguage,
+  error?: string
+): string {
+  switch (error) {
+    case "PUBLIC_COMPANY_QUERY_MISSING":
+      return tTenantEntry(language, "queryMissing");
+    case "PUBLIC_COMPANY_NOT_FOUND":
+      return tTenantEntry(language, "companyNotFound");
+    default:
+      return tTenantEntry(language, "companyCheckFailed");
+  }
 }
 
 export default function TenantEntryClient() {
@@ -273,8 +296,7 @@ export default function TenantEntryClient() {
 
       if (!parsed || !parsed.ok) {
         setToastMessage(
-          parsed?.error ??
-            tTenantEntry(language, "companyNotFound")
+          getTenantEntryApiErrorMessage(language, parsed?.error)
         );
         return;
       }

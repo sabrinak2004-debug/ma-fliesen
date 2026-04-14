@@ -12,7 +12,7 @@ export async function GET(): Promise<Response> {
     session.companyId.trim() === ""
   ) {
     return NextResponse.json(
-      { ok: false, error: "Nicht eingeloggt." },
+      { ok: false, error: "PUSH_NOT_AUTHENTICATED" },
       { status: 401 }
     );
   }
@@ -21,7 +21,7 @@ export async function GET(): Promise<Response> {
 
   if (publicKey === "") {
     return NextResponse.json(
-      { ok: false, error: "VAPID_PUBLIC_KEY fehlt." },
+      { ok: false, error: "PUSH_PUBLIC_KEY_MISSING" },
       { status: 500 }
     );
   }

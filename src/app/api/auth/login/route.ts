@@ -93,7 +93,7 @@ export async function POST(req: Request): Promise<Response> {
     companySubdomainFromBody || extractCompanySubdomainFromRequest(req);
 
   if (!fullName) {
-    return NextResponse.json({ ok: false, error: "Name fehlt" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "AUTH_LOGIN_NAME_MISSING" }, { status: 400 });
   }
 
   const matchingUsers = await prisma.appUser.findMany({
@@ -125,7 +125,7 @@ export async function POST(req: Request): Promise<Response> {
 
   if (matchingUsers.length === 0) {
     return NextResponse.json(
-      { ok: false, error: "Kein Zugriff. Name ist nicht hinterlegt." },
+      { ok: false, error: "AUTH_LOGIN_NAME_NOT_ALLOWED" },
       { status: 403 }
     );
   }
@@ -134,7 +134,7 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json(
       {
         ok: false,
-        error: "Name ist mehrfach vorhanden. Bitte über die richtige Firmen-URL einloggen.",
+        error: "AUTH_LOGIN_AMBIGUOUS_NAME",
       },
       { status: 409 }
     );
@@ -144,13 +144,13 @@ export async function POST(req: Request): Promise<Response> {
 
   if (!user) {
     return NextResponse.json(
-      { ok: false, error: "Benutzer konnte nicht geladen werden." },
+      { ok: false, error: "AUTH_LOGIN_USER_LOAD_FAILED" },
       { status: 500 }
     );
   }
 
   if (!user.isActive) {
-    return NextResponse.json({ ok: false, error: "User inaktiv" }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "AUTH_LOGIN_USER_INACTIVE" }, { status: 403 });
   }
 
   // EMPLOYEE: beim ersten Mal Passwort setzen, danach immer prüfen
@@ -159,11 +159,11 @@ export async function POST(req: Request): Promise<Response> {
 
     if (needsSetup) {
       if (!newPassword) {
-        return NextResponse.json({ ok: false, error: "Passwort-Setup erforderlich." }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "AUTH_LOGIN_PASSWORD_SETUP_REQUIRED" }, { status: 400 });
       }
       if (newPassword.length < 8) {
         return NextResponse.json(
-          { ok: false, error: "Passwort muss mind. 8 Zeichen haben." },
+          { ok: false, error: "AUTH_LOGIN_PASSWORD_TOO_SHORT" },
           { status: 400 }
         );
       }
@@ -179,15 +179,15 @@ export async function POST(req: Request): Promise<Response> {
       });
     } else {
       if (!password) {
-        return NextResponse.json({ ok: false, error: "Passwort fehlt" }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "AUTH_LOGIN_PASSWORD_MISSING" }, { status: 400 });
       }
       // user.passwordHash ist hier sicher gesetzt, aber TS mag's manchmal trotzdem:
       if (!user.passwordHash) {
-        return NextResponse.json({ ok: false, error: "Passwort nicht initialisiert." }, { status: 500 });
+        return NextResponse.json({ ok: false, error: "AUTH_LOGIN_PASSWORD_NOT_INITIALIZED" }, { status: 500 });
       }
       const ok = await bcrypt.compare(password, user.passwordHash);
       if (!ok) {
-        return NextResponse.json({ ok: false, error: "Falsches Passwort" }, { status: 401 });
+        return NextResponse.json({ ok: false, error: "AUTH_LOGIN_WRONG_PASSWORD" }, { status: 401 });
       }
     }
   }
@@ -195,14 +195,14 @@ export async function POST(req: Request): Promise<Response> {
   // ADMIN: immer Passwort prüfen
   if (user.role === Role.ADMIN) {
     if (!password) {
-      return NextResponse.json({ ok: false, error: "Passwort fehlt" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "AUTH_LOGIN_PASSWORD_MISSING" }, { status: 400 });
     }
     if (!user.passwordHash) {
-      return NextResponse.json({ ok: false, error: "Admin-Passwort nicht initialisiert" }, { status: 500 });
+      return NextResponse.json({ ok: false, error: "AUTH_LOGIN_ADMIN_PASSWORD_NOT_INITIALIZED" }, { status: 500 });
     }
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
-      return NextResponse.json({ ok: false, error: "Falsches Passwort" }, { status: 401 });
+      return NextResponse.json({ ok: false, error: "AUTH_LOGIN_WRONG_PASSWORD" }, { status: 401 });
     }
   }
 

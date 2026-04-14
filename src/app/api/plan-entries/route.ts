@@ -82,7 +82,7 @@ export async function GET(req: Request) {
   const sessionUserId = extractUserId(session);
 
   if (!sessionUserId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "PLAN_ENTRIES_UNAUTHORIZED" }, { status: 401 });
   }
 
   const me = await prisma.appUser.findUnique({
@@ -96,7 +96,7 @@ export async function GET(req: Request) {
   });
 
   if (!me || !me.isActive) {
-    return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
+    return NextResponse.json({ error: "PLAN_ENTRIES_FORBIDDEN" }, { status: 403 });
   }
 
   const url = new URL(req.url);
@@ -105,7 +105,7 @@ export async function GET(req: Request) {
   const userIdParam = url.searchParams.get("userId");
 
   if (!from || !to) {
-    return NextResponse.json({ error: "from/to missing" }, { status: 400 });
+    return NextResponse.json({ error: "PLAN_ENTRIES_FROM_TO_MISSING" }, { status: 400 });
   }
 
   const start = parseYMD(from);
@@ -128,7 +128,7 @@ export async function GET(req: Request) {
     });
 
     if (!targetUser || !targetUser.isActive || targetUser.role !== Role.EMPLOYEE) {
-      return NextResponse.json({ error: "Mitarbeiter nicht gefunden" }, { status: 404 });
+      return NextResponse.json({ error: "PLAN_ENTRIES_EMPLOYEE_NOT_FOUND" }, { status: 404 });
     }
 
     targetUserId = targetUser.id;
