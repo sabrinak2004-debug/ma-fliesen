@@ -4506,7 +4506,14 @@ export type AdminDashboardTextKey =
   | "openMissingEntriesList"
   | "openAbsencesList"
   | "openGeneralMissingEntriesList"
-  | "expandCollapseTitle";
+  | "expandCollapseTitle"
+  | "remindMissingNotLoggedIn"
+  | "remindMissingForbidden"
+  | "remindMissingInvalidBody"
+  | "remindMissingEmployeeIdMissing"
+  | "remindMissingEmployeeNotFound"
+  | "remindMissingNoOverdueEntries"
+  | "remindMissingNoPushSubscription";
 
 export const ADMIN_DASHBOARD_UI_TEXTS: Record<
   AdminDashboardTextKey,
@@ -5527,6 +5534,62 @@ export const ADMIN_DASHBOARD_UI_TEXTS: Record<
     TR: "Genişlet/daralt",
     SQ: "Hap/mbyll",
     KU: "Veke/bigire",
+  },
+  remindMissingNotLoggedIn: {
+    DE: "Nicht eingeloggt.",
+    EN: "Not logged in.",
+    IT: "Accesso non effettuato.",
+    TR: "Oturum açılmamış.",
+    SQ: "Nuk jeni të identifikuar.",
+    KU: "Têketin nehatiye kirin.",
+  },
+  remindMissingForbidden: {
+    DE: "Kein Zugriff.",
+    EN: "Access denied.",
+    IT: "Accesso negato.",
+    TR: "Erişim reddedildi.",
+    SQ: "Qasja u refuzua.",
+    KU: "Gihîştin hat redkirin.",
+  },
+  remindMissingInvalidBody: {
+    DE: "Ungültige Anfrage.",
+    EN: "Invalid request.",
+    IT: "Richiesta non valida.",
+    TR: "Geçersiz istek.",
+    SQ: "Kërkesë e pavlefshme.",
+    KU: "Daxwaza nederbasdar.",
+  },
+  remindMissingEmployeeIdMissing: {
+    DE: "Mitarbeiter-ID fehlt.",
+    EN: "Employee ID is missing.",
+    IT: "Manca l'ID del dipendente.",
+    TR: "Çalışan kimliği eksik.",
+    SQ: "Mungon ID-ja e punonjësit.",
+    KU: "Nasnameya karmend kêm e.",
+  },
+  remindMissingEmployeeNotFound: {
+    DE: "Mitarbeiter nicht gefunden.",
+    EN: "Employee not found.",
+    IT: "Dipendente non trovato.",
+    TR: "Çalışan bulunamadı.",
+    SQ: "Punonjësi nuk u gjet.",
+    KU: "Karmend nehat dîtin.",
+  },
+  remindMissingNoOverdueEntries: {
+    DE: "Für diesen Mitarbeiter gibt es aktuell keine überfälligen fehlenden Arbeitseinträge.",
+    EN: "There are currently no overdue missing work entries for this employee.",
+    IT: "Attualmente non ci sono registrazioni di lavoro mancanti e scadute per questo dipendente.",
+    TR: "Bu çalışan için şu anda gecikmiş eksik çalışma kaydı yok.",
+    SQ: "Aktualisht nuk ka hyrje pune të munguar të vonuara për këtë punonjës.",
+    KU: "Niha ji bo vî karmendî ti tomara karê winda ya derengmayî tune ye.",
+  },
+  remindMissingNoPushSubscription: {
+    DE: "Für diesen Mitarbeiter ist keine aktive Push-Subscription vorhanden.",
+    EN: "There is no active push subscription for this employee.",
+    IT: "Per questo dipendente non è disponibile alcuna sottoscrizione push attiva.",
+    TR: "Bu çalışan için aktif bir push aboneliği yok.",
+    SQ: "Për këtë punonjës nuk ka abonim aktiv push.",
+    KU: "Ji bo vî karmendî ti abonetiya push a çalak tune ye.",
   },
 };
 export type AdminVacationRequestsTextKey =

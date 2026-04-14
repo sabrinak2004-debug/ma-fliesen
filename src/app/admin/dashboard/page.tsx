@@ -319,6 +319,30 @@ function isOverviewApiResponse(v: unknown): v is OverviewApiResponse {
   );
 }
 
+function localizeRemindMissingError(
+  language: AppUiLanguage,
+  message: string
+): string {
+  switch (message) {
+    case "NOT_LOGGED_IN":
+      return translate(language, "remindMissingNotLoggedIn", ADMIN_DASHBOARD_UI_TEXTS);
+    case "FORBIDDEN":
+      return translate(language, "remindMissingForbidden", ADMIN_DASHBOARD_UI_TEXTS);
+    case "INVALID_BODY":
+      return translate(language, "remindMissingInvalidBody", ADMIN_DASHBOARD_UI_TEXTS);
+    case "EMPLOYEE_ID_MISSING":
+      return translate(language, "remindMissingEmployeeIdMissing", ADMIN_DASHBOARD_UI_TEXTS);
+    case "EMPLOYEE_NOT_FOUND":
+      return translate(language, "remindMissingEmployeeNotFound", ADMIN_DASHBOARD_UI_TEXTS);
+    case "NO_OVERDUE_MISSING_WORK_ENTRIES":
+      return translate(language, "remindMissingNoOverdueEntries", ADMIN_DASHBOARD_UI_TEXTS);
+    case "NO_ACTIVE_PUSH_SUBSCRIPTION":
+      return translate(language, "remindMissingNoPushSubscription", ADMIN_DASHBOARD_UI_TEXTS);
+    default:
+      return message;
+  }
+}
+
 /* =========================
    Helpers (Dates, Formatting)
    ========================= */
@@ -942,7 +966,10 @@ export default function AdminDashboardPage() {
       const j: unknown = await r.json().catch(() => ({}));
 
       if (!r.ok) {
-        const msg = isRecord(j) && isString(j["error"]) ? j["error"] : t("pushSendError");
+        const msg =
+          isRecord(j) && isString(j["error"])
+            ? localizeRemindMissingError(language, j["error"])
+            : t("pushSendError");
         setRemindErr(msg);
         return;
       }

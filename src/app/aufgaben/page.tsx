@@ -123,7 +123,11 @@ type AufgabenTextKey =
   | "monthSeptember"
   | "monthOctober"
   | "monthNovember"
-  | "monthDecember";
+  | "monthDecember"
+  | "systemTaskWorkTimeSingleTitle"
+  | "systemTaskWorkTimeMultiTitle"
+  | "systemTaskWorkTimeSingleDescription"
+  | "systemTaskWorkTimeMultiDescription";
 
 const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>> = {
   dashLabel: {
@@ -590,6 +594,38 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     SQ: "Mbyll",
     KU: "Bigire",
   },
+  systemTaskWorkTimeSingleTitle: {
+    DE: "Arbeitszeit für {date} nachtragen",
+    EN: "Add work time for {date}",
+    IT: "Inserisci l'orario di lavoro per {date}",
+    TR: "{date} için çalışma süresini gir",
+    SQ: "Regjistro kohën e punës për {date}",
+    KU: "Dema karê ji bo {date} binivîse",
+  },
+  systemTaskWorkTimeMultiTitle: {
+    DE: "Arbeitszeiten ab {date} nachtragen",
+    EN: "Add work times from {date}",
+    IT: "Inserisci gli orari di lavoro a partire dal {date}",
+    TR: "{date} tarihinden itibaren çalışma sürelerini gir",
+    SQ: "Regjistro kohët e punës nga {date}",
+    KU: "Demên karê ji {date} û pê ve binivîse",
+  },
+  systemTaskWorkTimeSingleDescription: {
+    DE: "Bitte trage deine fehlende Arbeitszeit für {date} in der App nach.",
+    EN: "Please add your missing work time for {date} in the app.",
+    IT: "Inserisci nell'app il tuo orario di lavoro mancante per il {date}.",
+    TR: "Lütfen uygulamada {date} için eksik çalışma sürenizi girin.",
+    SQ: "Ju lutem shtoni në aplikacion kohën tuaj të munguar të punës për {date}.",
+    KU: "Ji kerema xwe dema karê xwe ya winda ji bo {date} di sepanê de binivîse.",
+  },
+  systemTaskWorkTimeMultiDescription: {
+    DE: "Dir fehlen Arbeitszeiteinträge für mehrere Tage ({from} bis {to}). Bitte beginne mit dem ältesten offenen Tag {referenceDate}.",
+    EN: "You are missing work time entries for multiple days ({from} to {to}). Please start with the oldest open day {referenceDate}.",
+    IT: "Mancano registrazioni dell'orario di lavoro per più giorni ({from} fino al {to}). Inizia dal giorno aperto più vecchio: {referenceDate}.",
+    TR: "Birden fazla gün için çalışma süresi kaydınız eksik ({from} ile {to} arası). Lütfen en eski açık gün olan {referenceDate} ile başlayın.",
+    SQ: "Ju mungojnë regjistrimet e kohës së punës për disa ditë ({from} deri më {to}). Ju lutem filloni me ditën më të vjetër të hapur {referenceDate}.",
+    KU: "Ji bo çend rojan tomarên dema karê te kêm in ({from} heta {to}). Ji kerema xwe bi roja herî kevn a vekirî {referenceDate} dest pê bike.",
+  },
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -770,6 +806,78 @@ function replaceTemplate(
   return Object.entries(values).reduce((result, [key, value]) => {
     return result.replaceAll(`{${key}}`, String(value));
   }, template);
+}
+
+function localizeSystemTaskTitle(
+  language: AppUiLanguage,
+  title: string
+): string {
+  const singleMatch = title.match(
+    /^Arbeitszeit für (\d{4}-\d{2}-\d{2}) nachtragen$/
+  );
+  if (singleMatch) {
+    return replaceTemplate(
+      translate(language, "systemTaskWorkTimeSingleTitle", AUFGABEN_DICTIONARY),
+      {
+        date: formatDateLocalized(language, singleMatch[1]),
+      }
+    );
+  }
+
+  const multiMatch = title.match(
+    /^Arbeitszeiten ab (\d{4}-\d{2}-\d{2}) nachtragen$/
+  );
+  if (multiMatch) {
+    return replaceTemplate(
+      translate(language, "systemTaskWorkTimeMultiTitle", AUFGABEN_DICTIONARY),
+      {
+        date: formatDateLocalized(language, multiMatch[1]),
+      }
+    );
+  }
+
+  return title;
+}
+
+function localizeSystemTaskDescription(
+  language: AppUiLanguage,
+  description: string
+): string {
+  const singleMatch = description.match(
+    /^Bitte trage deine fehlende Arbeitszeit für (\d{4}-\d{2}-\d{2}) in der App nach\.$/
+  );
+  if (singleMatch) {
+    return replaceTemplate(
+      translate(
+        language,
+        "systemTaskWorkTimeSingleDescription",
+        AUFGABEN_DICTIONARY
+      ),
+      {
+        date: formatDateLocalized(language, singleMatch[1]),
+      }
+    );
+  }
+
+  const multiMatch = description.match(
+    /^Dir fehlen Arbeitszeiteinträge für mehrere Tage \((\d{4}-\d{2}-\d{2}) bis (\d{4}-\d{2}-\d{2})\)\. Bitte beginne mit dem ältesten offenen Tag (\d{4}-\d{2}-\d{2})\.$/
+  );
+  if (multiMatch) {
+    return replaceTemplate(
+      translate(
+        language,
+        "systemTaskWorkTimeMultiDescription",
+        AUFGABEN_DICTIONARY
+      ),
+      {
+        from: formatDateLocalized(language, multiMatch[1]),
+        to: formatDateLocalized(language, multiMatch[2]),
+        referenceDate: formatDateLocalized(language, multiMatch[3]),
+      }
+    );
+  }
+
+  return description;
 }
 
 function dayWordByCount(language: AppUiLanguage, count: number): string {
@@ -1122,6 +1230,11 @@ export default function AufgabenPage() {
   }
 
   function renderTaskCard(task: TaskRow, allowComplete: boolean): React.ReactElement {
+    const localizedTitle = localizeSystemTaskTitle(language, task.title);
+    const localizedDescription = task.description
+      ? localizeSystemTaskDescription(language, task.description)
+      : null;
+
     return (
       <div
         key={task.id}
@@ -1132,7 +1245,7 @@ export default function AufgabenPage() {
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ fontWeight: 1000 }}>{task.title}</div>
+          <div style={{ fontWeight: 1000 }}>{localizedTitle}</div>
           <div className={categoryAccentClassName(task.category)}>
             {categoryLabel(language, task.category)}
           </div>
@@ -1174,9 +1287,9 @@ export default function AufgabenPage() {
           </div>
         ) : null}
 
-        {task.description ? (
+        {localizedDescription ? (
           <div style={{ whiteSpace: "pre-wrap", color: "var(--text)" }}>
-            {task.description}
+            {localizedDescription}
           </div>
         ) : null}
 
