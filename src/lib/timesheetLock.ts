@@ -214,23 +214,23 @@ function countBusinessDaysBetweenExclusiveStartAndInclusiveEnd(
   return count;
 }
 
-  export function requiresTimeEntryUnlock(
-    workDateYMD: string,
-    todayYMD: string,
-    graceBusinessDays: number = 5
-  ): boolean {
-    if (workDateYMD >= todayYMD) {
-      return false;
-    }
-
-    const elapsedBusinessDays =
-      countBusinessDaysBetweenExclusiveStartAndInclusiveEnd(
-        workDateYMD,
-        todayYMD
-      );
-
-    return elapsedBusinessDays > graceBusinessDays;
+export function requiresTimeEntryUnlock(
+  workDateYMD: string,
+  todayYMD: string,
+  graceBusinessDays: number = 5
+): boolean {
+  if (workDateYMD >= todayYMD) {
+    return false;
   }
+
+  const elapsedBusinessDays =
+    countBusinessDaysBetweenExclusiveStartAndInclusiveEnd(
+      workDateYMD,
+      todayYMD
+    );
+
+  return elapsedBusinessDays > graceBusinessDays;
+}
 
 export function berlinTodayYMD(now: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -387,7 +387,6 @@ export async function getLockedMissingRequiredWorkDates(
   return [];
 }
 
-
 export async function hasActiveTimeEntryUnlock(
   userId: string,
   workDateYMD: string,
@@ -419,14 +418,12 @@ export async function hasActiveTimeEntryUnlock(
   return true;
 }
 
-
 export async function consumeTimeEntryUnlock(
   _userId: string,
   _workDateYMD: string
 ): Promise<void> {
   return;
 }
-
 
 export async function assertEmployeeMayEditDate(args: {
   role: "ADMIN" | "EMPLOYEE";
@@ -443,7 +440,7 @@ export async function assertEmployeeMayEditDate(args: {
   const today = berlinTodayYMD(now);
 
   if (args.workDateYMD > today) {
-    throw new Error("Du kannst keine Einträge für zukünftige Tage bearbeiten.");
+    throw new Error("TIME_ENTRY_FUTURE_DATE_EDIT_FORBIDDEN");
   }
 
   const previousDateYMD = isoDayUTC(
@@ -459,9 +456,7 @@ export async function assertEmployeeMayEditDate(args: {
       : [];
 
   if (missingBeforeTarget.length > 0) {
-    throw new Error(
-      `Dir fehlen noch Arbeitseinträge ab dem ${missingBeforeTarget[0]}. Bitte trage zuerst die ältesten fehlenden Tage nach.`
-    );
+    throw new Error(`TIME_ENTRY_OLDER_MISSING_ENTRIES_FIRST:${missingBeforeTarget[0]}`);
   }
 
   if (args.workDateYMD === today) {
@@ -487,8 +482,6 @@ export async function assertEmployeeMayEditDate(args: {
   );
 
   if (!hasUnlock) {
-    throw new Error(
-      "Dieser vergangene Tag ist gesperrt. Bitte stelle einen Nachtragsantrag, damit der Admin ihn freigeben kann."
-    );
+    throw new Error("TIME_ENTRY_LOCKED_DAY_REQUIRES_CORRECTION");
   }
 }
