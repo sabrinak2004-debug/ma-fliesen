@@ -51,7 +51,7 @@ type SessionLike = {
 };
 
 type TranslationMap = Partial<
-  Record<"DE" | "EN" | "IT" | "TR" | "SQ" | "KU", string>
+  Record<"DE" | "EN" | "IT" | "TR" | "SQ" | "KU" | "RO", string>
 >;
 
 function isTranslationMap(

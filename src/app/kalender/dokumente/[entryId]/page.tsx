@@ -72,6 +72,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Beklenmeyen yanıt.",
     SQ: "Përgjigje e papritur.",
     KU: "Bersiva neçaverêkirî.",
+    RO: "Răspuns neașteptat."
   },
   fileCouldNotBeLoaded: {
     DE: "Datei konnte nicht geladen werden.",
@@ -80,6 +81,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Dosya yüklenemedi.",
     SQ: "Skedari nuk mund të ngarkohej.",
     KU: "Pel nehat barkirin.",
+    RO: "Fișierul nu a putut fi încărcat."
   },
   previewUnsupported: {
     DE: "Dieser Dateityp kann in der App nicht angezeigt werden.",
@@ -88,6 +90,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Bu dosya türü uygulamada görüntülenemez.",
     SQ: "Ky lloj skedari nuk mund të shfaqet në aplikacion.",
     KU: "Ev cureya pelê di appê de nayê nîşandan.",
+    RO: "Acest tip de fișier nu poate fi afișat în aplicație."
   },
   unknownError: {
     DE: "Unbekannter Fehler",
@@ -96,6 +99,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Bilinmeyen hata",
     SQ: "Gabim i panjohur",
     KU: "Çewtiya nenas",
+    RO: "Eroare necunoscută"
   },
   previewOpenError: {
     DE: "Dokument konnte nicht in der App geöffnet werden: {message}",
@@ -104,6 +108,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Belge uygulamada açılamadı: {message}",
     SQ: "Dokumenti nuk mund të hapej në aplikacion: {message}",
     KU: "Belge di appê de venebû: {message}",
+    RO: "Documentul nu a putut fi deschis în aplicație: {message}"
   },
   shareUnavailable: {
     DE: "Auf diesem Gerät ist 'Teilen / In Dateien sichern' hier nicht verfügbar.",
@@ -112,6 +117,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Bu cihazda burada “Paylaş / Dosyalara kaydet” kullanılamıyor.",
     SQ: "“Ndaj / Ruaj te skedarët” nuk është i disponueshëm këtu në këtë pajisje.",
     KU: "Li ser vê cîhazê de “Parve bike / Di pelan de tomar bike” li vir tune ye.",
+    RO: "“Partajare / Salvare în fișiere” nu este disponibil aici pe acest dispozitiv."
   },
   shareFailed: {
     DE: "Dokument konnte nicht geteilt bzw. gespeichert werden.",
@@ -120,6 +126,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Belge paylaşılamadı veya kaydedilemedi.",
     SQ: "Dokumenti nuk mund të ndahej ose ruhej.",
     KU: "Belge nehat parvekirin an tomarkirin.",
+    RO: "Documentul nu a putut fi partajat sau salvat."
   },
   documentsCouldNotBeLoaded: {
     DE: "Dokumente konnten nicht geladen werden.",
@@ -128,6 +135,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Belgeler yüklenemedi.",
     SQ: "Dokumentet nuk mund të ngarkoheshin.",
     KU: "Belge nehatin barkirin.",
+    RO: "Documentele nu au putut fi încărcate."
   },
   networkError: {
     DE: "Netzwerkfehler.",
@@ -136,6 +144,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Ağ hatası.",
     SQ: "Gabim rrjeti.",
     KU: "Çewtiya torê.",
+    RO: "Eroare de rețea."
   },
   pdfViewerLoadError: {
     DE: "PDF-Viewer konnte nicht geladen werden: {message}",
@@ -144,6 +153,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "PDF görüntüleyici yüklenemedi: {message}",
     SQ: "Shikuesi PDF nuk mund të ngarkohej: {message}",
     KU: "Nîşanderê PDF nehat barkirin: {message}",
+    RO: "Vizualizatorul PDF nu a putut fi încărcat: {message}"
   },
   documents: {
     DE: "Dokumente",
@@ -152,6 +162,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Belgeler",
     SQ: "Dokumentet",
     KU: "Belge",
+    RO: "Documente"
   },
   backToCalendar: {
     DE: "← Zurück zum Kalender",
@@ -160,6 +171,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "← Takvime geri dön",
     SQ: "← Kthehu te kalendari",
     KU: "← Vegere salnameyê",
+    RO: "← Înapoi la calendar"
   },
   loadingDocuments: {
     DE: "Lade Dokumente...",
@@ -168,6 +180,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Belgeler yükleniyor...",
     SQ: "Dokumentet po ngarkohen...",
     KU: "Belge têne barkirin...",
+    RO: "Se încarcă documentele..."
   },
   noDocuments: {
     DE: "Keine Dokumente vorhanden.",
@@ -176,6 +189,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Belge yok.",
     SQ: "Nuk ka dokumente të disponueshme.",
     KU: "Belge tune ne.",
+    RO: "Nu există documente disponibile."
   },
   previewInApp: {
     DE: "In App ansehen",
@@ -184,6 +198,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Uygulamada görüntüle",
     SQ: "Shiko në aplikacion",
     KU: "Di appê de bibîne",
+    RO: "Vizualizează în aplicație"
   },
   shareSave: {
     DE: "Teilen / Sichern",
@@ -192,6 +207,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Paylaş / Kaydet",
     SQ: "Ndaj / Ruaj",
     KU: "Parve bike / Tomar bike",
+    RO: "Partajează / Salvează"
   },
   close: {
     DE: "Schließen",
@@ -200,6 +216,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Kapat",
     SQ: "Mbyll",
     KU: "Bigire",
+    RO: "Închide"
   },
   documentLoading: {
     DE: "Dokument wird geladen...",
@@ -208,6 +225,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Belge yükleniyor...",
     SQ: "Dokumenti po ngarkohet...",
     KU: "Belge tê barkirin...",
+    RO: "Documentul se încarcă..."
   },
   pdfViewerLoading: {
     DE: "PDF-Viewer wird geladen...",
@@ -216,6 +234,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "PDF görüntüleyici yükleniyor...",
     SQ: "Shikuesi PDF po ngarkohet...",
     KU: "Nîşanderê PDF tê barkirin...",
+    RO: "Vizualizatorul PDF se încarcă..."
   },
   pdfLoading: {
     DE: "PDF wird geladen...",
@@ -224,6 +243,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "PDF yükleniyor...",
     SQ: "PDF po ngarkohet...",
     KU: "PDF tê barkirin...",
+    RO: "PDF se încarcă..."
   },
   pdfLoadFailed: {
     DE: "PDF konnte nicht geladen werden.",
@@ -232,6 +252,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "PDF yüklenemedi.",
     SQ: "PDF nuk mund të ngarkohej.",
     KU: "PDF nehat barkirin.",
+    RO: "PDF nu a putut fi încărcat."
   },
   pageLoading: {
     DE: "Seite wird geladen...",
@@ -240,6 +261,7 @@ const KALENDER_DOKUMENTE_DICTIONARY: Record<
     TR: "Sayfa yükleniyor...",
     SQ: "Faqja po ngarkohet...",
     KU: "Rûpel tê barkirin...",
+    RO: "Pagina se încarcă..."
   },
 };
 
@@ -285,7 +307,8 @@ function isSessionDTO(v: unknown): v is SessionDTO {
       language === "IT" ||
       language === "TR" ||
       language === "SQ" ||
-      language === "KU") &&
+      language === "KU" ||
+      language === "RO") &&
     typeof companyId === "string" &&
     typeof companyName === "string" &&
     typeof companySubdomain === "string" &&

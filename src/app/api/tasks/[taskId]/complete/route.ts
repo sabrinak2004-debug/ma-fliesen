@@ -248,7 +248,8 @@ export async function POST(
     session.language === "IT" ||
     session.language === "TR" ||
     session.language === "SQ" ||
-    session.language === "KU"
+    session.language === "KU" ||
+    session.language === "RO"
       ? session.language
       : "DE";
 

@@ -443,7 +443,8 @@ function isSessionDTO(v: unknown): v is SessionDTO {
       language === "IT" ||
       language === "TR" ||
       language === "SQ" ||
-      language === "KU") &&
+      language === "KU" ||
+      language === "RO") &&
     typeof companyId === "string" &&
     typeof companyName === "string" &&
     typeof companySubdomain === "string" &&

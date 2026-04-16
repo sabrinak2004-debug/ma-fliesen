@@ -51,6 +51,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Dil",
     SQ: "Gjuha",
     KU: "Ziman",
+    RO: "Limba",
   },
   title: {
     DE: "Neues Passwort setzen",
@@ -59,6 +60,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Yeni şifre belirle",
     SQ: "Vendos fjalëkalim të ri",
     KU: "Şîfreya nû diyar bike",
+    RO: "Setați o parolă nouă",
   },
   companyAccess: {
     DE: "Firmenzugang",
@@ -67,6 +69,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Şirket erişimi",
     SQ: "Qasja e kompanisë",
     KU: "Gihîştina şirketê",
+    RO: "Acces companie",
   },
   missingToken: {
     DE: "Token fehlt. Bitte den Link vom Admin erneut anfordern.",
@@ -75,6 +78,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Token eksik. Lütfen bağlantıyı yöneticiden tekrar isteyin.",
     SQ: "Token mungon. Ju lutem kërkojeni sërish linkun nga administratori.",
     KU: "Token tune. Ji kerema xwe lînkê dîsa ji rêvebir bixwaze.",
+    RO: "Token este lipsă. Vă rugăm să solicitați din nou linkul de la administrator.",
   },
   requestLinkAgain: {
     DE: "Token fehlt. Bitte den Link vom Admin erneut anfordern.",
@@ -83,6 +87,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Token eksik. Lütfen bağlantıyı yöneticiden tekrar isteyin.",
     SQ: "Token mungon. Ju lutem kërkojeni sërish linkun nga administratori.",
     KU: "Token tune. Ji kerema xwe lînkê dîsa ji rêvebir bixwaze.",
+    RO: "Token este lipsă. Vă rugăm să solicitați din nou linkul de la administrator.",
   },
   newPassword: {
     DE: "Neues Passwort",
@@ -91,6 +96,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Yeni şifre",
     SQ: "Fjalëkalim i ri",
     KU: "Şîfreya nû",
+    RO: "Parolă nouă",
   },
   confirmPassword: {
     DE: "Passwort bestätigen",
@@ -99,6 +105,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Şifreyi onayla",
     SQ: "Konfirmo fjalëkalimin",
     KU: "Şîfreyê piştrast bike",
+    RO: "Confirmare parolă",
   },
   save: {
     DE: "Passwort speichern",
@@ -107,6 +114,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Şifreyi kaydet",
     SQ: "Ruaj fjalëkalimin",
     KU: "Şîfreyê tomar bike",
+    RO: "Salvează parola",
   },
   saving: {
     DE: "Speichern...",
@@ -115,6 +123,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Kaydediliyor...",
     SQ: "Po ruhet...",
     KU: "Tê tomarkirin...",
+    RO: "Se salvează...",
   },
   tokenMissingInvalid: {
     DE: "Token fehlt (Link ist ungültig).",
@@ -123,6 +132,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Token eksik (bağlantı geçersiz).",
     SQ: "Token mungon (linku është i pavlefshëm).",
     KU: "Token tune (lînk nederbasdar e).",
+    RO: "Token lipsește (linkul este invalid).",
   },
   tokenInvalid: {
     DE: "Der Link ist ungültig.",
@@ -131,6 +141,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Bağlantı geçersiz.",
     SQ: "Linku është i pavlefshëm.",
     KU: "Lînk nederbasdar e.",
+    RO: "Linkul este invalid.",
   },
   tokenAlreadyUsed: {
     DE: "Der Link wurde bereits verwendet.",
@@ -139,6 +150,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Bağlantı zaten kullanıldı.",
     SQ: "Linku është përdorur tashmë.",
     KU: "Lînk berê hatî bikaranîn.",
+    RO: "Linkul a fost deja folosit.",
   },
   tokenExpired: {
     DE: "Der Link ist abgelaufen.",
@@ -147,6 +159,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Bağlantının süresi doldu.",
     SQ: "Linku ka skaduar.",
     KU: "Demê lînkê derbas bûye.",
+    RO: "Linkul a expirat.",
   },
   userInactive: {
     DE: "Dieser Benutzer ist nicht aktiv.",
@@ -155,6 +168,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Bu kullanıcı aktif değil.",
     SQ: "Ky përdorues nuk është aktiv.",
     KU: "Ev bikarhêner çalak nîne.",
+    RO: "Acest utilizator nu este activ.",
   },
   wrongCompany: {
     DE: "Der Link gehört nicht zu diesem Firmenzugang.",
@@ -163,6 +177,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Bağlantı bu şirket erişimine ait değil.",
     SQ: "Linku nuk i përket kësaj qasjeje të kompanisë.",
     KU: "Lînk ne a vê gihîştina şirketê ye.",
+    RO: "Linkul nu aparține acestui acces companie.",
   },
   passwordTooShort: {
     DE: "Passwort muss mindestens 8 Zeichen haben.",
@@ -171,6 +186,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Şifre en az 8 karakter olmalıdır.",
     SQ: "Fjalëkalimi duhet të ketë të paktën 8 karaktere.",
     KU: "Şîfre divê herî kêm 8 tîpan hebe.",
+    RO: "Parola trebuie să aibă cel puțin 8 caractere.",
   },
   passwordMismatch: {
     DE: "Passwörter stimmen nicht überein.",
@@ -179,6 +195,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Şifreler eşleşmiyor.",
     SQ: "Fjalëkalimet nuk përputhen.",
     KU: "Şîfre hev nagirin.",
+    RO: "Parolele nu se potrivesc.",
   },
   resetFailed: {
     DE: "Reset fehlgeschlagen.",
@@ -187,6 +204,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Sıfırlama başarısız.",
     SQ: "Rivendosja dështoi.",
     KU: "Nûkirin têk çû.",
+    RO: "Resetul a eșuat.",
   },
   resetSuccess: {
     DE: "Passwort wurde gesetzt. Du kannst dich jetzt einloggen.",
@@ -195,6 +213,7 @@ const RESET_PASSWORD_TEXTS: Record<
     TR: "Şifre ayarlandı. Artık giriş yapabilirsiniz.",
     SQ: "Fjalëkalimi u vendos. Tani mund të hyni.",
     KU: "Şîfre hate danîn. Niha dikarî têkevî.",
+    RO: "Parola a fost setată. Acum te poți autentifica.",
   },
 };
 

@@ -137,6 +137,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Görevlerim",
     SQ: "Detyrat e mia",
     KU: "Erkên min",
+    RO: "Sarcinile mele",
   },
   monthJanuary: {
     DE: "Januar",
@@ -145,6 +146,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Ocak",
     SQ: "Janar",
     KU: "Rêbendan",
+    RO: "Ianuarie",
   },
   monthFebruary: {
     DE: "Februar",
@@ -153,6 +155,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Şubat",
     SQ: "Shkurt",
     KU: "Reşemî",
+    RO: "Februarie",
   },
   monthMarch: {
     DE: "März",
@@ -161,6 +164,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Mart",
     SQ: "Mars",
     KU: "Adar",
+    RO: "Martie",
   },
   monthApril: {
     DE: "April",
@@ -169,6 +173,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Nisan",
     SQ: "Prill",
     KU: "Nîsan",
+    RO: "Aprilie",
   },
   monthMay: {
     DE: "Mai",
@@ -177,6 +182,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Mayıs",
     SQ: "Maj",
     KU: "Gulan",
+    RO: "Mai",
   },
   monthJune: {
     DE: "Juni",
@@ -185,6 +191,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Haziran",
     SQ: "Qershor",
     KU: "Hezîran",
+    RO: "Iunie",
   },
   monthJuly: {
     DE: "Juli",
@@ -193,6 +200,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Temmuz",
     SQ: "Korrik",
     KU: "Tîrmeh",
+    RO: "Iulie",
   },
   monthAugust: {
     DE: "August",
@@ -201,6 +209,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Ağustos",
     SQ: "Gusht",
     KU: "Tebax",
+    RO: "August",
   },
   monthSeptember: {
     DE: "September",
@@ -209,6 +218,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Eylül",
     SQ: "Shtator",
     KU: "Îlon",
+    RO: "Septembrie",
   },
   monthOctober: {
     DE: "Oktober",
@@ -217,6 +227,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Ekim",
     SQ: "Tetor",
     KU: "Cotmeh",
+    RO: "Octombrie",
   },
   monthNovember: {
     DE: "November",
@@ -225,6 +236,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Kasım",
     SQ: "Nëntor",
     KU: "Mijdar",
+    RO: "Noiembrie",
   },
   monthDecember: {
     DE: "Dezember",
@@ -233,6 +245,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Aralık",
     SQ: "Dhjetor",
     KU: "Kanûn",
+    RO: "Decembrie",
   },
   tasksLoadFailed: {
     DE: "Aufgaben konnten nicht geladen werden.",
@@ -241,6 +254,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Görevler yüklenemedi.",
     SQ: "Detyrat nuk mund të ngarkoheshin.",
     KU: "Erk nehatin barkirin.",
+    RO: "Sarcinile nu au putut fi încărcate.",
   },
   unexpectedServerResponse: {
     DE: "Unerwartete Antwort vom Server.",
@@ -249,6 +263,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Sunucudan beklenmeyen yanıt.",
     SQ: "Përgjigje e papritur nga serveri.",
     KU: "Bersiva neçaverêkirî ji serverê.",
+    RO: "Răspuns neașteptat de la server.",
   },
   networkLoadError: {
     DE: "Netzwerkfehler beim Laden der Aufgaben.",
@@ -257,6 +272,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Görevler yüklenirken ağ hatası.",
     SQ: "Gabim rrjeti gjatë ngarkimit të detyrave.",
     KU: "Di barkirina erkan de şaşiya torê.",
+    RO: "Eroare de rețea la încărcarea sarcinilor.",
   },
   taskCompleteFailed: {
     DE: "Aufgabe konnte nicht abgeschlossen werden.",
@@ -265,6 +281,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Görev tamamlanamadı.",
     SQ: "Detyra nuk mund të përfundohej.",
     KU: "Erk nehat temamkirin.",
+    RO: "Sarcina nu a putut fi finalizată.",
   },
   taskCompletedSuccess: {
     DE: "Aufgabe wurde als erledigt markiert.",
@@ -273,6 +290,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Görev tamamlandı olarak işaretlendi.",
     SQ: "Detyra u shënua si e kryer.",
     KU: "Erk wekî qediya hat nîşankirin.",
+    RO: "Sarcina a fost marcată ca finalizată.",
   },
   networkCompleteError: {
     DE: "Netzwerkfehler beim Abschließen der Aufgabe.",
@@ -281,6 +299,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Görev tamamlanırken ağ hatası.",
     SQ: "Gabim rrjeti gjatë përfundimit të detyrës.",
     KU: "Di temamkirina erkê de şaşiya torê.",
+    RO: "Eroare de rețea la finalizarea sarcinii.",
   },
   noDate: {
     DE: "—",
@@ -289,6 +308,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "—",
     SQ: "—",
     KU: "—",
+    RO: "—",
   },
   until: {
     DE: "bis",
@@ -297,6 +317,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "ile",
     SQ: "deri",
     KU: "heta",
+    RO: "până la",
   },
   categoryWorkTime: {
     DE: "Arbeitszeit",
@@ -305,6 +326,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Çalışma süresi",
     SQ: "Koha e punës",
     KU: "Dema karê",
+    RO: "Timp de lucru",
   },
   categoryVacation: {
     DE: "Urlaub",
@@ -313,6 +335,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "İzin",
     SQ: "Pushim",
     KU: "Bêhnvedan",
+    RO: "Vacanță",
   },
   categorySickness: {
     DE: "Krankheit",
@@ -321,6 +344,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Hastalık",
     SQ: "Sëmundje",
     KU: "Nexweşî",
+    RO: "Boală",
   },
   categoryGeneral: {
     DE: "Allgemein",
@@ -329,6 +353,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Genel",
     SQ: "Të përgjithshme",
     KU: "Giştî",
+    RO: "General",
   },
   requiredNone: {
     DE: "Keine direkte Pflichtprüfung",
@@ -337,6 +362,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Doğrudan zorunlu kontrol yok",
     SQ: "Nuk ka kontroll të drejtpërdrejtë të detyrueshëm",
     KU: "Kontrola rasterast ya mecbûrî tune ye",
+    RO: "Nicio verificare directă necesară",
   },
   requiredWorkTime: {
     DE: "Arbeitszeit-Eintrag erforderlich",
@@ -345,6 +371,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Çalışma süresi kaydı gerekli",
     SQ: "Kërkohet regjistrim i kohës së punës",
     KU: "Tomara dema karê pêwist e",
+    RO: "Înregistrare timp de lucru necesară",
   },
   requiredVacation: {
     DE: "Urlaubs-Eintrag erforderlich",
@@ -353,6 +380,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "İzin kaydı gerekli",
     SQ: "Kërkohet regjistrim pushimi",
     KU: "Tomara bêhnvedanê pêwist e",
+    RO: "Înregistrare concediu necesară",
   },
   requiredSickness: {
     DE: "Krankheits-Eintrag erforderlich",
@@ -361,6 +389,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Hastalık kaydı gerekli",
     SQ: "Kërkohet regjistrim sëmundjeje",
     KU: "Tomara nexweşiyê pêwist e",
+    RO: "Înregistrare boală necesară",
   },
   taskActionWorkTime: {
     DE: "Bitte trage deine Arbeitszeit für {referenceText} ein, bevor du die Aufgabe als erledigt markierst.",
@@ -369,6 +398,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Görevi tamamlandı olarak işaretlemeden önce lütfen {referenceText} için çalışma sürenizi girin.",
     SQ: "Ju lutem regjistroni kohën tuaj të punës për {referenceText} përpara se ta shënoni detyrën si të kryer.",
     KU: "Ji kerema xwe berî ku erkê wekî qediya nîşan bikî, dema karê xwe ji bo {referenceText} binivîse.",
+    RO: "Vă rugăm să introduceți timpul de lucru pentru {referenceText} înainte de a marca sarcina ca finalizată.",
   },
   taskActionVacation: {
     DE: "Bitte erfasse für {referenceText} den Urlaub bzw. stelle den passenden Urlaubsantrag, bevor du die Aufgabe abschließt.",
@@ -377,6 +407,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Görevi tamamlamadan önce lütfen {referenceText} için izni kaydedin veya uygun izin talebini gönderin.",
     SQ: "Ju lutem regjistroni pushimin për {referenceText} ose dërgoni kërkesën përkatëse përpara se ta përfundoni detyrën.",
     KU: "Ji kerema xwe berî ku erkê temam bikî, bêhnvedanê ji bo {referenceText} tomar bike an daxwaza guncaw bişîne.",
+    RO: "Vă rugăm să înregistrați concediul pentru {referenceText} sau să trimiteți cererea de concediu corespunzătoare înainte de a finaliza sarcina.",
   },
   taskActionSickness: {
     DE: "Bitte erfasse für {referenceText} die Krankheit bzw. stelle den passenden Krankheitsantrag, bevor du die Aufgabe abschließt.",
@@ -385,6 +416,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Görevi tamamlamadan önce lütfen {referenceText} için hastalığı kaydedin veya uygun hastalık talebini gönderin.",
     SQ: "Ju lutem regjistroni sëmundjen për {referenceText} ose dërgoni kërkesën përkatëse përpara se ta përfundoni detyrën.",
     KU: "Ji kerema xwe berî ku erkê temam bikî, nexweşiyê ji bo {referenceText} tomar bike an daxwaza guncaw bişîne.",
+    RO: "Vă rugăm să înregistrați boala pentru {referenceText} sau să trimiteți cererea de concediu medical corespunzătoare înainte de a finaliza sarcina.",
   },
   taskActionNone: {
     DE: "Bitte prüfe die Aufgabe und markiere sie erst als erledigt, wenn du sie wirklich abgeschlossen hast.",
@@ -393,6 +425,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Lütfen görevi kontrol edin ve gerçekten tamamlandığında tamamlandı olarak işaretleyin.",
     SQ: "Ju lutem kontrolloni detyrën dhe shënojeni si të kryer vetëm kur të jetë përfunduar vërtet.",
     KU: "Ji kerema xwe erkê kontrol bike û tenê dema ku bi rastî qediya bû wekî qediya nîşan bike.",
+    RO: "Vă rugăm să revizuiți sarcina și să o marcați ca finalizată doar atunci când este cu adevărat terminată.",
   },
   openCapture: {
     DE: "Zur Erfassung",
@@ -401,6 +434,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Kayda git",
     SQ: "Te regjistrimi",
     KU: "Biçe tomarê",
+    RO: "La înregistrare",
   },
   openVacation: {
     DE: "Zum Urlaub",
@@ -409,6 +443,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "İzne git",
     SQ: "Te pushimi",
     KU: "Biçe bêhnvedanê",
+    RO: "La concediu",
   },
   openSickness: {
     DE: "Zur Krankheit",
@@ -417,6 +452,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Hastalığa git",
     SQ: "Te sëmundja",
     KU: "Biçe nexweşiyê",
+    RO: "La boală",
   },
   openGeneric: {
     DE: "Öffnen",
@@ -425,6 +461,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Aç",
     SQ: "Hape",
     KU: "Veke",
+    RO: "Deschide",
   },
   checking: {
     DE: "Prüfe...",
@@ -433,6 +470,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Kontrol ediliyor...",
     SQ: "Po kontrollohet...",
     KU: "Tê kontrolkirin...",
+    RO: "Se verifică...",
   },
   done: {
     DE: "Erledigt",
@@ -441,6 +479,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Tamamlandı",
     SQ: "E kryer",
     KU: "Qediya",
+    RO: "Finalizată",
   },
   missingEntriesDays: {
     DE: "Es fehlen Einträge für {count} {dayWord}",
@@ -449,6 +488,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "{count} {dayWord} için kayıt eksik",
     SQ: "Mungojnë regjistrime për {count} {dayWord}",
     KU: "Tomar ji bo {count} {dayWord} wenda ne",
+    RO: "Lipsesc înregistrări pentru {count} {dayWord}",
   },
   missingEntriesUntilToday: {
     DE: "Fehlende Einträge bis heute – tippe hier für Details.",
@@ -457,6 +497,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Bugüne kadar eksik kayıtlar – detaylar için buraya dokunun.",
     SQ: "Regjistrime të mungesës deri sot – prekni këtu për detaje.",
     KU: "Tomarên wenda heta îro – ji bo hûrguliyan li vir bitikîne.",
+    RO: "Lipsesc înregistrări până astăzi – atingeți aici pentru detalii.",
   },
   tapForDetails: {
     DE: "tippe hier für Details.",
@@ -465,6 +506,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "detaylar için buraya dokunun.",
     SQ: "prekni këtu për detaje.",
     KU: "ji bo hûrguliyan li vir bitikîne.",
+    RO: "atingeți aici pentru detalii.",
   },
   todo: {
     DE: "Zu erledigen",
@@ -473,6 +515,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Yapılacaklar",
     SQ: "Për t'u bërë",
     KU: "Yên ku divê bên kirin",
+    RO: "De făcut",
   },
   todoHint: {
     DE: "Öffne die jeweilige Aufgabe über den passenden Button und markiere sie erst danach als erledigt. Bei datumsbezogenen Aufgaben prüft die App automatisch, ob der erforderliche Eintrag wirklich vorhanden ist.",
@@ -481,6 +524,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "İlgili görevi uygun düğmeyle açın ve ancak sonra tamamlandı olarak işaretleyin. Tarihe bağlı görevlerde uygulama gerekli kaydın gerçekten mevcut olup olmadığını otomatik kontrol eder.",
     SQ: "Hapni detyrën përkatëse me butonin e duhur dhe shënojeni si të kryer vetëm më pas. Për detyrat sipas datës, aplikacioni kontrollon automatikisht nëse regjistrimi i kërkuar ekziston vërtet.",
     KU: "Erka têkildar bi bişkoka guncaw veke û tenê piştî wê wekî qediya nîşan bike. Ji bo erkên bi dîrokê re têkildar, sepan bixweber kontrol dike ka tomarê pêwist bi rastî heye yan na.",
+    RO: "Deschideți sarcina relevantă folosind butonul corespunzător și marcați-o ca finalizată doar după aceea. Pentru sarcinile bazate pe dată, aplicația verifică automat dacă înregistrarea necesară există cu adevărat.",
   },
   loading: {
     DE: "Lade...",
@@ -489,6 +533,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Yükleniyor...",
     SQ: "Duke u ngarkuar...",
     KU: "Tê barkirin...",
+    RO: "Se încarcă...",
   },
   noOpenTasks: {
     DE: "Keine offenen Aufgaben vorhanden.",
@@ -497,6 +542,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Açık görev yok.",
     SQ: "Nuk ka detyra të hapura.",
     KU: "Erkên vekirî tune ne.",
+    RO: "Nu există sarcini deschise.",
   },
   noOpenTasksInCategory: {
     DE: "Keine offenen Aufgaben.",
@@ -505,6 +551,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Açık görev yok.",
     SQ: "Nuk ka detyra të hapura.",
     KU: "Erkên vekirî tune ne.",
+    RO: "Nu există sarcini deschise.",
   },
   completedTasks: {
     DE: "Erledigte Aufgaben",
@@ -513,6 +560,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Tamamlanan görevler",
     SQ: "Detyrat e kryera",
     KU: "Erkên qediya",
+    RO: "Sarcini finalizate",
   },
   noCompletedTasks: {
     DE: "Keine erledigten Aufgaben vorhanden.",
@@ -521,6 +569,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Tamamlanmış görev yok.",
     SQ: "Nuk ka detyra të kryera.",
     KU: "Erkên qediya tune ne.",
+    RO: "Nu există sarcini finalizate.",
   },
   required: {
     DE: "Pflicht:",
@@ -529,6 +578,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Gerekli:",
     SQ: "Detyrueshme:",
     KU: "Pêwist:",
+    RO: "Obligatoriu:",
   },
   referencePeriod: {
     DE: "Bezugszeitraum:",
@@ -537,6 +587,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Referans dönemi:",
     SQ: "Periudha referente:",
     KU: "Navbera referansê:",
+    RO: "Perioada de referință:",
   },
   createdBy: {
     DE: "Erstellt von:",
@@ -545,6 +596,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Oluşturan:",
     SQ: "Krijuar nga:",
     KU: "Ji aliyê vê kesê ve hate afirandin:",
+    RO: "Creat de:",
   },
   completedOn: {
     DE: "Erledigt am:",
@@ -553,6 +605,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Tamamlanma tarihi:",
     SQ: "E kryer më:",
     KU: "Di vê dîrokê de qediya:",
+    RO: "Finalizată la:",
   },
   missingEntries: {
     DE: "Fehlende Einträge",
@@ -561,6 +614,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Eksik kayıtlar",
     SQ: "Regjistrime që mungojnë",
     KU: "Tomarên wenda",
+    RO: "Înregistrări lipsă",
   },
   missingEntriesRange: {
     DE: "Fehlende Einträge:",
@@ -569,6 +623,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Eksik kayıtlar:",
     SQ: "Regjistrime që mungojnë:",
     KU: "Tomarên wenda:",
+    RO: "Înregistrări lipsă:",
   },
   missingEntriesModalHint: {
     DE: "Es werden nur vergangene bzw. aktuell bereits fehlende Tage angezeigt. Zukünftige Tage werden hier nicht berücksichtigt.",
@@ -577,6 +632,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Burada yalnızca geçmiş veya şu anda eksik olan günler gösterilir. Gelecek günler dikkate alınmaz.",
     SQ: "Këtu shfaqen vetëm ditët e kaluara ose aktualisht të munguarat. Ditët e ardhshme nuk merren parasysh.",
     KU: "Li vir tenê rojên borî an rojên ku niha wenda ne tên nîşandan. Rojên pêşerojê li vir nayên hesibandin.",
+    RO: "Aici sunt afișate doar zilele trecute sau cele care lipsesc în prezent. Zilele viitoare nu sunt luate în considerare aici.",
   },
   goToCapture: {
     DE: "Zur Erfassung",
@@ -585,6 +641,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Kayda git",
     SQ: "Te regjistrimi",
     KU: "Biçe tomarê",
+    RO: "La înregistrare",
   },
   close: {
     DE: "Schließen",
@@ -593,6 +650,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Kapat",
     SQ: "Mbyll",
     KU: "Bigire",
+    RO: "Închide",
   },
   systemTaskWorkTimeSingleTitle: {
     DE: "Arbeitszeit für {date} nachtragen",
@@ -601,6 +659,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "{date} için çalışma süresini gir",
     SQ: "Regjistro kohën e punës për {date}",
     KU: "Dema karê ji bo {date} binivîse",
+    RO: "Adăugați timpul de lucru pentru {date}",
   },
   systemTaskWorkTimeMultiTitle: {
     DE: "Arbeitszeiten ab {date} nachtragen",
@@ -609,6 +668,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "{date} tarihinden itibaren çalışma sürelerini gir",
     SQ: "Regjistro kohët e punës nga {date}",
     KU: "Demên karê ji {date} û pê ve binivîse",
+    RO: "Adăugați timpii de lucru de la {date}",
   },
   systemTaskWorkTimeSingleDescription: {
     DE: "Bitte trage deine fehlende Arbeitszeit für {date} in der App nach.",
@@ -617,6 +677,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Lütfen uygulamada {date} için eksik çalışma sürenizi girin.",
     SQ: "Ju lutem shtoni në aplikacion kohën tuaj të munguar të punës për {date}.",
     KU: "Ji kerema xwe dema karê xwe ya winda ji bo {date} di sepanê de binivîse.",
+    RO: "Vă rugăm să adăugați timpul de lucru lipsă pentru {date} în aplicație.",
   },
   systemTaskWorkTimeMultiDescription: {
     DE: "Dir fehlen Arbeitszeiteinträge für mehrere Tage ({from} bis {to}). Bitte beginne mit dem ältesten offenen Tag {referenceDate}.",
@@ -625,6 +686,7 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     TR: "Birden fazla gün için çalışma süresi kaydınız eksik ({from} ile {to} arası). Lütfen en eski açık gün olan {referenceDate} ile başlayın.",
     SQ: "Ju mungojnë regjistrimet e kohës së punës për disa ditë ({from} deri më {to}). Ju lutem filloni me ditën më të vjetër të hapur {referenceDate}.",
     KU: "Ji bo çend rojan tomarên dema karê te kêm in ({from} heta {to}). Ji kerema xwe bi roja herî kevn a vekirî {referenceDate} dest pê bike.",
+    RO: "Vă lipsesc înregistrări de timp de lucru pentru mai multe zile ({from} până la {to}). Vă rugăm să începeți cu cea mai veche zi deschisă {referenceDate}.",
   },
 };
 
@@ -732,6 +794,8 @@ function formatDateLocalized(
       return `${day}.${month}.${year}`;
     case "KU":
       return `${day}.${month}.${year}`;
+    case "RO":
+      return `${day}.${month}.${year}`;
     case "DE":
     default:
       return `${day}.${month}.${year}`;
@@ -776,6 +840,8 @@ function formatDateLongLocalized(
     case "SQ":
       return `${Number(day)} ${monthName}`;
     case "KU":
+      return `${Number(day)} ${monthName}`;
+    case "RO":
       return `${Number(day)} ${monthName}`;
     case "DE":
     default:
@@ -892,6 +958,8 @@ function dayWordByCount(language: AppUiLanguage, count: number): string {
       return "ditë";
     case "KU":
       return "roj";
+    case "RO":
+      return count === 1 ? "zi" : "zile";
     case "DE":
     default:
       return count === 1 ? "Tag" : "Tage";

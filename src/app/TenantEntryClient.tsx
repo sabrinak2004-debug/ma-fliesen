@@ -113,6 +113,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Dil",
     SQ: "Gjuha",
     KU: "Ziman",
+    RO: "Limba",
   },
   badge: {
     DE: "Firmenzugang",
@@ -121,6 +122,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Şirket erişimi",
     SQ: "Qasja e kompanisë",
     KU: "Gihîştina şirketê",
+    RO: "Acces companie",
   },
   title: {
     DE: "Willkommen bei saleo!",
@@ -129,6 +131,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "saleo'ya hoş geldiniz!",
     SQ: "Mirë se vini në saleo!",
     KU: "Bi xêr hatî saleo!",
+    RO: "Bine ați venit la saleo!",
   },
   text: {
     DE: "Gib bitte deinen Firmennamen ein, damit wir dich zum richtigen Login weiterleiten können.",
@@ -137,6 +140,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Sizi doğru giriş sayfasına yönlendirebilmemiz için lütfen şirket adınızı girin.",
     SQ: "Ju lutem shkruani emrin e kompanisë suaj që t'ju ridrejtojmë te hyrja e duhur.",
     KU: "Ji kerema xwe navê şirketa xwe binivîse da ku em te ber bi têketina rast re bişînin.",
+    RO: "Vă rugăm să introduceți numele companiei, astfel încât să vă putem redirecționa către login-ul corect.",
   },
   companyName: {
     DE: "Ihr Firmenname",
@@ -145,6 +149,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Şirket adınız",
     SQ: "Emri i kompanisë suaj",
     KU: "Navê şirketa we",
+    RO: "Numele companiei dvs.",
   },
   companyNamePlaceholder: {
     DE: "z.B. Musterfirma",
@@ -153,6 +158,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "örn. Örnek Şirket",
     SQ: "p.sh. Kompania Shembull",
     KU: "mînak: Şirketa Nimûne",
+    RO: "ex. Compania Exemplu",
   },
   submitChecking: {
     DE: "Firma wird geprüft...",
@@ -161,6 +167,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Şirket kontrol ediliyor...",
     SQ: "Po kontrollohet kompania...",
     KU: "Şirket tê kontrolkirin...",
+    RO: "Se verifică compania...",
   },
   submitContinue: {
     DE: "Weiter zum Firmen-Login",
@@ -169,6 +176,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Şirket girişine devam et",
     SQ: "Vazhdo te hyrja e kompanisë",
     KU: "Berdewam bike bi têketina şirketê",
+    RO: "Continuă la login-ul companiei",
   },
   footnote: {
     DE: "Nach erfolgreicher Prüfung wirst du automatisch zu dem passenden Firmen-Login weitergeleitet.",
@@ -177,6 +185,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Başarılı kontrolden sonra doğru şirket girişine otomatik olarak yönlendirileceksiniz.",
     SQ: "Pas verifikimit të suksesshëm, do të ridrejtoheni automatikisht te hyrja e duhur e kompanisë.",
     KU: "Piştî kontrola serkeftî, tu bixweber ber bi têketina şirketa guncan ve tên şandin.",
+    RO: "După verificarea cu succes, veți fi redirecționat automat către login-ul companiei potrivite.",
   },
   privacy: {
     DE: "Datenschutz",
@@ -185,6 +194,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Gizlilik",
     SQ: "Privatësia",
     KU: "Nepenî",
+    RO: "Confidențialitate",
   },
   terms: {
     DE: "Nutzungsbedingungen",
@@ -193,6 +203,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Kullanım koşulları",
     SQ: "Kushtet e përdorimit",
     KU: "Mercên bikaranînê",
+    RO: "Termeni de utilizare",
   },
   enterCompany: {
     DE: "Bitte gib deinen Firmennamen oder die Subdomain ein.",
@@ -201,6 +212,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Lütfen şirket adınızı veya alt alan adınızı girin.",
     SQ: "Ju lutem shkruani emrin e kompanisë ose nën-domenin.",
     KU: "Ji kerema xwe navê şirketê an bin-domenê binivîse.",
+    RO: "Vă rugăm să introduceți numele companiei sau subdomeniul.",
   },
   queryMissing: {
     DE: "Bitte gib deinen Firmennamen oder die Subdomain ein.",
@@ -209,6 +221,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Lütfen şirket adınızı veya alt alan adınızı girin.",
     SQ: "Ju lutem shkruani emrin e kompanisë ose nën-domenin.",
     KU: "Ji kerema xwe navê şirketê an bin-domenê binivîse.",
+    RO: "Vă rugăm să introduceți numele companiei sau subdomeniul.",
   },
   companyNotFound: {
     DE: "Die Firma wurde nicht gefunden. Bitte prüfe deine Eingabe.",
@@ -217,6 +230,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Şirket bulunamadı. Lütfen girişinizi kontrol edin.",
     SQ: "Kompania nuk u gjet. Ju lutem kontrolloni shkrimin.",
     KU: "Şirket nehat dîtin. Ji kerema xwe têketina xwe kontrol bike.",
+    RO: "Companie negăsită. Vă rugăm să verificați datele introduse.",
   },
   companyCheckFailed: {
     DE: "Die Firma konnte gerade nicht geprüft werden. Bitte versuche es erneut.",
@@ -225,6 +239,7 @@ const TENANT_ENTRY_TEXTS: Record<
     TR: "Şirket şu anda kontrol edilemedi. Lütfen tekrar deneyin.",
     SQ: "Kompania nuk mund të kontrollohej tani. Ju lutem provoni përsëri.",
     KU: "Şirket niha nehat kontrolkirin. Ji kerema xwe dîsa biceribîne.",
+    RO: "Compania nu a putut fi verificată chiar acum. Vă rugăm să încercați din nou.",
   },
 };
 

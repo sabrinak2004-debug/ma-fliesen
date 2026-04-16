@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 
-export const SUPPORTED_LANGUAGES = ["DE", "EN", "IT", "TR", "SQ", "KU"] as const;
+export const SUPPORTED_LANGUAGES = ["DE", "EN", "IT", "TR", "SQ", "KU" , "RO"] as const;
 
 export type SupportedLang = (typeof SUPPORTED_LANGUAGES)[number];
 
@@ -10,7 +10,8 @@ type GoogleTranslateLanguageCode =
   | "it"
   | "tr"
   | "sq"
-  | "ku";
+  | "ku"
+  | "ro";
 
 type GoogleTranslateResponse = {
   data?: {
@@ -69,6 +70,8 @@ function mapAppLangToGoogleLang(lang: SupportedLang): GoogleTranslateLanguageCod
       return "sq";
     case "KU":
       return "ku";
+    case "RO":
+      return "ro";
   }
 }
 
@@ -97,6 +100,10 @@ function normalizeGoogleLangToAppLang(language: string | null | undefined): Supp
 
   if (normalized === "sq" || normalized.startsWith("sq-")) {
     return "SQ";
+  }
+
+  if (normalized === "ro" || normalized.startsWith("ro-")) {
+    return "RO";
   }
 
   if (
@@ -221,6 +228,7 @@ export async function translateAllLanguages(
     TR: "",
     SQ: "",
     KU: "",
+    RO: "",
   };
 
   if (!trimmed) {
@@ -264,6 +272,7 @@ export async function translateAllLanguages(
     TR: text,
     SQ: text,
     KU: text,
+    RO: text,
   };
 
   for (const entry of settledEntries) {

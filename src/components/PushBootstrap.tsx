@@ -32,6 +32,7 @@ const PUSH_BOOTSTRAP_TEXTS: Record<
     TR: "Geçersiz yanıt.",
     SQ: "Përgjigje e pavlefshme.",
     KU: "Bersiva nederbasdar.",
+    RO: "Răspuns invalid.",
   },
   missingPublicKey: {
     DE: "Public Key fehlt.",
@@ -40,6 +41,7 @@ const PUSH_BOOTSTRAP_TEXTS: Record<
     TR: "Public key eksik.",
     SQ: "Mungon public key.",
     KU: "Public key tune ye.",
+    RO: "Lipsește cheia publică.",
   },
   notAuthenticated: {
     DE: "Nicht eingeloggt.",
@@ -48,6 +50,7 @@ const PUSH_BOOTSTRAP_TEXTS: Record<
     TR: "Giriş yapılmadı.",
     SQ: "Nuk je i identifikuar.",
     KU: "Têketin nekiriye.",
+    RO: "Neautentificat.",
   },
   unknownError: {
     DE: "Unbekannter Fehler.",
@@ -56,6 +59,7 @@ const PUSH_BOOTSTRAP_TEXTS: Record<
     TR: "Bilinmeyen hata.",
     SQ: "Gabim i panjohur.",
     KU: "Çewtiya nenas.",
+    RO: "Eroare necunoscută.",
   },
   setupFailed: {
     DE: "Push-Setup fehlgeschlagen:",
@@ -64,6 +68,7 @@ const PUSH_BOOTSTRAP_TEXTS: Record<
     TR: "Push kurulumu başarısız oldu:",
     SQ: "Konfigurimi i push dështoi:",
     KU: "Sazkirina pushê serneket:",
+    RO: "Configurare push eșuată:",
   },
 };
 

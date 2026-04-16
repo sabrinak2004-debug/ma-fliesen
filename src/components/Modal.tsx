@@ -29,6 +29,7 @@ const MODAL_UI_TEXTS: Record<ModalTextKey, Record<AppUiLanguage, string>> = {
     TR: "Kapat",
     SQ: "Mbyll",
     KU: "Bigire",
+    RO: "Închide",
   },
 };
 

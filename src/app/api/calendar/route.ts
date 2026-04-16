@@ -17,7 +17,7 @@ type HolidayInfo = {
   type: string;
 };
 
-type SupportedLang = "DE" | "EN" | "IT" | "TR" | "SQ" | "KU";
+type SupportedLang = "DE" | "EN" | "IT" | "TR" | "SQ" | "KU" | "RO";
 type TranslationMap = Partial<Record<SupportedLang, string>>;
 type HolidayTranslationKey =
   | "NEW_YEAR"
@@ -44,6 +44,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<
     TR: "Yılbaşı",
     SQ: "Viti i Ri",
     KU: "Sersal",
+    RO: "Anul Nou",
   },
   EPIPHANY: {
     DE: "Heilige Drei Könige",
@@ -52,6 +53,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<
     TR: "Üç Kral Bayramı",
     SQ: "Dita e Tre Mbretërve",
     KU: "Cejna Sê Padşahan",
+    RO: "Bobotează",
   },
   GOOD_FRIDAY: {
     DE: "Karfreitag",
@@ -60,6 +62,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<
     TR: "Kutsal Cuma",
     SQ: "E Premtja e Madhe",
     KU: "Înê Pîroz",
+    RO: "Vinerea Mare",
   },
   EASTER_MONDAY: {
     DE: "Ostermontag",
@@ -68,6 +71,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<
     TR: "Paskalya Pazartesisi",
     SQ: "E Hëna e Pashkëve",
     KU: "Duşema Paskalyayê",
+    RO: "Lunea Paștelui",
   },
   LABOUR_DAY: {
     DE: "Tag der Arbeit",
@@ -76,6 +80,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<
     TR: "Emek ve Dayanışma Günü",
     SQ: "Dita e Punës",
     KU: "Roja Karkeran",
+    RO: "Ziua Muncii",
   },
   ASCENSION_DAY: {
     DE: "Christi Himmelfahrt",
@@ -84,6 +89,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<
     TR: "Göğe Yükseliş Günü",
     SQ: "Ngjitja e Krishtit në Qiell",
     KU: "Hilkişîna Mesîh",
+    RO: "Înălțarea Domnului",
   },
   WHIT_MONDAY: {
     DE: "Pfingstmontag",
@@ -92,6 +98,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<
     TR: "Pentekost Pazartesisi",
     SQ: "E Hëna e Rrëshajëve",
     KU: "Duşema Pentekostê",
+    RO: "Lunea Rusaliilor",
   },
   CORPUS_CHRISTI: {
     DE: "Fronleichnam",
@@ -100,6 +107,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<
     TR: "Corpus Christi",
     SQ: "Corpus Christi",
     KU: "Corpus Christi",
+    RO: "Corpus Christi",
   },
   GERMAN_UNITY_DAY: {
     DE: "Tag der Deutschen Einheit",
@@ -108,6 +116,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<
     TR: "Alman Birliği Günü",
     SQ: "Dita e Bashkimit Gjerman",
     KU: "Roja Yekîtiya Almanyayê",
+    RO: "Ziua Unității Germane",
   },
   ALL_SAINTS_DAY: {
     DE: "Allerheiligen",
@@ -116,6 +125,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<
     TR: "Azizler Günü",
     SQ: "Dita e të Gjithë Shenjtorëve",
     KU: "Roja Hemû Pîrozan",
+    RO: "Ziua Tuturor Sfinților",
   },
   CHRISTMAS_DAY: {
     DE: "1. Weihnachtstag",
@@ -124,6 +134,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<
     TR: "Noel'in 1. Günü",
     SQ: "Dita e parë e Krishtlindjes",
     KU: "Roja yekem a Noelê",
+    RO: "Crăciunul",
   },
   BOXING_DAY: {
     DE: "2. Weihnachtstag",
@@ -132,6 +143,7 @@ const HOLIDAY_NAME_TRANSLATIONS: Record<
     TR: "Noel'in 2. Günü",
     SQ: "Dita e dytë e Krishtlindjes",
     KU: "Roja duyem a Noelê",
+    RO: "A doua zi de Crăciun",
   },
 };
 
@@ -169,7 +181,8 @@ function toSupportedLang(language: string | null | undefined): SupportedLang {
     language === "IT" ||
     language === "TR" ||
     language === "SQ" ||
-    language === "KU"
+    language === "KU" ||
+    language === "RO"
   ) {
     return language;
   }

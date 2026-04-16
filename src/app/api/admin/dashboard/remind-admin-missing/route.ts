@@ -32,6 +32,8 @@ function formatDateForLanguage(language: AppUiLanguage, iso: string): string {
     case "DE":
     default:
       return `${day}.${month}.${year}`;
+    case "RO":
+      return `${day}.${month}.${year}`;
   }
 }
 
@@ -68,6 +70,10 @@ function getLocalizedWorkTaskTitle(
       return isSingleDay
         ? `Arbeitszeit für ${referenceDate} nachtragen`
         : `Arbeitszeiten ab ${referenceDate} nachtragen`;
+    case "RO":
+      return isSingleDay
+        ? `Adaugă timpul de lucru pentru ${dateLabel}`
+        : `Adaugă timpii de lucru începând cu ${dateLabel}`;
   }
 }
 
@@ -105,6 +111,8 @@ function getLocalizedWorkTaskDescription(args: {
       case "DE":
       default:
         return `Bitte trage deine fehlende Arbeitszeit für ${referenceDate} in der App nach.`;
+      case "RO":
+        return `Vă rugăm să adăugați în aplicație timpul de lucru lipsă pentru ${referenceDateLabel}.`;
     }
   }
 
@@ -119,6 +127,8 @@ function getLocalizedWorkTaskDescription(args: {
       return `Ju mungojnë regjistrimet e kohës së punës për disa ditë (${fromLabel} deri më ${toLabel}). Ju lutem filloni me ditën më të vjetër të hapur ${referenceDateLabel}.`;
     case "KU":
       return `Ji bo çend rojan tomarên dema karê te kêm in (${fromLabel} heta ${toLabel}). Ji kerema xwe bi roja herî kevn a vekirî ${referenceDateLabel} dest pê bike.`;
+    case "RO":
+      return `Vă lipsesc înregistrări ale timpului de lucru pentru mai multe zile (${fromLabel} până la ${toLabel}). Vă rugăm să începeți cu cea mai veche zi deschisă ${referenceDateLabel}.`;
     case "DE":
     default:
       return `Dir fehlen Arbeitszeiteinträge für mehrere Tage (${oldestMissingDate} bis ${newestMissingDate}). Bitte beginne mit dem ältesten offenen Tag ${referenceDate}.`;
@@ -137,6 +147,8 @@ function getLocalizedPushTitle(language: AppUiLanguage): string {
       return "Regjistrime pune që mungojnë";
     case "KU":
       return "Tomarên karê yên winda";
+    case "RO":
+      return "Înregistrări de lucru lipsă";
     case "DE":
     default:
       return "Fehlende Arbeitseinträge";
@@ -163,6 +175,8 @@ function getLocalizedPushBody(
       return `Ju mungojnë ende regjistrime pune për ${rangeLabel}. Ju lutem hapni detyrat tuaja dhe filloni me ditën më të vjetër që mungon.`;
     case "KU":
       return `Hîn jî ji bo ${rangeLabel} tomarên karê te kêm in. Ji kerema xwe erkên xwe veke û bi roja herî kevn a winda dest pê bike.`;
+    case "RO":
+      return `Încă vă lipsesc înregistrări de lucru pentru ${rangeLabel}. Vă rugăm să deschideți sarcinile și să începeți cu cea mai veche zi care lipsește.`;
     case "DE":
     default:
       return `Dir fehlen noch Arbeitseinträge für ${oldestMissingDate === newestMissingDate ? oldestMissingDate : `${oldestMissingDate} bis ${newestMissingDate}`}. Bitte öffne deine Aufgaben und beginne mit dem ältesten fehlenden Tag.`;

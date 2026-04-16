@@ -342,7 +342,8 @@ function toSupportedLang(language: string | null | undefined): SupportedLang {
     language === "IT" ||
     language === "TR" ||
     language === "SQ" ||
-    language === "KU"
+    language === "KU" ||
+    language === "RO"
   ) {
     return language;
   }
@@ -383,7 +384,8 @@ function toAppUiLanguage(value: string | null | undefined): AppUiLanguage {
     value === "IT" ||
     value === "TR" ||
     value === "SQ" ||
-    value === "KU"
+    value === "KU" ||
+    value === "RO"
   ) {
     return value;
   }

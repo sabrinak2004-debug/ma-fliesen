@@ -60,7 +60,7 @@ type AdminSessionDTO = {
   userId: string;
   fullName: string;
   role: "ADMIN" | "EMPLOYEE";
-  language: "DE" | "EN" | "IT" | "TR" | "SQ" | "KU";
+  language: "DE" | "EN" | "IT" | "TR" | "SQ" | "KU" | "RO";
   companyId: string;
   companyName: string;
   companySubdomain: string;
@@ -79,7 +79,8 @@ function isAdminSessionDTO(v: unknown): v is AdminSessionDTO {
       v["language"] === "IT" ||
       v["language"] === "TR" ||
       v["language"] === "SQ" ||
-      v["language"] === "KU") &&
+      v["language"] === "KU" ||
+      v["language"] === "RO") &&
     isString(v["companyId"]) &&
     isString(v["companyName"]) &&
     isString(v["companySubdomain"]) &&

@@ -33,7 +33,8 @@ function toSupportedLang(language: string | null | undefined): SupportedLang {
     language === "IT" ||
     language === "TR" ||
     language === "SQ" ||
-    language === "KU"
+    language === "KU" ||
+    language === "RO"
   ) {
     return language;
   }

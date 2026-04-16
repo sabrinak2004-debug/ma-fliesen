@@ -31,7 +31,8 @@ function isAppLanguage(value: unknown): value is AppLanguage {
     value === "IT" ||
     value === "TR" ||
     value === "SQ" ||
-    value === "KU"
+    value === "KU" ||
+    value === "RO"
   );
 }
 

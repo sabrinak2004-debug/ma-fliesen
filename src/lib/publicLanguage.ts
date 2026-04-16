@@ -55,6 +55,9 @@ export function applyDocumentLanguage(language: AppUiLanguage): void {
     case "KU":
       html.lang = "ku";
       break;
+    case "RO":
+      html.lang = "ro";
+      break;
     default:
       html.lang = "de";
       break;

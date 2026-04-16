@@ -66,7 +66,8 @@ function toAppUiLanguage(value: string | null | undefined): AppUiLanguage {
     value === "IT" ||
     value === "TR" ||
     value === "SQ" ||
-    value === "KU"
+    value === "KU" ||
+    value === "RO"
   ) {
     return value;
   }

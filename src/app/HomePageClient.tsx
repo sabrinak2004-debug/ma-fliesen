@@ -32,6 +32,7 @@ const HOME_TEXTS: Record<HomeTextKey, Record<AppUiLanguage, string>> = {
     TR: "Dil",
     SQ: "Gjuha",
     KU: "Ziman",
+    RO: "Limba",
   },
   title: {
     DE: "Digitale Zeiterfassung und Mitarbeiterverwaltung für Unternehmen",
@@ -40,6 +41,7 @@ const HOME_TEXTS: Record<HomeTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şirketler için dijital zaman takibi ve çalışan yönetimi",
     SQ: "Regjistrim digjital i orarit dhe menaxhim i punonjësve për kompani",
     KU: "Tomarkirina dîjîtal a demê û rêveberiya karmendan ji bo pargîdaniyan",
+    RO: "Monitorizare digitală a timpului și gestionare a angajaților pentru companii",
   },
   text: {
     DE: "saleo ist eine Webanwendung für die Erfassung von Arbeitszeiten, Einsatzplanung, Abwesenheiten, Aufgaben und betriebliche Organisation. Mitarbeiter und Administratoren nutzen die Anwendung über einen geschützten Firmenzugang.",
@@ -48,6 +50,7 @@ const HOME_TEXTS: Record<HomeTextKey, Record<AppUiLanguage, string>> = {
     TR: "saleo; çalışma saatlerinin kaydı, görev planlaması, devamsızlıklar, görevler ve şirket organizasyonu için bir web uygulamasıdır. Çalışanlar ve yöneticiler uygulamayı korumalı şirket girişi üzerinden kullanır.",
     SQ: "saleo është një aplikacion web për regjistrimin e orarit të punës, planifikimin e angazhimeve, mungesat, detyrat dhe organizimin e kompanisë. Punonjësit dhe administratorët e përdorin aplikacionin përmes një hyrjeje të mbrojtur të kompanisë.",
     KU: "saleo sepanek webê ye ji bo tomarkirina saetên xebatê, planandina karan, nebûn, erkan û rêxistina pargîdaniyê. Karmend û rêvebir sepana bi têketina parastî ya şirketê bikar tînin.",
+    RO: "saleo este o aplicație web pentru înregistrarea orelor de lucru, planificarea schimburilor, absențe, sarcini și organizarea companiei. Angajații și administratorii folosesc aplicația printr-un login protejat al companiei.",
   },
   feature1Title: {
     DE: "Arbeitszeiten erfassen",
@@ -56,6 +59,7 @@ const HOME_TEXTS: Record<HomeTextKey, Record<AppUiLanguage, string>> = {
     TR: "Çalışma saatlerini kaydet",
     SQ: "Regjistro orarin e punës",
     KU: "Saetên xebatê tomar bike",
+    RO: "Înregistrați orele de lucru",
   },
   feature1Text: {
     DE: "Startzeiten, Endzeiten, Pausen, Tätigkeiten, Einsatzorte und Fahrtzeiten digital dokumentieren.",
@@ -64,6 +68,7 @@ const HOME_TEXTS: Record<HomeTextKey, Record<AppUiLanguage, string>> = {
     TR: "Başlangıç saatlerini, bitiş saatlerini, molaları, faaliyetleri, çalışma yerlerini ve yolculuk sürelerini dijital olarak belgeleyin.",
     SQ: "Dokumentoni në mënyrë digjitale orën e fillimit, orën e mbarimit, pushimet, aktivitetet, vendet e punës dhe kohën e udhëtimit.",
     KU: "Demên destpêkê, bidawîbûnê, bêhnvedan, çalakî, cihên xebatê û demên rêwîtiyê bi dîjîtalî tomar bikin.",
+    RO: "Documentați digital orele de început, orele de sfârșit, pauzele, activitățile, locațiile de muncă și timpii de călătorie.",
   },
   feature2Title: {
     DE: "Abwesenheiten verwalten",
@@ -72,6 +77,7 @@ const HOME_TEXTS: Record<HomeTextKey, Record<AppUiLanguage, string>> = {
     TR: "Devamsızlıkları yönet",
     SQ: "Menaxho mungesat",
     KU: "Nebûnê birêve bibe",
+    RO: "Gestionați absențele",
   },
   feature2Text: {
     DE: "Urlaub, Krankheit, Anträge und Genehmigungen strukturiert und nachvollziehbar verwalten.",
@@ -80,6 +86,7 @@ const HOME_TEXTS: Record<HomeTextKey, Record<AppUiLanguage, string>> = {
     TR: "İzin, hastalık, talepler ve onayları düzenli ve takip edilebilir şekilde yönetin.",
     SQ: "Menaxhoni pushimet, sëmundjet, kërkesat dhe miratimet në mënyrë të strukturuar dhe të gjurmueshme.",
     KU: "Îzin, nexweşî, daxwaz û pejirandinê bi awayekî rêkûpêk û şopbar birêve bibin.",
+    RO: "Gestionați vacanțele, bolile, cererile și aprobările într-un mod structurat și trasabil.",
   },
   feature3Title: {
     DE: "Planung und Aufgaben",
@@ -88,6 +95,7 @@ const HOME_TEXTS: Record<HomeTextKey, Record<AppUiLanguage, string>> = {
     TR: "Planlama ve görevler",
     SQ: "Planifikim dhe detyra",
     KU: "Plan û erk",
+    RO: "Planificare și sarcini",
   },
   feature3Text: {
     DE: "Wochenpläne, Termine, Dokumente, Aufgaben und Hinweise zentral für Mitarbeiter und Admins bereitstellen.",
@@ -96,6 +104,7 @@ const HOME_TEXTS: Record<HomeTextKey, Record<AppUiLanguage, string>> = {
     TR: "Haftalık planları, randevuları, belgeleri, görevleri ve notları çalışanlar ve yöneticiler için merkezi olarak sağlayın.",
     SQ: "Ofroni në mënyrë qendrore plane javore, takime, dokumente, detyra dhe shënime për punonjësit dhe administratorët.",
     KU: "Planên heftane, civîn, belge, erk û nîşanî bi awayekî navendî ji bo karmend û rêvebiran peyda bikin.",
+    RO: "Furnizați planuri săptămânale, întâlniri, documente, sarcini și note în mod central pentru angajați și administratori.",
   },
   companyLogin: {
     DE: "Zum Firmen-Login",
@@ -104,6 +113,7 @@ const HOME_TEXTS: Record<HomeTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şirket girişine git",
     SQ: "Shko te hyrja e kompanisë",
     KU: "Biçe têketina şirketê",
+    RO: "Accesați login-ul companiei",
   },
   privacy: {
     DE: "Datenschutz",
@@ -112,6 +122,7 @@ const HOME_TEXTS: Record<HomeTextKey, Record<AppUiLanguage, string>> = {
     TR: "Gizlilik",
     SQ: "Privatësia",
     KU: "Nepenî",
+    RO: "Confidențialitate",
   },
   terms: {
     DE: "Nutzungsbedingungen",
@@ -120,6 +131,7 @@ const HOME_TEXTS: Record<HomeTextKey, Record<AppUiLanguage, string>> = {
     TR: "Kullanım koşulları",
     SQ: "Kushtet e përdorimit",
     KU: "Mercên bikaranînê",
+    RO: "Termeni de utilizare",
   },
 };
 

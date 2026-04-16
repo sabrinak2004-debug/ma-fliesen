@@ -211,6 +211,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Görevler",
     SQ: "Detyrat",
     KU: "Erk",
+    RO: "Sarcini",
   },
   monthCsv: {
     DE: "Monat (CSV)",
@@ -219,6 +220,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Ay (CSV)",
     SQ: "Muaji (CSV)",
     KU: "Meh (CSV)",
+    RO: "Lună (CSV)",
   },
   yearZip: {
     DE: "Jahr (ZIP)",
@@ -227,6 +229,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Yıl (ZIP)",
     SQ: "Viti (ZIP)",
     KU: "Sal (ZIP)",
+    RO: "An (ZIP)",
   },
   rangeCsv: {
     DE: "Zeitraum (CSV)",
@@ -235,6 +238,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Aralık (CSV)",
     SQ: "Periudha (CSV)",
     KU: "Navbera demê (CSV)",
+    RO: "Interval (CSV)",
   },
   daysUsed: {
     DE: "Tagen verbraucht",
@@ -243,6 +247,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "gün kullanıldı",
     SQ: "ditë të përdorura",
     KU: "roj hatine bikaranîn",
+    RO: "zile folosite",
   },
   daysLabel: {
     DE: "Tage",
@@ -251,6 +256,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "gün",
     SQ: "ditë",
     KU: "roj",
+    RO: "zile",
   },
   untilMonthlyTarget: {
     DE: "bis zum Monatssoll",
@@ -259,6 +265,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "aylık hedefe kadar",
     SQ: "deri te objektivi mujor",
     KU: "heta armanca mehane",
+    RO: "până la ținta lunară",
   },
   monthlyProgressDetails: {
     DE: "Details Monatsfortschritt",
@@ -267,6 +274,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Aylık ilerleme detayları",
     SQ: "Detajet e progresit mujor",
     KU: "Hûrguliyên pêşveçûna mehane",
+    RO: "Detalii progres lunar",
   },
   january: {
     DE: "Januar",
@@ -275,6 +283,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Ocak",
     SQ: "Janar",
     KU: "Rêbendan",
+    RO: "Ianuarie",
   },
   february: {
     DE: "Februar",
@@ -283,6 +292,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Şubat",
     SQ: "Shkurt",
     KU: "Reşemî",
+    RO: "Februarie",
   },
   march: {
     DE: "März",
@@ -291,6 +301,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Mart",
     SQ: "Mars",
     KU: "Adar",
+    RO: "Martie",
   },
   april: {
     DE: "April",
@@ -299,6 +310,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Nisan",
     SQ: "Prill",
     KU: "Nîsan",
+    RO: "Aprilie",
   },
   may: {
     DE: "Mai",
@@ -307,6 +319,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Mayıs",
     SQ: "Maj",
     KU: "Gulan",
+    RO: "Mai",
   },
   june: {
     DE: "Juni",
@@ -315,6 +328,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Haziran",
     SQ: "Qershor",
     KU: "Hezîran",
+    RO: "Iunie",
   },
   july: {
     DE: "Juli",
@@ -323,6 +337,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Temmuz",
     SQ: "Korrik",
     KU: "Tîrmeh",
+    RO: "Iulie",
   },
   august: {
     DE: "August",
@@ -331,6 +346,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Ağustos",
     SQ: "Gusht",
     KU: "Tebax",
+    RO: "August",
   },
   september: {
     DE: "September",
@@ -339,6 +355,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Eylül",
     SQ: "Shtator",
     KU: "Îlon",
+    RO: "Septembrie",
   },
   october: {
     DE: "Oktober",
@@ -347,6 +364,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Ekim",
     SQ: "Tetor",
     KU: "Cotmeh",
+    RO: "Octombrie",
   },
   november: {
     DE: "November",
@@ -355,6 +373,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Kasım",
     SQ: "Nëntor",
     KU: "Mijdar",
+    RO: "Noiembrie",
   },
   december: {
     DE: "Dezember",
@@ -363,6 +382,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Aralık",
     SQ: "Dhjetor",
     KU: "Kanûn",
+    RO: "Decembrie",
   },
   myTasks: {
     DE: "Meine Aufgaben",
@@ -371,6 +391,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Görevlerim",
     SQ: "Detyrat e mia",
     KU: "Erkên min",
+    RO: "Sarcinile mele",
   },
   adminExport: {
     DE: "Export (Admin)",
@@ -379,6 +400,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Dışa aktar (Yönetici)",
     SQ: "Eksporto (Admin)",
     KU: "Derxistin (Admin)",
+    RO: "Export (Admin)",
   },
   cancel: {
     DE: "Abbrechen",
@@ -387,6 +409,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "İptal",
     SQ: "Anulo",
     KU: "Betal bike",
+    RO: "Anulează",
   },
   startDownload: {
     DE: "Download starten",
@@ -395,6 +418,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "İndirmeyi başlat",
     SQ: "Nis shkarkimin",
     KU: "Daxistinê dest pê bike",
+    RO: "Începe descărcarea",
   },
   exportMonthCsv: {
     DE: "Monat (CSV)",
@@ -403,6 +427,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Ay (CSV)",
     SQ: "Muaji (CSV)",
     KU: "Meh (CSV)",
+    RO: "Lună (CSV)",
   },
   exportYearZip: {
     DE: "Jahr (ZIP)",
@@ -411,6 +436,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Yıl (ZIP)",
     SQ: "Viti (ZIP)",
     KU: "Sal (ZIP)",
+    RO: "An (ZIP)",
   },
   exportRangeCsv: {
     DE: "Zeitraum (CSV)",
@@ -419,6 +445,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Aralık (CSV)",
     SQ: "Periudha (CSV)",
     KU: "Navbera demê (CSV)",
+    RO: "Interval (CSV)",
   },
   selectMonth: {
     DE: "Monat auswählen",
@@ -427,6 +454,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Ay seçin",
     SQ: "Zgjidh muajin",
     KU: "Meh hilbijêre",
+    RO: "Selectează luna",
   },
   downloadOneCsvFor: {
     DE: "Download: eine CSV für",
@@ -435,6 +463,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "İndirme: şu ay için bir CSV",
     SQ: "Shkarkim: një CSV për",
     KU: "Daxistin: CSVek ji bo",
+    RO: "Download: un CSV pentru",
   },
   selectYear: {
     DE: "Jahr auswählen",
@@ -443,6 +472,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Yıl seçin",
     SQ: "Zgjidh vitin",
     KU: "Sal hilbijêre",
+    RO: "Selectează anul",
   },
   downloadZipWith12Csvs: {
     DE: "Download: ZIP mit 12 CSVs (pro Monat eine Datei)",
@@ -451,6 +481,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "İndirme: 12 CSV içeren ZIP (her ay için bir dosya)",
     SQ: "Shkarkim: ZIP me 12 CSV (nga një skedar për muaj)",
     KU: "Daxistin: ZIP bi 12 CSV-an (her meh pelekek)",
+    RO: "Download: ZIP cu 12 CSV-uri (un fișier per lună)",
   },
   selectRange: {
     DE: "Zeitraum auswählen",
@@ -459,6 +490,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Aralık seçin",
     SQ: "Zgjidh periudhën",
     KU: "Navbera demê hilbijêre",
+    RO: "Selectează intervalul",
   },
   from: {
     DE: "Von",
@@ -467,6 +499,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Başlangıç",
     SQ: "Nga",
     KU: "Ji",
+    RO: "De la",
   },
   to: {
     DE: "Bis",
@@ -475,6 +508,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Bitiş",
     SQ: "Deri",
     KU: "Heta",
+    RO: "Până la",
   },
   pleaseSelectFromAndTo: {
     DE: "Bitte Von und Bis auswählen.",
@@ -483,6 +517,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Lütfen başlangıç ve bitiş tarihini seçin.",
     SQ: "Zgjidh datën nga dhe deri.",
     KU: "Ji kerema xwe destpêk û dawiyê hilbijêre.",
+    RO: "Vă rugăm să selectați atât data de început, cât și data de sfârșit.",
   },
   fromDateAfterToDate: {
     DE: "Von-Datum darf nicht nach dem Bis-Datum liegen.",
@@ -491,6 +526,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Başlangıç tarihi bitiş tarihinden sonra olamaz.",
     SQ: "Data e fillimit nuk mund të jetë pas datës së mbarimit.",
     KU: "Dîroka destpêkê nikare piştî dîroka dawiyê be.",
+    RO: "Data de început nu poate fi după data de sfârșit.",
   },
   downloadCsvFromTo: {
     DE: "Download: CSV für",
@@ -499,6 +535,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "İndirme: CSV",
     SQ: "Shkarkim: CSV për",
     KU: "Daxistin: CSV ji bo",
+    RO: "Download: CSV pentru",
   },
   workDetails: {
     DE: "Details Arbeitsstunden",
@@ -507,6 +544,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Çalışma saati detayları",
     SQ: "Detajet e orëve të punës",
     KU: "Hûrguliyên demjimêrên karê",
+    RO: "Detalii ore de lucru",
   },
   close: {
     DE: "Schließen",
@@ -515,6 +553,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Kapat",
     SQ: "Mbyll",
     KU: "Bigire",
+    RO: "Închide",
   },
   targetGross: {
     DE: "Soll (Brutto):",
@@ -523,6 +562,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Hedef (brüt):",
     SQ: "Objektivi (bruto):",
     KU: "Armanc (berî derxistin):",
+    RO: "Țintă (brut):",
   },
   targetNet: {
     DE: "Soll (Netto):",
@@ -531,6 +571,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Hedef (net):",
     SQ: "Objektivi (neto):",
     KU: "Armanc (safî):",
+    RO: "Țintă (net):",
   },
   overtimeGross: {
     DE: "Überstunden (Brutto):",
@@ -539,6 +580,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Fazla mesai (brüt):",
     SQ: "Orë shtesë (bruto):",
     KU: "Demjimarên zêde (berî derxistin):",
+    RO: "Ore suplimentare (brut):",
   },
   overtimeNet: {
     DE: "Überstunden (Netto):",
@@ -547,6 +589,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Fazla mesai (net):",
     SQ: "Orë shtesë (neto):",
     KU: "Demjimarên zêde (safî):",
+    RO: "Ore suplimentare (net):",
   },
   grossNetExplanation: {
     DE: "Brutto ist das reguläre Monatssoll ohne Urlaub, Krankheit und Feiertage. Netto ist das reduzierte Monatssoll, bei dem bezahlte Urlaubstage, Krankheitstage und Feiertage vom Brutto-Soll abgezogen werden.",
@@ -555,6 +598,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Brüt, tatil, hastalık ve resmî tatiller olmadan normal aylık hedeftir. Net ise ücretli izin, hastalık günleri ve resmî tatiller düşüldükten sonraki azaltılmış aylık hedeftir.",
     SQ: "Bruto është objektivi normal mujor pa pushime, sëmundje dhe festa zyrtare. Neto është objektivi i reduktuar mujor pasi zbriten pushimet e paguara, ditët e sëmundjes dhe festat zyrtare.",
     KU: "Armanca berî derxistin armanca asayî ya mehanî ye bê bêhnvedan, nexweşî û cejnên fermî. Armanca safî armanca kêmkirî ya mehanî ye ku tê de bêhnvedanên bi mûçe, rojên nexweşiyê û cejnên fermî ji armanca berî derxistin tên jêbirin.",
+    RO: "Brut este ținta lunară regulată fără vacanță, boală și sărbători legale. Net este ținta lunară redusă, cu zilele de vacanță plătite, zilele de boală și sărbătorile legale deduse din ținta brută.",
   },
   monthProgressDetails: {
     DE: "Details Monatsfortschritt",
@@ -563,6 +607,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Aylık ilerleme detayları",
     SQ: "Detajet e progresit mujor",
     KU: "Hûrguliyên pêşveçûna mehane",
+    RO: "Detalii progres lunar",
   },
   currentWorkTime: {
     DE: "Arbeitszeit aktuell:",
@@ -571,6 +616,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Güncel çalışma süresi:",
     SQ: "Koha aktuale e punës:",
     KU: "Dema karê ya niha:",
+    RO: "Timp de lucru actual:",
   },
   vacationCredited: {
     DE: "Urlaub angerechnet:",
@@ -579,6 +625,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "İzin hesaba katıldı:",
     SQ: "Pushimi i llogaritur:",
     KU: "Bêhnvedan hat hesibandin:",
+    RO: "Vacanță creditată:",
   },
   sickCredited: {
     DE: "Krankheit angerechnet:",
@@ -587,6 +634,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Hastalık hesaba katıldı:",
     SQ: "Sëmundja e llogaritur:",
     KU: "Nexweşî hat hesibandin:",
+    RO: "Concediu de îngrijire medicală creditat:",
   },
   holidayCredited: {
     DE: "Feiertage angerechnet:",
@@ -595,6 +643,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Resmî tatiller hesaba katıldı:",
     SQ: "Festat zyrtare të llogaritura:",
     KU: "Cejnên fermî hatin hesibandin:",
+    RO: "Sărbători legale creditate:",
   },
   holidaysInMonth: {
     DE: "Feiertage im Monat:",
@@ -603,6 +652,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Ay içindeki resmî tatiller:",
     SQ: "Festat zyrtare në muaj:",
     KU: "Cejnên fermî di mehê de:",
+    RO: "Sărbători legale în lună:",
   },
   unpaidAbsence: {
     DE: "Unbezahlte Abwesenheit:",
@@ -611,6 +661,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Ücretsiz devamsızlık:",
     SQ: "Mungesë e papaguar:",
     KU: "Nebûna bê mûçe:",
+    RO: "Absență neplătită:",
   },
   unpaidAbsenceMinutes: {
     DE: "Unbezahlte Abwesenheit (Minuten):",
@@ -619,6 +670,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Ücretsiz devamsızlık (dakika):",
     SQ: "Mungesë e papaguar (minuta):",
     KU: "Nebûna bê mûçe (deqîqe):",
+    RO: "Absență neplătită (minute):",
   },
   overview: {
     DE: "Übersicht",
@@ -627,6 +679,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Genel bakış",
     SQ: "Përmbledhje",
     KU: "Nêrîn",
+    RO: "Prezentare generală",
   },
   dataFor: {
     DE: "Daten für",
@@ -635,6 +688,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Veriler:",
     SQ: "Të dhënat për",
     KU: "Daneyên ji bo",
+    RO: "Date pentru",
   },
   year: {
     DE: "Jahr",
@@ -643,6 +697,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Yıl",
     SQ: "Viti",
     KU: "Sal",
+    RO: "An",
   },
   month: {
     DE: "Monat",
@@ -651,6 +706,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Ay",
     SQ: "Muaji",
     KU: "Meh",
+    RO: "Lună",
   },
   workHours: {
     DE: "Arbeitsstunden",
@@ -659,6 +715,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Çalışma saatleri",
     SQ: "Orët e punës",
     KU: "Demjimêrên karê",
+    RO: "Ore de lucru",
   },
   details: {
     DE: "Details",
@@ -667,6 +724,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Detaylar",
     SQ: "Detaje",
     KU: "Hûrgulî",
+    RO: "Detalii",
   },
   showWorkDetails: {
     DE: "Details zu Arbeitsstunden anzeigen",
@@ -675,6 +733,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Çalışma saati detaylarını göster",
     SQ: "Shfaq detajet e orëve të punës",
     KU: "Hûrguliyên demjimêrên karê nîşan bide",
+    RO: "Afișează detaliile orelor de lucru",
   },
   vacationDays: {
     DE: "Urlaubstage",
@@ -683,6 +742,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "İzin günleri",
     SQ: "Ditët e pushimit",
     KU: "Rojên bêhnvedanê",
+    RO: "Zile de vacanță",
   },
   daysUnpaid: {
     DE: "Tage unbezahlt",
@@ -691,6 +751,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "gün ücretsiz",
     SQ: "ditë të papaguara",
     KU: "roj bê mûçe",
+    RO: "zile neplătite",
   },
   remainingVacation: {
     DE: "Resturlaub",
@@ -699,6 +760,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Kalan izin",
     SQ: "Pushimi i mbetur",
     KU: "Bêhnvedana mayî",
+    RO: "Vacanță rămasă",
   },
   usedOfConsumed: {
     DE: "von",
@@ -707,6 +769,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: " / ",
     SQ: "nga",
     KU: "ji",
+    RO: "din",
   },
   annualEntitlement: {
     DE: "Jahresanspruch:",
@@ -715,6 +778,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Yıllık hak:",
     SQ: "E drejta vjetore:",
     KU: "Mafê salane:",
+    RO: "Drept anual:",
   },
   sickDays: {
     DE: "Krankheitstage",
@@ -723,6 +787,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Hastalık günleri",
     SQ: "Ditët e sëmundjes",
     KU: "Rojên nexweşiyê",
+    RO: "Zile de boală",
   },
   monthProgress: {
     DE: "Monatsfortschritt",
@@ -731,6 +796,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Aylık ilerleme",
     SQ: "Progresi mujor",
     KU: "Pêşveçûna mehane",
+    RO: "Progres lunar",
   },
   stillUntilTarget: {
     DE: "Noch",
@@ -739,6 +805,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Kalan",
     SQ: "Edhe",
     KU: "Hê",
+    RO: "Încă",
   },
   holidaysConsidered: {
     DE: "Feiertage berücksichtigt",
@@ -747,6 +814,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "resmî tatiller dikkate alındı",
     SQ: "festat zyrtare të përfshira",
     KU: "cejnên fermî hatin hesibandin",
+    RO: "sărbători legale considerate",
   },
   showProgressDetails: {
     DE: "Details zum Monatsfortschritt anzeigen",
@@ -755,6 +823,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Aylık ilerleme detaylarını göster",
     SQ: "Shfaq detajet e progresit mujor",
     KU: "Hûrguliyên pêşveçûna mehane nîşan bide",
+    RO: "Afișează detaliile progresului lunar",
   },
   absences: {
     DE: "Abwesenheiten",
@@ -763,6 +832,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Devamsızlıklar",
     SQ: "Mungesat",
     KU: "Nebûn",
+    RO: "Absențe",
   },
   filtered: {
     DE: "Gefiltert",
@@ -771,6 +841,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Filtrelenmiş",
     SQ: "Filtruar",
     KU: "Parzûnkirî",
+    RO: "Filtrat",
   },
   searchName: {
     DE: "Name suchen…",
@@ -779,6 +850,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "İsim ara…",
     SQ: "Kërko emrin…",
     KU: "Nav bigere…",
+    RO: "Caută nume…",
   },
   allTypes: {
     DE: "Alle Typen",
@@ -787,6 +859,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Tüm türler",
     SQ: "Të gjitha llojet",
     KU: "Hemû cure",
+    RO: "Toate tipurile",
   },
   sick: {
     DE: "Krank",
@@ -795,6 +868,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Hasta",
     SQ: "I sëmurë",
     KU: "Nexweş",
+    RO: "Bolnav",
   },
   vacation: {
     DE: "Urlaub",
@@ -803,6 +877,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "İzin",
     SQ: "Pushim",
     KU: "Bêhnvedan",
+    RO: "Vacanță",
   },
   reset: {
     DE: "Reset",
@@ -811,6 +886,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Sıfırla",
     SQ: "Rivendos",
     KU: "Vesaz bike",
+    RO: "Resetare",
   },
   resetFilters: {
     DE: "Filter zurücksetzen",
@@ -819,6 +895,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Filtreleri sıfırla",
     SQ: "Rivendos filtrat",
     KU: "Parzûnan vesaz bike",
+    RO: "Resetează filtrele",
   },
   loading: {
     DE: "Lade...",
@@ -827,6 +904,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Yükleniyor...",
     SQ: "Duke u ngarkuar...",
     KU: "Tê barkirin...",
+    RO: "Se încarcă...",
   },
   noAbsencesForFilters: {
     DE: "Keine Abwesenheiten für diese Filter.",
@@ -835,6 +913,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Bu filtreler için devamsızlık yok.",
     SQ: "Nuk ka mungesa për këta filtra.",
     KU: "Ji bo van parzûnan nebûn tune ne.",
+    RO: "Nu există absențe pentru aceste filtre.",
   },
   unpaid: {
     DE: "unbezahlt",
@@ -843,6 +922,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "ücretsiz",
     SQ: "i papaguar",
     KU: "bê mûçe",
+    RO: "neplătit",
   },
   byEmployee: {
     DE: "Nach Mitarbeiter",
@@ -851,6 +931,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Çalışana göre",
     SQ: "Sipas punonjësit",
     KU: "Li gorî karmend",
+    RO: "După angajat",
   },
   entries: {
     DE: "Einträge",
@@ -859,6 +940,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "kayıt",
     SQ: "regjistrime",
     KU: "tomar",
+    RO: "înregistrări",
   },
   entry: {
     DE: "Eintrag",
@@ -867,6 +949,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "kayıt",
     SQ: "regjistrim",
     KU: "tomar",
+    RO: "înregistrare",
   },
   km: {
     DE: "km",
@@ -875,6 +958,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "km",
     SQ: "km",
     KU: "km",
+    RO: "km",
   },
   me: {
     DE: "Ich",
@@ -883,6 +967,7 @@ const OVERVIEW_DICTIONARY: Record<OverviewTextKey, Record<AppUiLanguage, string>
     TR: "Ben",
     SQ: "Unë",
     KU: "Ez",
+    RO: "Eu",
   },
 };
 
@@ -953,7 +1038,11 @@ function formatDateLocalized(language: AppUiLanguage, yyyyMmDd: string): string 
             ? "tr-TR"
             : language === "SQ"
               ? "sq-AL"
-              : "ku";
+              : language === "KU"
+                ? "ku-TR"
+                : language === "RO"
+                  ? "ro-RO"
+                  : "en-GB";
 
   return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
@@ -1038,6 +1127,8 @@ function formatDayCountLocalized(language: AppUiLanguage, days: number): string 
       return `${value} ${days === 1 ? "ditë" : "ditë"}`;
     case "KU":
       return `${String(days).replace(",", ".")} roj`;
+    case "RO":
+      return `${value} ${days === 1 ? "zi" : "zile"}`;
     case "DE":
     default:
       if (days === 0.5) return "0,5 Tag";

@@ -29,7 +29,8 @@ function normalizeAppLanguage(value: AppLanguage | null | undefined): AppLanguag
     value === "IT" ||
     value === "TR" ||
     value === "SQ" ||
-    value === "KU"
+    value === "KU" ||
+    value === "RO"
   ) {
     return value;
   }

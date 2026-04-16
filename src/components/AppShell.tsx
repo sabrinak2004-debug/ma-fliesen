@@ -62,7 +62,8 @@ function isSessionData(v: unknown): v is SessionData {
       language === "IT" ||
       language === "TR" ||
       language === "SQ" ||
-      language === "KU") &&
+      language === "KU" || 
+      language === "RO") &&
     typeof companyId === "string" &&
     typeof companyName === "string" &&
     typeof companySubdomain === "string" &&
@@ -211,6 +212,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Zaman Girişi",
     SQ: "Regjistrimi",
     KU: "Tomarkirin",
+    RO: "Înregistrare",
   },
   calendar: {
     DE: "Kalender",
@@ -219,6 +221,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Takvim",
     SQ: "Kalendari",
     KU: "Salname",
+    RO: "Calendar",
   },
   overview: {
     DE: "Übersicht",
@@ -227,6 +230,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Genel Bakış",
     SQ: "Përmbledhje",
     KU: "Têgihiştin",
+    RO: "Prezentare generală",
   },
   tasks: {
     DE: "Aufgaben",
@@ -235,6 +239,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Görevler",
     SQ: "Detyrat",
     KU: "Erk",
+    RO: "Sarcini",
   },
   dashboard: {
     DE: "Dashboard",
@@ -243,6 +248,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Panel",
     SQ: "Paneli",
     KU: "Dashboard",
+    RO: "Tablou de bord",
   },
   appointments: {
     DE: "Termine",
@@ -251,6 +257,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Randevular",
     SQ: "Takimet",
     KU: "Civîn",
+    RO: "Programări",
   },
   weeklyPlan: {
     DE: "Wochenplan",
@@ -259,6 +266,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Haftalık Plan",
     SQ: "Plani Javor",
     KU: "Plana Heftane",
+    RO: "Plan săptămânal",
   },
   vacationRequests: {
     DE: "Urlaubsanträge",
@@ -267,6 +275,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "İzin Talepleri",
     SQ: "Kërkesat për Pushim",
     KU: "Daxwazên Îzinê",
+    RO: "Cereri de concediu",
   },
   sickRequests: {
     DE: "Krankheitsanträge",
@@ -275,6 +284,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Hastalık Talepleri",
     SQ: "Kërkesat për Sëmundje",
     KU: "Daxwazên Nexweşiyê",
+    RO: "Cereri de concediu medical",
   },
   correctionRequests: {
     DE: "Nachtragsanträge",
@@ -283,6 +293,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Düzeltme Talepleri",
     SQ: "Kërkesat për Korrigjim",
     KU: "Daxwazên Rastkirinê",
+    RO: "Cereri de corecție",
   },
   passwordReset: {
     DE: "Passwort-Reset",
@@ -291,6 +302,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Şifre Sıfırlama",
     SQ: "Rivendosja e Fjalëkalimit",
     KU: "Nûkirina Şîfreyê",
+    RO: "Resetare parolă",
   },
   menuOpen: {
     DE: "Menü öffnen",
@@ -299,6 +311,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Menüyü aç",
     SQ: "Hap menunë",
     KU: "Menuyê veke",
+    RO: "Deschide meniul",
   },
   menuClose: {
     DE: "Menü schließen",
@@ -307,6 +320,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Menüyü kapat",
     SQ: "Mbyll menunë",
     KU: "Menuyê bigire",
+    RO: "Închide meniul",
   },
   close: {
     DE: "Schließen",
@@ -315,6 +329,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Kapat",
     SQ: "Mbyll",
     KU: "Bigire",
+    RO: "Închide",
   },
   logout: {
     DE: "Logout",
@@ -323,6 +338,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Çıkış yap",
     SQ: "Dilnişanê derkeve",
     KU: "Derkeve",
+    RO: "Deconectare",
   },
   loading: {
     DE: "Lade...",
@@ -331,6 +347,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Yükleniyor...",
     SQ: "Duke u ngarkuar...",
     KU: "Tê barkirin...",
+    RO: "Se încarcă...",
   },
   admin: {
     DE: "Admin",
@@ -339,6 +356,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Yönetici",
     SQ: "Admin",
     KU: "Rêvebir",
+    RO: "Admin",
   },
   employee: {
     DE: "Mitarbeiter",
@@ -347,6 +365,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Çalışan",
     SQ: "Punonjës",
     KU: "Karmend",
+    RO: "Angajat",
   },
   adminArea: {
     DE: "Adminbereich",
@@ -355,6 +374,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Yönetici Alanı",
     SQ: "Zona e Adminit",
     KU: "Qada Rêvebirê",
+    RO: "Zona admin",
   },
   employeeArea: {
     DE: "Mitarbeiterbereich",
@@ -363,6 +383,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Çalışan Alanı",
     SQ: "Zona e Punonjësit",
     KU: "Qada Karmendan",
+    RO: "Zona angajat",
   },
   openItems: {
     DE: "Offene Elemente",
@@ -371,6 +392,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Açık öğeler",
     SQ: "Elemente të hapura",
     KU: "Hêmanên vekirî",
+    RO: "Elemente deschise",
   },
   openTasksAria: {
     DE: "offene Aufgaben",
@@ -379,6 +401,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "açık görev",
     SQ: "detyra të hapura",
     KU: "erkên vekirî",
+    RO: "sarcini deschise",
   },
   language: {
     DE: "Sprache",
@@ -387,6 +410,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Dil",
     SQ: "Gjuha",
     KU: "Ziman",
+    RO: "Limba",
   },
   languageSaving: {
     DE: "Sprache wird gespeichert...",
@@ -395,6 +419,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Dil kaydediliyor...",
     SQ: "Gjuha po ruhet...",
     KU: "Ziman tê tomar kirin...",
+    RO: "Se salvează limba...",
   },
   languageSaved: {
     DE: "Sprache gespeichert.",
@@ -403,6 +428,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Dil kaydedildi.",
     SQ: "Gjuha u ruajt.",
     KU: "Ziman hate tomar kirin.",
+    RO: "Limba a fost salvată.",
   },
   languageSaveError: {
     DE: "Sprache konnte nicht gespeichert werden.",
@@ -411,6 +437,7 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     TR: "Dil kaydedilemedi.",
     SQ: "Gjuha nuk mund të ruhej.",
     KU: "Ziman nehat tomar kirin.",
+    RO: "Limba nu a putut fi salvată.",
   },
 };
 

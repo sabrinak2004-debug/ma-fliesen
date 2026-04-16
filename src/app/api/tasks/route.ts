@@ -10,7 +10,7 @@ type MissingWorkEntryAlert = {
   newestMissingDate: string;
 } | null;
 
-type SupportedLang = "DE" | "EN" | "IT" | "TR" | "SQ" | "KU";
+type SupportedLang = "DE" | "EN" | "IT" | "TR" | "SQ" | "KU" | "RO";
 type TranslationMap = Partial<Record<SupportedLang, string>>;
 
 function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
@@ -28,7 +28,8 @@ function toSupportedLang(language: string | null | undefined): SupportedLang {
     language === "IT" ||
     language === "TR" ||
     language === "SQ" ||
-    language === "KU"
+    language === "KU" ||
+    language === "RO"
   ) {
     return language;
   }

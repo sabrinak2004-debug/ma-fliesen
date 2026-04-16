@@ -57,6 +57,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Geçersiz yanıt.",
     SQ: "Përgjigje e pavlefshme.",
     KU: "Bersiva nederbasdar.",
+    RO: "Răspuns invalid.",
   },
   missingPublicKey: {
     DE: "Public Key fehlt.",
@@ -65,6 +66,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Public key eksik.",
     SQ: "Mungon public key.",
     KU: "Public key tune ye.",
+    RO: "Lipsește cheia publică.",
   },
   unknownError: {
     DE: "Unbekannter Fehler.",
@@ -73,6 +75,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Bilinmeyen hata.",
     SQ: "Gabim i panjohur.",
     KU: "Çewtiya nenas.",
+    RO: "Eroare necunoscută.",
   },
   subscriptionIncomplete: {
     DE: "Subscription unvollständig.",
@@ -81,6 +84,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Abonelik eksik.",
     SQ: "Abonimi është i paplotë.",
     KU: "Abonetî ne temam e.",
+    RO: "Abonamentul este incomplet.",
   },
   saveFailed: {
     DE: "Push konnte nicht gespeichert werden.",
@@ -89,6 +93,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Push kaydedilemedi.",
     SQ: "Push nuk mund të ruhej.",
     KU: "Push nehat tomar kirin.",
+    RO: "Push nu a putut fi salvat.",
   },
   notAuthenticated: {
     DE: "Nicht eingeloggt.",
@@ -97,6 +102,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Giriş yapılmadı.",
     SQ: "Nuk je i identifikuar.",
     KU: "Têketin nekiriye.",
+    RO: "Neautentificat.",
   },
   wrongCompanyContext: {
     DE: "Falscher Firmenkontext.",
@@ -105,6 +111,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Yanlış şirket bağlamı.",
     SQ: "Kontekst i gabuar i kompanisë.",
     KU: "Konteksta şirketa şaş e.",
+    RO: "Context de companie greșit.",
   },
   permissionDenied: {
     DE: "Push wurde nicht erlaubt.",
@@ -113,6 +120,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Push izni verilmedi.",
     SQ: "Push nuk u lejua.",
     KU: "Destûra pushê nehat dayîn.",
+    RO: "Push nu a fost permis.",
   },
   sessionLoadFailed: {
     DE: "Session konnte nicht geladen werden.",
@@ -121,6 +129,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Oturum yüklenemedi.",
     SQ: "Sesioni nuk mund të ngarkohej.",
     KU: "Danûstendin nehat barkirin.",
+    RO: "Sesiunea nu a putut fi încărcată.",
   },
   activated: {
     DE: "Push ist jetzt aktiviert.",
@@ -129,6 +138,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Push artık etkin.",
     SQ: "Push tani është aktivizuar.",
     KU: "Push niha çalak e.",
+    RO: "Push este acum activat.",
   },
   activationFailed: {
     DE: "Push konnte nicht aktiviert werden.",
@@ -137,6 +147,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Push etkinleştirilemedi.",
     SQ: "Push nuk mund të aktivizohej.",
     KU: "Push nehat çalak kirin.",
+    RO: "Push nu a putut fi activat.",
   },
   title: {
     DE: "Push-Benachrichtigungen aktivieren",
@@ -145,6 +156,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Push bildirimlerini etkinleştir",
     SQ: "Aktivizo njoftimet push",
     KU: "Agahdariyên pushê çalak bike",
+    RO: "Activează notificările push",
   },
   description: {
     DE: "Aktiviere Push, damit du Erinnerungen zu fehlenden Einträgen, Anträgen und Aufgaben direkt auf diesem Gerät erhältst.",
@@ -153,6 +165,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Eksik kayıtlar, talepler ve görevlerle ilgili hatırlatmaları doğrudan bu cihazda almak için push'u etkinleştir.",
     SQ: "Aktivizo push që të marrësh kujtesa për regjistrime që mungojnë, kërkesa dhe detyra direkt në këtë pajisje.",
     KU: "Pushê çalak bike da ku hişyariyên derbarê tomarkirinên kêm, daxwaz û erkan de rasterast li ser vê cîhazê bistînî.",
+    RO: "Activează push pentru a primi mementouri despre intrări lipsă, cereri și sarcini direct pe acest dispozitiv.",
   },
   activating: {
     DE: "Aktiviere...",
@@ -161,6 +174,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Etkinleştiriliyor...",
     SQ: "Po aktivizohet...",
     KU: "Tê çalak kirin...",
+    RO: "Activare...",
   },
   activateNow: {
     DE: "Push jetzt aktivieren",
@@ -169,6 +183,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Push'u şimdi etkinleştir",
     SQ: "Aktivizo push tani",
     KU: "Pushê niha çalak bike",
+    RO: "Activează push acum",
   },
   companyName: {
     DE: "Firmenname:",
@@ -177,6 +192,7 @@ const PUSH_ONBOARDING_TEXTS: Record<
     TR: "Şirket adı:",
     SQ: "Emri i kompanisë:",
     KU: "Navê pargîdaniyê:",
+    RO: "Numele companiei:",
   },
 };
 

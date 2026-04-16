@@ -510,4 +510,5 @@ enum AppLanguage {
   TR
   SQ
   KU
+  RO
 }

@@ -90,6 +90,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Dil",
     SQ: "Gjuha",
     KU: "Ziman",
+    RO: "Limba",
   },
   companyAccess: {
     DE: "Firmenzugang",
@@ -98,6 +99,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şirket erişimi",
     SQ: "Qasja e kompanisë",
     KU: "Gihîştina şirketê",
+    RO: "Acces companie",
   },
   employeeName: {
     DE: "Mitarbeitername",
@@ -106,6 +108,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Çalışan adı",
     SQ: "Emri i punonjësit",
     KU: "Navê karmendê",
+    RO: "Nume angajat",
   },
   employeeNamePlaceholder: {
     DE: "Vor- und Nachname (muss hinterlegt sein)",
@@ -114,6 +117,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Ad ve soyad (kayıtlı olmalıdır)",
     SQ: "Emri dhe mbiemri (duhet të jetë i regjistruar)",
     KU: "Nav û paşnav (divê tomarkirî be)",
+    RO: "Nume și prenume (trebuie să fie înregistrat)",
   },
   checkingAccess: {
     DE: "Prüfe Zugriff...",
@@ -122,6 +126,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Erişim kontrol ediliyor...",
     SQ: "Po kontrollohet qasja...",
     KU: "Gihîştin tê kontrolkirin...",
+    RO: "Se verifică accesul...",
   },
   nameNotStored: {
     DE: "Name nicht hinterlegt.",
@@ -130,6 +135,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "İsim kayıtlı değil.",
     SQ: "Emri nuk është i regjistruar.",
     KU: "Nav tomar nekiriye.",
+    RO: "Nume negăsit.",
   },
   accessOkAdmin: {
     DE: "Zugriff OK. (Admin)",
@@ -138,6 +144,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Erişim tamam. (Yönetici)",
     SQ: "Qasja në rregull. (Admin)",
     KU: "Gihîştin baş e. (Rêvebir)",
+    RO: "Acces OK. (Admin)",
   },
   accessOkEmployee: {
     DE: "Zugriff OK. (Mitarbeiter)",
@@ -146,6 +153,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Erişim tamam. (Çalışan)",
     SQ: "Qasja në rregull. (Punonjës)",
     KU: "Gihîştin baş e. (Karmend)",
+    RO: "Acces OK. (Angajat)",
   },
   enterName: {
     DE: "Bitte Namen eingeben.",
@@ -154,6 +162,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Lütfen isminizi girin.",
     SQ: "Ju lutem shkruani emrin.",
     KU: "Ji kerema xwe navê xwe binivîse.",
+    RO: "Vă rugăm să introduceți numele.",
   },
   noAccess: {
     DE: "Kein Zugriff. Name ist nicht hinterlegt.",
@@ -162,6 +171,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Erişim yok. İsim kayıtlı değil.",
     SQ: "Nuk ka qasje. Emri nuk është i regjistruar.",
     KU: "Gihîştin tune. Nav tomar nekiriye.",
+    RO: "Fără acces. Numele nu este înregistrat.",
   },
   ambiguousName: {
     DE: "Name ist mehrfach vorhanden. Bitte melde dich über den richtigen Firmenzugang an.",
@@ -170,6 +180,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Bu isim birden fazla kez mevcut. Lütfen doğru şirket erişimi üzerinden giriş yapın.",
     SQ: "Ky emër ekziston më shumë se një herë. Ju lutem hyni përmes qasjes së saktë të kompanisë.",
     KU: "Ev nav gelek caran heye. Ji kerema xwe bi gihîştina rast a şirketê têkeve.",
+    RO: "Acest nume există de mai multe ori. Vă rugăm să vă conectați prin accesul corect al companiei.",
   },
   userLoadFailed: {
     DE: "Benutzer konnte nicht geladen werden.",
@@ -178,6 +189,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Kullanıcı yüklenemedi.",
     SQ: "Përdoruesi nuk mund të ngarkohej.",
     KU: "Bikarhêner nehat barkirin.",
+    RO: "Utilizatorul nu a putut fi încărcat.",
   },
   userInactive: {
     DE: "Dieser Benutzer ist nicht aktiv.",
@@ -186,6 +198,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Bu kullanıcı aktif değil.",
     SQ: "Ky përdorues nuk është aktiv.",
     KU: "Ev bikarhêner çalak nîne.",
+    RO: "Acest utilizator nu este activ.",
   },
   passwordSetupRequired: {
     DE: "Für diesen Benutzer muss zuerst ein Passwort festgelegt werden.",
@@ -194,6 +207,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Bu kullanıcı için önce bir şifre belirlenmelidir.",
     SQ: "Për këtë përdorues duhet së pari të vendoset një fjalëkalim.",
     KU: "Ji bo vî bikarhênerî pêşî divê şîfre were danîn.",
+    RO: "Trebuie să se seteze mai întâi o parolă pentru acest utilizator.",
   },
   passwordNotInitialized: {
     DE: "Das Passwort ist noch nicht initialisiert.",
@@ -202,6 +216,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şifre henüz başlatılmadı.",
     SQ: "Fjalëkalimi ende nuk është inicializuar.",
     KU: "Şîfre hêj nehatî destpêkirin.",
+    RO: "Parola nu a fost încă inițializată.",
   },
   adminPasswordNotInitialized: {
     DE: "Das Admin-Passwort ist noch nicht initialisiert.",
@@ -210,6 +225,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Yönetici şifresi henüz başlatılmadı.",
     SQ: "Fjalëkalimi i administratorit ende nuk është inicializuar.",
     KU: "Şîfreya rêvebir hêj nehatî destpêkirin.",
+    RO: "Parola de administrator nu a fost încă inițializată.",
   },
   wrongPassword: {
     DE: "Das Passwort ist falsch.",
@@ -218,6 +234,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şifre yanlış.",
     SQ: "Fjalëkalimi është i gabuar.",
     KU: "Şîfre şaş e.",
+    RO: "Parola este incorectă.",
   },
   forgotNameTooShort: {
     DE: "Bitte gib deinen Namen vollständig ein.",
@@ -226,6 +243,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Lütfen adınızı tam olarak girin.",
     SQ: "Ju lutem shkruani emrin tuaj të plotë.",
     KU: "Ji kerema xwe navê xwe bi tevahî binivîse.",
+    RO: "Vă rugăm să introduceți numele complet.",
   },
   waitForCheck: {
     DE: "Bitte kurz warten – Zugriff wird geprüft.",
@@ -234,6 +252,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Lütfen biraz bekleyin – erişim kontrol ediliyor.",
     SQ: "Ju lutem prisni pak - qasja po kontrollohet.",
     KU: "Ji kerema xwe hinek bisekine - gihîştin tê kontrolkirin.",
+    RO: "Vă rugăm să așteptați un moment - accesul este în verificare.",
   },
   passwordTooShort: {
     DE: "Passwort muss mind. 8 Zeichen haben.",
@@ -242,6 +261,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şifre en az 8 karakter olmalıdır.",
     SQ: "Fjalëkalimi duhet të ketë të paktën 8 karaktere.",
     KU: "Şîfre divê herî kêm 8 tîpan hebe.",
+    RO: "Parola trebuie să aibă cel puțin 8 caractere."
   },
   passwordMismatch: {
     DE: "Passwörter stimmen nicht überein.",
@@ -250,6 +270,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şifreler eşleşmiyor.",
     SQ: "Fjalëkalimet nuk përputhen.",
     KU: "Şîfre hev nagirin.",
+    RO: "Parolele nu se potrivesc."
   },
   enterPassword: {
     DE: "Bitte Passwort eingeben.",
@@ -258,6 +279,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Lütfen şifrenizi girin.",
     SQ: "Ju lutem shkruani fjalëkalimin.",
     KU: "Ji kerema xwe şîfreyê binivîse.",
+    RO: "Vă rugăm să introduceți parola."
   },
   unexpectedServerResponse: {
     DE: "Unerwartete Antwort vom Server.",
@@ -266,6 +288,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Sunucudan beklenmeyen yanıt.",
     SQ: "Përgjigje e papritur nga serveri.",
     KU: "Bersiva nedihatî ji serverê.",
+    RO: "Răspuns neașteptat de la server."
   },
   loginFailed: {
     DE: "Login fehlgeschlagen.",
@@ -274,6 +297,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Giriş başarısız.",
     SQ: "Hyrja dështoi.",
     KU: "Têketin têk çû.",
+    RO: "Autentificare eșuată."
   },
   loginNetworkError: {
     DE: "Netzwerkfehler beim Login.",
@@ -282,6 +306,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Giriş sırasında ağ hatası.",
     SQ: "Gabim rrjeti gjatë hyrjes.",
     KU: "Di têketinê de çewtiya torê.",
+    RO: "Eroare de rețea în timpul autentificării."
   },
   forgotEnterNameFirst: {
     DE: "Bitte zuerst deinen Namen eingeben.",
@@ -290,6 +315,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Lütfen önce isminizi girin.",
     SQ: "Ju lutem së pari shkruani emrin tuaj.",
     KU: "Ji kerema xwe pêşî navê xwe binivîse.",
+    RO: "Vă rugăm să introduceți mai întâi numele."
   },
   forgotWaitForCheck: {
     DE: "Bitte kurz warten – Zugriff wird geprüft.",
@@ -298,6 +324,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Lütfen biraz bekleyin – erişim kontrol ediliyor.",
     SQ: "Ju lutem prisni pak - qasja po kontrollohet.",
     KU: "Ji kerema xwe hinek bisekine - gihîştin tê kontrolkirin.",
+    RO: "Vă rugăm să așteptați un moment - accesul este în verificare."
   },
   forgotRequestFailed: {
     DE: "Anfrage fehlgeschlagen.",
@@ -306,6 +333,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "İstek başarısız.",
     SQ: "Kërkesa dështoi.",
     KU: "Daxwaz têk çû.",
+    RO: "Cerere eșuată."
   },
   forgotRequestCreated: {
     DE: "Anfrage wurde erstellt. Bitte wende dich an den Admin – er sendet dir einen Reset-Link.",
@@ -314,6 +342,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "İstek oluşturuldu. Lütfen yöneticiye başvurun - size bir sıfırlama bağlantısı gönderecektir.",
     SQ: "Kërkesa u krijua. Ju lutem kontaktoni administratorin - ai do t'ju dërgojë një link rivendosjeje.",
     KU: "Daxwaz hate afirandin. Ji kerema xwe bi rêvebir re têkilî daynin - ew dê lînkek nûkirinê ji we re bişîne.",
+    RO: "Cerere creată. Vă rugăm să contactați administratorul - vă va trimite un link de resetare."
   },
   forgotNetworkError: {
     DE: "Netzwerkfehler. Bitte später erneut versuchen.",
@@ -322,6 +351,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Ağ hatası. Lütfen daha sonra tekrar deneyin.",
     SQ: "Gabim rrjeti. Ju lutem provoni më vonë.",
     KU: "Çewtiya torê. Ji kerema xwe paşê dîsa biceribîne.",
+    RO: "Eroare de rețea. Vă rugăm să încercați din nou mai târziu."
   },
   setPasswordFirstTime: {
     DE: "Passwort festlegen (nur beim ersten Mal)",
@@ -330,6 +360,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şifre belirle (yalnızca ilk kez)",
     SQ: "Vendos fjalëkalimin (vetëm herën e parë)",
     KU: "Şîfreyê diyar bike (tenê cara yekem)",
+    RO: "Setați parola (doar prima dată)",
   },
   newPasswordPlaceholder: {
     DE: "Neues Passwort (mind. 8 Zeichen)",
@@ -338,6 +369,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Yeni şifre (en az 8 karakter)",
     SQ: "Fjalëkalim i ri (min. 8 karaktere)",
     KU: "Şîfreya nû (herî kêm 8 tîp)",
+    RO: "Parolă nouă (min. 8 caractere)",
   },
   repeatPassword: {
     DE: "Passwort wiederholen",
@@ -346,6 +378,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şifreyi tekrar girin",
     SQ: "Përsërit fjalëkalimin",
     KU: "Şîfreyê dubare bike",
+    RO: "Repetați parola",
   },
   repeatPasswordPlaceholder: {
     DE: "Passwort wiederholen",
@@ -354,6 +387,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şifreyi tekrar girin",
     SQ: "Përsërit fjalëkalimin",
     KU: "Şîfreyê dubare bike",
+    RO: "Repetați parola",
   },
   hidePassword: {
     DE: "Passwort verbergen",
@@ -362,6 +396,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şifreyi gizle",
     SQ: "Fshihe fjalëkalimin",
     KU: "Şîfreyê veşêre",
+    RO: "Ascunde parola",
   },
   showPassword: {
     DE: "Passwort anzeigen",
@@ -370,6 +405,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şifreyi göster",
     SQ: "Shfaq fjalëkalimin",
     KU: "Şîfreyê nîşan bide",
+    RO: "Afișează parola",
   },
   password: {
     DE: "Passwort",
@@ -378,6 +414,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şifre",
     SQ: "Fjalëkalimi",
     KU: "Şîfre",
+    RO: "Parolă",
   },
   forgotPassword: {
     DE: "Passwort vergessen?",
@@ -386,6 +423,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şifrenizi mi unuttunuz?",
     SQ: "Keni harruar fjalëkalimin?",
     KU: "Şîfreyê ji bîr kir?",
+    RO: "Ați uitat parola?",
   },
   forgotCreating: {
     DE: "Anfrage wird erstellt...",
@@ -394,6 +432,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "İstek oluşturuluyor...",
     SQ: "Po krijohet kërkesa...",
     KU: "Daxwaz tê afirandin...",
+    RO: "Se creează cererea...",
   },
   pleaseWait: {
     DE: "Bitte warten...",
@@ -402,6 +441,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Lütfen bekleyin...",
     SQ: "Ju lutem prisni...",
     KU: "Ji kerema xwe bisekine...",
+    RO: "Vă rugăm să așteptați...",
   },
   savePasswordAndLogin: {
     DE: "Passwort speichern & Login",
@@ -410,6 +450,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Şifreyi kaydet ve giriş yap",
     SQ: "Ruaj fjalëkalimin dhe hyr",
     KU: "Şîfreyê tomar bike û têkeve",
+    RO: "Salvează parola și autentifică-te",
   },
   login: {
     DE: "Login",
@@ -418,6 +459,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Giriş yap",
     SQ: "Hyr",
     KU: "Têkeve",
+    RO: "Autentificare",
   },
   privacy: {
     DE: "Datenschutz",
@@ -426,6 +468,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Gizlilik",
     SQ: "Privatësia",
     KU: "Nepenî",
+    RO: "Confidențialitate",
   },
   terms: {
     DE: "Nutzungsbedingungen",
@@ -434,6 +477,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Kullanım koşulları",
     SQ: "Kushtet e përdorimit",
     KU: "Mercên bikaranînê",
+    RO: "Termeni de utilizare",
   },
   loginFootnote: {
     DE: "Nur hinterlegte Mitarbeiter können sich anmelden. Beim ersten Login wird ein Passwort festgelegt.",
@@ -442,6 +486,7 @@ const LOGIN_TEXTS: Record<LoginTextKey, Record<AppUiLanguage, string>> = {
     TR: "Yalnızca kayıtlı çalışanlar giriş yapabilir. İlk girişte bir şifre belirlenir.",
     SQ: "Vetëm punonjësit e regjistruar mund të hyjnë. Në hyrjen e parë vendoset një fjalëkalim.",
     KU: "Tenê karmendên tomarkirî dikarin têkevin. Di têketina yekem de şîfre tê diyarkirin.",
+    RO: "Doar angajații înregistrați se pot autentifica. O parolă este setată în timpul primei autentificări.",
   },
 };
 

@@ -36,7 +36,9 @@ function isAppLanguage(v: unknown): v is AppUiLanguage {
     v === "IT" ||
     v === "TR" ||
     v === "SQ" ||
-    v === "KU"
+    v === "KU" ||
+    v === "RO"
+
   );
 }
 

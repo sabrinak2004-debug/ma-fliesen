@@ -32,6 +32,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "1. Genel Bilgiler",
       SQ: "1. Informacione të Përgjithshme",
       KU: "1. Agahiyên Giştî",
+      RO: "1. Informații Generale",
     },
   },
   {
@@ -43,6 +44,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "Bu gizlilik politikası, “saleo.app” web uygulamasının (dijital zaman takibi ve çalışan yönetimi) kullanımı sırasında kişisel verilerin işlenmesini açıklar.",
       SQ: "Kjo politikë privatësie shpjegon përpunimin e të dhënave personale gjatë përdorimit të aplikacionit web “saleo.app” (regjistrim dixhital i kohës dhe menaxhim i punonjësve).",
       KU: "Ev polîtîkaya nepenîtiyê pêvajoya daneyên kesane di dema bikaranîna sepanê ya webê “saleo.app” de şirove dike (tomarkirina demê ya dîjîtal û rêveberiya karmendan).",
+      RO: "Această politică de confidențialitate explică procesarea datelor personale atunci când utilizați aplicația web “saleo.app” (urmărirea digitală a timpului și gestionarea angajaților).",
     },
   },
   {
@@ -54,6 +56,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "2. Veri Sorumlusu",
       SQ: "2. Përgjegjësi i përpunimit",
       KU: "2. Berpirsa pêvajoyê",
+      RO: "2. Operatorul de date",
     },
   },
   {
@@ -65,6 +68,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "Veri işleme faaliyetinden sorumlu kişi:\nSabrina Klausmeier\nStetter Weg 11, 70794 Filderstadt\nsabrinak2004@gmail.com",
       SQ: "Përgjegjëse për përpunimin e të dhënave është:\nSabrina Klausmeier\nStetter Weg 11, 70794 Filderstadt\nsabrinak2004@gmail.com",
       KU: "Berpirsa pêvajoya daneyan ev e:\nSabrina Klausmeier\nStetter Weg 11, 70794 Filderstadt\nsabrinak2004@gmail.com",
+      RO: "Operatorul responsabil pentru procesarea datelor este:\nSabrina Klausmeier\nStetter Weg 11, 70794 Filderstadt\nsabrinak2004@gmail.com",
     },
   },
   {
@@ -76,6 +80,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "3. İşlenen Veriler",
       SQ: "3. Të dhënat e përpunuara",
       KU: "3. Daneyên tên pêvajokirin",
+      RO: "3. Datele procesate",
     },
   },
   {
@@ -87,6 +92,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "a) Kullanıcı verileri",
       SQ: "a) Të dhënat e përdoruesit",
       KU: "a) Daneyên bikarhênerê",
+      RO: "a) Datele utilizatorului",
     },
   },
   {
@@ -99,6 +105,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Ad (fullName)",
         SQ: "Emri (fullName)",
         KU: "Nav (fullName)",
+        RO: "Nume (fullName)",
       },
       {
         DE: "Benutzerrolle (Mitarbeiter / Admin)",
@@ -107,6 +114,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Kullanıcı rolü (Çalışan / Yönetici)",
         SQ: "Roli i përdoruesit (Punonjës / Admin)",
         KU: "Rolê bikarhênerê (Karmend / Rêvebir)",
+        RO: "Rolul utilizatorului (Angajat / Admin)",
       },
       {
         DE: "Login-Daten (verschlüsselt)",
@@ -115,6 +123,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Giriş verileri (şifrelenmiş)",
         SQ: "Të dhënat e hyrjes (të enkriptuara)",
         KU: "Daneyên têketinê (şîfrekirî)",
+        RO: "Datele de autentificare (criptate)",
       },
       {
         DE: "Firmenzugehörigkeit",
@@ -123,6 +132,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Şirket bağlantısı",
         SQ: "Përkatësia e kompanisë",
         KU: "Girêdana pargîdaniyê",
+        RO: "Afilierea companiei",
       },
     ],
   },
@@ -135,6 +145,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "b) Çalışma süresi verileri",
       SQ: "b) Të dhënat e kohës së punës",
       KU: "b) Daneyên demjimêra karê",
+      RO: "b) Datele timpului de lucru",
     },
   },
   {
@@ -147,6 +158,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Çalışma saatleri (başlangıç, bitiş)",
         SQ: "Orari i punës (fillimi, fundi)",
         KU: "Demjimêrên karê (destpêk, dawî)",
+        RO: "Orele de lucru (început, sfârșit)",
       },
       {
         DE: "Pausen",
@@ -155,6 +167,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Molalar",
         SQ: "Pushimet",
         KU: "Navber",
+        RO: "Pauze",
       },
       {
         DE: "Tätigkeiten",
@@ -163,6 +176,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Faaliyetler",
         SQ: "Aktivitetet",
         KU: "Çalakî",
+        RO: "Activități",
       },
       {
         DE: "Einsatzorte",
@@ -171,6 +185,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Görev yerleri",
         SQ: "Vendet e punës",
         KU: "Cihên karê",
+        RO: "Locații de muncă",
       },
       {
         DE: "Fahrtzeiten",
@@ -179,6 +194,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Yol süreleri",
         SQ: "Kohët e udhëtimit",
         KU: "Demên rêwîtiyê",
+        RO: "Timp de călătorie",
       },
       {
         DE: "Notizen",
@@ -187,6 +203,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Notlar",
         SQ: "Shënime",
         KU: "Nîşe",
+        RO: "Note",
       },
     ],
   },
@@ -199,6 +216,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "c) Devamsızlık verileri",
       SQ: "c) Të dhënat e mungesës",
       KU: "c) Daneyên nebûnê",
+      RO: "c) Datele de absență",
     },
   },
   {
@@ -211,6 +229,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "İzin (ücretli/ücretsiz, yarım gün mümkün)",
         SQ: "Pushim (i paguar / i papaguar, të mundshme gjysmë dite)",
         KU: "Îzin (mûçe/heqî, nîv roj jî heye)",
+        RO: "Vacanță (plătită/neplătită, posibilă jumătate de zi)",
       },
       {
         DE: "Krankheitstage",
@@ -219,6 +238,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Hastalık günleri",
         SQ: "Ditët e sëmundjes",
         KU: "Rojên nexweşiyê",
+        RO: "Zile de boală",
       },
       {
         DE: "Anträge (Urlaub, Krankheit, Nachträge)",
@@ -227,6 +247,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Talepler (izin, hastalık, düzeltme)",
         SQ: "Kërkesa (pushim, sëmundje, korrigjime)",
         KU: "Daxwaz (îzin, nexweşî, rastkirin)",
+        RO: "Cereri (vacanță, boală, corecții)",
       },
     ],
   },
@@ -239,6 +260,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "d) Organizasyon ve planlama verileri",
       SQ: "d) Të dhëna organizimi dhe planifikimi",
       KU: "d) Daneyên rêxistin û planê",
+      RO: "d) Date de organizare și planificare",
     },
   },
   {
@@ -251,6 +273,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Takvim kayıtları",
         SQ: "Regjistrime kalendari",
         KU: "Tomarên salnameyê",
+        RO: "Intrări de calendar",
       },
       {
         DE: "Termine (inkl. Google Calendar Integration, falls aktiviert)",
@@ -259,6 +282,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Randevular (etkinse Google Calendar entegrasyonu dahil)",
         SQ: "Takime (përfshirë integrimin me Google Calendar, nëse aktivizohet)",
         KU: "Civîn (tevî entegrasyona Google Calendar, heke çalak be)",
+        RO: "Programări (inclusiv integrare Google Calendar, dacă este activată)",
       },
       {
         DE: "Wochenpläne",
@@ -267,6 +291,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Haftalık planlar",
         SQ: "Plane javore",
         KU: "Planên heftane",
+        RO: "Planuri săptămânale",
       },
       {
         DE: "Aufgaben",
@@ -275,6 +300,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Görevler",
         SQ: "Detyra",
         KU: "Erk",
+        RO: "Sarcini",
       },
     ],
   },
@@ -287,6 +313,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "e) Belgeler",
       SQ: "e) Dokumentet",
       KU: "e) Belge",
+      RO: "e) Documente",
     },
   },
   {
@@ -299,6 +326,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Yüklenen dosyalar (örn. şantiye formları)",
         SQ: "Skedarë të ngarkuar (p.sh. fletë kantieri)",
         KU: "Pelên barkirî (mînak belgeyên şantiyê)",
+        RO: "Fișiere încărcate (de ex. fișe de șantier)",
       },
     ],
   },
@@ -311,6 +339,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "f) Teknik veriler",
       SQ: "f) Të dhëna teknike",
       KU: "f) Daneyên teknîkî",
+      RO: "f) Date tehnice",
     },
   },
   {
@@ -323,6 +352,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Oturum verileri (giriş çerezleri)",
         SQ: "Të dhëna sesioni (cookie hyrjeje)",
         KU: "Daneyên danişînê (cookieyên têketinê)",
+        RO: "Date de sesiune (cookie-uri de autentificare)",
       },
       {
         DE: "Push-Benachrichtigungen (Browser-Subscription)",
@@ -331,6 +361,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Push bildirimleri (tarayıcı aboneliği)",
         SQ: "Njoftime push (abonim i shfletuesit)",
         KU: "Agahdariyên push (abonetiya gerokê)",
+        RO: "Notificări push (abonament browser)",
       },
       {
         DE: "Zeitstempel (createdAt, updatedAt)",
@@ -339,6 +370,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Zaman damgaları (createdAt, updatedAt)",
         SQ: "Kohë-shënime (createdAt, updatedAt)",
         KU: "Demanîşan (createdAt, updatedAt)",
+        RO: "Timestamps (createdAt, updatedAt)",
       },
     ],
   },
@@ -351,6 +383,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "4. İşleme amacı",
       SQ: "4. Qëllimi i përpunimit",
       KU: "4. Armanca pêvajoyê",
+      RO: "4. Scopul prelucrării",
     },
   },
   {
@@ -362,6 +395,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "İşleme şu amaçlarla yapılır:",
       SQ: "Përpunimi kryhet për:",
       KU: "Pêvajokirin ji bo van armancan tê kirin:",
+      RO: "Prelucrarea se realizează în următoarele scopuri:",
     },
   },
   {
@@ -374,6 +408,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Çalışma süresi takibi",
         SQ: "Regjistrimi i kohës së punës",
         KU: "Tomarkirina demê ya karê",
+        RO: "Urmărirea timpului",
       },
       {
         DE: "Verwaltung von Mitarbeitern",
@@ -382,6 +417,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Çalışan yönetimi",
         SQ: "Menaxhimi i punonjësve",
         KU: "Rêveberiya karmendan",
+        RO: "Gestionarea angajaților",
       },
       {
         DE: "Planung von Einsätzen",
@@ -390,6 +426,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Görev planlaması",
         SQ: "Planifikimi i angazhimeve",
         KU: "Planandina cihgirtinan",
+        RO: "Planificarea sarcinilor",
       },
       {
         DE: "Bearbeitung von Urlaubs- und Krankheitsanträgen",
@@ -398,6 +435,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "İzin ve hastalık taleplerinin işlenmesi",
         SQ: "Përpunimi i kërkesave për pushim dhe sëmundje",
         KU: "Pêvajoya daxwazên îzin û nexweşiyê",
+        RO: "Procesarea cererilor de concediu și boală",
       },
       {
         DE: "Kommunikation über Aufgaben und Benachrichtigungen",
@@ -406,6 +444,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Görevler ve bildirimler üzerinden iletişim",
         SQ: "Komunikim përmes detyrave dhe njoftimeve",
         KU: "Têkilî bi erk û agahdariyan re",
+        RO: "Comunicare prin sarcini și notificări",
       },
     ],
   },
@@ -418,6 +457,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "5. Hukuki dayanak",
       SQ: "5. Baza ligjore",
       KU: "5. Bingehê qanûnî",
+      RO: "5. Baza legală",
     },
   },
   {
@@ -429,6 +469,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "İşleme şu hükümlere dayanır:",
       SQ: "Përpunimi bazohet në:",
       KU: "Pêvajokirin li ser van bingehan e:",
+      RO: "Prelucrarea se bazează pe:",
     },
   },
   {
@@ -441,6 +482,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "KVKK/GDPR Madde 6(1)(b) (sözleşmenin ifası)",
         SQ: "Neni 6(1)(b) GDPR (zbatimi i kontratës)",
         KU: "Art. 6(1)(b) GDPR (bicihanîna peymanê)",
+        RO: "Art. 6(1)(b) GDPR (executarea unui contract)",
       },
       {
         DE: "Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an effizienter Organisation)",
@@ -449,6 +491,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "GDPR Madde 6(1)(f) (verimli organizasyonda meşru menfaat)",
         SQ: "Neni 6(1)(f) GDPR (interes legjitim për organizim efikas)",
         KU: "Art. 6(1)(f) GDPR (berjewendiya rewa ji bo rêxistina bi bandor)",
+        RO: "Art. 6(1)(f) GDPR (interes legitim în organizarea eficientă)",
       },
     ],
   },
@@ -461,6 +504,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "6. Push Bildirimleri",
       SQ: "6. Njoftimet push",
       KU: "6. Agahdariyên push",
+      RO: "6. Notificări push",
     },
   },
   {
@@ -472,6 +516,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "Uygulama, örneğin talepler veya görevler için push bildirimleri gönderebilir. Bunlar yalnızca onay sonrasında etkinleştirilir.",
       SQ: "Aplikacioni mund të dërgojë njoftime push, për shembull për kërkesa ose detyra. Këto aktivizohen vetëm pas pëlqimit.",
       KU: "Sepan dikare agahdariyên push bişîne, mînak ji bo daxwaz an erk. Ev tenê piştî razîbûnê çalak dibin.",
+      RO: "Aplicația poate trimite notificări push, de exemplu pentru cereri sau sarcini. Acestea sunt activate doar după consimțământ.",
     },
   },
   {
@@ -483,6 +528,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "7. Çerezler / Oturumlar",
       SQ: "7. Cookies / Sesione",
       KU: "7. Cookie / Danişîn",
+      RO: "7. Cookie-uri / Sesiuni",
     },
   },
   {
@@ -494,6 +540,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "Kimlik doğrulama için bir oturum çerezi kullanılır. Bu teknik olarak gereklidir ve izleme verisi içermez.",
       SQ: "Për autentifikim përdoret një cookie sesioni. Ai është teknikisht i nevojshëm dhe nuk përmban të dhëna gjurmimi.",
       KU: "Ji bo nasnamekirinê cookieyek danişînê tê bikaranîn. Ew ji aliyê teknîkî ve pêdivî ye û daneyên şopandinê nagire.",
+      RO: "Pentru autentificare se folosește un cookie de sesiune. Acesta este tehnic necesar și nu conține date de urmărire.",
     },
   },
   {
@@ -505,6 +552,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "8. Saklama ve silme",
       SQ: "8. Ruajtja dhe fshirja",
       KU: "8. Tomarkirin û jêbirin",
+      RO: "8. Stocare și ștergere",
     },
   },
   {
@@ -516,6 +564,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "Veriler şu süre boyunca saklanır:",
       SQ: "Të dhënat ruhen për aq kohë sa:",
       KU: "Dane heta vê demê tên tomarkirin:",
+      RO: "Datele sunt stocate atât timp cât:",
     },
   },
   {
@@ -528,6 +577,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "aktif bir kullanıcı ilişkisi mevcutsa",
         SQ: "ekziston një marrëdhënie aktive përdoruesi",
         KU: "têkiliyek bikarhênerê çalak hebe",
+        RO: "există o relație activă cu utilizatorul",
       },
       {
         DE: "oder gesetzliche Aufbewahrungspflichten vorliegen",
@@ -536,6 +586,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "veya yasal saklama yükümlülükleri varsa",
         SQ: "ose ekzistojnë detyrime ligjore ruajtjeje",
         KU: "an jî berpirsiyarîyên qanûnî yên tomarkirinê hebe",
+        RO: "sau există obligații legale de păstrare",
       },
     ],
   },
@@ -548,6 +599,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "Daha sonra silinirler.",
       SQ: "Pas kësaj fshihen.",
       KU: "Piştî wê têne jêbirin.",
+      RO: "După aceea, acestea sunt șterse.",
     },
   },
   {
@@ -559,6 +611,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "9. Verilerin paylaşılması",
       SQ: "9. Dhënia e të dhënave",
       KU: "9. Parvekirina daneyan",
+      RO: "9. Divulgarea datelor",
     },
   },
   {
@@ -570,6 +623,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "Veriler, barındırma gibi teknik olarak gerekli hizmetler veya etkinleştirilmişse isteğe bağlı Google Calendar entegrasyonu dışında üçüncü taraflara aktarılmaz.",
       SQ: "Nuk bëhet dhënie e të dhënave te palë të treta, përveç shërbimeve teknikisht të nevojshme, si hostimi, ose integrimit opsional me Google Calendar nëse aktivizohet.",
       KU: "Dane ji bilî xizmetên ji aliyê teknîkî ve pêdivî, mînak hosting, an jî entegrasyona vebijarkî ya Google Calendar heke çalak be, ji aliyên sêyem re nayên dayîn.",
+      RO: "Nu se divulgă date către terți, cu excepția serviciilor tehnic necesare, cum ar fi găzduirea, sau a integrării opționale cu Google Calendar dacă este activată.",
     },
   },
   {
@@ -581,6 +635,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "10. Güvenlik",
       SQ: "10. Siguria",
       KU: "10. Ewlehî",
+      RO: "10. Securitate",
     },
   },
   {
@@ -592,6 +647,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "Veriler uygun teknik önlemlerle korunur:",
       SQ: "Të dhënat mbrohen përmes masave teknike të përshtatshme:",
       KU: "Dane bi rêbazên teknîkî yên guncaw tên parastin:",
+      RO: "Datele sunt protejate prin măsuri tehnice adecvate:",
     },
   },
   {
@@ -604,6 +660,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Parolaların şifreli saklanması",
         SQ: "Ruajtje e enkriptuar e fjalëkalimeve",
         KU: "Tomarkirina şîfreyan a şîfrekirî",
+        RO: "Stocare criptată a parolelor",
       },
       {
         DE: "Zugriffsbeschränkungen (Admin / Mitarbeiter)",
@@ -612,6 +669,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Erişim kısıtlamaları (Yönetici / Çalışan)",
         SQ: "Kufizime të qasjes (Admin / Punonjës)",
         KU: "Sînorkirina gihîştinê (Rêvebir / Karmend)",
+        RO: "Restricții de acces (Admin / Angajat)",
       },
       {
         DE: "Serverseitige Validierung",
@@ -620,6 +678,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Sunucu taraflı doğrulama",
         SQ: "Validim nga ana e serverit",
         KU: "Piştrastkirina aliyê serverê",
+        RO: "Validare pe partea de server",
       },
     ],
   },
@@ -632,6 +691,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "11. Kullanıcı hakları",
       SQ: "11. Të drejtat e përdoruesve",
       KU: "11. Mafên bikarhêneran",
+      RO: "11. Drepturile utilizatorilor",
     },
   },
   {
@@ -643,6 +703,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "Kullanıcılar şu haklara sahiptir:",
       SQ: "Përdoruesit kanë të drejtë për:",
       KU: "Bikarhêneran mafê van hene:",
+      RO: "Utilizatorii au dreptul la:",
     },
   },
   {
@@ -655,6 +716,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Bilgi alma",
         SQ: "Qasje",
         KU: "Agahî bistînin",
+        RO: "Acces",
       },
       {
         DE: "Berichtigung",
@@ -663,6 +725,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Düzeltme",
         SQ: "Korrigjim",
         KU: "Rastkirin",
+        RO: "Rectificare",
       },
       {
         DE: "Löschung",
@@ -671,6 +734,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Silme",
         SQ: "Fshirje",
         KU: "Jêbirin",
+        RO: "Ștergere",
       },
       {
         DE: "Einschränkung der Verarbeitung",
@@ -679,6 +743,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "İşlemenin kısıtlanması",
         SQ: "Kufizim i përpunimit",
         KU: "Sînorkirina pêvajoyê",
+        RO: "Restricționarea prelucrării",
       },
       {
         DE: "Datenübertragbarkeit",
@@ -687,6 +752,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
         TR: "Veri taşınabilirliği",
         SQ: "Transportueshmëri e të dhënave",
         KU: "Veguhastina daneyan",
+        RO: "Portabilitatea datelor",
       },
     ],
   },
@@ -699,6 +765,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "12. İletişim",
       SQ: "12. Kontakti",
       KU: "12. Têkilî",
+      RO: "12. Contact",
     },
   },
   {
@@ -710,6 +777,7 @@ const PRIVACY_BLOCKS: LegalBlock[] = [
       TR: "Gizlilikle ilgili sorular için:\nsabrinak2004@gmail.com",
       SQ: "Për pyetje rreth privatësisë:\nsabrinak2004@gmail.com",
       KU: "Ji bo pirsên derbarê nepenîtiyê:\nsabrinak2004@gmail.com",
+      RO: "Pentru întrebări legate de confidențialitate:\nsabrinak2004@gmail.com",
     },
   },
 ];
@@ -724,6 +792,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "1. Kapsam",
       SQ: "1. Fusha e zbatimit",
       KU: "1. Qada sepandinê",
+      RO: "1. Domeniu de aplicare",
     },
   },
   {
@@ -735,6 +804,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Bu kullanım koşulları, “saleo.app” web uygulamasının kullanımını kapsar.",
       SQ: "Këto kushte përdorimi vlejnë për përdorimin e aplikacionit web “saleo.app”.",
       KU: "Ev mercên bikaranînê ji bo bikaranîna sepanê ya webê “saleo.app” derbasdar in.",
+      RO: "Acești termeni de utilizare se aplică utilizării aplicației web “saleo.app”.",
     },
   },
   {
@@ -746,6 +816,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "2. Hizmet açıklaması",
       SQ: "2. Përshkrimi i shërbimeve",
       KU: "2. Danasîna xizmetan",
+      RO: "2. Descrierea serviciilor",
     },
   },
   {
@@ -757,6 +828,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Uygulama şu amaçlarla kullanılır:",
       SQ: "Aplikacioni shërben për:",
       KU: "Sepan ji bo van armancan tê bikaranîn:",
+      RO: "Aplicația este utilizată pentru:",
     },
   },
   {
@@ -769,6 +841,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "Çalışma sürelerinin kaydı",
         SQ: "Regjistrimin e orarit të punës",
         KU: "Tomarkirina demjimêrên karê",
+        RO: "Înregistrarea timpului de lucru",
       },
       {
         DE: "Verwaltung von Mitarbeitern",
@@ -777,6 +850,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "Çalışanların yönetimi",
         SQ: "Menaxhimin e punonjësve",
         KU: "Rêveberiya karmendan",
+        RO: "Gestionarea angajaților",
       },
       {
         DE: "Planung von Einsätzen",
@@ -785,6 +859,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "Görev planlaması",
         SQ: "Planifikimin e angazhimeve",
         KU: "Planandina cihgirtinan",
+        RO: "Planificarea sarcinilor",
       },
       {
         DE: "Verwaltung von Abwesenheiten",
@@ -793,6 +868,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "Devamsızlıkların yönetimi",
         SQ: "Menaxhimin e mungesave",
         KU: "Rêveberiya nebûnê",
+        RO: "Gestionarea absențelor",
       },
       {
         DE: "Aufgaben- und Kommunikationssystem",
@@ -801,6 +877,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "Görev ve iletişim sistemi",
         SQ: "Sistem detyrash dhe komunikimi",
         KU: "Pergala erk û têkiliyê",
+        RO: "Sistem de sarcini și comunicare",
       },
     ],
   },
@@ -813,6 +890,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "3. Kullanıcı rolleri",
       SQ: "3. Rolet e përdoruesve",
       KU: "3. Rolên bikarhêneran",
+      RO: "3. Roluri de utilizator",
     },
   },
   {
@@ -824,6 +902,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Uygulama şu rolleri ayırır:",
       SQ: "Aplikacioni dallon:",
       KU: "Sepan van rolan ji hev dide:",
+      RO: "Aplicația face distincție între:",
     },
   },
   {
@@ -836,6 +915,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "Çalışanlar",
         SQ: "Punonjës",
         KU: "Karmend",
+        RO: "Angajați",
       },
       {
         DE: "Administratoren",
@@ -844,6 +924,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "Yöneticiler",
         SQ: "Administratorë",
         KU: "Rêvebir",
+        RO: "Administratori",
       },
     ],
   },
@@ -856,6 +937,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Yöneticiler; düzenleme, silme ve onaylama gibi genişletilmiş haklara sahiptir.",
       SQ: "Administratorët kanë të drejta të zgjeruara, për shembull redaktim, fshirje dhe miratim.",
       KU: "Rêvebiran mafên berfirehtir hene, mînak sererastkirin, jêbirin û pejirandin.",
+      RO: "Administratorii au drepturi extinse, de exemplu editare, ștergere și aprobare.",
     },
   },
   {
@@ -867,6 +949,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "4. Kullanıcı yükümlülükleri",
       SQ: "4. Detyrimet e përdoruesve",
       KU: "4. Erkên bikarhêneran",
+      RO: "4. Obligațiile utilizatorilor",
     },
   },
   {
@@ -878,6 +961,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Çalışanlar şunları yapmalıdır:",
       SQ: "Punonjësit duhet:",
       KU: "Karmendan divê:",
+      RO: "Angajații trebuie să:",
     },
   },
   {
@@ -890,6 +974,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "doğru çalışma saatlerini girmek",
         SQ: "të regjistrojnë saktë orarin e punës",
         KU: "demjimêrên karê rast binivîsin",
+        RO: "introduceți corect orele de lucru",
       },
       {
         DE: "Einträge zeitnah erfassen",
@@ -898,6 +983,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "kayıtları zamanında girmek",
         SQ: "t’i regjistrojnë hyrjet në kohë",
         KU: "tomaran di wextê xwe de bikin",
+        RO: "înregistrați intrările prompt",
       },
       {
         DE: "bei fehlenden Einträgen ggf. Nachtragsanträge stellen",
@@ -906,6 +992,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "eksik kayıtlar varsa gerekirse düzeltme talebi oluşturmak",
         SQ: "nëse mungojnë hyrje, të bëjnë kërkesa korrigjimi",
         KU: "heke tomar kêm be, daxwaza rastkirinê bikin",
+        RO: "trimiteți cereri de corecție dacă intrările lipsesc",
       },
     ],
   },
@@ -918,6 +1005,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Yöneticiler şunları yapabilir:",
       SQ: "Administratorët mund të:",
       KU: "Rêvebiran dikarin:",
+      RO: "Administratorii pot:",
     },
   },
   {
@@ -930,6 +1018,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "verileri yönetmek",
         SQ: "menaxhojnë të dhënat",
         KU: "danean bi rê ve bibin",
+        RO: "gestionați datele",
       },
       {
         DE: "Anträge genehmigen oder ablehnen",
@@ -938,6 +1027,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "talepleri onaylamak veya reddetmek",
         SQ: "miratojnë ose refuzojnë kërkesa",
         KU: "daxwazan pejirînin an red bikin",
+        RO: "aprobați sau respingeți cererile",
       },
       {
         DE: "Aufgaben erstellen",
@@ -946,6 +1036,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "görev oluşturmak",
         SQ: "krijojnë detyra",
         KU: "erkan biafirînin",
+        RO: "creați sarcini",
       },
     ],
   },
@@ -958,6 +1049,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "5. Kullanılabilirlik",
       SQ: "5. Disponueshmëria",
       KU: "5. Amadeyî",
+      RO: "5. Disponibilitate",
     },
   },
   {
@@ -969,6 +1061,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Uygulama mümkün olan en yüksek erişilebilirlikle sunulur, ancak sürekli erişilebilirlik garanti edilmez.",
       SQ: "Aplikacioni mbahet sa më i disponueshëm që të jetë e mundur, por pa garanci për disponueshmëri të përhershme.",
       KU: "Sepan bi qasî ku pêkan be amade tê girtin, lê bê garantiya amadeya domdar.",
+      RO: "Aplicația este menținută disponibilă cât mai bine posibil, dar fără nicio garanție de disponibilitate permanentă.",
     },
   },
   {
@@ -980,6 +1073,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "6. Sorumluluk",
       SQ: "6. Përgjegjësia",
       KU: "6. Berpirsyarî",
+      RO: "6. Răspundere",
     },
   },
   {
@@ -991,6 +1085,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "İşletmeci yalnızca şu durumlarda sorumludur:",
       SQ: "Operatori mban përgjegjësi vetëm për:",
       KU: "Xwediyê pergalê tenê ji bo van berpirsyar e:",
+      RO: "Operatorul este răspunzător doar pentru:",
     },
   },
   {
@@ -1003,6 +1098,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "kasıt",
         SQ: "qëllim",
         KU: "qest",
+        RO: "intenție",
       },
       {
         DE: "grobe Fahrlässigkeit",
@@ -1011,6 +1107,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "ağır ihmal",
         SQ: "pakujdesi e rëndë",
         KU: "xemsariya giran",
+        RO: "neglijență gravă",
       },
     ],
   },
@@ -1023,6 +1120,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Şu durumlar için sorumluluk kabul edilmez:",
       SQ: "Nuk ka përgjegjësi për:",
       KU: "Ji bo van ti berpirsyarî tune ye:",
+      RO: "Nu se asumă nicio răspundere pentru:",
     },
   },
   {
@@ -1035,6 +1133,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "kullanıcıların yanlış girişleri",
         SQ: "hyrje të pasakta nga përdoruesit",
         KU: "têketinên şaş yên bikarhêneran",
+        RO: "intrări incorecte făcute de utilizatori",
       },
       {
         DE: "Datenverlust außerhalb des Einflussbereichs",
@@ -1043,6 +1142,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "kontrol alanı dışındaki veri kaybı",
         SQ: "humbje të dhënash jashtë zonës së ndikimit",
         KU: "windabûna daneyan li derveyî qada kontrolê",
+        RO: "pierdere de date în afara sferei de influență",
       },
     ],
   },
@@ -1055,6 +1155,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "7. Kullanım kısıtlamaları",
       SQ: "7. Kufizimet e përdorimit",
       KU: "7. Sînorkirinên bikaranînê",
+      RO: "7. Restricții de utilizare",
     },
   },
   {
@@ -1066,6 +1167,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Şunlar yasaktır:",
       SQ: "Ndalohet:",
       KU: "Qedexe ye:",
+      RO: "Este interzis să:",
     },
   },
   {
@@ -1078,6 +1180,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "yanlış veri girmek",
         SQ: "të futen të dhëna të rreme",
         KU: "dane şaş têkevin",
+        RO: "introduceți date false",
       },
       {
         DE: "unbefugten Zugriff zu versuchen",
@@ -1086,6 +1189,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "yetkisiz erişim girişiminde bulunmak",
         SQ: "të tentohet qasje e paautorizuar",
         KU: "hewldana gihîştina bêdestûr",
+        RO: "încercați acces neautorizat",
       },
       {
         DE: "die App missbräuchlich zu verwenden",
@@ -1094,6 +1198,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "uygulamayı kötüye kullanmak",
         SQ: "të keqpërdoret aplikacioni",
         KU: "sepana bi awayekî xerab bikar bîne",
+        RO: "abuzarea de aplicație",
       },
     ],
   },
@@ -1106,6 +1211,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "8. Belgeler ve içerikler",
       SQ: "8. Dokumentet dhe përmbajtja",
       KU: "8. Belge û naverok",
+      RO: "8. Documente și conținut",
     },
   },
   {
@@ -1117,6 +1223,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Yüklenen belgeler:",
       SQ: "Dokumentet e ngarkuara duhet:",
       KU: "Belgeyên barkirî divê:",
+      RO: "Documentele încărcate trebuie să:",
     },
   },
   {
@@ -1129,6 +1236,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "hukuka aykırı içerik barındırmamalıdır",
         SQ: "të mos përmbajnë përmbajtje të paligjshme",
         KU: "naveroka neqanûnî nebin",
+        RO: "să nu conțină conținut ilegal",
       },
       {
         DE: "nur für betriebliche Zwecke genutzt werden",
@@ -1137,6 +1245,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
         TR: "yalnızca iş amaçlı kullanılmalıdır",
         SQ: "të përdoren vetëm për qëllime të biznesit",
         KU: "tenê ji bo armancên karî werin bikaranîn",
+        RO: "să fie folosite doar în scopuri de afaceri",
       },
     ],
   },
@@ -1149,6 +1258,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "9. Fesih / Erişim",
       SQ: "9. Ndërprerja / Qasja",
       KU: "9. Betalkirin / Gihîştin",
+      RO: "9. Reziliere / Acces",
     },
   },
   {
@@ -1160,6 +1270,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Erişim, işletmeci veya yönetici tarafından her zaman devre dışı bırakılabilir.",
       SQ: "Qasja mund të çaktivizohet në çdo kohë nga operatori ose administratori.",
       KU: "Gihîştin dikare her dem ji aliyê xwedî pergalê an rêvebir ve were neçalakirin.",
+      RO: "Accesul poate fi dezactivat în orice moment de către operator sau administrator.",
     },
   },
   {
@@ -1171,6 +1282,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "10. Değişiklikler",
       SQ: "10. Ndryshime",
       KU: "10. Guhertin",
+      RO: "10. Modificări",
     },
   },
   {
@@ -1182,6 +1294,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Kullanım koşulları her zaman değiştirilebilir.",
       SQ: "Kushtet e përdorimit mund të ndryshohen në çdo kohë.",
       KU: "Mercên bikaranînê dikarin her dem werin guhertin.",
+      RO: "Termenii de utilizare pot fi modificați în orice moment.",
     },
   },
   {
@@ -1193,6 +1306,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "11. Uygulanacak hukuk",
       SQ: "11. Ligji i zbatueshëm",
       KU: "11. Hiqûqa tên sepandin",
+      RO: "11. Legea aplicabilă",
     },
   },
   {
@@ -1204,6 +1318,7 @@ const TERMS_BLOCKS: LegalBlock[] = [
       TR: "Alman hukuku uygulanır.",
       SQ: "Zbatohet ligji gjerman.",
       KU: "Hiqûqa Alman tê sepandin.",
+      RO: "Se aplică legea germană.",
     },
   },
 ];

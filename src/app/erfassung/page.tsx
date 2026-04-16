@@ -196,6 +196,8 @@ function formatDateLocalized(
       return `${weekday} ${day}.${month}.${year}`;
     case "KU":
       return `${weekday} ${day}.${month}.${year}`;
+    case "RO":
+      return `${weekday} ${day}.${month}.${year}`;
     case "DE":
     default:
       return `${weekday} ${day}.${month}.${year}`;
@@ -514,7 +516,8 @@ function isSessionData(v: unknown): v is SessionData {
       language === "IT" ||
       language === "TR" ||
       language === "SQ" ||
-      language === "KU") &&
+      language === "KU" ||
+      language === "RO") &&
     typeof companyId === "string" &&
     typeof companyName === "string" &&
     typeof companySubdomain === "string" &&

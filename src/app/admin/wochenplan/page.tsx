@@ -20,7 +20,7 @@ type AdminSessionDTO = {
   userId: string;
   fullName: string;
   role: "ADMIN" | "EMPLOYEE";
-  language: "DE" | "EN" | "IT" | "TR" | "SQ" | "KU";
+  language: "DE" | "EN" | "IT" | "TR" | "SQ" | "KU" | "RO";
   companyId: string;
   companyName: string;
   companySubdomain: string;
@@ -39,7 +39,8 @@ function isAdminSessionDTO(v: unknown): v is AdminSessionDTO {
       v.language === "IT" ||
       v.language === "TR" ||
       v.language === "SQ" ||
-      v.language === "KU") &&
+      v.language === "KU" ||
+      v.language === "RO") &&
     typeof v.companyId === "string" &&
     typeof v.companyName === "string" &&
     typeof v.companySubdomain === "string" &&
@@ -506,7 +507,9 @@ export default function AdminWochenplanPage() {
         current === translate("IT", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
         current === translate("TR", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
         current === translate("SQ", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
-        current === translate("KU", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS)
+        current === translate("KU", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
+        current === translate("RO", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS)
+
       ) {
         return t("document");
       }
