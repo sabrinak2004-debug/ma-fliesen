@@ -7146,7 +7146,12 @@ export type AdminWeeklyPlanTextKey =
   | "keepPrefixHint"
   | "unknown"
   | "maxAllowedPrefix"
-  | "siteSheetDefaultTitle";
+  | "siteSheetDefaultTitle"
+  | "forbidden"
+  | "weekStartMissing"
+  | "missingFields"
+  | "invalidUserId"
+  | "entryNotFound";
 
 export const ADMIN_WEEKLY_PLAN_UI_TEXTS: Record<
   AdminWeeklyPlanTextKey,
@@ -7879,5 +7884,45 @@ export const ADMIN_WEEKLY_PLAN_UI_TEXTS: Record<
     TR: "Şantiye formu",
     SQ: "Fletë kantieri",
     KU: "Pelê şantiye",
+  },
+  forbidden: {
+    DE: "Kein Zugriff.",
+    EN: "Forbidden.",
+    IT: "Accesso negato.",
+    TR: "Erişim engellendi.",
+    SQ: "Qasja u ndalua.",
+    KU: "Gihîştin qedexe ye.",
+  },
+  weekStartMissing: {
+    DE: "weekStart fehlt.",
+    EN: "weekStart is missing.",
+    IT: "weekStart manca.",
+    TR: "weekStart eksik.",
+    SQ: "weekStart mungon.",
+    KU: "weekStart tune ye.",
+  },
+  missingFields: {
+    DE: "Pflichtfelder fehlen.",
+    EN: "Required fields are missing.",
+    IT: "Mancano campi obbligatori.",
+    TR: "Zorunlu alanlar eksik.",
+    SQ: "Fushat e detyrueshme mungojnë.",
+    KU: "Qadên pêwîst kêm in.",
+  },
+  invalidUserId: {
+    DE: "Ungültige userId.",
+    EN: "Invalid userId.",
+    IT: "userId non valida.",
+    TR: "Geçersiz userId.",
+    SQ: "userId e pavlefshme.",
+    KU: "userId nederbasdar e.",
+  },
+  entryNotFound: {
+    DE: "Eintrag nicht gefunden.",
+    EN: "Entry not found.",
+    IT: "Voce non trovata.",
+    TR: "Kayıt bulunamadı.",
+    SQ: "Regjistrimi nuk u gjet.",
+    KU: "Tomar nehate dîtin.",
   },
 };

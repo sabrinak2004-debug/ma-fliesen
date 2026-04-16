@@ -4,6 +4,13 @@ import { requireAdmin } from "@/lib/requireAdmin";
 import { getSession } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
+import {
+  ADMIN_WEEKLY_PLAN_UI_TEXTS,
+  normalizeAppUiLanguage,
+  translate,
+  type AdminWeeklyPlanTextKey,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 
 function hasCompanyScope(
@@ -148,9 +155,29 @@ function toPrismaNullableJsonInput(
   return value as Prisma.InputJsonValue;
 }
 
+function toAppUiLanguage(language: string | null | undefined): AppUiLanguage {
+  return normalizeAppUiLanguage(language);
+}
+
+function tWorkEntries(
+  language: string | null | undefined,
+  key: AdminWeeklyPlanTextKey
+): string {
+  return translate(
+    toAppUiLanguage(language),
+    key,
+    ADMIN_WEEKLY_PLAN_UI_TEXTS
+  );
+}
+
 export async function GET(req: Request) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!admin) {
+    return NextResponse.json(
+      { error: tWorkEntries("DE", "forbidden") },
+      { status: 403 }
+    );
+  }
 
   const adminUser = await prisma.appUser.findUnique({
     where: { id: admin.id },
@@ -161,13 +188,19 @@ export async function GET(req: Request) {
 
   const session = await getSession();
   if (!hasCompanyScope(session) || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json(
+      { error: tWorkEntries(adminUser?.language ?? "DE", "forbidden") },
+      { status: 403 }
+    );
   }
 
   const url = new URL(req.url);
   const weekStart = url.searchParams.get("weekStart"); // Montag YYYY-MM-DD
   if (!weekStart) {
-    return NextResponse.json({ error: "weekStart missing" }, { status: 400 });
+    return NextResponse.json(
+      { error: tWorkEntries(adminUser?.language ?? "DE", "weekStartMissing") },
+      { status: 400 }
+    );
   }
 
   const start = parseYMD(weekStart);
@@ -214,11 +247,26 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!admin) {
+    return NextResponse.json(
+      { error: tWorkEntries("DE", "forbidden") },
+      { status: 403 }
+    );
+  }
+
+  const adminUser = await prisma.appUser.findUnique({
+    where: { id: admin.id },
+    select: {
+      language: true,
+    },
+  });
 
   const session = await getSession();
   if (!hasCompanyScope(session) || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json(
+      { error: tWorkEntries(adminUser?.language ?? "DE", "forbidden") },
+      { status: 403 }
+    );
   }
 
   const body = (await req.json()) as Partial<WorkEntryPostBody>;
@@ -235,7 +283,10 @@ export async function POST(req: Request) {
   } = body ?? {};
 
   if (!userId || !workDate || !startHHMM || !endHHMM || !activity) {
-    return NextResponse.json({ error: "missing fields" }, { status: 400 });
+    return NextResponse.json(
+      { error: tWorkEntries(adminUser?.language ?? "DE", "missingFields") },
+      { status: 400 }
+    );
   }
 
   const targetUser = await prisma.appUser.findFirst({
@@ -250,7 +301,10 @@ export async function POST(req: Request) {
   });
 
   if (!targetUser) {
-    return NextResponse.json({ error: "userId ungültig" }, { status: 400 });
+    return NextResponse.json(
+      { error: tWorkEntries(adminUser?.language ?? "DE", "invalidUserId") },
+      { status: 400 }
+    );
   }
 
   const grossMinutes = minutesBetween(startHHMM, endHHMM);
@@ -319,7 +373,10 @@ export async function POST(req: Request) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Eintrag nicht gefunden" }, { status: 404 });
+      return NextResponse.json(
+        { error: tWorkEntries(adminUser?.language ?? "DE", "entryNotFound") },
+        { status: 404 }
+      );
     }
 
     saved = await prisma.workEntry.update({
@@ -335,11 +392,26 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!admin) {
+    return NextResponse.json(
+      { error: tWorkEntries("DE", "forbidden") },
+      { status: 403 }
+    );
+  }
+
+  const adminUser = await prisma.appUser.findUnique({
+    where: { id: admin.id },
+    select: {
+      language: true,
+    },
+  });
 
   const session = await getSession();
   if (!hasCompanyScope(session) || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json(
+      { error: tWorkEntries(adminUser?.language ?? "DE", "forbidden") },
+      { status: 403 }
+    );
   }
 
   const url = new URL(req.url);
@@ -359,7 +431,10 @@ export async function DELETE(req: Request) {
   });
 
   if (!existing) {
-    return NextResponse.json({ error: "Eintrag nicht gefunden" }, { status: 404 });
+    return NextResponse.json(
+      { error: tWorkEntries(adminUser?.language ?? "DE", "entryNotFound") },
+      { status: 404 }
+    );
   }
 
   await prisma.workEntry.delete({ where: { id: existing.id } });

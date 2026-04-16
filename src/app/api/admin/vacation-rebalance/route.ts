@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { rebalanceAutoUnpaidVacationRequestsForYear } from "@/app/api/absence-requests/route";
+import { ADMIN_TASKS_UI_TEXTS, translate } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,10 @@ function isAuthorizedCronRequest(req: Request): boolean {
 export async function GET(req: Request) {
   if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json(
-      { ok: false, error: "Nicht autorisiert." },
+      {
+        ok: false,
+        error: translate("DE", "noAccess", ADMIN_TASKS_UI_TEXTS),
+      },
       { status: 401 }
     );
   }
