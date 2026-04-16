@@ -311,20 +311,23 @@ async function readFileViaFileReader(file: Blob): Promise<ArrayBuffer> {
   });
 }
 
-async function normalizeUploadFile(file: File): Promise<File> {
+async function normalizeUploadFile(
+  file: File,
+  readErrorMessage: string
+): Promise<File> {
   let arrayBuffer: ArrayBuffer | null = null;
 
   try {
     arrayBuffer = await withTimeout(
       file.arrayBuffer(),
       8000,
-      "arrayBuffer timeout"
+      "ARRAY_BUFFER_TIMEOUT"
     );
   } catch {
     arrayBuffer = await withTimeout(
       readFileViaFileReader(file),
       15000,
-      "Die Datei konnte nicht gelesen werden. Bitte Datei zuerst lokal auf den Mac laden oder nach Downloads kopieren."
+      readErrorMessage
     );
   }
 
@@ -492,8 +495,12 @@ export default function AdminWochenplanPage() {
     setDocTitle((current) => {
       if (
         current === "" ||
-        current === "Baustellenzettel" ||
-        current === "Dokument" ||
+        current === translate("DE", "siteSheetDefaultTitle", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
+        current === translate("EN", "siteSheetDefaultTitle", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
+        current === translate("IT", "siteSheetDefaultTitle", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
+        current === translate("TR", "siteSheetDefaultTitle", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
+        current === translate("SQ", "siteSheetDefaultTitle", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
+        current === translate("KU", "siteSheetDefaultTitle", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
         current === translate("DE", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
         current === translate("EN", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
         current === translate("IT", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
@@ -506,7 +513,7 @@ export default function AdminWochenplanPage() {
 
       return current;
     });
-  }, [language]);
+  }, [language, t]);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -853,7 +860,7 @@ export default function AdminWochenplanPage() {
 
     if (selectedFile.size > PLAN_DOC_MAX_BYTES) {
       setDocsError(
-        `${t("documentTooLarge")} (${formatBytes(selectedFile.size)}). Maximal erlaubt sind ${formatBytes(PLAN_DOC_MAX_BYTES)}.`
+        `${t("documentTooLarge")} (${formatBytes(selectedFile.size)}). ${t("maxAllowedPrefix")} ${formatBytes(PLAN_DOC_MAX_BYTES)}.`
       );
       return;
     }
@@ -868,7 +875,7 @@ export default function AdminWochenplanPage() {
 
     try {
       const normalizedFile = await withTimeout(
-        normalizeUploadFile(selectedFile),
+        normalizeUploadFile(selectedFile, t("documentUploadReadError")),
         15000,
         t("documentUploadReadError")
       );
@@ -1063,7 +1070,7 @@ export default function AdminWochenplanPage() {
 
       if (!res.ok) {
         const err: unknown = await res.json().catch(() => ({}));
-        const msg = getStringProp(err, "error") ?? "unknown";
+        const msg = getStringProp(err, "error") ?? t("unknown");
         setPageError(`${t("saveEntryFailed")} ${msg}`);
         return;
       }
@@ -1119,7 +1126,7 @@ export default function AdminWochenplanPage() {
 
       if (!res.ok) {
         const err: unknown = await res.json().catch(() => ({}));
-        const msg = getStringProp(err, "error") ?? "unknown";
+        const msg = getStringProp(err, "error") ?? t("unknown");
         setPageError(`${t("saveNoteFailed")} ${msg}`);
         return;
       }

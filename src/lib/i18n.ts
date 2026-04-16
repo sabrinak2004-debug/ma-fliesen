@@ -3077,7 +3077,15 @@ export type AdminTasksTextKey =
   | "halfVacationOnlySingleDateRequest"
   | "approvedAbsenceAlreadyExists"
   | "pendingRequestAlreadyExists"
-  | "newAbsenceRequestPushTitle";
+  | "newAbsenceRequestPushTitle"
+  | "invalidRequest"
+  | "assignedToUserIdMissing"
+  | "titleMissing"
+  | "invalidCategory"
+  | "invalidRequiredAction"
+  | "invalidReferenceRange"
+  | "tasksOnlyForEmployees"
+  | "newTaskPushTitle";
 
 export const ADMIN_TASKS_UI_TEXTS: Record<
   AdminTasksTextKey,
@@ -3850,6 +3858,70 @@ export const ADMIN_TASKS_UI_TEXTS: Record<
     TR: "Yeni devamsızlık talebi",
     SQ: "Kërkesë e re për mungesë",
     KU: "Daxwaza nû ya nebûnê",
+  },
+  invalidRequest: {
+    DE: "Ungültige Anfrage.",
+    EN: "Invalid request.",
+    IT: "Richiesta non valida.",
+    TR: "Geçersiz istek.",
+    SQ: "Kërkesë e pavlefshme.",
+    KU: "Daxwaza nederbasdar.",
+  },
+  assignedToUserIdMissing: {
+    DE: "assignedToUserId fehlt.",
+    EN: "assignedToUserId is missing.",
+    IT: "assignedToUserId manca.",
+    TR: "assignedToUserId eksik.",
+    SQ: "assignedToUserId mungon.",
+    KU: "assignedToUserId tune ye.",
+  },
+  titleMissing: {
+    DE: "Titel fehlt.",
+    EN: "Title is missing.",
+    IT: "Manca il titolo.",
+    TR: "Başlık eksik.",
+    SQ: "Titulli mungon.",
+    KU: "Sernav tune ye.",
+  },
+  invalidCategory: {
+    DE: "Ungültige Kategorie.",
+    EN: "Invalid category.",
+    IT: "Categoria non valida.",
+    TR: "Geçersiz kategori.",
+    SQ: "Kategori e pavlefshme.",
+    KU: "Kategorîya nederbasdar.",
+  },
+  invalidRequiredAction: {
+    DE: "Ungültige Pflichtaktion.",
+    EN: "Invalid required action.",
+    IT: "Azione richiesta non valida.",
+    TR: "Geçersiz gerekli işlem.",
+    SQ: "Veprim i detyrueshëm i pavlefshëm.",
+    KU: "Çalakiya pêwîst nederbasdar e.",
+  },
+  invalidReferenceRange: {
+    DE: "Ungültiger Bezugszeitraum. Erwartet wird YYYY-MM-DD.",
+    EN: "Invalid reference period. Expected format is YYYY-MM-DD.",
+    IT: "Periodo di riferimento non valido. Formato atteso: YYYY-MM-DD.",
+    TR: "Geçersiz ilgili dönem. Beklenen format YYYY-MM-DD.",
+    SQ: "Periudhë referente e pavlefshme. Formati i pritur është YYYY-MM-DD.",
+    KU: "Dema referansê nederbasdar e. Forma pêwîst YYYY-MM-DD ye.",
+  },
+  tasksOnlyForEmployees: {
+    DE: "Aufgaben können nur Mitarbeitern zugewiesen werden.",
+    EN: "Tasks can only be assigned to employees.",
+    IT: "Le attività possono essere assegnate solo ai dipendenti.",
+    TR: "Görevler yalnızca çalışanlara atanabilir.",
+    SQ: "Detyrat mund t’u caktohen vetëm punonjësve.",
+    KU: "Erk tenê dikarin ji karmendan re bên veqetandin.",
+  },
+  newTaskPushTitle: {
+    DE: "Neue Aufgabe",
+    EN: "New task",
+    IT: "Nuova attività",
+    TR: "Yeni görev",
+    SQ: "Detyrë e re",
+    KU: "Erkeke nû",
   },
 };
 
@@ -7071,7 +7143,10 @@ export type AdminWeeklyPlanTextKey =
   | "saturday"
   | "repairWork"
   | "subcontractors"
-  | "keepPrefixHint";
+  | "keepPrefixHint"
+  | "unknown"
+  | "maxAllowedPrefix"
+  | "siteSheetDefaultTitle";
 
 export const ADMIN_WEEKLY_PLAN_UI_TEXTS: Record<
   AdminWeeklyPlanTextKey,
@@ -7780,5 +7855,29 @@ export const ADMIN_WEEKLY_PLAN_UI_TEXTS: Record<
     TR: "Öneki bırakın, aksi halde özel satırda görünmez.",
     SQ: "Mbaje prefiksin, përndryshe nuk do të shfaqet në rreshtin special.",
     KU: "Pêşgirê bihêle, wekî din di rêza taybet de dernakeve.",
+  },
+  unknown: {
+    DE: "Unbekannt",
+    EN: "Unknown",
+    IT: "Sconosciuto",
+    TR: "Bilinmiyor",
+    SQ: "E panjohur",
+    KU: "Nenas",
+  },
+  maxAllowedPrefix: {
+    DE: "Maximal erlaubt sind",
+    EN: "Maximum allowed is",
+    IT: "Il massimo consentito è",
+    TR: "İzin verilen maksimum",
+    SQ: "Maksimumi i lejuar është",
+    KU: "Herî zêde destûr dayî ye",
+  },
+  siteSheetDefaultTitle: {
+    DE: "Baustellenzettel",
+    EN: "Site sheet",
+    IT: "Rapporto di cantiere",
+    TR: "Şantiye formu",
+    SQ: "Fletë kantieri",
+    KU: "Pelê şantiye",
   },
 };

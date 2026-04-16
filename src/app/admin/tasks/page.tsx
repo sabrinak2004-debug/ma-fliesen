@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import {
   ADMIN_TASKS_UI_TEXTS,
+  toHtmlLang,
   translate,
   type AppUiLanguage,
 } from "@/lib/i18n";
@@ -184,7 +185,7 @@ function formatDate(value: string | null, language: AppUiLanguage): string {
   const [y, m, d] = normalized.split("-").map(Number);
   const date = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
 
-  return new Intl.DateTimeFormat("de-DE", {
+  return new Intl.DateTimeFormat(toHtmlLang(language), {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

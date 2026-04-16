@@ -3,6 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
+import {
+  ADMIN_WEEKLY_PLAN_UI_TEXTS,
+  normalizeAppUiLanguage,
+  translate,
+  type AdminWeeklyPlanTextKey,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 function parseYMD(ymd: string) {
   const [y, m, d] = ymd.split("-").map(Number);
@@ -74,6 +81,21 @@ function toPrismaNullableJsonInput(
   return value as Prisma.InputJsonValue;
 }
 
+function toAppUiLanguage(language: string | null | undefined): AppUiLanguage {
+  return normalizeAppUiLanguage(language);
+}
+
+function tWeekly(
+  language: string | null | undefined,
+  key: AdminWeeklyPlanTextKey
+): string {
+  return translate(
+    toAppUiLanguage(language),
+    key,
+    ADMIN_WEEKLY_PLAN_UI_TEXTS
+  );
+}
+
 export async function GET(req: Request) {
   const admin = await requireAdmin();
   if (!admin) {
@@ -140,7 +162,18 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!admin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const adminUser = await prisma.appUser.findUnique({
+    where: { id: admin.id },
+    select: {
+      language: true,
+    },
+  });
+
+  const adminLanguage = adminUser?.language ?? "DE";
 
   const body = (await req.json()) as Partial<PostBody>;
 
@@ -148,7 +181,10 @@ export async function POST(req: Request) {
 
   // PlanEntry-Felder (Admin-Notiz ist NICHT mehr hier)
   if (!userId || !workDate || !startHHMM || !endHHMM || !activity) {
-    return NextResponse.json({ error: "missing fields" }, { status: 400 });
+    return NextResponse.json(
+      { error: tWeekly(adminLanguage, "pleaseSelectStartEnd") },
+      { status: 400 }
+    );
   }
 
   const targetUser = await prisma.appUser.findUnique({
@@ -162,7 +198,10 @@ export async function POST(req: Request) {
   });
 
   if (!targetUser || !targetUser.isActive) {
-    return NextResponse.json({ error: "Mitarbeiter nicht gefunden." }, { status: 404 });
+    return NextResponse.json(
+      { error: tWeekly(adminLanguage, "pleaseSelectEmployee") },
+      { status: 404 }
+    );
   }
 
   if (targetUser.companyId !== admin.companyId) {
@@ -170,7 +209,10 @@ export async function POST(req: Request) {
   }
 
   if (targetUser.role !== "EMPLOYEE") {
-    return NextResponse.json({ error: "Planung nur für Mitarbeiter erlaubt." }, { status: 400 });
+    return NextResponse.json(
+      { error: tWeekly(adminLanguage, "pleaseSelectEmployee") },
+      { status: 400 }
+    );
   }
 
   let activitySourceLanguage: SupportedLang | null = null;

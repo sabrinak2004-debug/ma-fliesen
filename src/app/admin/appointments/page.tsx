@@ -4,6 +4,7 @@ import React, { Suspense, useEffect, useState } from "react";
 import KalenderPage from "@/app/kalender/page";
 import {
   ADMIN_APPOINTMENTS_UI_TEXTS,
+  normalizeAppUiLanguage,
   translate,
   type AppUiLanguage,
 } from "@/lib/i18n";
@@ -80,7 +81,7 @@ export default function AdminAppointmentsPage(): React.ReactElement {
 
         const session = parseMeSession(data);
         if (session) {
-          setLanguage(session.language);
+          setLanguage(normalizeAppUiLanguage(session.language));
         }
       } catch {
         if (!alive) return;

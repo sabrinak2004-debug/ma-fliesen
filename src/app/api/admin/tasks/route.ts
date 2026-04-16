@@ -9,6 +9,13 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { sendPushToUser } from "@/lib/webpush";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
+import {
+  ADMIN_TASKS_UI_TEXTS,
+  normalizeAppUiLanguage,
+  translate,
+  type AdminTasksTextKey,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 type CreateTaskBody = {
   assignedToUserId?: string;
@@ -238,10 +245,28 @@ function toPrismaNullableJsonInput(
   return value as Prisma.InputJsonValue;
 }
 
+function toAppUiLanguage(language: string | null | undefined): AppUiLanguage {
+  return normalizeAppUiLanguage(language);
+}
+
+function tTask(
+  language: string | null | undefined,
+  key: AdminTasksTextKey
+): string {
+  return translate(
+    toAppUiLanguage(language),
+    key,
+    ADMIN_TASKS_UI_TEXTS
+  );
+}
+
 export async function GET(): Promise<NextResponse> {
   const admin = await requireAdmin();
   if (!admin) {
-    return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
+    return NextResponse.json(
+      { error: tTask("DE", "noAccess") },
+      { status: 401 }
+    );
   }
 
   const adminUser = await prisma.appUser.findUnique({
@@ -324,14 +349,29 @@ export async function GET(): Promise<NextResponse> {
 export async function POST(req: Request): Promise<NextResponse> {
   const admin = await requireAdmin();
   if (!admin) {
-    return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
+    return NextResponse.json(
+      { error: tTask("DE", "noAccess") },
+      { status: 401 }
+    );
   }
+
+  const adminUser = await prisma.appUser.findUnique({
+    where: { id: admin.id },
+    select: {
+      language: true,
+    },
+  });
+
+  const adminLanguage = adminUser?.language ?? "DE";
 
   let body: CreateTaskBody;
   try {
     body = (await req.json()) as CreateTaskBody;
   } catch {
-    return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
+    return NextResponse.json(
+      { error: tTask(adminLanguage, "invalidRequest") },
+      { status: 400 }
+    );
   }
 
   const assignedToUserId = parseOptionalString(body.assignedToUserId);
@@ -344,25 +384,28 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   if (!assignedToUserId) {
     return NextResponse.json(
-      { error: "assignedToUserId fehlt." },
+      { error: tTask(adminLanguage, "assignedToUserIdMissing") },
       { status: 400 }
     );
   }
 
   if (!title) {
-    return NextResponse.json({ error: "Titel fehlt." }, { status: 400 });
+    return NextResponse.json(
+      { error: tTask(adminLanguage, "titleMissing") },
+      { status: 400 }
+    );
   }
 
   if (!categoryRaw || !isTaskCategory(categoryRaw)) {
     return NextResponse.json(
-      { error: "Ungültige Kategorie." },
+      { error: tTask(adminLanguage, "invalidCategory") },
       { status: 400 }
     );
   }
 
   if (!isTaskRequiredAction(requiredActionRaw)) {
     return NextResponse.json(
-      { error: "Ungültige Pflichtaktion." },
+      { error: tTask(adminLanguage, "invalidRequiredAction") },
       { status: 400 }
     );
   }
@@ -374,7 +417,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   if (!normalizedReferenceRange) {
     return NextResponse.json(
-      { error: "Ungültiger Bezugszeitraum. Erwartet wird YYYY-MM-DD." },
+      { error: tTask(adminLanguage, "invalidReferenceRange") },
       { status: 400 }
     );
   }
@@ -393,21 +436,21 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   if (!assignedUser || !assignedUser.isActive) {
     return NextResponse.json(
-      { error: "Mitarbeiter nicht gefunden oder inaktiv." },
+      { error: tTask(adminLanguage, "employeeNotFoundOrInactive") },
       { status: 404 }
     );
   }
 
   if (assignedUser.companyId !== admin.companyId) {
     return NextResponse.json(
-      { error: "Keine Berechtigung für diesen Mitarbeiter." },
+      { error: tTask(adminLanguage, "noAccess") },
       { status: 403 }
     );
   }
 
   if (assignedUser.role !== "EMPLOYEE") {
     return NextResponse.json(
-      { error: "Aufgaben können nur Mitarbeitern zugewiesen werden." },
+      { error: tTask(adminLanguage, "tasksOnlyForEmployees") },
       { status: 400 }
     );
   }
@@ -470,7 +513,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   });
 
   await sendPushToUser(assignedUser.id, {
-    title: "Neue Aufgabe",
+    title: tTask(assignedUser.language ?? "DE", "newTaskPushTitle"),
     body: getTranslatedText(
       title,
       titleTranslationsRecord,

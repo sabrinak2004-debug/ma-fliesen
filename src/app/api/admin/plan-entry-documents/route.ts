@@ -3,6 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
+import {
+  ADMIN_WEEKLY_PLAN_UI_TEXTS,
+  normalizeAppUiLanguage,
+  translate,
+  type AdminWeeklyPlanTextKey,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -72,6 +79,21 @@ function toPrismaNullableJsonInput(
   }
 
   return value as Prisma.InputJsonValue;
+}
+
+function toAppUiLanguage(language: string | null | undefined): AppUiLanguage {
+  return normalizeAppUiLanguage(language);
+}
+
+function tWeekly(
+  language: string | null | undefined,
+  key: AdminWeeklyPlanTextKey
+): string {
+  return translate(
+    toAppUiLanguage(language),
+    key,
+    ADMIN_WEEKLY_PLAN_UI_TEXTS
+  );
 }
 
 export async function GET(req: Request) {
@@ -150,7 +172,18 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!admin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const adminUser = await prisma.appUser.findUnique({
+    where: { id: admin.id },
+    select: {
+      language: true,
+    },
+  });
+
+  const adminLanguage = adminUser?.language ?? "DE";
 
   let form: FormData;
 
@@ -158,7 +191,7 @@ export async function POST(req: Request) {
     form = await req.formData();
   } catch {
     return NextResponse.json(
-      { error: "Upload konnte nicht gelesen werden. Bitte Datei prüfen und erneut versuchen." },
+      { error: tWeekly(adminLanguage, "documentUploadReadError") },
       { status: 400 }
     );
   }
@@ -168,7 +201,7 @@ export async function POST(req: Request) {
   const fileRaw = form.get("file");
 
   const planEntryId = getString(planEntryIdRaw);
-  const title = (getString(titleRaw) ?? "Dokument").trim().slice(0, 80);
+  const title = (getString(titleRaw) ?? tWeekly(adminLanguage, "document")).trim().slice(0, 80);
 
   let titleSourceLanguage: SupportedLang | null = null;
   let titleTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
@@ -180,17 +213,28 @@ export async function POST(req: Request) {
     titleTranslations = toPrismaNullableJsonInput(translationResult.translations);
   }
 
-  if (!planEntryId) return NextResponse.json({ error: "planEntryId missing" }, { status: 400 });
-  if (!(fileRaw instanceof File)) return NextResponse.json({ error: "file missing" }, { status: 400 });
+  if (!planEntryId) {
+    return NextResponse.json({ error: "planEntryId missing" }, { status: 400 });
+  }
+
+  if (!(fileRaw instanceof File)) {
+    return NextResponse.json({ error: "file missing" }, { status: 400 });
+  }
 
   const mimeType = fileRaw.type;
   if (!ALLOWED_MIME.has(mimeType)) {
-    return NextResponse.json({ error: "Dateityp nicht erlaubt (PDF/JPG/PNG/WEBP)." }, { status: 400 });
+    return NextResponse.json(
+      { error: tWeekly(adminLanguage, "documentInvalidType") },
+      { status: 400 }
+    );
   }
 
   const sizeBytes = fileRaw.size;
   if (sizeBytes <= 0 || sizeBytes > MAX_BYTES) {
-    return NextResponse.json({ error: "Datei zu groß (max. 15 MB)." }, { status: 400 });
+    return NextResponse.json(
+      { error: tWeekly(adminLanguage, "documentTooLarge") },
+      { status: 400 }
+    );
   }
 
   const entry = await prisma.planEntry.findUnique({
@@ -223,7 +267,7 @@ export async function POST(req: Request) {
     data.set(source);
   } catch {
     return NextResponse.json(
-      { error: "Datei konnte serverseitig nicht verarbeitet werden." },
+      { error: tWeekly(adminLanguage, "documentUploadReadError") },
       { status: 400 }
     );
   }
@@ -234,7 +278,7 @@ export async function POST(req: Request) {
     data: {
       planEntryId,
       uploadedById: admin.id,
-      title: title.length ? title : "Dokument",
+      title: title.length ? title : tWeekly(adminLanguage, "document"),
       titleSourceLanguage,
       titleTranslations,
       fileName,
