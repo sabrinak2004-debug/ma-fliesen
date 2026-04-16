@@ -1885,7 +1885,10 @@ export type ErfassungTextKey =
   | "legalBreakHeadline"
   | "legalBreakAfterSixHours"
   | "legalBreakAfterNineHours"
-  | "legalBreakAutoApplied";
+  | "legalBreakAutoApplied"
+  | "timesheetFutureDateEditForbidden"
+  | "timesheetOlderMissingEntriesFirst"
+  | "timesheetLockedDayRequiresCorrection";
 
 export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage, string>> = {
   loading: {
@@ -2951,6 +2954,30 @@ export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage
     TR: "Düzenleme başarısız oldu.",
     SQ: "Ndryshimi dështoi.",
     KU: "Sererastkirin bi ser neket.",
+  },
+  timesheetFutureDateEditForbidden: {
+    DE: "Du kannst keine Einträge für zukünftige Tage bearbeiten.",
+    EN: "You cannot edit entries for future days.",
+    IT: "Non puoi modificare voci per giorni futuri.",
+    TR: "Gelecek günler için kayıt düzenleyemezsiniz.",
+    SQ: "Nuk mund të ndryshoni regjistrime për ditë të ardhshme.",
+    KU: "Tu nikarî tomarên rojên pêşerojê sererast bikî.",
+  },
+  timesheetOlderMissingEntriesFirst: {
+    DE: "Dir fehlen noch Arbeitseinträge ab dem {date}. Bitte trage zuerst die ältesten fehlenden Tage nach.",
+    EN: "You still have missing work entries starting from {date}. Please add the oldest missing days first.",
+    IT: "Ti mancano ancora registrazioni di lavoro a partire dal {date}. Inserisci prima i giorni mancanti più vecchi.",
+    TR: "{date} tarihinden itibaren hâlâ eksik çalışma kayıtlarınız var. Lütfen önce en eski eksik günleri girin.",
+    SQ: "Ju mungojnë ende regjistrime pune duke filluar nga {date}. Ju lutem regjistroni së pari ditët më të vjetra që mungojnë.",
+    KU: "Ji {date} û pê ve hîn jî tomarên karê te kêm in. Ji kerema xwe pêşî rojên herî kevn ên winda binivîse.",
+  },
+  timesheetLockedDayRequiresCorrection: {
+    DE: "Dieser vergangene Tag ist gesperrt. Bitte stelle einen Nachtragsantrag, damit der Admin ihn freigeben kann.",
+    EN: "This past day is locked. Please submit a correction request so the admin can approve it.",
+    IT: "Questo giorno passato è bloccato. Invia una richiesta di integrazione affinché l'admin possa approvarlo.",
+    TR: "Bu geçmiş gün kilitlidir. Lütfen yöneticinin onaylayabilmesi için bir düzeltme talebi gönderin.",
+    SQ: "Kjo ditë e kaluar është e bllokuar. Ju lutem dërgoni një kërkesë korrigjimi që admini ta miratojë.",
+    KU: "Ev roja borî hatiye girtin. Ji kerema xwe daxwaza rastkirinê bişîne da ku admin wê veke.",
   },
 };
 

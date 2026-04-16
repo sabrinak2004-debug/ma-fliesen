@@ -11,6 +11,7 @@ import { computeDayBreakFromGross } from "@/lib/breaks";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 import {
   ADMIN_TASKS_UI_TEXTS,
+  ERFASSUNG_DICTIONARY,
   translate,
   type AdminTasksTextKey,
   type AppUiLanguage,
@@ -126,6 +127,58 @@ function translateEntryText(
   key: AdminTasksTextKey
 ): string {
   return translate(language, key, ADMIN_TASKS_UI_TEXTS);
+}
+
+function formatDateForLanguage(language: AppUiLanguage, iso: string): string {
+  const normalized = iso.length >= 10 ? iso.slice(0, 10) : iso;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return iso;
+  }
+
+  const [year, month, day] = normalized.split("-");
+
+  switch (language) {
+    case "EN":
+      return `${month}/${day}/${year}`;
+    case "IT":
+      return `${day}/${month}/${year}`;
+    case "TR":
+      return `${day}.${month}.${year}`;
+    case "SQ":
+      return `${day}.${month}.${year}`;
+    case "KU":
+      return `${day}.${month}.${year}`;
+    case "DE":
+    default:
+      return `${day}.${month}.${year}`;
+  }
+}
+
+function translateTimesheetLockError(
+  language: AppUiLanguage,
+  error: unknown,
+  fallback: string
+): string {
+  if (!(error instanceof Error)) {
+    return fallback;
+  }
+
+  if (error.message === "TIME_ENTRY_FUTURE_DATE_EDIT_FORBIDDEN") {
+    return translate(language, "timesheetFutureDateEditForbidden", ERFASSUNG_DICTIONARY);
+  }
+
+  if (error.message === "TIME_ENTRY_LOCKED_DAY_REQUIRES_CORRECTION") {
+    return translate(language, "timesheetLockedDayRequiresCorrection", ERFASSUNG_DICTIONARY);
+  }
+
+  if (error.message.startsWith("TIME_ENTRY_OLDER_MISSING_ENTRIES_FIRST:")) {
+    const missingDate = error.message.slice("TIME_ENTRY_OLDER_MISSING_ENTRIES_FIRST:".length).trim();
+
+    return translate(language, "timesheetOlderMissingEntriesFirst", ERFASSUNG_DICTIONARY)
+      .replace("{date}", formatDateForLanguage(language, missingDate || ""));
+  }
+
+  return error.message || fallback;
 }
 
 type EntryBody = {
@@ -652,10 +705,11 @@ export async function POST(req: Request) {
         companyId: session.companyId,
       });
     } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : translateEntryText(language, "notAllowed");
+      const message = translateTimesheetLockError(
+        language,
+        error,
+        translateEntryText(language, "notAllowed")
+      );
 
       return NextResponse.json({ error: message }, { status: 403 });
     }
@@ -885,10 +939,11 @@ export async function PATCH(req: Request) {
         companyId: session.companyId,
       });
     } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : translateEntryText(language, "notAllowed");
+      const message = translateTimesheetLockError(
+        language,
+        error,
+        translateEntryText(language, "notAllowed")
+      );
 
       return NextResponse.json({ error: message }, { status: 403 });
     }
@@ -926,10 +981,11 @@ export async function PATCH(req: Request) {
         companyId: session.companyId,
       });
     } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : translateEntryText(language, "notAllowed");
+      const message = translateTimesheetLockError(
+        language,
+        error,
+        translateEntryText(language, "notAllowed")
+      );
 
       return NextResponse.json({ error: message }, { status: 403 });
     }
@@ -1193,10 +1249,11 @@ export async function DELETE(req: Request) {
         companyId: session.companyId,
       });
     } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : translateEntryText(language, "notAllowed");
+      const message = translateTimesheetLockError(
+        language,
+        error,
+        translateEntryText(language, "notAllowed")
+      );
 
       return NextResponse.json({ error: message }, { status: 403 });
     }
