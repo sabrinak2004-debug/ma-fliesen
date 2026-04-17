@@ -236,6 +236,14 @@ export type AdminAbsenceRequestsApiTextKey =
   | "halfVacationDayOn"
   | "fromTo";
 
+
+export type AdminAbsenceRequestPushTextKey =
+  | "typeVacation"
+  | "typeSick"
+  | "scopeHalfDay"
+  | "compensationPaid"
+  | "compensationUnpaid";
+
 export const ADMIN_ABSENCE_REQUESTS_API_TEXTS: Record<
   AdminAbsenceRequestsApiTextKey,
   Record<AppUiLanguage, string>
@@ -419,6 +427,57 @@ export const ADMIN_ABSENCE_REQUESTS_API_TEXTS: Record<
     SQ: "{startDate} deri më {endDate}",
     KU: "ji {startDate} heta {endDate}",
     RO: "de la {startDate} până la {endDate}",
+  },
+};
+
+export const ADMIN_ABSENCE_REQUEST_PUSH_TEXTS: Record<
+  AdminAbsenceRequestPushTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  typeVacation: {
+    DE: "Urlaub",
+    EN: "Vacation",
+    IT: "Ferie",
+    TR: "İzin",
+    SQ: "Pushim",
+    KU: "Betlane",
+    RO: "Concediu",
+  },
+  typeSick: {
+    DE: "Krankheit",
+    EN: "Sickness",
+    IT: "Malattia",
+    TR: "Hastalık",
+    SQ: "Sëmundje",
+    KU: "Nexweşî",
+    RO: "Boală",
+  },
+  scopeHalfDay: {
+    DE: "Halber Tag",
+    EN: "Half day",
+    IT: "Mezza giornata",
+    TR: "Yarım gün",
+    SQ: "Gjysmë dite",
+    KU: "Nîv roj",
+    RO: "Jumătate de zi",
+  },
+  compensationPaid: {
+    DE: "Bezahlt",
+    EN: "Paid",
+    IT: "Pagata",
+    TR: "Ücretli",
+    SQ: "E paguar",
+    KU: "Bi pere",
+    RO: "Plătit",
+  },
+  compensationUnpaid: {
+    DE: "Unbezahlt",
+    EN: "Unpaid",
+    IT: "Non pagata",
+    TR: "Ücretsiz",
+    SQ: "E papaguar",
+    KU: "Bêpere",
+    RO: "Neplătit",
   },
 };
 

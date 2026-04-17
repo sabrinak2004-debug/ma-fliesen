@@ -11,8 +11,10 @@ import { prisma } from "@/lib/prisma";
 import { buildPushUrl, sendPushToAdmins } from "@/lib/webpush";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 import {
+  ADMIN_ABSENCE_REQUEST_PUSH_TEXTS,
   EMPLOYEE_ABSENCE_REQUESTS_API_TEXTS,
   translate,
+  type AdminAbsenceRequestPushTextKey,
   type AppUiLanguage,
   type EmployeeAbsenceRequestsApiTextKey,
 } from "@/lib/i18n";
@@ -398,6 +400,13 @@ function translateAbsenceRequestText(
   key: EmployeeAbsenceRequestsApiTextKey
 ): string {
   return translate(language, key, EMPLOYEE_ABSENCE_REQUESTS_API_TEXTS);
+}
+
+function translateAdminAbsenceRequestPushText(
+  language: AppUiLanguage,
+  key: AdminAbsenceRequestPushTextKey
+): string {
+  return translate(language, key, ADMIN_ABSENCE_REQUEST_PUSH_TEXTS);
 }
 
 export async function rebalanceAutoUnpaidVacationRequestsForYear(
@@ -1130,17 +1139,21 @@ export async function POST(req: Request) {
     },
   });
 
-  const typeLabel = typeRaw === "VACATION" ? "VACATION" : "SICK";
+  const typeLabel =
+    typeRaw === "VACATION"
+      ? translateAdminAbsenceRequestPushText(language, "typeVacation")
+      : translateAdminAbsenceRequestPushText(language, "typeSick");
+
   const compensationLabel =
     typeRaw === "VACATION"
       ? finalCompensation === AbsenceCompensation.UNPAID
-        ? "UNPAID"
-        : "PAID"
+        ? translateAdminAbsenceRequestPushText(language, "compensationUnpaid")
+        : translateAdminAbsenceRequestPushText(language, "compensationPaid")
       : "";
 
   const dateLabel =
     dayPortion === AbsenceDayPortion.HALF_DAY
-      ? `${startDate} (HALF_DAY)`
+      ? `${startDate} (${translateAdminAbsenceRequestPushText(language, "scopeHalfDay")})`
       : startDate === endDate
         ? startDate
         : `${startDate} - ${endDate}`;
