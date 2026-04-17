@@ -11,10 +11,10 @@ import { prisma } from "@/lib/prisma";
 import { buildPushUrl, sendPushToAdmins } from "@/lib/webpush";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 import {
-  ADMIN_TASKS_UI_TEXTS,
+  EMPLOYEE_ABSENCE_REQUESTS_API_TEXTS,
   translate,
-  type AdminTasksTextKey,
   type AppUiLanguage,
+  type EmployeeAbsenceRequestsApiTextKey,
 } from "@/lib/i18n";
 
 type CreateAbsenceRequestBody = {
@@ -395,9 +395,9 @@ function toAppUiLanguage(value: string | null | undefined): AppUiLanguage {
 
 function translateAbsenceRequestText(
   language: AppUiLanguage,
-  key: AdminTasksTextKey
+  key: EmployeeAbsenceRequestsApiTextKey
 ): string {
-  return translate(language, key, ADMIN_TASKS_UI_TEXTS);
+  return translate(language, key, EMPLOYEE_ABSENCE_REQUESTS_API_TEXTS);
 }
 
 export async function rebalanceAutoUnpaidVacationRequestsForYear(
@@ -999,7 +999,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           ok: false,
-        error: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+          error: translateAbsenceRequestText(language, "vacationNoWeekdays"),
         },
         { status: 400 }
       );

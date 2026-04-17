@@ -285,23 +285,30 @@ async function withTimeout<T>(
   });
 }
 
-async function readFileViaFileReader(file: Blob): Promise<ArrayBuffer> {
+async function readFileViaFileReader(
+  file: Blob,
+  errorMessages: {
+    fileReaderError: string;
+    fileReaderAborted: string;
+    invalidFileFormat: string;
+  }
+): Promise<ArrayBuffer> {
   return await new Promise<ArrayBuffer>((resolve, reject) => {
     const reader = new FileReader();
 
     reader.onerror = () => {
-      reject(new Error("FILE_READER_ERROR"));
+      reject(new Error(errorMessages.fileReaderError));
     };
 
     reader.onabort = () => {
-      reject(new Error("FILE_READER_ABORTED"));
+      reject(new Error(errorMessages.fileReaderAborted));
     };
 
     reader.onload = () => {
       const result = reader.result;
 
       if (!(result instanceof ArrayBuffer)) {
-        reject(new Error("INVALID_FILE_FORMAT"));
+        reject(new Error(errorMessages.invalidFileFormat));
         return;
       }
 
@@ -314,7 +321,12 @@ async function readFileViaFileReader(file: Blob): Promise<ArrayBuffer> {
 
 async function normalizeUploadFile(
   file: File,
-  readErrorMessage: string
+  errorMessages: {
+    arrayBufferTimeout: string;
+    fileReaderError: string;
+    fileReaderAborted: string;
+    invalidFileFormat: string;
+  }
 ): Promise<File> {
   let arrayBuffer: ArrayBuffer | null = null;
 
@@ -322,13 +334,17 @@ async function normalizeUploadFile(
     arrayBuffer = await withTimeout(
       file.arrayBuffer(),
       8000,
-      "ARRAY_BUFFER_TIMEOUT"
+      errorMessages.arrayBufferTimeout
     );
   } catch {
     arrayBuffer = await withTimeout(
-      readFileViaFileReader(file),
+      readFileViaFileReader(file, {
+        fileReaderError: errorMessages.fileReaderError,
+        fileReaderAborted: errorMessages.fileReaderAborted,
+        invalidFileFormat: errorMessages.invalidFileFormat,
+      }),
       15000,
-      readErrorMessage
+      errorMessages.fileReaderError
     );
   }
 
@@ -499,6 +515,8 @@ export default function AdminWochenplanPage() {
         return t("weekStartMissing");
       case "MISSING_FIELDS":
         return t("missingFields");
+      case "INVALID_USER_ID":
+        return t("invalidUserId");
       case "ENTRY_NOT_FOUND":
         return t("entryNotFound");
       default:
@@ -668,39 +686,70 @@ export default function AdminWochenplanPage() {
     setLoading(true);
     setPageError("");
 
-    const [uRes, eRes, nRes] = await Promise.all([
-      fetch("/api/admin/users", { credentials: "include", cache: "no-store" }),
-      fetch(`/api/admin/plan-entries?weekStart=${fmtYMD(weekStart)}`, {
-        credentials: "include",
-        cache: "no-store",
-      }),
-      fetch(`/api/admin/admin-notes?weekStart=${fmtYMD(weekStart)}`, {
-        credentials: "include",
-        cache: "no-store",
-      }),
-    ]);
+    try {
+      const [uRes, eRes, nRes] = await Promise.all([
+        fetch("/api/admin/users", { credentials: "include", cache: "no-store" }),
+        fetch(`/api/admin/plan-entries?weekStart=${fmtYMD(weekStart)}`, {
+          credentials: "include",
+          cache: "no-store",
+        }),
+        fetch(`/api/admin/admin-notes?weekStart=${fmtYMD(weekStart)}`, {
+          credentials: "include",
+          cache: "no-store",
+        }),
+      ]);
 
-    if (uRes.status === 401 || eRes.status === 401 || nRes.status === 401) {
+      if (uRes.status === 401 || eRes.status === 401 || nRes.status === 401) {
+        setLoading(false);
+        router.replace("/login");
+        return;
+      }
+
+      if (uRes.status === 403 || eRes.status === 403 || nRes.status === 403) {
+        setLoading(false);
+        setPageError(t("accessDenied"));
+        return;
+      }
+
+      if (!uRes.ok) {
+        setUsers([]);
+        setEntries([]);
+        setAdminNotes([]);
+        setPageError(t("usersLoadError"));
+        return;
+      }
+
+      if (!eRes.ok) {
+        setUsers([]);
+        setEntries([]);
+        setAdminNotes([]);
+        setPageError(t("planEntriesLoadError"));
+        return;
+      }
+
+      if (!nRes.ok) {
+        setUsers([]);
+        setEntries([]);
+        setAdminNotes([]);
+        setPageError(t("adminNotesLoadError"));
+        return;
+      }
+
+      const uJson: unknown = await uRes.json().catch(() => ({}));
+      const eJson: unknown = await eRes.json().catch(() => ({}));
+      const nJson: unknown = await nRes.json().catch(() => ({}));
+
+      setUsers(getArrayProp<User>(uJson, "users", isUser));
+      setEntries(getArrayProp<PlanEntry>(eJson, "entries", isPlanEntry));
+      setAdminNotes(getArrayProp<AdminNote>(nJson, "notes", isAdminNote));
+    } catch {
+      setUsers([]);
+      setEntries([]);
+      setAdminNotes([]);
+      setPageError(t("weeklyPlanLoadError"));
+    } finally {
       setLoading(false);
-      router.replace("/login");
-      return;
     }
-
-    if (uRes.status === 403 || eRes.status === 403 || nRes.status === 403) {
-      setLoading(false);
-      setPageError(t("accessDenied"));
-      return;
-    }
-
-    const uJson: unknown = await uRes.json().catch(() => ({}));
-    const eJson: unknown = await eRes.json().catch(() => ({}));
-    const nJson: unknown = await nRes.json().catch(() => ({}));
-
-    setUsers(getArrayProp<User>(uJson, "users", isUser));
-    setEntries(getArrayProp<PlanEntry>(eJson, "entries", isPlanEntry));
-    setAdminNotes(getArrayProp<AdminNote>(nJson, "notes", isAdminNote));
-
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -798,7 +847,7 @@ export default function AdminWochenplanPage() {
     );
 
     if (!response.ok) {
-      setDocsError(t("documentPreviewError"));
+      throw new Error(t("documentPreviewError"));
     }
 
     return await response.blob();
@@ -892,7 +941,12 @@ export default function AdminWochenplanPage() {
 
     try {
       const normalizedFile = await withTimeout(
-        normalizeUploadFile(selectedFile, t("documentUploadReadError")),
+        normalizeUploadFile(selectedFile, {
+          arrayBufferTimeout: t("arrayBufferTimeout"),
+          fileReaderError: t("fileReaderError"),
+          fileReaderAborted: t("fileReaderAborted"),
+          invalidFileFormat: t("invalidFileFormat"),
+        }),
         15000,
         t("documentUploadReadError")
       );
@@ -934,7 +988,9 @@ export default function AdminWochenplanPage() {
 
       if (error instanceof Error) {
         setDocsError(
-          error.message || t("documentUploadReadError")
+          error.message && error.message.trim()
+            ? error.message
+            : t("documentUploadUnknownError")
         );
         return;
       }

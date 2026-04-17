@@ -8,6 +8,13 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { buildPushUrl, sendPushToUser } from "@/lib/webpush";
+import {
+  ADMIN_ABSENCE_REQUESTS_API_TEXTS,
+  normalizeAppUiLanguage,
+  translate,
+  type AdminAbsenceRequestsApiTextKey,
+  type AppUiLanguage,
+} from "@/lib/i18n";
 
 type RouteContext = {
   params: Promise<{
@@ -163,17 +170,65 @@ function getDayPortionUnits(dayPortion: AbsenceDayPortion): number {
   return dayPortion === AbsenceDayPortion.HALF_DAY ? 1 : 2;
 }
 
+function translateAdminAbsenceRequestText(
+  language: AppUiLanguage,
+  key: AdminAbsenceRequestsApiTextKey
+): string {
+  return translate(language, key, ADMIN_ABSENCE_REQUESTS_API_TEXTS);
+}
+
+function formatText(
+  template: string,
+  values: Record<string, string>
+): string {
+  return Object.entries(values).reduce((result, [key, value]) => {
+    return result.replaceAll(`{${key}}`, value);
+  }, template);
+}
+
 function portionLabel(
+  language: AppUiLanguage,
   type: AbsenceType,
   dayPortion: AbsenceDayPortion,
   startDate: string,
   endDate: string
 ): string {
-  if (type === "VACATION" && dayPortion === "HALF_DAY") {
-    return `halber Urlaubstag am ${startDate}`;
+  if (type === AbsenceType.VACATION && dayPortion === AbsenceDayPortion.HALF_DAY) {
+    return formatText(
+      translateAdminAbsenceRequestText(language, "halfVacationDayOn"),
+      { date: startDate }
+    );
   }
-  if (startDate === endDate) return startDate;
-  return `${startDate} bis ${endDate}`;
+
+  if (startDate === endDate) {
+    return startDate;
+  }
+
+  return formatText(
+    translateAdminAbsenceRequestText(language, "fromTo"),
+    {
+      startDate,
+      endDate,
+    }
+  );
+}
+
+function getRequestTypeLabel(
+  language: AppUiLanguage,
+  type: AbsenceType
+): string {
+  return type === AbsenceType.VACATION
+    ? translateAdminAbsenceRequestText(language, "vacationRequestLabel")
+    : translateAdminAbsenceRequestText(language, "sickRequestLabel");
+}
+
+function getCompensationLabel(
+  language: AppUiLanguage,
+  compensation: AbsenceCompensation
+): string {
+  return compensation === AbsenceCompensation.UNPAID
+    ? translateAdminAbsenceRequestText(language, "unpaid")
+    : translateAdminAbsenceRequestText(language, "paid");
 }
 
 function buildVacationAbsenceRowsWithSplit(
@@ -273,7 +328,10 @@ export async function POST(req: Request, context: RouteContext) {
 
   if (!requestId) {
     return NextResponse.json(
-      { ok: false, error: "Fehlende Request-ID." },
+      {
+        ok: false,
+        error: translateAdminAbsenceRequestText("DE", "missingRequestId"),
+      },
       { status: 400 }
     );
   }
@@ -290,6 +348,7 @@ export async function POST(req: Request, context: RouteContext) {
           fullName: true,
           isActive: true,
           companyId: true,
+          language: true,
         },
       },
     },
@@ -297,10 +356,15 @@ export async function POST(req: Request, context: RouteContext) {
 
   if (!existing) {
     return NextResponse.json(
-      { ok: false, error: "Antrag nicht gefunden." },
+      {
+        ok: false,
+        error: translateAdminAbsenceRequestText("DE", "requestNotFound"),
+      },
       { status: 404 }
     );
   }
+
+  const employeeLanguage = normalizeAppUiLanguage(existing.user.language);
 
   if (existing.user.companyId !== admin.companyId) {
     return NextResponse.json(
@@ -311,14 +375,23 @@ export async function POST(req: Request, context: RouteContext) {
 
   if (!existing.user.isActive) {
     return NextResponse.json(
-      { ok: false, error: "Mitarbeiter ist nicht aktiv." },
+      {
+        ok: false,
+        error: translateAdminAbsenceRequestText(employeeLanguage, "employeeInactive"),
+      },
       { status: 409 }
     );
   }
 
   if (existing.status !== AbsenceRequestStatus.PENDING) {
     return NextResponse.json(
-      { ok: false, error: "Nur offene Anträge können genehmigt werden." },
+      {
+        ok: false,
+        error: translateAdminAbsenceRequestText(
+          employeeLanguage,
+          "onlyPendingCanBeApproved"
+        ),
+      },
       { status: 409 }
     );
   }
@@ -356,7 +429,10 @@ export async function POST(req: Request, context: RouteContext) {
 
   if (finalEndDate < finalStartDate) {
     return NextResponse.json(
-      { ok: false, error: "Ende darf nicht vor Start liegen." },
+      {
+        ok: false,
+        error: translateAdminAbsenceRequestText(employeeLanguage, "endBeforeStart"),
+      },
       { status: 400 }
     );
   }
@@ -365,7 +441,10 @@ export async function POST(req: Request, context: RouteContext) {
     return NextResponse.json(
       {
         ok: false,
-        error: "Jahresübergreifende Abwesenheiten werden aktuell noch nicht unterstützt. Bitte je Kalenderjahr separat genehmigen.",
+        error: translateAdminAbsenceRequestText(
+          employeeLanguage,
+          "crossYearApprovalNotSupported"
+        ),
       },
       { status: 400 }
     );
@@ -376,7 +455,13 @@ export async function POST(req: Request, context: RouteContext) {
     finalDayPortion === AbsenceDayPortion.HALF_DAY
   ) {
     return NextResponse.json(
-      { ok: false, error: "Halbe Tage sind nur für Urlaub erlaubt." },
+      {
+        ok: false,
+        error: translateAdminAbsenceRequestText(
+          employeeLanguage,
+          "halfDaysOnlyForVacation"
+        ),
+      },
       { status: 400 }
     );
   }
@@ -401,7 +486,10 @@ export async function POST(req: Request, context: RouteContext) {
     return NextResponse.json(
       {
         ok: false,
-        error: "Im Zeitraum existiert bereits eine bestätigte Abwesenheit.",
+        error: translateAdminAbsenceRequestText(
+          employeeLanguage,
+          "approvedAbsenceAlreadyExists"
+        ),
       },
       { status: 409 }
     );
@@ -422,7 +510,10 @@ export async function POST(req: Request, context: RouteContext) {
     return NextResponse.json(
       {
         ok: false,
-        error: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+        error: translateAdminAbsenceRequestText(
+          employeeLanguage,
+          "vacationNoWeekdays"
+        ),
       },
       { status: 400 }
     );
@@ -552,16 +643,17 @@ export async function POST(req: Request, context: RouteContext) {
     };
   });
 
-  const typeLabel =
-    finalType === AbsenceType.VACATION ? "Urlaubsantrag" : "Krankheitsantrag";
-
-  const compensationLabel =
-    finalCompensation === AbsenceCompensation.UNPAID ? "unbezahlt" : "bezahlt";
-
   const startDate = toIsoDateUTC(finalStartDate);
   const endDate = toIsoDateUTC(finalEndDate);
 
+  const typeLabel = getRequestTypeLabel(employeeLanguage, finalType);
+  const compensationLabel = getCompensationLabel(
+    employeeLanguage,
+    finalCompensation
+  );
+
   const dateLabel = portionLabel(
+    employeeLanguage,
     finalType,
     finalDayPortion,
     startDate,
@@ -569,8 +661,15 @@ export async function POST(req: Request, context: RouteContext) {
   );
 
   await sendPushToUser(existing.userId, {
-    title: "Antrag genehmigt",
-    body: `Dein ${typeLabel.toLowerCase()} wurde genehmigt (${dateLabel}, ${compensationLabel}).`,
+    title: translateAdminAbsenceRequestText(employeeLanguage, "approvedPushTitle"),
+    body: formatText(
+      translateAdminAbsenceRequestText(employeeLanguage, "approvedPushBody"),
+      {
+        type: typeLabel,
+        dateLabel,
+        compensationLabel,
+      }
+    ),
     url: buildPushUrl(
       `/kalender?openDate=${encodeURIComponent(startDate)}&absenceStart=${encodeURIComponent(startDate)}&absenceEnd=${encodeURIComponent(endDate)}&absenceType=${encodeURIComponent(finalType)}&absenceDayPortion=${encodeURIComponent(finalDayPortion)}&absenceCompensation=${encodeURIComponent(finalCompensation)}`
     ),

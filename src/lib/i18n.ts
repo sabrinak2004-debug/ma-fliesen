@@ -76,6 +76,352 @@ export function translate<Key extends string>(
   return entry[language] ?? entry.DE;
 }
 
+export type EmployeeAbsenceRequestsApiTextKey =
+  | "notLoggedInWithPeriod"
+  | "dateMustBeYmd"
+  | "invalidAbsenceType"
+  | "endBeforeStart"
+  | "crossYearRequestsNotSupported"
+  | "sickOnlyFullDayRequested"
+  | "sickCannotBeRequestedUnpaid"
+  | "halfDaysOnlyForVacation"
+  | "halfVacationOnlySingleDateRequest"
+  | "vacationNoWeekdays"
+  | "approvedAbsenceAlreadyExists"
+  | "pendingRequestAlreadyExists"
+  | "newAbsenceRequestPushTitle";
+
+export const EMPLOYEE_ABSENCE_REQUESTS_API_TEXTS: Record<
+  EmployeeAbsenceRequestsApiTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  notLoggedInWithPeriod: {
+    DE: "Nicht eingeloggt.",
+    EN: "Not logged in.",
+    IT: "Accesso non effettuato.",
+    TR: "Giriş yapılmadı.",
+    SQ: "Nuk je i identifikuar.",
+    KU: "Têketin nehatiye kirin.",
+    RO: "Nu ești autentificat.",
+  },
+  dateMustBeYmd: {
+    DE: "Datum muss im Format JJJJ-MM-TT sein.",
+    EN: "Date must be in YYYY-MM-DD format.",
+    IT: "La data deve essere nel formato YYYY-MM-DD.",
+    TR: "Tarih YYYY-MM-DD formatında olmalıdır.",
+    SQ: "Data duhet të jetë në formatin YYYY-MM-DD.",
+    KU: "Dîrok divê di formata YYYY-MM-DD de be.",
+    RO: "Data trebuie să fie în formatul YYYY-MM-DD.",
+  },
+  invalidAbsenceType: {
+    DE: "Ungültiger Abwesenheitstyp.",
+    EN: "Invalid absence type.",
+    IT: "Tipo di assenza non valido.",
+    TR: "Geçersiz devamsızlık türü.",
+    SQ: "Lloj i pavlefshëm mungese.",
+    KU: "Cureya nebûnê nederbasdar e.",
+    RO: "Tip de absență invalid.",
+  },
+  endBeforeStart: {
+    DE: "Ende darf nicht vor Start liegen.",
+    EN: "End must not be before start.",
+    IT: "La fine non può essere prima dell'inizio.",
+    TR: "Bitiş başlangıçtan önce olamaz.",
+    SQ: "Mbarimi nuk mund të jetë para fillimit.",
+    KU: "Dawî nikare berî destpêkê be.",
+    RO: "Sfârșitul nu trebuie să fie înainte de început.",
+  },
+  crossYearRequestsNotSupported: {
+    DE: "Jahresübergreifende Anträge werden aktuell noch nicht unterstützt.",
+    EN: "Requests across calendar years are not supported yet.",
+    IT: "Le richieste che coprono più anni non sono ancora supportate.",
+    TR: "Yıllar arası talepler henüz desteklenmiyor.",
+    SQ: "Kërkesat që përfshijnë disa vite kalendarike nuk mbështeten ende.",
+    KU: "Daxwazên ku di navbera salan de ne hêj nayên piştgirîkirin.",
+    RO: "Cererile care se întind pe mai mulți ani calendaristici nu sunt încă acceptate.",
+  },
+  sickOnlyFullDayRequested: {
+    DE: "Krankheit kann nur ganztägig beantragt werden.",
+    EN: "Sickness can only be requested as a full day.",
+    IT: "La malattia può essere richiesta solo per l'intera giornata.",
+    TR: "Hastalık sadece tam gün olarak talep edilebilir.",
+    SQ: "Sëmundja mund të kërkohet vetëm për gjithë ditën.",
+    KU: "Nexweşî tenê dikare wekî rojek tam were daxwaz kirin.",
+    RO: "Boala poate fi solicitată doar ca zi întreagă.",
+  },
+  sickCannotBeRequestedUnpaid: {
+    DE: "Krankheit darf nicht als unbezahlt beantragt werden.",
+    EN: "Sickness must not be requested as unpaid.",
+    IT: "La malattia non può essere richiesta come non retribuita.",
+    TR: "Hastalık ücretsiz olarak talep edilemez.",
+    SQ: "Sëmundja nuk mund të kërkohet si e papaguar.",
+    KU: "Nexweşî nikare wekî bê mûçe were daxwaz kirin.",
+    RO: "Boala nu poate fi solicitată ca neplătită.",
+  },
+  halfDaysOnlyForVacation: {
+    DE: "Halbe Tage sind nur für Urlaub erlaubt.",
+    EN: "Half days are only allowed for vacation.",
+    IT: "I mezzi giorni sono consentiti solo per ferie.",
+    TR: "Yarım gün sadece izin için kullanılabilir.",
+    SQ: "Gjysmë ditët lejohen vetëm për pushim.",
+    KU: "Nîv roj tenê ji bo bêhnvedanê tên destûrkirin.",
+    RO: "Jumătățile de zi sunt permise doar pentru concediu.",
+  },
+  halfVacationOnlySingleDateRequest: {
+    DE: "Ein halber Urlaubstag darf nur für genau ein Datum beantragt werden.",
+    EN: "A half vacation day may only be requested for exactly one date.",
+    IT: "Una mezza giornata di ferie può essere richiesta solo per una sola data.",
+    TR: "Yarım gün izin yalnızca tek bir tarih için talep edilebilir.",
+    SQ: "Një gjysmë dite pushimi mund të kërkohet vetëm për një datë të vetme.",
+    KU: "Nîv roj bêhnvedanê tenê ji bo tenê yek dîrokê dikare were daxwaz kirin.",
+    RO: "O jumătate de zi de concediu poate fi solicitată doar pentru o singură dată.",
+  },
+  vacationNoWeekdays: {
+    DE: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+    EN: "There are no workdays for vacation in the selected period. Weekends are automatically excluded.",
+    IT: "Nel periodo selezionato non ci sono giorni lavorativi per ferie. I fine settimana vengono esclusi automaticamente.",
+    TR: "Seçilen aralıkta izin için iş günü yok. Hafta sonları otomatik olarak hariç tutulur.",
+    SQ: "Në periudhën e zgjedhur nuk ka ditë pune për pushim. Fundjavat përjashtohen automatikisht.",
+    KU: "Di navbera hilbijartî de rojên karê ji bo bêhnvedanê tune ne. Dawiya hefteyê bixweber nayê hesibandin.",
+    RO: "Nu există zile lucrătoare pentru concediu în perioada selectată. Zilele de weekend sunt excluse automat.",
+  },
+  approvedAbsenceAlreadyExists: {
+    DE: "Im gewählten Zeitraum existiert bereits eine bestätigte Abwesenheit.",
+    EN: "A confirmed absence already exists in the selected period.",
+    IT: "Nel periodo selezionato esiste già un'assenza confermata.",
+    TR: "Seçilen dönemde zaten onaylanmış bir devamsızlık var.",
+    SQ: "Në periudhën e zgjedhur ekziston tashmë një mungesë e konfirmuar.",
+    KU: "Di navbera hilbijartî de jixwe nebûnek pejirandî heye.",
+    RO: "Există deja o absență confirmată în perioada selectată.",
+  },
+  pendingRequestAlreadyExists: {
+    DE: "Im gewählten Zeitraum existiert bereits ein offener Antrag.",
+    EN: "An open request already exists in the selected period.",
+    IT: "Nel periodo selezionato esiste già una richiesta aperta.",
+    TR: "Seçilen dönemde zaten açık bir talep var.",
+    SQ: "Në periudhën e zgjedhur ekziston tashmë një kërkesë e hapur.",
+    KU: "Di navbera hilbijartî de jixwe daxwazek vekirî heye.",
+    RO: "Există deja o cerere deschisă în perioada selectată.",
+  },
+  newAbsenceRequestPushTitle: {
+    DE: "Neuer Abwesenheitsantrag",
+    EN: "New absence request",
+    IT: "Nuova richiesta di assenza",
+    TR: "Yeni devamsızlık talebi",
+    SQ: "Kërkesë e re për mungesë",
+    KU: "Daxwaza nebûnê ya nû",
+    RO: "Cerere nouă de absență",
+  },
+};
+
+export type AdminAbsenceRequestsApiTextKey =
+  | "missingRequestId"
+  | "requestNotFound"
+  | "employeeInactive"
+  | "onlyPendingCanBeApproved"
+  | "onlyPendingCanBeRejected"
+  | "endBeforeStart"
+  | "crossYearApprovalNotSupported"
+  | "halfDaysOnlyForVacation"
+  | "approvedAbsenceAlreadyExists"
+  | "vacationNoWeekdays"
+  | "approvedPushTitle"
+  | "approvedPushBody"
+  | "rejectedPushTitle"
+  | "rejectedPushBody"
+  | "vacationRequestLabel"
+  | "sickRequestLabel"
+  | "paid"
+  | "unpaid"
+  | "halfVacationDayOn"
+  | "fromTo";
+
+export const ADMIN_ABSENCE_REQUESTS_API_TEXTS: Record<
+  AdminAbsenceRequestsApiTextKey,
+  Record<AppUiLanguage, string>
+> = {
+  missingRequestId: {
+    DE: "Fehlende Request-ID.",
+    EN: "Missing request ID.",
+    IT: "ID richiesta mancante.",
+    TR: "Eksik talep kimliği.",
+    SQ: "Mungon ID-ja e kërkesës.",
+    KU: "Nasnameya daxwazê tune ye.",
+    RO: "Lipsește ID-ul cererii.",
+  },
+  requestNotFound: {
+    DE: "Antrag nicht gefunden.",
+    EN: "Request not found.",
+    IT: "Richiesta non trovata.",
+    TR: "Talep bulunamadı.",
+    SQ: "Kërkesa nuk u gjet.",
+    KU: "Daxwaz nehat dîtin.",
+    RO: "Cererea nu a fost găsită.",
+  },
+  employeeInactive: {
+    DE: "Mitarbeiter ist nicht aktiv.",
+    EN: "Employee is not active.",
+    IT: "Il dipendente non è attivo.",
+    TR: "Çalışan aktif değil.",
+    SQ: "Punonjësi nuk është aktiv.",
+    KU: "Karmend çalak nîne.",
+    RO: "Angajatul nu este activ.",
+  },
+  onlyPendingCanBeApproved: {
+    DE: "Nur offene Anträge können genehmigt werden.",
+    EN: "Only open requests can be approved.",
+    IT: "Solo le richieste aperte possono essere approvate.",
+    TR: "Sadece açık talepler onaylanabilir.",
+    SQ: "Vetëm kërkesat e hapura mund të miratohen.",
+    KU: "Tenê daxwazên vekirî dikarin bêne pejirandin.",
+    RO: "Doar cererile deschise pot fi aprobate.",
+  },
+  onlyPendingCanBeRejected: {
+    DE: "Nur offene Anträge können abgelehnt werden.",
+    EN: "Only open requests can be rejected.",
+    IT: "Solo le richieste aperte possono essere rifiutate.",
+    TR: "Sadece açık talepler reddedilebilir.",
+    SQ: "Vetëm kërkesat e hapura mund të refuzohen.",
+    KU: "Tenê daxwazên vekirî dikarin bêne redkirin.",
+    RO: "Doar cererile deschise pot fi respinse.",
+  },
+  endBeforeStart: {
+    DE: "Ende darf nicht vor Start liegen.",
+    EN: "End must not be before start.",
+    IT: "La fine non può essere prima dell'inizio.",
+    TR: "Bitiş başlangıçtan önce olamaz.",
+    SQ: "Mbarimi nuk mund të jetë para fillimit.",
+    KU: "Dawî nikare berî destpêkê be.",
+    RO: "Sfârșitul nu trebuie să fie înainte de început.",
+  },
+  crossYearApprovalNotSupported: {
+    DE: "Jahresübergreifende Abwesenheiten werden aktuell noch nicht unterstützt. Bitte je Kalenderjahr separat genehmigen.",
+    EN: "Absences across calendar years are not supported yet. Please approve them separately for each calendar year.",
+    IT: "Le assenze che coprono più anni non sono ancora supportate. Approvale separatamente per ogni anno solare.",
+    TR: "Yıllar arası devamsızlıklar henüz desteklenmiyor. Lütfen her takvim yılı için ayrı ayrı onaylayın.",
+    SQ: "Mungesat që përfshijnë disa vite kalendarike nuk mbështeten ende. Ju lutem miratojini veçmas për çdo vit kalendarik.",
+    KU: "Nebûnên ku di navbera salan de ne hêj nayên piştgirîkirin. Ji kerema xwe wan ji bo her sala salnameyê cuda pejirîne.",
+    RO: "Absențele care se întind pe mai mulți ani calendaristici nu sunt încă acceptate. Te rugăm să le aprobi separat pentru fiecare an calendaristic.",
+  },
+  halfDaysOnlyForVacation: {
+    DE: "Halbe Tage sind nur für Urlaub erlaubt.",
+    EN: "Half days are only allowed for vacation.",
+    IT: "I mezzi giorni sono consentiti solo per ferie.",
+    TR: "Yarım gün sadece izin için kullanılabilir.",
+    SQ: "Gjysmë ditët lejohen vetëm për pushim.",
+    KU: "Nîv roj tenê ji bo bêhnvedanê tên destûrkirin.",
+    RO: "Jumătățile de zi sunt permise doar pentru concediu.",
+  },
+  approvedAbsenceAlreadyExists: {
+    DE: "Im Zeitraum existiert bereits eine bestätigte Abwesenheit.",
+    EN: "A confirmed absence already exists in this period.",
+    IT: "Esiste già un'assenza confermata in questo periodo.",
+    TR: "Bu dönemde zaten onaylanmış bir devamsızlık var.",
+    SQ: "Në këtë periudhë ekziston tashmë një mungesë e konfirmuar.",
+    KU: "Di vê navberê de jixwe nebûnek pejirandî heye.",
+    RO: "Există deja o absență confirmată în această perioadă.",
+  },
+  vacationNoWeekdays: {
+    DE: "Im gewählten Zeitraum liegen keine Arbeitstage für Urlaub. Wochenenden werden automatisch nicht mitgezählt.",
+    EN: "There are no workdays for vacation in the selected period. Weekends are automatically excluded.",
+    IT: "Nel periodo selezionato non ci sono giorni lavorativi per ferie. I fine settimana vengono esclusi automaticamente.",
+    TR: "Seçilen aralıkta izin için iş günü yok. Hafta sonları otomatik olarak hariç tutulur.",
+    SQ: "Në periudhën e zgjedhur nuk ka ditë pune për pushim. Fundjavat përjashtohen automatikisht.",
+    KU: "Di navbera hilbijartî de rojên karê ji bo bêhnvedanê tune ne. Dawiya hefteyê bixweber nayê hesibandin.",
+    RO: "Nu există zile lucrătoare pentru concediu în perioada selectată. Zilele de weekend sunt excluse automat.",
+  },
+  approvedPushTitle: {
+    DE: "Antrag genehmigt",
+    EN: "Request approved",
+    IT: "Richiesta approvata",
+    TR: "Talep onaylandı",
+    SQ: "Kërkesa u miratua",
+    KU: "Daxwaz hate pejirandin",
+    RO: "Cerere aprobată",
+  },
+  approvedPushBody: {
+    DE: "Dein {type} wurde genehmigt ({dateLabel}, {compensationLabel}).",
+    EN: "Your {type} was approved ({dateLabel}, {compensationLabel}).",
+    IT: "La tua {type} è stata approvata ({dateLabel}, {compensationLabel}).",
+    TR: "{type} talebiniz onaylandı ({dateLabel}, {compensationLabel}).",
+    SQ: "{type} juaj u miratua ({dateLabel}, {compensationLabel}).",
+    KU: "{type} a te hate pejirandin ({dateLabel}, {compensationLabel}).",
+    RO: "{type} tău a fost aprobat ({dateLabel}, {compensationLabel}).",
+  },
+  rejectedPushTitle: {
+    DE: "Antrag abgelehnt",
+    EN: "Request rejected",
+    IT: "Richiesta rifiutata",
+    TR: "Talep reddedildi",
+    SQ: "Kërkesa u refuzua",
+    KU: "Daxwaz hate redkirin",
+    RO: "Cerere respinsă",
+  },
+  rejectedPushBody: {
+    DE: "Dein {type} wurde abgelehnt.",
+    EN: "Your {type} was rejected.",
+    IT: "La tua {type} è stata rifiutata.",
+    TR: "{type} talebiniz reddedildi.",
+    SQ: "{type} juaj u refuzua.",
+    KU: "{type} a te hate redkirin.",
+    RO: "{type} tău a fost respins.",
+  },
+  vacationRequestLabel: {
+    DE: "Urlaubsantrag",
+    EN: "vacation request",
+    IT: "richiesta ferie",
+    TR: "izin talebi",
+    SQ: "kërkesë pushimi",
+    KU: "daxwaza bêhnvedanê",
+    RO: "cerere de concediu",
+  },
+  sickRequestLabel: {
+    DE: "Krankheitsantrag",
+    EN: "sickness request",
+    IT: "richiesta di malattia",
+    TR: "hastalık talebi",
+    SQ: "kërkesë sëmundjeje",
+    KU: "daxwaza nexweşiyê",
+    RO: "cerere de boală",
+  },
+  paid: {
+    DE: "bezahlt",
+    EN: "paid",
+    IT: "retribuito",
+    TR: "ücretli",
+    SQ: "i paguar",
+    KU: "bi mûçe",
+    RO: "plătit",
+  },
+  unpaid: {
+    DE: "unbezahlt",
+    EN: "unpaid",
+    IT: "non retribuito",
+    TR: "ücretsiz",
+    SQ: "i papaguar",
+    KU: "bê mûçe",
+    RO: "neplătit",
+  },
+  halfVacationDayOn: {
+    DE: "halber Urlaubstag am {date}",
+    EN: "half vacation day on {date}",
+    IT: "mezza giornata di ferie il {date}",
+    TR: "{date} tarihinde yarım gün izin",
+    SQ: "gjysmë dite pushimi më {date}",
+    KU: "nîv roj bêhnvedanê di {date} de",
+    RO: "jumătate de zi de concediu pe {date}",
+  },
+  fromTo: {
+    DE: "{startDate} bis {endDate}",
+    EN: "{startDate} to {endDate}",
+    IT: "dal {startDate} al {endDate}",
+    TR: "{startDate} - {endDate}",
+    SQ: "{startDate} deri më {endDate}",
+    KU: "ji {startDate} heta {endDate}",
+    RO: "de la {startDate} până la {endDate}",
+  },
+};
+
 export type TimeEntryCorrectionApiTextKey =
   | "notLoggedIn"
   | "employeeOnlyCreate"
@@ -7923,7 +8269,16 @@ export type AdminWeeklyPlanTextKey =
   | "weekStartMissing"
   | "missingFields"
   | "invalidUserId"
-  | "entryNotFound";
+  | "entryNotFound"
+  | "fileReaderError"
+  | "fileReaderAborted"
+  | "invalidFileFormat"
+  | "arrayBufferTimeout"
+  | "documentUploadUnknownError"
+  | "weeklyPlanLoadError"
+  | "usersLoadError"
+  | "adminNotesLoadError"
+  | "planEntriesLoadError";
 
 export const ADMIN_WEEKLY_PLAN_UI_TEXTS: Record<
   AdminWeeklyPlanTextKey,
@@ -8792,5 +9147,86 @@ export const ADMIN_WEEKLY_PLAN_UI_TEXTS: Record<
     SQ: "Regjistrimi nuk u gjet.",
     KU: "Tomar nehate dîtin.",
     RO: "Înregistrarea nu a fost găsită.",
+  },
+  fileReaderError: {
+    DE: "Die Datei konnte nicht gelesen werden.",
+    EN: "The file could not be read.",
+    IT: "Impossibile leggere il file.",
+    TR: "Dosya okunamadı.",
+    SQ: "Skedari nuk mund të lexohej.",
+    KU: "Pel nayê xwendin.",
+    RO: "Fișierul nu a putut fi citit.",
+  },
+  fileReaderAborted: {
+    DE: "Das Lesen der Datei wurde abgebrochen.",
+    EN: "Reading the file was aborted.",
+    IT: "La lettura del file è stata interrotta.",
+    TR: "Dosyanın okunması iptal edildi.",
+    SQ: "Leximi i skedarit u anulua.",
+    KU: "Xwendina pelê hate betalkirin.",
+    RO: "Citirea fișierului a fost întreruptă.",
+  },
+  invalidFileFormat: {
+    DE: "Ungültiges Dateiformat.",
+    EN: "Invalid file format.",
+    IT: "Formato file non valido.",
+    TR: "Geçersiz dosya biçimi.",
+    SQ: "Format i pavlefshëm i skedarit.",
+    KU: "Formata pelê nederbasdar e.",
+    RO: "Format de fișier invalid.",
+  },
+  arrayBufferTimeout: {
+    DE: "Zeitüberschreitung beim Lesen der Datei.",
+    EN: "Timed out while reading the file.",
+    IT: "Tempo scaduto durante la lettura del file.",
+    TR: "Dosya okunurken zaman aşımı oluştu.",
+    SQ: "Koha skadoi gjatë leximit të skedarit.",
+    KU: "Dema xwendina pelê derbas bû.",
+    RO: "Timpul pentru citirea fișierului a expirat.",
+  },
+  documentUploadUnknownError: {
+    DE: "Das Dokument konnte nicht hochgeladen werden.",
+    EN: "The document could not be uploaded.",
+    IT: "Impossibile caricare il documento.",
+    TR: "Belge yüklenemedi.",
+    SQ: "Dokumenti nuk mund të ngarkohej.",
+    KU: "Belge nayê barkirin.",
+    RO: "Documentul nu a putut fi încărcat.",
+  },
+  weeklyPlanLoadError: {
+    DE: "Der Wochenplan konnte nicht geladen werden.",
+    EN: "The weekly plan could not be loaded.",
+    IT: "Impossibile caricare il piano settimanale.",
+    TR: "Haftalık plan yüklenemedi.",
+    SQ: "Plani javor nuk mund të ngarkohej.",
+    KU: "Plana hefteyî nayê barkirin.",
+    RO: "Planul săptămânal nu a putut fi încărcat.",
+  },
+  usersLoadError: {
+    DE: "Die Mitarbeiter konnten nicht geladen werden.",
+    EN: "The employees could not be loaded.",
+    IT: "Impossibile caricare i dipendenti.",
+    TR: "Çalışanlar yüklenemedi.",
+    SQ: "Punonjësit nuk mund të ngarkoheshin.",
+    KU: "Karmend nayên barkirin.",
+    RO: "Angajații nu au putut fi încărcați.",
+  },
+  adminNotesLoadError: {
+    DE: "Die Admin-Notizen konnten nicht geladen werden.",
+    EN: "The admin notes could not be loaded.",
+    IT: "Impossibile caricare le note admin.",
+    TR: "Yönetici notları yüklenemedi.",
+    SQ: "Shënimet e administratorit nuk mund të ngarkoheshin.",
+    KU: "Nîşaneyên admin nayên barkirin.",
+    RO: "Notițele administratorului nu au putut fi încărcate.",
+  },
+  planEntriesLoadError: {
+    DE: "Die Plan-Einträge konnten nicht geladen werden.",
+    EN: "The plan entries could not be loaded.",
+    IT: "Impossibile caricare le voci del piano.",
+    TR: "Plan kayıtları yüklenemedi.",
+    SQ: "Regjistrimet e planit nuk mund të ngarkoheshin.",
+    KU: "Tomarên planê nayên barkirin.",
+    RO: "Înregistrările planului nu au putut fi încărcate.",
   },
 };
