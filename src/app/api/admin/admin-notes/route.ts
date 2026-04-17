@@ -70,7 +70,7 @@ function toPrismaNullableJsonInput(
 
 export async function GET(req: Request) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!admin) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const adminUser = await prisma.appUser.findUnique({
     where: { id: admin.id },
@@ -81,7 +81,7 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const weekStart = url.searchParams.get("weekStart");
-  if (!weekStart) return NextResponse.json({ error: "weekStart missing" }, { status: 400 });
+  if (!weekStart) return NextResponse.json({ error: "WEEK_START_MISSING" }, { status: 400 });
 
   const start = parseYMD(weekStart);
   const end = new Date(start);
@@ -112,13 +112,13 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!admin) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const body = (await req.json()) as Partial<PostBody>;
   const { id, userId, workDate, note } = body ?? {};
 
   if (!userId || !workDate) {
-    return NextResponse.json({ error: "missing fields" }, { status: 400 });
+    return NextResponse.json({ error: "MISSING_FIELDS" }, { status: 400 });
   }
 
   const targetUser = await prisma.appUser.findFirst({
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
   });
 
   if (!targetUser) {
-    return NextResponse.json({ error: "Ungültiger Mitarbeiter" }, { status: 400 });
+    return NextResponse.json({ error: "INVALID_USER" }, { status: 400 });
   }
 
   let noteSourceLanguage: SupportedLang | null = null;
@@ -169,7 +169,7 @@ export async function POST(req: Request) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Notiz nicht gefunden" }, { status: 404 });
+      return NextResponse.json({ error: "NOTE_NOT_FOUND" }, { status: 404 });
     }
 
     const saved = await prisma.adminNote.update({
@@ -206,11 +206,11 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!admin) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id missing" }, { status: 400 });
+  if (!id) return NextResponse.json({ error: "MISSING_ID" }, { status: 400 });
 
   const existing = await prisma.adminNote.findFirst({
     where: {
@@ -225,7 +225,7 @@ export async function DELETE(req: Request) {
   });
 
   if (!existing) {
-    return NextResponse.json({ error: "Notiz nicht gefunden" }, { status: 404 });
+    return NextResponse.json({ error: "NOTE_NOT_FOUND" }, { status: 404 });
   }
 
   await prisma.adminNote.delete({ where: { id: existing.id } });

@@ -491,6 +491,20 @@ export default function AdminWochenplanPage() {
 
   const rowLabel = (key: AdminWeeklyPlanTextKey): string =>
     translate(language, key, ADMIN_WEEKLY_PLAN_UI_TEXTS);
+  function mapWeeklyPlanApiError(errorCode: string | null): string {
+    switch (errorCode) {
+      case "FORBIDDEN":
+        return t("forbidden");
+      case "WEEK_START_MISSING":
+        return t("weekStartMissing");
+      case "MISSING_FIELDS":
+        return t("missingFields");
+      case "ENTRY_NOT_FOUND":
+        return t("entryNotFound");
+      default:
+        return errorCode && errorCode.trim() ? errorCode : t("unknown");
+    }
+  }
 
   useEffect(() => {
     setDocTitle((current) => {
@@ -502,6 +516,7 @@ export default function AdminWochenplanPage() {
         current === translate("TR", "siteSheetDefaultTitle", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
         current === translate("SQ", "siteSheetDefaultTitle", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
         current === translate("KU", "siteSheetDefaultTitle", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
+        current === translate("RO", "siteSheetDefaultTitle", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
         current === translate("DE", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
         current === translate("EN", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
         current === translate("IT", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
@@ -509,7 +524,6 @@ export default function AdminWochenplanPage() {
         current === translate("SQ", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
         current === translate("KU", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS) ||
         current === translate("RO", "document", ADMIN_WEEKLY_PLAN_UI_TEXTS)
-
       ) {
         return t("document");
       }
@@ -1073,7 +1087,8 @@ export default function AdminWochenplanPage() {
 
       if (!res.ok) {
         const err: unknown = await res.json().catch(() => ({}));
-        const msg = getStringProp(err, "error") ?? t("unknown");
+        const rawMsg = getStringProp(err, "error");
+        const msg = mapWeeklyPlanApiError(rawMsg);
         setPageError(`${t("saveEntryFailed")} ${msg}`);
         return;
       }
@@ -1097,7 +1112,10 @@ export default function AdminWochenplanPage() {
         credentials: "include",
       });
       if (!res.ok) {
-        setPageError(t("deleteEntryFailed"));
+        const err: unknown = await res.json().catch(() => ({}));
+        const rawMsg = getStringProp(err, "error");
+        const msg = mapWeeklyPlanApiError(rawMsg);
+        setPageError(`${t("deleteEntryFailed")} ${msg}`);
         return;
       }
       closeEntryModal();
@@ -1129,7 +1147,8 @@ export default function AdminWochenplanPage() {
 
       if (!res.ok) {
         const err: unknown = await res.json().catch(() => ({}));
-        const msg = getStringProp(err, "error") ?? t("unknown");
+        const rawMsg = getStringProp(err, "error");
+        const msg = mapWeeklyPlanApiError(rawMsg);
         setPageError(`${t("saveNoteFailed")} ${msg}`);
         return;
       }
@@ -1153,7 +1172,10 @@ export default function AdminWochenplanPage() {
         credentials: "include",
       });
       if (!res.ok) {
-        setPageError(t("deleteNoteFailed"));
+        const err: unknown = await res.json().catch(() => ({}));
+        const rawMsg = getStringProp(err, "error");
+        const msg = mapWeeklyPlanApiError(rawMsg);
+        setPageError(`${t("deleteNoteFailed")} ${msg}`);
         return;
       }
       closeNoteModal();
@@ -1442,7 +1464,7 @@ export default function AdminWochenplanPage() {
                                 </div>
                                 {e.noteEmployee ? (
                                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-                                    📝 MA: {e.noteEmployee}
+                                    {t("employeeNotePrefix")} {e.noteEmployee}
                                   </div>
                                 ) : null}
                               </div>

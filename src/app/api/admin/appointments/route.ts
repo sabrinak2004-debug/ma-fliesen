@@ -59,7 +59,7 @@ export async function GET(req: Request) {
 
   const admin = await requireAdmin(session.userId, session.companyId);
   if (!admin) {
-    return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
   }
 
   const url = new URL(req.url);
@@ -72,24 +72,24 @@ export async function GET(req: Request) {
 
   if (date) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return NextResponse.json({ ok: false, error: "date Format muss YYYY-MM-DD sein" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "INVALID_DATE_FORMAT" }, { status: 400 });
     }
     // Ganzer Tag in UTC: [00:00, 24:00)
     rangeFrom = utcFromLocalDateTime(date, "00:00");
     rangeTo = utcFromLocalDateTime(date, "23:59");
   } else {
     if (!from || !to) {
-      return NextResponse.json({ ok: false, error: "from/to oder date fehlt" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "MISSING_FROM_TO_OR_DATE" }, { status: 400 });
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
-      return NextResponse.json({ ok: false, error: "from/to Format muss YYYY-MM-DD sein" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "INVALID_FROM_TO_FORMAT" }, { status: 400 });
     }
     rangeFrom = utcFromLocalDateTime(from, "00:00");
     rangeTo = utcFromLocalDateTime(to, "23:59");
   }
 
   if (!rangeFrom || !rangeTo) {
-    return NextResponse.json({ ok: false, error: "Ungültiger Zeitraum" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "INVALID_RANGE" }, { status: 400 });
   }
 
   const events = await prisma.calendarEvent.findMany({
@@ -124,11 +124,11 @@ export async function POST(req: Request) {
 
   const admin = await requireAdmin(session.userId, session.companyId);
   if (!admin) {
-    return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
   }
 
   const body: unknown = await req.json().catch(() => null);
-  if (!isRecord(body)) return NextResponse.json({ ok: false, error: "Ungültige Daten" }, { status: 400 });
+  if (!isRecord(body)) return NextResponse.json({ ok: false, error: "INVALID_DATA" }, { status: 400 });
 
   const date = getString(body, "date").trim();
   const startHHMM = getString(body, "startHHMM").trim();
@@ -138,13 +138,13 @@ export async function POST(req: Request) {
   const notesRaw = getString(body, "notes").trim();
 
   if (!date || !startHHMM || !endHHMM || !title) {
-    return NextResponse.json({ ok: false, error: "date, startHHMM, endHHMM, title sind Pflicht" }, { status: 400 });
-  }
+  return NextResponse.json({ ok: false, error: "MISSING_REQUIRED_FIELDS" }, { status: 400 });
+}
 
   const startAt = utcFromLocalDateTime(date, startHHMM);
   const endAt = utcFromLocalDateTime(date, endHHMM);
-  if (!startAt || !endAt) return NextResponse.json({ ok: false, error: "Ungültiges Datum/Zeit" }, { status: 400 });
-  if (endAt <= startAt) return NextResponse.json({ ok: false, error: "Ende muss nach Start liegen" }, { status: 400 });
+  if (!startAt || !endAt) return NextResponse.json({ ok: false, error: "INVALID_DATE_TIME" }, { status: 400 });
+  if (endAt <= startAt) return NextResponse.json({ ok: false, error: "END_MUST_BE_AFTER_START" }, { status: 400 });
 
   const created = await prisma.calendarEvent.create({
     data: {

@@ -72,11 +72,11 @@ export async function PUT(req: Request, ctx: Ctx) {
 
   const admin = await requireAdmin(session.userId, session.companyId);
   if (!admin) {
-    return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
   }
 
   const id = await getIdFromCtx(ctx);
-  if (!id) return NextResponse.json({ ok: false, error: "id fehlt" }, { status: 400 });
+  if (!id) return NextResponse.json({ ok: false, error: "MISSING_ID" }, { status: 400 });
 
   const existing = await prisma.calendarEvent.findFirst({
     where: {
@@ -87,10 +87,10 @@ export async function PUT(req: Request, ctx: Ctx) {
       },
     },
   });
-  if (!existing) return NextResponse.json({ ok: false, error: "Termin nicht gefunden" }, { status: 404 });
+  if (!existing) return NextResponse.json({ ok: false, error: "APPOINTMENT_NOT_FOUND" }, { status: 404 });
 
   const body: unknown = await req.json().catch(() => null);
-  if (!isRecord(body)) return NextResponse.json({ ok: false, error: "Ungültige Daten" }, { status: 400 });
+  if (!isRecord(body)) return NextResponse.json({ ok: false, error: "INVALID_DATA" }, { status: 400 });
 
   const date = getString(body, "date").trim();
   const startHHMM = getString(body, "startHHMM").trim();
@@ -100,13 +100,13 @@ export async function PUT(req: Request, ctx: Ctx) {
   const notesRaw = getString(body, "notes").trim();
 
   if (!date || !startHHMM || !endHHMM || !title) {
-    return NextResponse.json({ ok: false, error: "date, startHHMM, endHHMM, title sind Pflicht" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "MISSING_REQUIRED_FIELDS" }, { status: 400 });
   }
 
   const startAt = utcFromLocalDateTime(date, startHHMM);
   const endAt = utcFromLocalDateTime(date, endHHMM);
-  if (!startAt || !endAt) return NextResponse.json({ ok: false, error: "Ungültiges Datum/Zeit" }, { status: 400 });
-  if (endAt <= startAt) return NextResponse.json({ ok: false, error: "Ende muss nach Start liegen" }, { status: 400 });
+  if (!startAt || !endAt) return NextResponse.json({ ok: false, error: "INVALID_DATE_TIME" }, { status: 400 });
+  if (endAt <= startAt) return NextResponse.json({ ok: false, error: "END_MUST_BE_AFTER_START" }, { status: 400 });
 
   const updated = await prisma.calendarEvent.update({
     where: { id: existing.id },
@@ -190,8 +190,8 @@ export async function PUT(req: Request, ctx: Ctx) {
     return NextResponse.json(
       {
         ok: false,
-        error: "Termin wurde in der App gespeichert, aber nicht in Google aktualisiert.",
-        details: error instanceof Error ? error.message : "Unbekannter Google-Fehler",
+        error: "GOOGLE_SYNC_UPDATE_FAILED",
+        details: error instanceof Error ? error.message : "UNKNOWN_GOOGLE_ERROR",
       },
       { status: 500 }
     );
@@ -219,11 +219,11 @@ export async function DELETE(_req: Request, ctx: Ctx) {
 
   const admin = await requireAdmin(session.userId, session.companyId);
   if (!admin) {
-    return NextResponse.json({ ok: false, error: "Keine Berechtigung" }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
   }
 
   const id = await getIdFromCtx(ctx);
-  if (!id) return NextResponse.json({ ok: false, error: "id fehlt" }, { status: 400 });
+  if (!id) return NextResponse.json({ ok: false, error: "MISSING_ID" }, { status: 400 });
 
   const existing = await prisma.calendarEvent.findFirst({
     where: {
@@ -235,7 +235,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
     },
     select: { id: true, googleEventId: true },
   });
-  if (!existing) return NextResponse.json({ ok: false, error: "Termin nicht gefunden" }, { status: 404 });
+  if (!existing) return NextResponse.json({ ok: false, error: "APPOINTMENT_NOT_FOUND" }, { status: 404 });
 
   try {
     const googleClient = await getAuthedCalendarClient(admin.id);
