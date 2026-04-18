@@ -19,7 +19,7 @@ import {
   getMissingRequiredWorkDates,
 } from "@/lib/timesheetLock";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
-import { buildPushUrl, sendPushToAdmins } from "@/lib/webpush";
+import { buildPushUrl, sendLocalizedPushToAdmins } from "@/lib/webpush";
 
 type CreateTimeEntryCorrectionRequestBody = {
   targetDate?: unknown;
@@ -422,12 +422,22 @@ export async function POST(req: Request) {
       : `${startDateYMD} bis ${endDateYMD}`;
 
   if (!adminTaskForAutoApproval) {
-    await sendPushToAdmins({
+    await sendLocalizedPushToAdmins({
       companyId: session.companyId,
-      title: t("newCorrectionRequestPushTitle"),
-      body: translate(language, "newCorrectionRequestPushBody", TIME_ENTRY_CORRECTION_API_TEXTS)
-        .replace("{name}", session.fullName)
-        .replace("{dateLabel}", dateLabel),
+      title: (adminLanguage) =>
+        translate(
+          adminLanguage,
+          "newCorrectionRequestPushTitle",
+          TIME_ENTRY_CORRECTION_API_TEXTS
+        ),
+      body: (adminLanguage) =>
+        translate(
+          adminLanguage,
+          "newCorrectionRequestPushBody",
+          TIME_ENTRY_CORRECTION_API_TEXTS
+        )
+          .replace("{name}", session.fullName)
+          .replace("{dateLabel}", dateLabel),
       url: buildPushUrl("/admin/nachtragsanfragen"),
     });
   }
