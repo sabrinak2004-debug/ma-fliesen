@@ -6,10 +6,12 @@ import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 import {
   ADMIN_WEEKLY_PLAN_UI_TEXTS,
   normalizeAppUiLanguage,
+  toHtmlLang,
   translate,
   type AdminWeeklyPlanTextKey,
   type AppUiLanguage,
 } from "@/lib/i18n";
+import { sendPushToUser } from "@/lib/webpush";
 
 function parseYMD(ymd: string) {
   const [y, m, d] = ymd.split("-").map(Number);
@@ -95,6 +97,89 @@ function tWeekly(
     key,
     ADMIN_WEEKLY_PLAN_UI_TEXTS
   );
+}
+
+function formatWorkDateForLanguage(
+  workDate: string,
+  language: string | null | undefined
+): string {
+  return new Intl.DateTimeFormat(toHtmlLang(toAppUiLanguage(language)), {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Europe/Berlin",
+  }).format(parseYMD(workDate));
+}
+
+function buildPlanCreatedPushText(params: {
+  language: string | null | undefined;
+  workDate: string;
+  startHHMM: string;
+  endHHMM: string;
+  activity: string;
+}): { title: string; body: string } {
+  const appLanguage = toAppUiLanguage(params.language);
+  const dateLabel = formatWorkDateForLanguage(params.workDate, params.language);
+  const activityLabel = params.activity.trim();
+
+  switch (appLanguage) {
+    case "EN":
+      return {
+        title: "New assignment",
+        body: activityLabel
+          ? `You have been assigned a new job on ${dateLabel} (${params.startHHMM}–${params.endHHMM}): ${activityLabel}`
+          : `You have been assigned a new job on ${dateLabel} (${params.startHHMM}–${params.endHHMM}).`,
+      };
+
+    case "IT":
+      return {
+        title: "Nuovo incarico",
+        body: activityLabel
+          ? `Ti è stato assegnato un nuovo incarico per il ${dateLabel} (${params.startHHMM}–${params.endHHMM}): ${activityLabel}`
+          : `Ti è stato assegnato un nuovo incarico per il ${dateLabel} (${params.startHHMM}–${params.endHHMM}).`,
+      };
+
+    case "TR":
+      return {
+        title: "Yeni görev",
+        body: activityLabel
+          ? `${dateLabel} için (${params.startHHMM}–${params.endHHMM}) sana yeni bir görev atandı: ${activityLabel}`
+          : `${dateLabel} için (${params.startHHMM}–${params.endHHMM}) sana yeni bir görev atandı.`,
+      };
+
+    case "SQ":
+      return {
+        title: "Detyrë e re",
+        body: activityLabel
+          ? `Të është caktuar një detyrë e re për ${dateLabel} (${params.startHHMM}–${params.endHHMM}): ${activityLabel}`
+          : `Të është caktuar një detyrë e re për ${dateLabel} (${params.startHHMM}–${params.endHHMM}).`,
+      };
+
+    case "KU":
+      return {
+        title: "Erka nû",
+        body: activityLabel
+          ? `Ji bo ${dateLabel} (${params.startHHMM}–${params.endHHMM}) erka nû ji te re hat tayînkirin: ${activityLabel}`
+          : `Ji bo ${dateLabel} (${params.startHHMM}–${params.endHHMM}) erka nû ji te re hat tayînkirin.`,
+      };
+
+    case "RO":
+      return {
+        title: "Sarcină nouă",
+        body: activityLabel
+          ? `Ai primit o sarcină nouă pentru ${dateLabel} (${params.startHHMM}–${params.endHHMM}): ${activityLabel}`
+          : `Ai primit o sarcină nouă pentru ${dateLabel} (${params.startHHMM}–${params.endHHMM}).`,
+      };
+
+    case "DE":
+    default:
+      return {
+        title: "Neuer Einsatz",
+        body: activityLabel
+          ? `Dir wurde ein neuer Einsatz für den ${dateLabel} (${params.startHHMM}–${params.endHHMM}) zugeteilt: ${activityLabel}`
+          : `Dir wurde ein neuer Einsatz für den ${dateLabel} (${params.startHHMM}–${params.endHHMM}) zugeteilt.`,
+      };
+  }
 }
 
 export async function GET(req: Request) {
@@ -192,9 +277,11 @@ export async function POST(req: Request) {
     where: { id: String(userId) },
     select: {
       id: true,
+      fullName: true,
       companyId: true,
       isActive: true,
       role: true,
+      language: true,
     },
   });
 
@@ -288,6 +375,29 @@ export async function POST(req: Request) {
   const saved = id
     ? await prisma.planEntry.update({ where: { id: String(id) }, data })
     : await prisma.planEntry.create({ data });
+
+  if (!id) {
+    try {
+      const pushText = buildPlanCreatedPushText({
+        language: targetUser.language,
+        workDate: String(workDate),
+        startHHMM: String(startHHMM),
+        endHHMM: String(endHHMM),
+        activity: String(activity),
+      });
+
+      await sendPushToUser(targetUser.id, {
+        title: pushText.title,
+        body: pushText.body,
+        url: "/kalender",
+      });
+    } catch (error: unknown) {
+      console.error("Failed to send plan-entry push notification", {
+        targetUserId: targetUser.id,
+        error,
+      });
+    }
+  }
 
   return NextResponse.json({ ok: true, entry: saved });
 }
