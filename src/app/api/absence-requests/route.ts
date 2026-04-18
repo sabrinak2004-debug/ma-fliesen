@@ -8,7 +8,7 @@ import {
 } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { buildPushUrl, sendPushToAdmins } from "@/lib/webpush";
+import { buildPushUrl, sendPushToUser } from "@/lib/webpush";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 import {
   ADMIN_ABSENCE_REQUEST_PUSH_TEXTS,
@@ -1139,36 +1139,56 @@ export async function POST(req: Request) {
     },
   });
 
-  const typeLabel =
-    typeRaw === "VACATION"
-      ? translateAdminAbsenceRequestPushText(language, "typeVacation")
-      : translateAdminAbsenceRequestPushText(language, "typeSick");
-
-  const compensationLabel =
-    typeRaw === "VACATION"
-      ? finalCompensation === AbsenceCompensation.UNPAID
-        ? translateAdminAbsenceRequestPushText(language, "compensationUnpaid")
-        : translateAdminAbsenceRequestPushText(language, "compensationPaid")
-      : "";
-
-  const dateLabel =
-    dayPortion === AbsenceDayPortion.HALF_DAY
-      ? `${startDate} (${translateAdminAbsenceRequestPushText(language, "scopeHalfDay")})`
-      : startDate === endDate
-        ? startDate
-        : `${startDate} - ${endDate}`;
-
   const adminTargetUrl =
     typeRaw === "VACATION"
       ? buildPushUrl("/admin/urlaubsantraege")
       : buildPushUrl("/admin/krankheitsantraege");
 
-  await sendPushToAdmins({
-    companyId: session.companyId,
-    title: translateAbsenceRequestText(language, "newAbsenceRequestPushTitle"),
-    body: `${session.fullName}: ${typeLabel} (${dateLabel}${typeRaw === "VACATION" ? `, ${compensationLabel}` : ""})`,
-    url: adminTargetUrl,
+  const admins = await prisma.appUser.findMany({
+    where: {
+      companyId: session.companyId,
+      role: "ADMIN",
+      isActive: true,
+    },
+    select: {
+      id: true,
+      language: true,
+    },
   });
+
+  for (const adminUser of admins) {
+    const adminLanguage = toAppUiLanguage(adminUser.language);
+
+    const typeLabel =
+      typeRaw === "VACATION"
+        ? translateAdminAbsenceRequestPushText(adminLanguage, "typeVacation")
+        : translateAdminAbsenceRequestPushText(adminLanguage, "typeSick");
+
+    const compensationLabel =
+      typeRaw === "VACATION"
+        ? finalCompensation === AbsenceCompensation.UNPAID
+          ? translateAdminAbsenceRequestPushText(adminLanguage, "compensationUnpaid")
+          : translateAdminAbsenceRequestPushText(adminLanguage, "compensationPaid")
+        : "";
+
+    const dateLabel =
+      dayPortion === AbsenceDayPortion.HALF_DAY
+        ? `${startDate} (${translateAdminAbsenceRequestPushText(adminLanguage, "scopeHalfDay")})`
+        : startDate === endDate
+          ? startDate
+          : `${startDate} - ${endDate}`;
+
+    await sendPushToUser(adminUser.id, {
+      title: translateAbsenceRequestText(
+        adminLanguage,
+        "newAbsenceRequestPushTitle"
+      ),
+      body: `${session.fullName}: ${typeLabel} (${dateLabel}${
+        typeRaw === "VACATION" ? `, ${compensationLabel}` : ""
+      })`,
+      url: adminTargetUrl,
+    });
+  }
 
   return NextResponse.json({
     ok: true,

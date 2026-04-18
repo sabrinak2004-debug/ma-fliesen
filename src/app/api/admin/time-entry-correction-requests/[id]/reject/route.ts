@@ -17,15 +17,6 @@ type RouteContext = {
 
 export async function POST(_req: Request, context: RouteContext) {
   const admin = await requireAdmin();
-  const adminUser = admin
-    ? await prisma.appUser.findUnique({
-        where: { id: admin.id },
-        select: { language: true },
-      })
-    : null;
-  const language = normalizeAppUiLanguage(adminUser?.language);
-  const t = (key: keyof typeof TIME_ENTRY_CORRECTION_API_TEXTS) =>
-    translate(language, key, TIME_ENTRY_CORRECTION_API_TEXTS);
 
   if (!admin) {
     return NextResponse.json(
@@ -39,7 +30,7 @@ export async function POST(_req: Request, context: RouteContext) {
 
   if (!requestId) {
     return NextResponse.json(
-      { ok: false, error: t("missingRequestId") },
+      { ok: false, error: "MISSING_REQUEST_ID" },
       { status: 400 }
     );
   }
@@ -53,6 +44,7 @@ export async function POST(_req: Request, context: RouteContext) {
           fullName: true,
           isActive: true,
           companyId: true,
+          language: true,
         },
       },
     },
@@ -60,10 +52,14 @@ export async function POST(_req: Request, context: RouteContext) {
 
   if (!existing) {
     return NextResponse.json(
-      { ok: false, error: t("requestNotFound") },
+      { ok: false, error: "REQUEST_NOT_FOUND" },
       { status: 404 }
     );
   }
+
+  const employeeLanguage = normalizeAppUiLanguage(existing.user.language);
+  const t = (key: keyof typeof TIME_ENTRY_CORRECTION_API_TEXTS) =>
+    translate(employeeLanguage, key, TIME_ENTRY_CORRECTION_API_TEXTS);
 
   if (existing.user.companyId !== admin.companyId) {
     return NextResponse.json(
