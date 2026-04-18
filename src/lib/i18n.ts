@@ -8284,6 +8284,8 @@ export type AdminWeeklyPlanTextKey =
   | "documentDeleteFailed"
   | "title"
   | "file"
+  | "chooseFile"
+  | "noFileSelected"
   | "uploadDocument"
   | "uploading"
   | "documentAllowedInfo"
@@ -8801,6 +8803,24 @@ export const ADMIN_WEEKLY_PLAN_UI_TEXTS: Record<
     SQ: "Skedari",
     KU: "Pel",
     RO: "Fișier",
+  },
+  chooseFile: {
+    DE: "Datei auswählen",
+    EN: "Choose file",
+    IT: "Seleziona file",
+    TR: "Dosya seç",
+    SQ: "Zgjidh skedar",
+    KU: "Pel hilbijêre",
+    RO: "Alege fișier",
+  },
+  noFileSelected: {
+    DE: "Noch keine Datei ausgewählt",
+    EN: "No file selected yet",
+    IT: "Nessun file selezionato",
+    TR: "Henüz dosya seçilmedi",
+    SQ: "Nuk është zgjedhur ende asnjë skedar",
+    KU: "Hêj pel nehatiye hilbijartin",
+    RO: "Încă nu a fost selectat niciun fișier",
   },
   uploadDocument: {
     DE: "Dokument hochladen",

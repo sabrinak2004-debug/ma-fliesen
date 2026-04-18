@@ -2102,16 +2102,52 @@ export default function AdminWochenplanPage() {
 
                   <div>
                     <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>{t("file")}</div>
-                    <input
-                      type="file"
-                      accept=".pdf,image/jpeg,image/png,image/webp"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0] ?? null;
-                        setDocsError(null);
-                        setSelectedFile(f);
+
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        flexWrap: "wrap",
+                        width: "100%",
                       }}
-                      className="input"
-                    />
+                    >
+                      <input
+                        type="file"
+                        accept=".pdf,image/jpeg,image/png,image/webp"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0] ?? null;
+                          setDocsError(null);
+                          setSelectedFile(f);
+                        }}
+                        style={{ display: "none" }}
+                      />
+
+                      <span
+                        className="pill"
+                        style={{
+                          cursor: "pointer",
+                          userSelect: "none",
+                        }}
+                      >
+                        {t("chooseFile")}
+                      </span>
+
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: "var(--muted)",
+                          minWidth: 0,
+                          flex: 1,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={selectedFile?.name ?? t("noFileSelected")}
+                      >
+                        {selectedFile?.name ?? t("noFileSelected")}
+                      </span>
+                    </label>
                   </div>
                 </div>
 
