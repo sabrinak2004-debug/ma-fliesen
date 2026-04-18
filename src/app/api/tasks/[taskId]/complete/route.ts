@@ -6,13 +6,52 @@ import {
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { sendPushToAdmins } from "@/lib/webpush";
+import { sendPushToUser } from "@/lib/webpush";
 import {
   ADMIN_TASKS_UI_TEXTS,
   translate,
   type AppUiLanguage,
   type AdminTasksTextKey,
 } from "@/lib/i18n";
+
+type SupportedLang = "DE" | "EN" | "IT" | "TR" | "SQ" | "KU" | "RO";
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: unknown): value is TranslationMap {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU" ||
+    language === "RO"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string | null | undefined,
+  translations: unknown,
+  language: string | null | undefined
+): string {
+  const fallback = originalText ?? "";
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return fallback;
+  }
+
+  const translated = translations[targetLanguage];
+  return typeof translated === "string" && translated.trim() ? translated : fallback;
+}
 
 type Params = {
   params: Promise<{
@@ -358,12 +397,31 @@ export async function POST(
     },
   });
 
-  await sendPushToAdmins({
-    companyId: session.companyId,
-    title: translateAdminTaskText(language, "taskCompletedPushTitle"),
-    body: `${task.assignedToUser.fullName}: ${task.title}`,
-    url: "/admin/tasks",
+  const admins = await prisma.appUser.findMany({
+    where: {
+      companyId: session.companyId,
+      role: "ADMIN",
+      isActive: true,
+    },
+    select: {
+      id: true,
+      language: true,
+    },
   });
+
+  for (const adminUser of admins) {
+    const adminLanguage = toSupportedLang(adminUser.language);
+
+    await sendPushToUser(adminUser.id, {
+      title: translateAdminTaskText(adminLanguage, "taskCompletedPushTitle"),
+      body: `${task.assignedToUser.fullName}: ${getTranslatedText(
+        task.title,
+        task.titleTranslations,
+        adminLanguage
+      )}`,
+      url: "/admin/tasks",
+    });
+  }
 
   return NextResponse.json({
   task: {
