@@ -1558,14 +1558,13 @@ function KalenderPageInner({
   ]);
 
   useEffect(() => {
-    if (isAdmin) return;
-
     const openDateParam = searchParams.get("openDate");
     const absenceStartParam = searchParams.get("absenceStart");
     const absenceEndParam = searchParams.get("absenceEnd");
     const absenceTypeParam = searchParams.get("absenceType");
     const absenceDayPortionParam = searchParams.get("absenceDayPortion");
     const absenceCompensationParam = searchParams.get("absenceCompensation");
+    const openSourceParam = searchParams.get("openSource");
 
     const resolvedOpenDate =
       openDateParam || absenceStartParam || absenceEndParam;
@@ -1593,6 +1592,16 @@ function KalenderPageInner({
       parseAbsenceCompensationParam(absenceCompensationParam) ?? "PAID";
 
     setCursor(ymdToDateLocal(resolvedOpenDate));
+
+    if (openSourceParam === "plan-entry") {
+      setViewMode("WEEK");
+    }
+
+    if (isAdmin) {
+      openDay(resolvedOpenDate);
+      router.replace("/kalender");
+      return;
+    }
 
     openDay(resolvedOpenDate, {
       absenceStart: resolvedStart,

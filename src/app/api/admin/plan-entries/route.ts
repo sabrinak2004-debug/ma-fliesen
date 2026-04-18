@@ -389,7 +389,7 @@ export async function POST(req: Request) {
       await sendPushToUser(targetUser.id, {
         title: pushText.title,
         body: pushText.body,
-        url: "/kalender",
+        url: `/kalender?openDate=${encodeURIComponent(String(workDate))}&openSource=plan-entry`,
       });
     } catch (error: unknown) {
       console.error("Failed to send plan-entry push notification", {
