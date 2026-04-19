@@ -17,27 +17,27 @@ export default function SickBedIcon({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Bettpfosten links */}
+      {/* Linkes Bettbein / Bettpfosten */}
       <rect x="6" y="18" width="6" height="32" rx="3" fill={color} />
 
       {/* Kopf */}
       <circle cx="20" cy="30" r="6" fill={color} />
 
-      {/* Bettfläche (unter Kopf) */}
-      <rect x="12" y="36" width="18" height="6" fill={color} />
+      {/* Linke Liegefläche (dünner, unten bündig mit rechts) */}
+      <rect x="12" y="37" width="11" height="5" fill={color} />
 
-      {/* Bett (große Fläche mit Rundung rechts) */}
+      {/* Rechte Liegefläche (mit kleiner Lücke zur linken Fläche, insgesamt dünner) */}
       <path
-        d="M30 36 H48 A10 10 0 0 1 58 46 V48 A4 4 0 0 1 54 52 H30 Z"
+        d="M26 33 H42 C48 33 52 37 52 43 V50 H49 V43 C49 39.7 46.3 37 43 37 H26 Z"
         fill={color}
       />
 
-      {/* Bettbein rechts */}
-      <rect x="52" y="48" width="6" height="8" rx="3" fill={color} />
+      {/* Rechtes Bettbein, unten bündig mit links */}
+      <rect x="49" y="42" width="3" height="8" rx="1.5" fill={color} />
 
-      {/* Kreuz oben */}
-      <rect x="36" y="8" width="8" height="20" rx="4" fill={color} />
-      <rect x="30" y="14" width="20" height="8" rx="4" fill={color} />
+      {/* Kreuz */}
+      <rect x="28" y="8" width="8" height="16" rx="2" fill={color} />
+      <rect x="24" y="12" width="16" height="8" rx="2" fill={color} />
     </svg>
   );
 }
