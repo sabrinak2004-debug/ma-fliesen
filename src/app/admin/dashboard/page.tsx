@@ -11,7 +11,7 @@ import {
   translate,
   type AppUiLanguage,
 } from "@/lib/i18n";
-import { Download } from "lucide-react";
+import { Download, ClipboardList } from "lucide-react";
 
 /* =========================
    Types (Dashboard Timeline)
@@ -1286,7 +1286,8 @@ export default function AdminDashboardPage() {
             }}
             title={t("manageTasks")}
           >
-            📋 {t("manageTasks")}
+            <ClipboardList/>
+            {t("manageTasks")}
           </Link>
 
           <button
