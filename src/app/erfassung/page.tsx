@@ -9,7 +9,7 @@ import { translate, type AppUiLanguage } from "@/lib/i18n";
 import { type ErfassungTextKey, ERFASSUNG_DICTIONARY } from "@/lib/i18n";
 import { Pause } from 'lucide-react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPencil, faTrashCan } from "@fortawesome/free-solid-svg-icons";
+import { faPencil, faTrashCan, faPause } from "@fortawesome/free-solid-svg-icons";
 
 type MeResponse =
   | {
@@ -1742,7 +1742,7 @@ useEffect(() => {
 
             <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
         <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <span style={{ color: "var(--accent)" }}><Pause /></span> {t("breakCapture")}
+          <span style={{ color: "var(--accent)" }}><FontAwesomeIcon icon={faPause} /></span> {t("breakCapture")}
         </div>
 
         {breakError ? (

@@ -19,7 +19,7 @@ import {
   TreePalm
 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStethoscope, faPencil, faTrashCan } from "@fortawesome/free-solid-svg-icons";
+import { faStethoscope, faPencil, faTrashCan, faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import { Stethoscope } from "lucide-react";
 
 type CalendarDay = {
@@ -2622,7 +2622,7 @@ function KalenderPageInner({
 
                         {a.notes ? (
                           <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>
-                            📝 {a.notes}
+                            <FontAwesomeIcon icon={faPenToSquare} /> {a.notes}
                           </div>
                         ) : null}
                       </div>
@@ -2837,7 +2837,7 @@ function KalenderPageInner({
 
                       {p.noteEmployee ? (
                         <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                          📝 {p.noteEmployee}
+                          <FontAwesomeIcon icon={faPenToSquare} /> {p.noteEmployee}
                         </div>
                       ) : null}
                     </div>
@@ -2917,7 +2917,7 @@ function KalenderPageInner({
 
                       {p.noteEmployee ? (
                         <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                          📝 {p.noteEmployee}
+                          <FontAwesomeIcon icon={faPenToSquare} /> {p.noteEmployee}
                         </div>
                       ) : null}
 
@@ -3078,7 +3078,7 @@ function KalenderPageInner({
 
                         {b.noteEmployee.trim() ? (
                           <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                            📝 {b.noteEmployee}
+                            <FontAwesomeIcon icon={faPenToSquare} /> {b.noteEmployee}
                           </div>
                         ) : null}
 
