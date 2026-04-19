@@ -51,7 +51,6 @@ export default function SickBedIcon({
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
 
       {/* Rechte Rundung runter */}
