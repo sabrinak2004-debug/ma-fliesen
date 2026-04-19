@@ -11,6 +11,7 @@ import {
   translate,
   type AppUiLanguage,
 } from "@/lib/i18n";
+import { Download } from "lucide-react";
 
 /* =========================
    Types (Dashboard Timeline)
@@ -1295,7 +1296,8 @@ export default function AdminDashboardPage() {
             style={{ fontWeight: 900 }}
             title={t("exportAdmin")}
           >
-            ⬇️ Export
+          <Download size={18} />
+            Export
           </button>
 
           <Modal
