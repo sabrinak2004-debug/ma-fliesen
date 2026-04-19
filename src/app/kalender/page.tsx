@@ -2971,7 +2971,7 @@ function KalenderPageInner({
                             fontWeight: 900,
                           }}
                         >
-                          <TreePalm size={18} style={{ flex: "0 0 auto" }} />
+                          <TreePalm style={{ flex: "0 0 auto" }} />
                           <span>
                             {replaceTemplate(t("vacationConfirmedSingleDay"), { date: selectedDate })}
                           </span>
