@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
-import { Info } from "lucide-react";
+import { Info, Stethoscope } from "lucide-react";
 import { TreePalm } from "lucide-react";
 import {
   ADMIN_DASHBOARD_UI_TEXTS,
@@ -2404,7 +2404,7 @@ export default function AdminDashboardPage() {
                                   <div style={{ color: "var(--muted)", paddingLeft: 6 }}>{t("noWorkTimesInMonth")}</div>
                                 )
                               ) : null}
-
+                              <Stethoscope />
                               {sectionHeader(
                                 "SICK",
                                 t("sickness"),
