@@ -10,6 +10,7 @@ import { translate, type AppUiLanguage } from "@/lib/i18n";
 import { TreePalm, Stethoscope, HandCoins  } from 'lucide-react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBusinessTime } from "@fortawesome/free-solid-svg-icons";
+import RemainingVacationIcon from "@/components/icons/RemainingVacationIcon";
 
 
 type WorkEntry = {
@@ -2057,7 +2058,7 @@ const resetAbsFilters = (): void => {
               {t("annualEntitlement")} {String(annualVacationDays).replace(".", ",")} {t("daysLabel")}
             </div>
           </div>
-          <div className="app-kpi-icon">🗓</div>
+          <div className="app-kpi-icon"><RemainingVacationIcon /></div>
         </div>
 
         <div className="card kpi">
