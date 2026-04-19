@@ -939,6 +939,10 @@ body {
   background: var(--brand-sick-border);
 }
 
+.dot-holiday {
+  background: var(--brand-holiday-border);
+}
+
 /* ===== Entry Cards (Premium UI) ===== */
 
 .entry-grid {
