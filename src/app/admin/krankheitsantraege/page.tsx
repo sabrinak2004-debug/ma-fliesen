@@ -10,6 +10,8 @@ import {
   type AdminSickRequestsTextKey,
   ADMIN_SICK_REQUESTS_UI_TEXTS,
 } from "@/lib/i18n";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faStethoscope } from "@fortawesome/free-solid-svg-icons";
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AbsenceType = "VACATION" | "SICK";
@@ -989,7 +991,7 @@ export default function KrankheitsantraegePage() {
             <div className="small">{t("pendingRequestsKpi")}</div>
             <div className="big">{pendingItems.length}</div>
           </div>
-          <div className="admin-workflow-kpi-icon">🤒</div>
+          <div className="admin-workflow-kpi-icon"><FontAwesomeIcon icon={["fas", "stethoscope"]} /></div>
         </div>
 
         <div className="card kpi">
@@ -1011,7 +1013,7 @@ export default function KrankheitsantraegePage() {
 
       <div className="card card-olive admin-workflow-filter-shell">
         <div className="section-title admin-workflow-filter-title">
-          <span className="admin-workflow-filter-icon">🤒</span>
+          <span className="admin-workflow-filter-icon"><FontAwesomeIcon icon={["fas", "stethoscope"]} /></span>
           {t("pageTitle")}
         </div>
 

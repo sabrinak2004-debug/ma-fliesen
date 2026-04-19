@@ -1205,9 +1205,24 @@ useEffect(() => {
       item.paidVacationUnits > 0 && item.unpaidVacationUnits > 0;
     const requestedDays = totalRequestedVacationDays(item);
     const durationText =
-      item.dayPortion === "HALF_DAY"
-        ? `🌴 ${t("typeVacation")} · ${formatDateLocalized(item.startDate, language)} · 0,5 ${t("day")}`
-        : `🌴 ${t("typeVacation")} · ${rangeLabel(item.startDate, item.endDate, language)} · ${formatVacationDays(requestedDays)} ${requestedDays === 1 ? t("day") : t("days")}`;
+      item.dayPortion === "HALF_DAY" ? (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <TreePalm size={14} style={{ flex: "0 0 auto" }} />
+          <span>
+            {t("typeVacation")} · {formatDateLocalized(item.startDate, language)} · 0,5{" "}
+            {t("day")}
+          </span>
+        </span>
+      ) : (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <TreePalm size={14} style={{ flex: "0 0 auto" }} />
+          <span>
+            {t("typeVacation")} · {rangeLabel(item.startDate, item.endDate, language)} ·{" "}
+            {formatVacationDays(requestedDays)}{" "}
+            {requestedDays === 1 ? t("day") : t("days")}
+          </span>
+        </span>
+      );
 
     return (
       <div
