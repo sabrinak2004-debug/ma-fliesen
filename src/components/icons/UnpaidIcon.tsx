@@ -26,7 +26,7 @@ export default function UnpaidIcon({
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize="24"
-        fontWeight="900"
+        fontWeight="800"
         fill="currentColor"
       >
         €
@@ -36,7 +36,7 @@ export default function UnpaidIcon({
       <path
         d="M4 20L20 4"
         stroke="currentColor"
-        strokeWidth="1"
+        strokeWidth="1.9"
         strokeLinecap="round"
       />
     </svg>
