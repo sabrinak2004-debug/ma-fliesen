@@ -14,7 +14,7 @@ import {
 } from "@/lib/i18n";
 import { Download, ClipboardList, ClockAlert, TriangleAlert, UserRoundCheck, CalendarX2 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPencil, faTrashCan, faInfo, faPenToSquare } from "@fortawesome/free-solid-svg-icons";
+import { faPencil, faTrashCan, faInfo, faPenToSquare, faBriefcase } from "@fortawesome/free-solid-svg-icons";
 import UnpaidIcon from "@/components/icons/UnpaidIcon";
 
 /* =========================
@@ -2170,7 +2170,7 @@ export default function AdminDashboardPage() {
 
                           const cat = openCats[u.userId] ?? defaultCatState;
 
-                          const sectionHeader = (key: CatKey, label: string, countText: string) => (
+                          const sectionHeader = (key: CatKey, label: string, countText: string, icon?:React.ReactNode) => (
                             <div
                               onClick={() => setOpenCats((prev) => toggleCat(prev, u.userId, key))}
                               style={{
@@ -2198,7 +2198,8 @@ export default function AdminDashboardPage() {
                               {sectionHeader(
                                 "WORK",
                                 t("workTimes"),
-                                `${workItems.length} ${workItems.length === 1 ? t("entry") : t("entriesPlural")}`
+                                `${workItems.length} ${workItems.length === 1 ? t("entry") : t("entriesPlural")}`,
+                                <FontAwesomeIcon icon={faBriefcase} />
                               )}
                               {cat.WORK ? (
                                 workItems.length > 0 ? (
@@ -2404,11 +2405,12 @@ export default function AdminDashboardPage() {
                                   <div style={{ color: "var(--muted)", paddingLeft: 6 }}>{t("noWorkTimesInMonth")}</div>
                                 )
                               ) : null}
-                              <Stethoscope />
+
                               {sectionHeader(
                                 "SICK",
                                 t("sickness"),
-                                `${sickRanges.length} ${sickRanges.length === 1 ? t("period") : t("periods")}`
+                                `${sickRanges.length} ${sickRanges.length === 1 ? t("period") : t("periods")}`,
+                                <Stethoscope />
                               )}
                               {cat.SICK ? (
                                 sickRanges.length > 0 ? (
@@ -2447,7 +2449,8 @@ export default function AdminDashboardPage() {
                               {sectionHeader(
                                 "VACATION",
                                 t("vacationLabel"),
-                                `${vacationRanges.length} ${vacationRanges.length === 1 ? t("period") : t("periods")}`
+                                `${vacationRanges.length} ${vacationRanges.length === 1 ? t("period") : t("periods")}`,
+                                <TreePalm />
                               )}
                               {cat.VACATION ? (
                                 vacationRanges.length > 0 ? (
