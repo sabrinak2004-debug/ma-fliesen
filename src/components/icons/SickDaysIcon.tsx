@@ -17,22 +17,22 @@ export default function SickBedIcon({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Linkes Bettbein / Bettpfosten */}
+      {/* Linkes Bettbein / Pfosten */}
       <rect x="6" y="18" width="6" height="32" rx="3" fill={color} />
 
       {/* Kopf */}
       <circle cx="20" cy="30" r="6" fill={color} />
 
-      {/* Linke Liegefläche (dünner, unten bündig mit rechts) */}
-      <rect x="12" y="37" width="11" height="5" fill={color} />
+      {/* Linke Liegefläche */}
+      <rect x="12" y="35" width="11" height="7" fill={color} />
 
-      {/* Rechte Liegefläche (mit kleiner Lücke zur linken Fläche, insgesamt dünner) */}
+      {/* Rechte Liegefläche (JETZT DICKER) */}
       <path
-        d="M26 33 H42 C48 33 52 37 52 43 V50 H49 V43 C49 39.7 46.3 37 43 37 H26 Z"
+        d="M26 30 H42 C48 30 52 35 52 42 V50 H49 V42 C49 37.5 45.5 34 41.5 34 H26 Z"
         fill={color}
       />
 
-      {/* Rechtes Bettbein, unten bündig mit links */}
+      {/* Rechtes Bettbein */}
       <rect x="49" y="42" width="3" height="8" rx="1.5" fill={color} />
 
       {/* Kreuz */}
