@@ -2187,6 +2187,18 @@ export default function AdminDashboardPage() {
                             >
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <span style={{ opacity: 0.9 }}>{cat[key] ? "▼" : "▶"}</span>
+                                {icon ? (
+                                  <span
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      lineHeight: 0,
+                                    }}
+                                  >
+                                    {icon}
+                                  </span>
+                                ) : null}
                                 <span>{label}</span>
                               </div>
                               <div style={{ color: "var(--muted-2)", fontWeight: 900, fontSize: 12 }}>{countText}</div>
