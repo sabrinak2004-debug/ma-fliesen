@@ -7,7 +7,7 @@ type UnpaidIconProps = {
 };
 
 export default function UnpaidIcon({
-  size = 20,
+  size = 24,
   className,
   strokeWidth = 2,
 }: UnpaidIconProps): React.ReactElement {
