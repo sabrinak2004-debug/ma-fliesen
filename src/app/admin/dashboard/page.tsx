@@ -1280,7 +1280,7 @@ export default function AdminDashboardPage() {
         <div style={{ display: "flex", alignItems: "end", gap: 10, flexWrap: "wrap" }}>
           <Link
             href="/admin/tasks"
-            className="tenant-action-link"
+            className="tenant-action-link inline-flex items-center justify-center gap-2 leading-none"
             style={{
               fontWeight: 900,
             }}
