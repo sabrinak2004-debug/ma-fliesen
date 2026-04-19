@@ -19,7 +19,7 @@ import {
   TreePalm
 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStethoscope } from "@fortawesome/free-solid-svg-icons";
+import { faStethoscope, faPencil, faTrashCan } from "@fortawesome/free-solid-svg-icons";
 import { Stethoscope } from "lucide-react";
 
 type CalendarDay = {
@@ -2586,7 +2586,7 @@ function KalenderPageInner({
                               title={t("edit")}
                               className="tenant-icon-button tenant-icon-button-neutral"
                             >
-                              ✏️
+                              <FontAwesomeIcon icon={faPencil} />
                             </button>
                             <button
                               type="button"
@@ -2595,7 +2595,7 @@ function KalenderPageInner({
                               title={t("delete")}
                               className="tenant-icon-button tenant-icon-button-danger"
                             >
-                              🗑️
+                              <FontAwesomeIcon icon={faTrashCan} />
                             </button>
                           </div>
                         </div>

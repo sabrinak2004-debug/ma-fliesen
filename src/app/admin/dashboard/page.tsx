@@ -13,6 +13,8 @@ import {
   type AppUiLanguage,
 } from "@/lib/i18n";
 import { Download, ClipboardList, ClockAlert, TriangleAlert, UserRoundCheck, CalendarX2 } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPencil, faTrashCan } from "@fortawesome/free-solid-svg-icons";
 
 /* =========================
    Types (Dashboard Timeline)
@@ -2366,7 +2368,7 @@ export default function AdminDashboardPage() {
                                                         fontWeight: 900,
                                                       }}
                                                     >
-                                                      ✏️
+                                                      <FontAwesomeIcon icon={faPencil} />
                                                     </button>
 
                                                     <button
@@ -2386,7 +2388,7 @@ export default function AdminDashboardPage() {
                                                         fontWeight: 1000,
                                                       }}
                                                     >
-                                                      🗑️
+                                                      <FontAwesomeIcon icon={faTrashCan} />
                                                     </button>
                                                   </div>
                                                 </div>
