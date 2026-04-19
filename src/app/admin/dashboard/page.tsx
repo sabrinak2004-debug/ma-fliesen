@@ -1286,8 +1286,8 @@ export default function AdminDashboardPage() {
             }}
             title={t("manageTasks")}
           >
-            <ClipboardList/>
-            {t("manageTasks")}
+            <ClipboardList className="w-[18px] h-[18px] shrink-0"/>
+            <span className="leading-none">{t("manageTasks")}</span>
           </Link>
 
           <button
