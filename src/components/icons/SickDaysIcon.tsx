@@ -1,48 +1,43 @@
 import * as React from "react";
 
-type SickDaysIconProps = {
+type SickBedIconProps = {
   size?: number;
-  className?: string;
+  color?: string;
 };
 
-export default function SickDaysIcon({
+export default function SickBedIcon({
   size = 24,
-  className,
-}: SickDaysIconProps): React.ReactElement {
+  color = "currentColor",
+}: SickBedIconProps) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 64 64"
-      fill="currentColor"
-      className={className}
+      fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
     >
-      {/* Kreuz */}
-      <rect x="39" y="11" width="8" height="18" rx="2.2" />
-      <rect x="34" y="16" width="18" height="8" rx="2.2" />
-
       {/* Bettpfosten links */}
-      <rect x="15" y="21" width="3.6" height="24" rx="1.8" />
+      <rect x="6" y="18" width="6" height="32" rx="3" fill={color} />
 
       {/* Kopf */}
-      <circle cx="24.2" cy="29.6" r="4.9" />
+      <circle cx="20" cy="30" r="6" fill={color} />
 
-      {/* Kissen / Verbindung unter Kopf */}
-      <rect x="20.2" y="34.1" width="8.4" height="3.8" rx="1.4" />
+      {/* Bettfläche (unter Kopf) */}
+      <rect x="12" y="36" width="18" height="6" fill={color} />
 
-      {/* Verbindung vom Kopfbereich zum Bett */}
-      <rect x="27.8" y="33.1" width="3.2" height="4.8" rx="1.2" />
+      {/* Bett (große Fläche mit Rundung rechts) */}
+      <path
+        d="M30 36 H48 A10 10 0 0 1 58 46 V48 A4 4 0 0 1 54 52 H30 Z"
+        fill={color}
+      />
 
-      {/* Bettkörper */}
-      <path d="M31 31.8H40.8C46.1 31.8 49.8 35.1 49.8 39.7V40.9H31V31.8Z" />
+      {/* Bettbein rechts */}
+      <rect x="52" y="48" width="6" height="8" rx="3" fill={color} />
 
-      {/* Unterkante Bett */}
-      <rect x="31" y="37.2" width="18.8" height="3.7" rx="1.3" />
-
-      {/* Rechter Bettfuß */}
-      <rect x="48.2" y="40.7" width="3.2" height="8.2" rx="1.6" />
+      {/* Kreuz oben */}
+      <rect x="36" y="8" width="8" height="20" rx="4" fill={color} />
+      <rect x="30" y="14" width="20" height="8" rx="4" fill={color} />
     </svg>
   );
 }
