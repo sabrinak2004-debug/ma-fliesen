@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { translate, type AppUiLanguage } from "@/lib/i18n";
@@ -1001,6 +1001,8 @@ function KalenderPageInner({
     translate(language, key, KALENDER_DICTIONARY);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const didConsumeOpenParamsRef = useRef(false);
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const [viewMode, setViewMode] = useState<CalendarViewMode>("MONTH");
 
@@ -1558,6 +1560,10 @@ function KalenderPageInner({
   ]);
 
   useEffect(() => {
+    if (didConsumeOpenParamsRef.current) {
+      return;
+    }
+
     const openDateParam = searchParams.get("openDate");
     const absenceStartParam = searchParams.get("absenceStart");
     const absenceEndParam = searchParams.get("absenceEnd");
@@ -1591,6 +1597,8 @@ function KalenderPageInner({
     const resolvedCompensation =
       parseAbsenceCompensationParam(absenceCompensationParam) ?? "PAID";
 
+    didConsumeOpenParamsRef.current = true;
+
     setCursor(ymdToDateLocal(resolvedOpenDate));
 
     if (openSourceParam === "plan-entry") {
@@ -1599,7 +1607,7 @@ function KalenderPageInner({
 
     if (isAdmin) {
       openDay(resolvedOpenDate);
-      router.replace("/kalender");
+      router.replace(pathname, { scroll: false });
       return;
     }
 
@@ -1611,8 +1619,8 @@ function KalenderPageInner({
       absenceCompensation: resolvedCompensation,
     });
 
-    router.replace("/kalender");
-  }, [isAdmin, openDay, router, searchParams]);
+    router.replace(pathname, { scroll: false });
+  }, [isAdmin, openDay, pathname, router, searchParams]);
 
   function syncPlanEntryToWorkEntry(plan: PlanEntry): void {
   const syncDate =
