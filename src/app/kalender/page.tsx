@@ -16,6 +16,7 @@ import {
   Flower2,
   Sun,
   PartyPopper,
+  TreePalm
 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStethoscope } from "@fortawesome/free-solid-svg-icons";
@@ -3112,6 +3113,7 @@ function KalenderPageInner({
                 }}
                 disabled={!!selectedRequestBlock}
               >
+                <TreePalm size={14} style={{ flex: "0 0 auto" }} />
                 {t("absenceTypeVacation")}
               </button>
               <button
