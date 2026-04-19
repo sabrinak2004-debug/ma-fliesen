@@ -20,26 +20,29 @@ export default function SickDaysIcon({
       aria-hidden="true"
     >
       {/* Kreuz */}
-      <rect x="40" y="10" width="8" height="20" rx="2.5" />
-      <rect x="34" y="16" width="20" height="8" rx="2.5" />
+      <rect x="39" y="11" width="8" height="18" rx="2.2" />
+      <rect x="34" y="16" width="18" height="8" rx="2.2" />
 
-      {/* Kopf (kleiner + Abstand) */}
-      <circle cx="24" cy="30" r="5" />
+      {/* Bettpfosten links */}
+      <rect x="15" y="21" width="3.6" height="24" rx="1.8" />
 
-      {/* Bettpfosten links (etwas länger) */}
-      <rect x="14" y="20" width="4" height="28" rx="2" />
+      {/* Kopf */}
+      <circle cx="24.2" cy="29.6" r="4.9" />
 
-      {/* Verbindung Kopf -> Bett (dicker + gleiche Höhe) */}
-      <rect x="18" y="34" width="14" height="5" rx="1.5" />
+      {/* Kissen / Verbindung unter Kopf */}
+      <rect x="20.2" y="34.1" width="8.4" height="3.8" rx="1.4" />
 
-      {/* Bettkörper (etwas kompakter) */}
-      <path d="M32 32H46C52 32 56 36 56 41V42H32V32Z" />
+      {/* Verbindung vom Kopfbereich zum Bett */}
+      <rect x="27.8" y="33.1" width="3.2" height="4.8" rx="1.2" />
 
-      {/* rechter Fuß (näher dran) */}
-      <rect x="54" y="42" width="4" height="10" rx="2" />
+      {/* Bettkörper */}
+      <path d="M31 31.8H40.8C46.1 31.8 49.8 35.1 49.8 39.7V40.9H31V31.8Z" />
 
-      {/* untere Linie (gleiche Höhe wie Kopf-Linie) */}
-      <rect x="32" y="37" width="24" height="5" rx="1.5" />
+      {/* Unterkante Bett */}
+      <rect x="31" y="37.2" width="18.8" height="3.7" rx="1.3" />
+
+      {/* Rechter Bettfuß */}
+      <rect x="48.2" y="40.7" width="3.2" height="8.2" rx="1.6" />
     </svg>
   );
 }
