@@ -57,12 +57,14 @@ export default function RemainingVacationIcon({
         strokeWidth={strokeWidth}
       />
 
-      {/* Kalender-Trennlinie */}
+
+      {/* Schirmdach außen */}
       <path
-        d="M2.8 7.25H21.2"
+        d="M8.1 14.25C8.25 11.7 10.35 9.9 13 9.9C15.75 9.9 17.95 11.95 18.05 14.65L8.1 14.25Z"
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
 
       {/* Schirm-Segmente */}
