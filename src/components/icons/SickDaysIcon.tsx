@@ -39,7 +39,7 @@ export default function SickBedIcon({
 
 {/* Linke obere Liegefläche */}
       <path
-        d="M10 38H21"
+        d="M10 38H30"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="butt"
@@ -47,7 +47,7 @@ export default function SickBedIcon({
 
       {/* Rechte Liegefläche mit Rundung */}
       <path
-        d="M25 32 H40 C45 32 48 35 48 40 V46 H25 Z"
+        d="M25 32 H40 C45 32 48 35 48 V46 Z"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
