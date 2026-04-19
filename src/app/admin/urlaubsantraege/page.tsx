@@ -12,6 +12,7 @@ import {
 } from "@/lib/i18n";
 import { Hourglass, CircleCheckBig, TreePalm, Wallet } from "lucide-react";
 import { CircleX } from 'lucide-react';
+import RemainingVacationIcon from "@/components/icons/RemainingVacationIcon";
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AbsenceType = "VACATION" | "SICK";
@@ -1684,7 +1685,7 @@ useEffect(() => {
             ) : null}
           </div>
 
-          <div className="admin-workflow-kpi-icon"><TreePalm /><Wallet /></div>
+          <div className="admin-workflow-kpi-icon"><RemainingVacationIcon /></div>
         </div>
 
         <div className="card kpi">
