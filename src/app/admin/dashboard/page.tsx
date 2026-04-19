@@ -6,6 +6,7 @@ import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { Info } from "lucide-react";
+import { TreePalm } from "lucide-react";
 import {
   ADMIN_DASHBOARD_UI_TEXTS,
   translate,
@@ -2466,10 +2467,24 @@ export default function AdminDashboardPage() {
                                             borderRadius: 10,
                                             fontWeight: 1100,
                                             background: "color-mix(in srgb, var(--accent) 10%, transparent)",
-                                            border: "1px solid rgba(90,167,255,0.14)",
+                                            border: "1px solid var(--brand-vacation-border)",
                                           }}
                                         >
-                                          {r.compensation === "UNPAID" ? t("vacationUnpaidLabel") : t("vacationLabel")} · {text}
+                                          <span
+                                            style={{
+                                              display: "inline-flex",
+                                              alignItems: "center",
+                                              gap: 8,
+                                            }}
+                                          >
+                                            <TreePalm size={16} style={{ flex: "0 0 auto" }} />
+                                            <span>
+                                              {r.compensation === "UNPAID"
+                                                ? t("vacationUnpaidLabel")
+                                                : t("vacationLabel")}{" "}
+                                              · {text}
+                                            </span>
+                                          </span>
                                         </div>
                                       );
                                     })}

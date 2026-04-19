@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { translate, type AppUiLanguage } from "@/lib/i18n";
+import { TreePalm } from 'lucide-react';
 
 type WorkEntry = {
   id: string;
@@ -2039,7 +2040,7 @@ const resetAbsFilters = (): void => {
               </div>
             ) : null}
           </div>
-          <div className="app-kpi-icon">🌴</div>
+          <div className="app-kpi-icon"><TreePalm /></div>
         </div>
 
         <div className="card kpi">

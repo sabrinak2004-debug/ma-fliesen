@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStethoscope } from "@fortawesome/free-solid-svg-icons";
+import { Stethoscope } from "lucide-react";
 
 type CalendarDay = {
   date: string;
@@ -817,23 +818,43 @@ function getAbsenceCompensationBreakdown(
 function requestBlockLabel(
   language: AppUiLanguage,
   b: AbsenceRequestBlock
-): string {
-  const icon = b.type === "VACATION" ? "🌴" : "🤒";
+): React.ReactNode {
+  const isVacation = b.type === "VACATION";
 
-  if (b.type === "VACATION" && b.dayPortion === "HALF_DAY") {
-    return replaceTemplate(
-      translate(language, "vacationRequestHalfDay", KALENDER_DICTIONARY),
-      { date: b.start }
+  const icon = isVacation ? (
+    <TreePalm size={14} style={{ flex: "0 0 auto" }} />
+  ) : (
+    <Stethoscope size={14} style={{ flex: "0 0 auto" }} />
+  );
+
+  if (isVacation && b.dayPortion === "HALF_DAY") {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        {icon}
+        <span>
+          {replaceTemplate(
+            translate(language, "vacationRequestHalfDay", KALENDER_DICTIONARY),
+            { date: b.start }
+          )}
+        </span>
+      </span>
     );
   }
 
-  const name =
-    b.type === "VACATION"
-      ? translate(language, "vacationRequest", KALENDER_DICTIONARY)
-      : translate(language, "sicknessRequest", KALENDER_DICTIONARY);
+  const name = isVacation
+    ? translate(language, "vacationRequest", KALENDER_DICTIONARY)
+    : translate(language, "sicknessRequest", KALENDER_DICTIONARY);
 
   const span = b.start === b.end ? b.start : `${b.start}–${b.end}`;
-  return `${icon} ${name} (${span})`;
+
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+      {icon}
+      <span>
+        {name} ({span})
+      </span>
+    </span>
+  );
 }
 
 const CAT_STORAGE_KEY = "mafliesen_admin_event_categories_v1";
