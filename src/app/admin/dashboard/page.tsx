@@ -14,7 +14,7 @@ import {
 } from "@/lib/i18n";
 import { Download, ClipboardList, ClockAlert, TriangleAlert, UserRoundCheck, CalendarX2 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPencil, faTrashCan, faInfo, faPenToSquare, faBriefcase } from "@fortawesome/free-solid-svg-icons";
+import { faPencil, faTrashCan, faInfo, faPenToSquare, faHammer } from "@fortawesome/free-solid-svg-icons";
 import UnpaidIcon from "@/components/icons/UnpaidIcon";
 
 /* =========================
@@ -2211,7 +2211,7 @@ export default function AdminDashboardPage() {
                                 "WORK",
                                 t("workTimes"),
                                 `${workItems.length} ${workItems.length === 1 ? t("entry") : t("entriesPlural")}`,
-                                <FontAwesomeIcon icon={faBriefcase} />
+                                <FontAwesomeIcon icon={faHammer} />
                               )}
                               {cat.WORK ? (
                                 workItems.length > 0 ? (
