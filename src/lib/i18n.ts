@@ -1,4 +1,6 @@
 // src/lib/i18n.ts
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faStethoscope } from "@fortawesome/free-solid-svg-icons";
 
 export const APP_UI_LANGUAGES = ["DE", "EN", "IT", "TR", "SQ", "KU", "RO"] as const;
 
@@ -1186,8 +1188,8 @@ export const KALENDER_DICTIONARY: Record<KalenderTextKey, Record<AppUiLanguage, 
     RO: "🌴 Vacanță ({date})",
   },
   sickConfirmedHalfDay: {
-    DE: "🤒 Krank (0,5 Tag)",
-    EN: "🤒 Sick (0.5 day)",
+    DE: "<FontAwesomeIcon icon={faStethoscope} /> Krank (0,5 Tag)",
+    EN: "<FontAwesomeIcon icon={faStethoscope} /> Sick (0.5 day)",
     IT: "🤒 Malattia (0,5 giorno)",
     TR: "🤒 Hasta (0,5 gün)",
     SQ: "🤒 I sëmurë (0,5 ditë)",
