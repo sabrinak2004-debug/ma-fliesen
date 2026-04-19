@@ -1292,7 +1292,7 @@ export default function AdminDashboardPage() {
           <button
             onClick={openExportModal}
             type="button"
-            className="btn btn-accent"
+            className="btn btn-accent inline-flex items-center justify-center gap-2 leading-none"
             style={{ fontWeight: 900 }}
             title={t("exportAdmin")}
           >
