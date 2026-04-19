@@ -25,7 +25,7 @@ export default function UnpaidIcon({
         y="14"
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize="12"
+        fontSize="24"
         fontWeight="900"
         fill="currentColor"
       >
