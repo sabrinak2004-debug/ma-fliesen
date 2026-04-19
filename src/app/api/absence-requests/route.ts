@@ -1140,21 +1140,9 @@ export async function POST(req: Request) {
     );
   }
 
-  let noteEmployeeSourceLanguage: SupportedLang | null = null;
-  let noteEmployeeTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+  const noteEmployeeSourceLanguage: SupportedLang | null = null;
+  const noteEmployeeTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
     Prisma.JsonNull;
-
-  if (noteEmployee) {
-    try {
-      const translationResult = await translateAllLanguages(noteEmployee);
-      noteEmployeeSourceLanguage = translationResult.sourceLanguage;
-      noteEmployeeTranslations = toPrismaNullableJsonInput(
-        translationResult.translations
-      );
-    } catch (error) {
-      console.error("Translation for noteEmployee failed:", error);
-    }
-  }
 
   const created = await prisma.absenceRequest.create({
     data: {
@@ -1188,6 +1176,26 @@ export async function POST(req: Request) {
       },
     },
   });
+
+  if (noteEmployee) {
+    void (async () => {
+      try {
+        const translationResult = await translateAllLanguages(noteEmployee);
+
+        await prisma.absenceRequest.update({
+          where: { id: created.id },
+          data: {
+            noteEmployeeSourceLanguage: translationResult.sourceLanguage,
+            noteEmployeeTranslations: toPrismaNullableJsonInput(
+              translationResult.translations
+            ),
+          },
+        });
+      } catch (error) {
+        console.error("Translation for noteEmployee failed:", error);
+      }
+    })();
+  }
 
   const adminTargetUrl =
     typeRaw === "VACATION"
