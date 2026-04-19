@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBusinessTime } from "@fortawesome/free-solid-svg-icons";
 import RemainingVacationIcon from "@/components/icons/RemainingVacationIcon";
 import UnpaidIcon from "@/components/icons/UnpaidIcon";
+import SickDaysIcon from "@/components/icons/SickDaysIcon";
 
 
 type WorkEntry = {
@@ -2067,7 +2068,7 @@ const resetAbsFilters = (): void => {
             <div className="small">{t("sickDays")}</div>
             <div className="big">{sickDays}</div>
           </div>
-          <div className="app-kpi-icon">🌡</div>
+          <div className="app-kpi-icon"><SickDaysIcon size={30} /></div>
         </div>
       </div>
 
