@@ -11,7 +11,7 @@ import {
   translate,
   type AppUiLanguage,
 } from "@/lib/i18n";
-import { Download, ClipboardList } from "lucide-react";
+import { Download, ClipboardList, ClockAlert, TriangleAlert, UserRoundCheck, CalendarX2 } from "lucide-react";
 
 /* =========================
    Types (Dashboard Timeline)
@@ -1932,7 +1932,7 @@ export default function AdminDashboardPage() {
             <div className="big">{dash?.cards.employeesActive ?? t("dash")}</div>
           </div>
 
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>👥</div>
+          <div style={{ color: "var(--muted-2)", fontSize: 22 }}><UserRoundCheck /></div>
         </div>
 
         <div
@@ -1968,7 +1968,7 @@ export default function AdminDashboardPage() {
             <div className="big">{dash?.cards.missingToday ?? t("dash")}</div>
           </div>
 
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>⚠️</div>
+          <div style={{ color: "var(--muted-2)", fontSize: 22 }}><ClockAlert /></div>
         </div>
 
         <div
@@ -2004,7 +2004,7 @@ export default function AdminDashboardPage() {
             <div className="big">{dash?.cards.absencesToday ?? t("dash")}</div>
           </div>
 
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🌴</div>
+          <div style={{ color: "var(--muted-2)", fontSize: 22 }}><CalendarX2 /></div>
         </div>
         <div
           className="card kpi group hover:shadow-lg transition"
@@ -2039,7 +2039,7 @@ export default function AdminDashboardPage() {
             <div className="big">{dash?.cards.overdueMissingGeneral ?? t("dash")}</div>
           </div>
 
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>🕘</div>
+          <div style={{ color: "var(--muted-2)", fontSize: 22 }}><TriangleAlert/></div>
         </div>
       </div>
 
