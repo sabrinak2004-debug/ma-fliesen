@@ -10,6 +10,7 @@ import {
   type AdminVacationRequestsTextKey,
   ADMIN_VACATION_REQUESTS_UI_TEXTS,
 } from "@/lib/i18n";
+import { Hourglass, CircleCheckBig, Ban, TreePalm, Wallet } from "lucide-react";
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AbsenceType = "VACATION" | "SICK";
@@ -1667,7 +1668,7 @@ useEffect(() => {
             ) : null}
           </div>
 
-          <div className="admin-workflow-kpi-icon">🏖️</div>
+          <div className="admin-workflow-kpi-icon"><TreePalm /><Wallet /></div>
         </div>
 
         <div className="card kpi">
@@ -1675,7 +1676,7 @@ useEffect(() => {
             <div className="small">{t("pendingRequestsKpi")}</div>
             <div className="big">{pendingItems.length}</div>
           </div>
-          <div className="admin-workflow-kpi-icon">🌴</div>
+          <div className="admin-workflow-kpi-icon"><Hourglass /></div>
         </div>
 
         <div className="card kpi">
@@ -1683,7 +1684,7 @@ useEffect(() => {
             <div className="small">{t("approvedKpi")}</div>
             <div className="big">{approvedItems.length}</div>
           </div>
-          <div className="admin-workflow-kpi-icon">✅</div>
+          <div className="admin-workflow-kpi-icon"><CircleCheckBig /></div>
         </div>
 
         <div className="card kpi">
@@ -1691,13 +1692,13 @@ useEffect(() => {
             <div className="small">{t("rejectedKpi")}</div>
             <div className="big">{rejectedItems.length}</div>
           </div>
-          <div className="admin-workflow-kpi-icon">⛔</div>
+          <div className="admin-workflow-kpi-icon"><Ban /></div>
         </div>
       </div>
 
       <div className="card card-olive admin-workflow-filter-shell">
         <div className="section-title admin-workflow-filter-title">
-          <span className="admin-workflow-filter-icon">🌴</span>
+          <span className="admin-workflow-filter-icon"><TreePalm /></span>
           {t("pageTitle")}
         </div>
 
