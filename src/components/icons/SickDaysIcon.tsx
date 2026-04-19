@@ -64,7 +64,7 @@ export default function SickBedIcon({
 
       {/* Untere Bettlinie */}
       <path
-        d="M8 44H48"
+        d="M8 46H48"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="butt"
