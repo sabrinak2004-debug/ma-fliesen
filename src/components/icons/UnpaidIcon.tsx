@@ -7,7 +7,7 @@ type UnpaidIconProps = {
 };
 
 export default function UnpaidIcon({
-  size = 100,
+  size = 24,
   className,
   strokeWidth = 2,
 }: UnpaidIconProps): React.ReactElement {
@@ -18,7 +18,6 @@ export default function UnpaidIcon({
       viewBox="0 0 24 24"
       fill="none"
       className={className}
-      xmlns="http://www.w3.org/2000/svg"
     >
       {/* Geldschein */}
       <rect
@@ -31,22 +30,17 @@ export default function UnpaidIcon({
         strokeWidth={strokeWidth}
       />
 
-      {/* Kreis / Wertsymbol */}
-      <circle
-        cx="12"
-        cy="12"
-        r="2.5"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-      />
-
-      {/* kleine Markierungen links/rechts */}
-      <path
-        d="M6 9H6.01M18 9H18.01M6 15H6.01M18 15H18.01"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-      />
+      {/* € Symbol */}
+      <text
+        x="12"
+        y="14"
+        textAnchor="middle"
+        fontSize="6.5"
+        fontWeight="bold"
+        fill="currentColor"
+      >
+        €
+      </text>
 
       {/* Durchgestrichen */}
       <path

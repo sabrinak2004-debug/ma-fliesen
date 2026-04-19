@@ -2480,7 +2480,7 @@ export default function AdminDashboardPage() {
                                               gap: 8,
                                             }}
                                           >
-                                            <UnpaidIcon />
+                                            <TreePalm size={16} style={{ flex: "0 0 auto" }} />
                                             <span>
                                               {r.compensation === "UNPAID"
                                                 ? t("vacationUnpaidLabel")

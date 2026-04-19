@@ -7,7 +7,7 @@ type RemainingVacationIconProps = {
 };
 
 export default function RemainingVacationIcon({
-  size = 100,
+  size = 24,
   className,
   strokeWidth = 2,
 }: RemainingVacationIconProps): React.ReactElement {
@@ -18,7 +18,6 @@ export default function RemainingVacationIcon({
       viewBox="0 0 24 24"
       fill="none"
       className={className}
-      xmlns="http://www.w3.org/2000/svg"
     >
       {/* Kalender */}
       <rect
@@ -49,33 +48,34 @@ export default function RemainingVacationIcon({
         strokeLinecap="round"
       />
 
-      {/* Palme */}
+      {/* Palme – geschwungen wie dein Bild */}
       <path
-        d="M12 18V14"
+        d="M12 18C12 15 12.5 13 13 11"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+      />
+
+      <path
+        d="M13 11C11.5 10 10 10 9 11"
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
       />
       <path
-        d="M12 14C10.5 13 9 13 8 14"
+        d="M13 11C14.5 10 16 10 17 11"
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
       />
       <path
-        d="M12 14C13.5 13 15 13 16 14"
+        d="M13 11C12 9.8 11 9.5 10 9.7"
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
       />
       <path
-        d="M12 14C11 12.8 10 12.5 9 12.7"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-      />
-      <path
-        d="M12 14C13 12.8 14 12.5 15 12.7"
+        d="M13 11C14 9.8 15 9.5 16 9.7"
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
