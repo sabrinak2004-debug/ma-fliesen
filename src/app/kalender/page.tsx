@@ -3114,7 +3114,7 @@ function KalenderPageInner({
                 }}
                 disabled={!!selectedRequestBlock}
               >
-                <TreePalm size={14} style={{ flex: "0 0 auto" }} />
+                <TreePalm/>
                 {t("absenceTypeVacation")}
               </button>
               <button
