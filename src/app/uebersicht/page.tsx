@@ -11,6 +11,7 @@ import { TreePalm, Stethoscope, HandCoins  } from 'lucide-react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBusinessTime } from "@fortawesome/free-solid-svg-icons";
 import RemainingVacationIcon from "@/components/icons/RemainingVacationIcon";
+import UnpaidIcon from "@/components/icons/UnpaidIcon";
 
 
 type WorkEntry = {
@@ -2139,7 +2140,7 @@ const resetAbsFilters = (): void => {
               <TreePalm /> {filteredAbsenceCounts.vac}
             </span>
             <span className="app-chip-warning">
-              <HandCoins /> {filteredAbsenceCounts.unpaidVac}
+              <UnpaidIcon /> {filteredAbsenceCounts.unpaidVac}
             </span>
           </div>
         </div>
