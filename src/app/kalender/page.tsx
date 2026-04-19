@@ -3123,7 +3123,7 @@ function KalenderPageInner({
                     width: "100%",
                   }}
                 >
-                  <TreePalm size={18} style={{ flex: "0 0 auto" }} />
+                  <TreePalm style={{ flex: "0 0 auto" }} />
                   <span>{t("absenceTypeVacation")}</span>
                 </span>
               </button>
@@ -3139,8 +3139,18 @@ function KalenderPageInner({
                 }}
                 disabled={!!selectedRequestBlock}
               >
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  width: "100%",
+                }}
+              >
               <FontAwesomeIcon icon={faStethoscope} />
-                {t("absenceTypeSick")}
+              <span>{t("absenceTypeSick")}</span>
+              </span>
               </button>
             </div>
 
