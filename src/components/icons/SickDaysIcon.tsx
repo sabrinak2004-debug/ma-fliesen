@@ -47,10 +47,11 @@ export default function SickBedIcon({
 
       {/* Rechte Liegefläche mit Rundung */}
       <path
-        d="M25 32 H40 C45 32 48 35 48 40 V46 Z"
+        d="M25 32 H40 C45 32 48 35 48 40 V46 L25 46 Z"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
 
       {/* Rechte Rundung runter */}
