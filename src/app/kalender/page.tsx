@@ -2963,9 +2963,18 @@ function KalenderPageInner({
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {confirmedAbsencesForSelectedDay.some((a) => a.type === "VACATION") ? (
                       <div className="card" style={{ padding: 12 }}>
-                        <div style={{ fontWeight: 900 }}>
-                          <TreePalm style={{ flex: "0 0 auto" }}/>
-                          {replaceTemplate(t("vacationConfirmedSingleDay"), { date: selectedDate })}
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 8,
+                            fontWeight: 900,
+                          }}
+                        >
+                          <TreePalm size={18} style={{ flex: "0 0 auto" }} />
+                          <span>
+                            {replaceTemplate(t("vacationConfirmedSingleDay"), { date: selectedDate })}
+                          </span>
                         </div>
                         <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
                           {t("alreadyConfirmedRegistered")}
@@ -2983,11 +2992,20 @@ function KalenderPageInner({
                       .filter((a) => a.type === "SICK")
                       .map((a) => (
                         <div key={a.id} className="card" style={{ padding: 12 }}>
-                          <div style={{ fontWeight: 900 }}>
+                          <div
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 8,
+                              fontWeight: 900,
+                            }}
+                          >
                             <FontAwesomeIcon icon={faStethoscope} />
-                            {a.dayPortion === "HALF_DAY"
-                              ? t("sickConfirmedHalfDay")
-                              : t("sickConfirmedFullDay")}
+                            <span>
+                              {a.dayPortion === "HALF_DAY"
+                                ? t("sickConfirmedHalfDay")
+                                : t("sickConfirmedFullDay")}
+                            </span>
                           </div>
                           <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
                             {t("alreadyConfirmedRegistered")}
