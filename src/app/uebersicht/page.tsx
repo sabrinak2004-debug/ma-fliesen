@@ -8,6 +8,9 @@ import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { translate, type AppUiLanguage } from "@/lib/i18n";
 import { TreePalm, Stethoscope, HandCoins  } from 'lucide-react';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBusinessTime } from "@fortawesome/free-solid-svg-icons";
+
 
 type WorkEntry = {
   id: string;
@@ -2024,7 +2027,7 @@ const resetAbsFilters = (): void => {
               </button>
             </div>
           </div>
-          <div className="app-kpi-icon">⏱</div>
+          <div className="app-kpi-icon"><FontAwesomeIcon icon={faBusinessTime} /></div>
         </div>
 
 
