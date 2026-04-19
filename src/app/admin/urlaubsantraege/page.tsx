@@ -1685,7 +1685,7 @@ useEffect(() => {
             ) : null}
           </div>
 
-          <div className="admin-workflow-kpi-icon"><RemainingVacationIcon size={30}/></div>
+          <div className="admin-workflow-kpi-icon"><RemainingVacationIcon size={50}/></div>
         </div>
 
         <div className="card kpi">
