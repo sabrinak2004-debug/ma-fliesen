@@ -1197,7 +1197,7 @@ export const KALENDER_DICTIONARY: Record<KalenderTextKey, Record<AppUiLanguage, 
     RO: "🤒 Bolnav (0,5 zi)",
   },
   sickConfirmedFullDay: {
-    DE: "🤒 Krank (1 Tag)",
+    DE: "<FontAwesomeIcon icon={faStethoscope} /> Krank (1 Tag)",
     EN: "🤒 Sick (1 day)",
     IT: "🤒 Malattia (1 giorno)",
     TR: "🤒 Hasta (1 gün)",
