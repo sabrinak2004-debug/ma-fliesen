@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { translate, type AppUiLanguage } from "@/lib/i18n";
-import { TreePalm } from 'lucide-react';
+import { TreePalm, Stethoscope, HandCoins  } from 'lucide-react';
 
 type WorkEntry = {
   id: string;
@@ -2129,13 +2129,13 @@ const resetAbsFilters = (): void => {
               {t("filtered")}: {filteredAbsenceCounts.total}
             </span>
             <span className="app-chip-sick">
-              🌡 {filteredAbsenceCounts.sick}
+              <Stethoscope /> {filteredAbsenceCounts.sick}
             </span>
             <span className="app-chip-vacation">
-              🌴 {filteredAbsenceCounts.vac}
+              <TreePalm /> {filteredAbsenceCounts.vac}
             </span>
             <span className="app-chip-warning">
-              💸 {filteredAbsenceCounts.unpaidVac}
+              <HandCoins /> {filteredAbsenceCounts.unpaidVac}
             </span>
           </div>
         </div>

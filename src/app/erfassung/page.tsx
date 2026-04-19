@@ -7,6 +7,7 @@ import Toast from "@/components/Toast";
 import Modal from "@/components/Modal";
 import { translate, type AppUiLanguage } from "@/lib/i18n";
 import { type ErfassungTextKey, ERFASSUNG_DICTIONARY } from "@/lib/i18n";
+import { Pause } from 'lucide-react';
 
 type MeResponse =
   | {
@@ -1739,7 +1740,7 @@ useEffect(() => {
 
             <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
         <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <span style={{ color: "var(--accent)" }}>⏸</span> {t("breakCapture")}
+          <span style={{ color: "var(--accent)" }}><Pause /></span> {t("breakCapture")}
         </div>
 
         {breakError ? (
