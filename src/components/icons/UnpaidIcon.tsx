@@ -30,13 +30,14 @@ export default function UnpaidIcon({
         strokeWidth={strokeWidth}
       />
 
-      {/* € Symbol */}
+      {/* GROSSES € */}
       <text
         x="12"
-        y="14"
+        y="13.8"
         textAnchor="middle"
-        fontSize="6.5"
-        fontWeight="bold"
+        dominantBaseline="middle"
+        fontSize="9"          // 👈 groß gemacht
+        fontWeight="900"      // 👈 fett
         fill="currentColor"
       >
         €
