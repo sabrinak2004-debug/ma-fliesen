@@ -3126,7 +3126,7 @@ function KalenderPageInner({
                 }}
                 disabled={!!selectedRequestBlock}
               >
-              <FontAwesomeIcon icon={faStethoscope} />
+              <FontAwesomeIcon icon={faStethoscope} style={{ flex: "0 0 auto" }}/>
                 {t("absenceTypeSick")}
               </button>
             </div>
