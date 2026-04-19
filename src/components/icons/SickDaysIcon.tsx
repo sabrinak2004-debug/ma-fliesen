@@ -18,72 +18,68 @@ export default function SickBedIcon({
       viewBox="0 0 64 64"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
     >
-      {/* Bettpfosten links */}
+      {/* Linkes Bettbein / Pfosten */}
       <path
-        d="M8 24V48"
+        d="M8 22V50"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
 
       {/* Kopf */}
       <circle
         cx="18"
-        cy="29"
-        r="4.5"
+        cy="30"
+        r="5"
         stroke={color}
         strokeWidth={strokeWidth}
       />
 
-      {/* Verbindung / Schulterbereich */}
+      {/* Verbindung Kopf → Bett */}
       <path
-        d="M22.5 29H23.5"
+        d="M23 30H25"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
       />
 
-      {/* Linke obere Liegefläche */}
+      {/* Linke Liegefläche */}
       <path
-        d="M9 34H21"
+        d="M8 36H22"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="butt"
       />
 
-      {/* Rechte obere Liegefläche */}
+      {/* Rechte Liegefläche mit Rundung */}
       <path
-        d="M24 30H38C43.523 30 48 34.477 48 40V40"
+        d="M25 32H40C45 32 48 35 48 40"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
 
-      {/* Rechte senkrechte Rundung / Bettbein */}
+      {/* Rechte Rundung runter */}
       <path
-        d="M48 40V48"
+        d="M48 40V50"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
 
-      {/* Untere durchgehende Bettfläche */}
+      {/* Untere Bettlinie */}
       <path
         d="M8 40H48"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="butt"
-        strokeLinejoin="round"
       />
 
-      {/* Medizinisches Kreuz oben */}
+      {/* Medizinisches Kreuz */}
       <path
-        d="M25 9H31V14H36V20H31V25H25V20H20V14H25V9Z"
+        d="M26 10H32V14H36V20H32V24H26V20H22V14H26V10Z"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinejoin="round"
