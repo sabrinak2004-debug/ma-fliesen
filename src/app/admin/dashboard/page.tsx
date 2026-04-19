@@ -1296,8 +1296,8 @@ export default function AdminDashboardPage() {
             style={{ fontWeight: 900 }}
             title={t("exportAdmin")}
           >
-          <Download size={18} />
-            Export
+          <Download className="w-[18px] h-[18px] shrink-0" />
+            <span className="leading-none">Export</span>
           </button>
 
           <Modal
