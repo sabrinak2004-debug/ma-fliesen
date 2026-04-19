@@ -14,7 +14,7 @@ import {
 } from "@/lib/i18n";
 import { Download, ClipboardList, ClockAlert, TriangleAlert, UserRoundCheck, CalendarX2 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPencil, faTrashCan, faInfo } from "@fortawesome/free-solid-svg-icons";
+import { faPencil, faTrashCan, faInfo, faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import UnpaidIcon from "@/components/icons/UnpaidIcon";
 
 /* =========================
