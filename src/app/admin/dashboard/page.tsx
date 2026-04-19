@@ -14,7 +14,7 @@ import {
 } from "@/lib/i18n";
 import { Download, ClipboardList, ClockAlert, TriangleAlert, UserRoundCheck, CalendarX2 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPencil, faTrashCan } from "@fortawesome/free-solid-svg-icons";
+import { faPencil, faTrashCan, faInfo } from "@fortawesome/free-solid-svg-icons";
 
 /* =========================
    Types (Dashboard Timeline)
@@ -2326,7 +2326,7 @@ export default function AdminDashboardPage() {
                                                         fontWeight: 900,
                                                       }}
                                                     >
-                                                      ℹ️ {t("details")}
+                                                      <FontAwesomeIcon icon={faInfo} /> {t("details")}
                                                     </button>
 
                                                     {it.noteEmployee && it.noteEmployee.trim() ? (

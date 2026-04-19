@@ -9,7 +9,7 @@ import { translate, type AppUiLanguage } from "@/lib/i18n";
 import { type ErfassungTextKey, ERFASSUNG_DICTIONARY } from "@/lib/i18n";
 import { Pause } from 'lucide-react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPencil, faTrashCan, faPause } from "@fortawesome/free-solid-svg-icons";
+import { faPencil, faTrashCan, faPause, faInfo } from "@fortawesome/free-solid-svg-icons";
 
 type MeResponse =
   | {
@@ -2031,7 +2031,7 @@ useEffect(() => {
                                   title={t("showDetails")}
                                   className="tenant-icon-button tenant-icon-button-success"
                                 >
-                                  ℹ️ {t("details")}
+                                  <FontAwesomeIcon icon={faInfo} /> {t("details")}
                                 </button>
 
                                 {e.noteEmployee.trim() ? (
