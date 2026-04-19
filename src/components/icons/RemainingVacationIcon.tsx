@@ -1,4 +1,4 @@
-export function RemainingVacationIcon({
+export default function RemainingVacationIcon({
   size = 24,
   color = "currentColor",
 }: {
