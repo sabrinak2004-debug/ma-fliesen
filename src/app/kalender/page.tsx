@@ -2963,8 +2963,8 @@ function KalenderPageInner({
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {confirmedAbsencesForSelectedDay.some((a) => a.type === "VACATION") ? (
                       <div className="card" style={{ padding: 12 }}>
+                        <TreePalm />
                         <div style={{ fontWeight: 900 }}>
-                          <TreePalm />
                           {replaceTemplate(t("vacationConfirmedSingleDay"), { date: selectedDate })}
                         </div>
                         <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
