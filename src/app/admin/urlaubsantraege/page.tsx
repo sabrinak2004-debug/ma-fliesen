@@ -10,7 +10,8 @@ import {
   type AdminVacationRequestsTextKey,
   ADMIN_VACATION_REQUESTS_UI_TEXTS,
 } from "@/lib/i18n";
-import { Hourglass, CircleCheckBig, Ban, TreePalm, Wallet } from "lucide-react";
+import { Hourglass, CircleCheckBig, TreePalm, Wallet } from "lucide-react";
+import { CircleX } from 'lucide-react';
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AbsenceType = "VACATION" | "SICK";
@@ -1707,7 +1708,7 @@ useEffect(() => {
             <div className="small">{t("rejectedKpi")}</div>
             <div className="big">{rejectedItems.length}</div>
           </div>
-          <div className="admin-workflow-kpi-icon"><Ban /></div>
+          <div className="admin-workflow-kpi-icon"><CircleX /></div>
         </div>
       </div>
 

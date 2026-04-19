@@ -9,7 +9,7 @@ import {
   type AppUiLanguage,
 } from "@/lib/i18n";
 import { CircleCheckBig } from 'lucide-react';
-import { CircleX } from 'lucide-react';
+import { CircleX, SquarePen } from 'lucide-react';
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -748,7 +748,7 @@ export default function NachtragsanfragenPage() {
             <div className="small">{t("pendingRequestsKpi")}</div>
             <div className="big">{pendingItems.length}</div>
           </div>
-          <div className="admin-workflow-kpi-icon">🕘</div>
+          <div className="admin-workflow-kpi-icon"><SquarePen /></div>
         </div>
 
         <div className="card kpi">
@@ -770,7 +770,7 @@ export default function NachtragsanfragenPage() {
 
       <div className="card card-olive admin-workflow-filter-shell">
         <div className="section-title admin-workflow-filter-title">
-          <span className="admin-workflow-filter-icon">🕘</span>
+          <span className="admin-workflow-filter-icon"><SquarePen /></span>
           {t("pageTitle")}
         </div>
 
