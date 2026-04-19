@@ -1208,7 +1208,7 @@ useEffect(() => {
     const durationText =
       item.dayPortion === "HALF_DAY" ? (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <TreePalm size={14} style={{ flex: "0 0 auto" }} />
+          <TreePalm />
           <span>
             {t("typeVacation")} · {formatDateLocalized(item.startDate, language)} · 0,5{" "}
             {t("day")}
@@ -1216,7 +1216,7 @@ useEffect(() => {
         </span>
       ) : (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <TreePalm size={14} style={{ flex: "0 0 auto" }} />
+          <TreePalm />
           <span>
             {t("typeVacation")} · {rangeLabel(item.startDate, item.endDate, language)} ·{" "}
             {formatVacationDays(requestedDays)}{" "}
