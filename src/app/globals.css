@@ -375,6 +375,39 @@ body {
   border-color: var(--danger-border);
   color: var(--danger-text);
 }
+
+.btn-type-active-vacation {
+  border-color: var(--brand-vacation-border);
+  background: var(--brand-vacation-bg);
+  color: var(--text);
+}
+
+.btn-type-active-sick {
+  border-color: var(--brand-sick-border);
+  background: var(--brand-sick-bg);
+  color: var(--text);
+}
+
+.btn-type-active-vacation {
+  border: 1px solid var(--brand-vacation-border);
+  background: var(--brand-vacation-bg);
+  color: var(--text);
+}
+
+.btn-type-active-sick {
+  border: 1px solid var(--brand-sick-border);
+  background: var(--brand-sick-bg);
+  color: var(--text);
+}
+
+.btn-type-active-vacation:hover {
+  background: color-mix(in srgb, var(--brand-vacation-bg) 80%, white 20%);
+}
+
+.btn-type-active-sick:hover {
+  background: color-mix(in srgb, var(--brand-sick-bg) 80%, white 20%);
+}
+
 .app-modal-footer-surface {
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--overlay-bg) 94%, transparent);
@@ -2146,6 +2179,7 @@ li {
   gap: 8px;
   line-height: 16px;
 }
+
 
 .calendar-floating-button {
   position: fixed;

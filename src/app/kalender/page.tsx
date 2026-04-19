@@ -3100,7 +3100,9 @@ function KalenderPageInner({
 
             <div className="calendar-form-grid-2" style={{ marginBottom: 12 }}>
               <button
-                className={`btn ${absenceType === "VACATION" ? "btn-accent" : ""}`}
+                className={`btn ${
+                  absenceType === "VACATION" ? "btn-type-active-vacation" : ""
+                }`}
                 type="button"
                 onClick={() => {
                   setAbsenceType("VACATION");
@@ -3110,7 +3112,9 @@ function KalenderPageInner({
                 {t("absenceTypeVacation")}
               </button>
               <button
-                className={`btn ${absenceType === "SICK" ? "btn-danger" : ""}`}
+                className={`btn ${
+                  absenceType === "SICK" ? "btn-type-active-sick" : ""
+                }`}
                 type="button"
                 onClick={() => {
                   setAbsenceType("SICK");
@@ -3139,7 +3143,11 @@ function KalenderPageInner({
                 </div>
                 <div className="calendar-form-grid-2">
                   <button
-                    className={`btn ${absenceDayPortion === "FULL_DAY" ? "btn-accent" : ""}`}
+                    className={`btn ${
+                      absenceDayPortion === "FULL_DAY"
+                        ? "btn-type-active-vacation"
+                        : ""
+                    }`}
                     type="button"
                     onClick={() => setAbsenceDayPortion("FULL_DAY")}
                     disabled={!!selectedRequestBlock}
@@ -3147,7 +3155,11 @@ function KalenderPageInner({
                     {t("fullVacationDay")}
                   </button>
                   <button
-                    className={`btn ${absenceDayPortion === "HALF_DAY" ? "btn-accent" : ""}`}
+                    className={`btn ${
+                      absenceDayPortion === "HALF_DAY"
+                        ? "btn-type-active-vacation"
+                        : ""
+                    }`}
                     type="button"
                     onClick={() => {
                       setAbsenceDayPortion("HALF_DAY");
@@ -3211,7 +3223,11 @@ function KalenderPageInner({
                 ) : (
                   <div className="calendar-form-grid-2">
                     <button
-                      className={`btn ${absenceCompensation === "PAID" ? "btn-accent" : ""}`}
+                      className={`btn ${
+                        absenceCompensation === "PAID"
+                          ? "btn-type-active-vacation"
+                          : ""
+                      }`}
                       type="button"
                       onClick={() => setAbsenceCompensation("PAID")}
                       disabled={!!selectedRequestBlock || compensationLockedBySystem}
@@ -3219,7 +3235,11 @@ function KalenderPageInner({
                       {t("paid")}
                     </button>
                     <button
-                      className={`btn ${absenceCompensation === "UNPAID" ? "btn-accent" : ""}`}
+                      className={`btn ${
+                        absenceCompensation === "UNPAID"
+                          ? "btn-type-active-vacation"
+                          : ""
+                      }`}
                       type="button"
                       onClick={() => setAbsenceCompensation("UNPAID")}
                       disabled={!!selectedRequestBlock || compensationLockedBySystem}
