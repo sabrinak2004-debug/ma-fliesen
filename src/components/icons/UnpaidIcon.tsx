@@ -7,7 +7,7 @@ type UnpaidIconProps = {
 };
 
 export default function UnpaidIcon({
-  size = 24,
+  size = 20,
   className,
   strokeWidth = 2,
 }: UnpaidIconProps): React.ReactElement {
@@ -19,25 +19,14 @@ export default function UnpaidIcon({
       fill="none"
       className={className}
     >
-      {/* Geldschein */}
-      <rect
-        x="3"
-        y="6"
-        width="18"
-        height="12"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-      />
-
-      {/* GROSSES € */}
+      {/* Großes € */}
       <text
         x="12"
-        y="13.8"
+        y="14"
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize="9"          // 👈 groß gemacht
-        fontWeight="900"      // 👈 fett
+        fontSize="12"
+        fontWeight="900"
         fill="currentColor"
       >
         €
