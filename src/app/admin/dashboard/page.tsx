@@ -2348,7 +2348,7 @@ export default function AdminDashboardPage() {
                                                           fontWeight: 900,
                                                         }}
                                                       >
-                                                        📝 {t("note")}
+                                                        <FontAwesomeIcon icon={faPenToSquare} /> {t("note")}
                                                       </button>
                                                     ) : null}
 

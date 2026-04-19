@@ -13,6 +13,9 @@ import {
   type AdminWeeklyPlanTextKey,
   ADMIN_WEEKLY_PLAN_UI_TEXTS,
 } from "@/lib/i18n";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
+
 
 type User = { id: string; fullName: string };
 
@@ -1520,6 +1523,7 @@ export default function AdminWochenplanPage() {
                                 </div>
                                 {e.noteEmployee ? (
                                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+                                    <FontAwesomeIcon icon={faPenToSquare} />
                                     {t("employeeNotePrefix")} {e.noteEmployee}
                                   </div>
                                 ) : null}
@@ -1832,6 +1836,7 @@ export default function AdminWochenplanPage() {
 
                                   {e.noteEmployee ? (
                                     <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+                                       <FontAwesomeIcon icon={faPenToSquare} />
                                       {t("employeeNotePrefix")} {e.noteEmployee}
                                     </div>
                                   ) : null}
