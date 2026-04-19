@@ -36,7 +36,7 @@ export default function UnpaidIcon({
       <path
         d="M4 20L20 4"
         stroke="currentColor"
-        strokeWidth={strokeWidth}
+        strokeWidth="1"
         strokeLinecap="round"
       />
     </svg>
