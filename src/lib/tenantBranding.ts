@@ -164,7 +164,7 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     textFaint: "#6a6460",
     accent: "#3f3b3d",
     accent2: "#575152",
-    onAccent: "#ffffff",
+    onAccent: "#bebebe",
     sidebarStripe: "#3f3b3d",
     badgeBg: "#3f3b3d",
     badgeText: "#ffffff",
