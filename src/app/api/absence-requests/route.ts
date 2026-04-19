@@ -409,56 +409,6 @@ function translateAdminAbsenceRequestPushText(
   return translate(language, key, ADMIN_ABSENCE_REQUEST_PUSH_TEXTS);
 }
 
-async function notifyAdminsAboutAbsenceRequest(args: {
-  admins: Array<{
-    id: string;
-    language: string | null;
-  }>;
-  employeeFullName: string;
-  type: AbsenceType;
-  dayPortion: AbsenceDayPortion;
-  startDate: string;
-  endDate: string;
-  compensation: AbsenceCompensation;
-  adminTargetUrl: string;
-}): Promise<void> {
-  await Promise.allSettled(
-    args.admins.map(async (adminUser) => {
-      const adminLanguage = toAppUiLanguage(adminUser.language);
-
-      const typeLabel =
-        args.type === "VACATION"
-          ? translateAdminAbsenceRequestPushText(adminLanguage, "typeVacation")
-          : translateAdminAbsenceRequestPushText(adminLanguage, "typeSick");
-
-      const compensationLabel =
-        args.type === "VACATION"
-          ? args.compensation === AbsenceCompensation.UNPAID
-            ? translateAdminAbsenceRequestPushText(adminLanguage, "compensationUnpaid")
-            : translateAdminAbsenceRequestPushText(adminLanguage, "compensationPaid")
-          : "";
-
-      const dateLabel =
-        args.dayPortion === AbsenceDayPortion.HALF_DAY
-          ? `${args.startDate} (${translateAdminAbsenceRequestPushText(adminLanguage, "scopeHalfDay")})`
-          : args.startDate === args.endDate
-            ? args.startDate
-            : `${args.startDate} - ${args.endDate}`;
-
-      await sendPushToUser(adminUser.id, {
-        title: translateAbsenceRequestText(
-          adminLanguage,
-          "newAbsenceRequestPushTitle"
-        ),
-        body: `${args.employeeFullName}: ${typeLabel} (${dateLabel}${
-          args.type === "VACATION" ? `, ${compensationLabel}` : ""
-        })`,
-        url: args.adminTargetUrl,
-      });
-    })
-  );
-}
-
 export async function rebalanceAutoUnpaidVacationRequestsForYear(
   userId: string,
   year: number,
@@ -1140,9 +1090,21 @@ export async function POST(req: Request) {
     );
   }
 
-  const noteEmployeeSourceLanguage: SupportedLang | null = null;
-  const noteEmployeeTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+  let noteEmployeeSourceLanguage: SupportedLang | null = null;
+  let noteEmployeeTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
     Prisma.JsonNull;
+
+  if (noteEmployee) {
+    try {
+      const translationResult = await translateAllLanguages(noteEmployee);
+      noteEmployeeSourceLanguage = translationResult.sourceLanguage;
+      noteEmployeeTranslations = toPrismaNullableJsonInput(
+        translationResult.translations
+      );
+    } catch (error) {
+      console.error("Translation for noteEmployee failed:", error);
+    }
+  }
 
   const created = await prisma.absenceRequest.create({
     data: {
@@ -1177,26 +1139,6 @@ export async function POST(req: Request) {
     },
   });
 
-  if (noteEmployee) {
-    void (async () => {
-      try {
-        const translationResult = await translateAllLanguages(noteEmployee);
-
-        await prisma.absenceRequest.update({
-          where: { id: created.id },
-          data: {
-            noteEmployeeSourceLanguage: translationResult.sourceLanguage,
-            noteEmployeeTranslations: toPrismaNullableJsonInput(
-              translationResult.translations
-            ),
-          },
-        });
-      } catch (error) {
-        console.error("Translation for noteEmployee failed:", error);
-      }
-    })();
-  }
-
   const adminTargetUrl =
     typeRaw === "VACATION"
       ? buildPushUrl("/admin/urlaubsantraege")
@@ -1214,16 +1156,39 @@ export async function POST(req: Request) {
     },
   });
 
-  void notifyAdminsAboutAbsenceRequest({
-    admins,
-    employeeFullName: session.fullName,
-    type: typeRaw,
-    dayPortion,
-    startDate,
-    endDate,
-    compensation: finalCompensation,
-    adminTargetUrl,
-  });
+  for (const adminUser of admins) {
+    const adminLanguage = toAppUiLanguage(adminUser.language);
+
+    const typeLabel =
+      typeRaw === "VACATION"
+        ? translateAdminAbsenceRequestPushText(adminLanguage, "typeVacation")
+        : translateAdminAbsenceRequestPushText(adminLanguage, "typeSick");
+
+    const compensationLabel =
+      typeRaw === "VACATION"
+        ? finalCompensation === AbsenceCompensation.UNPAID
+          ? translateAdminAbsenceRequestPushText(adminLanguage, "compensationUnpaid")
+          : translateAdminAbsenceRequestPushText(adminLanguage, "compensationPaid")
+        : "";
+
+    const dateLabel =
+      dayPortion === AbsenceDayPortion.HALF_DAY
+        ? `${startDate} (${translateAdminAbsenceRequestPushText(adminLanguage, "scopeHalfDay")})`
+        : startDate === endDate
+          ? startDate
+          : `${startDate} - ${endDate}`;
+
+    await sendPushToUser(adminUser.id, {
+      title: translateAbsenceRequestText(
+        adminLanguage,
+        "newAbsenceRequestPushTitle"
+      ),
+      body: `${session.fullName}: ${typeLabel} (${dateLabel}${
+        typeRaw === "VACATION" ? `, ${compensationLabel}` : ""
+      })`,
+      url: adminTargetUrl,
+    });
+  }
 
   return NextResponse.json({
     ok: true,
