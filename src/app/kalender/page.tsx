@@ -17,6 +17,8 @@ import {
   Sun,
   PartyPopper,
 } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faStethoscope } from "@fortawesome/free-solid-svg-icons";
 
 type CalendarDay = {
   date: string;
@@ -2980,6 +2982,7 @@ function KalenderPageInner({
                       .map((a) => (
                         <div key={a.id} className="card" style={{ padding: 12 }}>
                           <div style={{ fontWeight: 900 }}>
+                            <FontAwesomeIcon icon={faStethoscope} />
                             {a.dayPortion === "HALF_DAY"
                               ? t("sickConfirmedHalfDay")
                               : t("sickConfirmedFullDay")}
@@ -3123,6 +3126,7 @@ function KalenderPageInner({
                 }}
                 disabled={!!selectedRequestBlock}
               >
+              <FontAwesomeIcon icon={faStethoscope} />
                 {t("absenceTypeSick")}
               </button>
             </div>
