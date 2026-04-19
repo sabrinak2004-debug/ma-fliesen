@@ -272,6 +272,32 @@ async function hasRequiredActionBeenFulfilled(
   return false;
 }
 
+async function notifyAdminsAboutCompletedTask(args: {
+  admins: Array<{
+    id: string;
+    language: string | null;
+  }>;
+  employeeFullName: string;
+  taskTitle: string;
+  taskTitleTranslations: unknown;
+}): Promise<void> {
+  await Promise.allSettled(
+    args.admins.map(async (adminUser) => {
+      const adminLanguage = toSupportedLang(adminUser.language);
+
+      await sendPushToUser(adminUser.id, {
+        title: translateAdminTaskText(adminLanguage, "taskCompletedPushTitle"),
+        body: `${args.employeeFullName}: ${getTranslatedText(
+          args.taskTitle,
+          args.taskTitleTranslations,
+          adminLanguage
+        )}`,
+        url: "/admin/tasks",
+      });
+    })
+  );
+}
+
 export async function POST(
   _req: Request,
   context: Params
@@ -409,19 +435,12 @@ export async function POST(
     },
   });
 
-  for (const adminUser of admins) {
-    const adminLanguage = toSupportedLang(adminUser.language);
-
-    await sendPushToUser(adminUser.id, {
-      title: translateAdminTaskText(adminLanguage, "taskCompletedPushTitle"),
-      body: `${task.assignedToUser.fullName}: ${getTranslatedText(
-        task.title,
-        task.titleTranslations,
-        adminLanguage
-      )}`,
-      url: "/admin/tasks",
-    });
-  }
+  void notifyAdminsAboutCompletedTask({
+    admins,
+    employeeFullName: task.assignedToUser.fullName,
+    taskTitle: task.title,
+    taskTitleTranslations: task.titleTranslations,
+  });
 
   return NextResponse.json({
   task: {

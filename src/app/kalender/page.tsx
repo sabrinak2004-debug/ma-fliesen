@@ -1753,7 +1753,7 @@ function KalenderPageInner({
       setOpen(false);
       setSelectedRequestBlock(null);
       setRequestNote("");
-      await reloadMonthAll();
+      void reloadMonthAll();
     } catch {
       setError(t("networkSaveError"));
     } finally {
