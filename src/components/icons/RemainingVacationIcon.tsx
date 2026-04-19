@@ -63,7 +63,6 @@ export default function RemainingVacationIcon({
         d="M8.1 14.25C8.25 11.7 10.35 9.9 13 9.9C15.75 9.9 17.95 11.95 18.05 14.65L8.1 14.25Z"
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        strokeLinecap="round"
         strokeLinejoin="round"
       />
 
@@ -125,12 +124,6 @@ export default function RemainingVacationIcon({
       {/* Liegenbeine */}
       <path
         d="M10.05 20.3L9.7 21.65"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-      />
-      <path
-        d="M12.95 20.3L12.65 21.65"
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
