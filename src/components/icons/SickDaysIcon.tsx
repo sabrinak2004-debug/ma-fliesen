@@ -36,13 +36,6 @@ export default function SickBedIcon({
         strokeWidth={strokeWidth}
       />
 
-      {/* Verbindung Kopf → Bett */}
-      <path
-        d="M23 30H25"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-      />
 
       {/* Linke Liegefläche */}
       <path
