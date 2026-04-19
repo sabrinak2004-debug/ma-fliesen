@@ -42,6 +42,29 @@
   --brand-holiday-text: #575152;
   --brand-floating-btn-bg: #3f3b3d;
   --brand-floating-btn-text: #ffffff;
+  --button-primary-bg: linear-gradient(
+    180deg,
+    rgba(var(--accent-rgb), 0.92),
+    rgba(var(--accent-rgb), 0.82)
+  );
+  --button-primary-border: var(--accent-border);
+  --button-primary-text: var(--brand-on-accent);
+
+  --button-secondary-bg: var(--surface-strong);
+  --button-secondary-border: var(--border);
+  --button-secondary-text: var(--text);
+
+  --button-danger-bg: var(--danger-soft);
+  --button-danger-border: var(--danger-border);
+  --button-danger-text: var(--danger-text);
+
+  --button-vacation-bg: var(--brand-vacation-bg);
+  --button-vacation-border: var(--brand-vacation-border);
+  --button-vacation-text: var(--text);
+
+  --button-sick-bg: var(--brand-sick-bg);
+  --button-sick-border: var(--brand-sick-border);
+  --button-sick-text: var(--text);
   --brand-neutral-card-bg: rgba(200, 193, 184, 0.14);
   --brand-neutral-card-bg-strong: rgba(200, 193, 184, 0.24);
   --brand-scroll-track: color-mix(in srgb, var(--text) 4%, transparent);
@@ -251,19 +274,20 @@ body {
 .btn {
   border-radius: 14px;
   padding: 11px 14px;
-  border: 1px solid var(--border);
-  background: var(--surface-strong);
-  color: var(--text);
+  border: 1px solid var(--button-secondary-border);
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
   transition:
     transform 0.12s ease,
     background 0.12s ease,
     border-color 0.12s ease,
+    color 0.12s ease,
     opacity 0.12s ease;
 }
 
 .btn:hover {
   transform: translateY(-1px);
-  background: color-mix(in srgb, var(--surface-strong) 88%, var(--text) 12%);
+  background: color-mix(in srgb, var(--button-secondary-bg) 88%, var(--text) 12%);
 }
 
 .btn:disabled {
@@ -272,14 +296,24 @@ body {
 }
 
 .btn-accent {
-  background: linear-gradient(
-    180deg,
-    rgba(var(--accent-rgb), 0.92),
-    rgba(var(--accent-rgb), 0.82)
-  );
-  border-color: var(--accent-border);
-  color: #111613;
+  background: var(--button-primary-bg);
+  border-color: var(--button-primary-border);
+  color: var(--button-primary-text);
   font-weight: 700;
+}
+
+.btn-accent:hover {
+  background: var(--button-primary-bg);
+}
+
+.btn-danger {
+  background: var(--button-danger-bg);
+  border-color: var(--button-danger-border);
+  color: var(--button-danger-text);
+}
+
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--button-danger-bg) 88%, white 12%);
 }
 
 .brand-logo-fallback {
