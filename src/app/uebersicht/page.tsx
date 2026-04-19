@@ -2068,7 +2068,7 @@ const resetAbsFilters = (): void => {
             <div className="small">{t("sickDays")}</div>
             <div className="big">{sickDays}</div>
           </div>
-          <div className="app-kpi-icon"><SickDaysIcon size={30} /></div>
+          <div className="app-kpi-icon"><SickDaysIcon size={40} /></div>
         </div>
       </div>
 
