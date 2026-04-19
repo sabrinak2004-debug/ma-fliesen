@@ -15,6 +15,7 @@ import {
 import { Download, ClipboardList, ClockAlert, TriangleAlert, UserRoundCheck, CalendarX2 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPencil, faTrashCan, faInfo } from "@fortawesome/free-solid-svg-icons";
+import UnpaidIcon from "@/components/icons/UnpaidIcon";
 
 /* =========================
    Types (Dashboard Timeline)
@@ -2479,7 +2480,7 @@ export default function AdminDashboardPage() {
                                               gap: 8,
                                             }}
                                           >
-                                            <TreePalm size={16} style={{ flex: "0 0 auto" }} />
+                                            <UnpaidIcon />
                                             <span>
                                               {r.compensation === "UNPAID"
                                                 ? t("vacationUnpaidLabel")

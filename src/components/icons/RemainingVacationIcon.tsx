@@ -7,7 +7,7 @@ type RemainingVacationIconProps = {
 };
 
 export default function RemainingVacationIcon({
-  size = 40,
+  size = 100,
   className,
   strokeWidth = 2,
 }: RemainingVacationIconProps): React.ReactElement {
