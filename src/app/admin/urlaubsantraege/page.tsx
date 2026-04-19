@@ -1206,8 +1206,8 @@ useEffect(() => {
     const requestedDays = totalRequestedVacationDays(item);
     const durationText =
       item.dayPortion === "HALF_DAY"
-        ? `<TreePalm /> ${t("typeVacation")} · ${formatDateLocalized(item.startDate, language)} · 0,5 ${t("day")}`
-        : `<TreePalm /> ${t("typeVacation")} · ${rangeLabel(item.startDate, item.endDate, language)} · ${formatVacationDays(requestedDays)} ${requestedDays === 1 ? t("day") : t("days")}`;
+        ? `🌴 ${t("typeVacation")} · ${formatDateLocalized(item.startDate, language)} · 0,5 ${t("day")}`
+        : `🌴 ${t("typeVacation")} · ${rangeLabel(item.startDate, item.endDate, language)} · ${formatVacationDays(requestedDays)} ${requestedDays === 1 ? t("day") : t("days")}`;
 
     return (
       <div
