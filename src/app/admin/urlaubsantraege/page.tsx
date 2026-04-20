@@ -1211,7 +1211,6 @@ useEffect(() => {
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           <TreePalm 
             style={{
-              color: "var(--tenant-warning-accent)",
               opacity: 500,
               flexShrink: 0,
             }}
@@ -1225,7 +1224,6 @@ useEffect(() => {
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           <TreePalm 
             style={{
-              color: "var(--tenant-warning-accent)",
               opacity: 500,
               flexShrink: 0,
             }}
@@ -1701,7 +1699,6 @@ useEffect(() => {
             <RemainingVacationIcon
               size={50}
               style={{
-                color: "var(--tenant-warning-accent)",
                 opacity: 500,
                 flexShrink: 0,
               }}
@@ -1739,7 +1736,6 @@ useEffect(() => {
           <span className="admin-workflow-filter-icon">
             <TreePalm
               style={{
-                color: "var(--tenant-warning-accent)",
                 opacity: 500,
                 flexShrink: 0,
               }}

@@ -2049,7 +2049,6 @@ const resetAbsFilters = (): void => {
           <div className="app-kpi-icon">
             <TreePalm 
               style={{
-                color: "var(--tenant-warning-accent)",
                 opacity: 500,
                 flexShrink: 0,
               }} 
@@ -2071,7 +2070,6 @@ const resetAbsFilters = (): void => {
           <div className="app-kpi-icon">
             <RemainingVacationIcon
               style={{
-                color: "var(--tenant-warning-accent)",
                 opacity: 500,
                 flexShrink: 0,
               }}
@@ -2086,10 +2084,8 @@ const resetAbsFilters = (): void => {
           </div>
           <div className="app-kpi-icon">
             <SickDaysIcon
-              size={18}
               style={{
-                color: "var(--tenant-sick-accent)",
-                opacity: 1,
+                opacity: 500,
                 flexShrink: 0,
               }}
             />
@@ -2204,7 +2200,6 @@ const resetAbsFilters = (): void => {
               <TreePalm
                 strokeWidth={2.2}
                 style={{
-                  color: "var(--tenant-vacation-accent)",
                   flexShrink: 0,
                   opacity: 500,
                   flex: "0 0 auto" 

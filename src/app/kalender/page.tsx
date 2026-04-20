@@ -824,7 +824,6 @@ function requestBlockLabel(
   const icon = isVacation ? (
     <TreePalm 
       style={{
-        color: "var(--tenant-warning-accent)",
         opacity: 500,
         flexShrink: 0,
         flex: "0 0 auto" 
@@ -3026,7 +3025,6 @@ function KalenderPageInner({
                         >
                           <TreePalm 
                             style={{
-                              color: "var(--tenant-warning-accent)",
                               opacity: 500,
                               flexShrink: 0,
                               flex: "0 0 auto" 
@@ -3203,7 +3201,6 @@ function KalenderPageInner({
                 >
                   <TreePalm 
                     style={{
-                      color: "var(--tenant-warning-accent)",
                       opacity: 500,
                       flexShrink: 0,
                       flex: "0 0 auto" 

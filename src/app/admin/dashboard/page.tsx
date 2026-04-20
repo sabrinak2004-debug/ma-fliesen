@@ -2464,9 +2464,7 @@ export default function AdminDashboardPage() {
                                 t("vacationLabel"),
                                 `${vacationRanges.length} ${vacationRanges.length === 1 ? t("period") : t("periods")}`,
                                 <TreePalm 
-                                  size={50}
                                   style={{
-                                    color: "var(--tenant-warning-accent)",
                                     opacity: 500,
                                     flexShrink: 0,
                                   }}
@@ -2505,7 +2503,6 @@ export default function AdminDashboardPage() {
                                           >
                                             <TreePalm 
                                               style={{
-                                              color: "var(--tenant-warning-accent)",
                                               opacity: 500,
                                               flexShrink: 0,
                                               flex: "0 0 auto" }} 
