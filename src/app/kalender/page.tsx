@@ -19,7 +19,7 @@ import {
   TreePalm
 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStethoscope, faPencil, faTrashCan, faPenToSquare } from "@fortawesome/free-solid-svg-icons";
+import { faStethoscope, faPencil, faTrashCan, faPenToSquare, faShare, faFilePdf } from "@fortawesome/free-solid-svg-icons";
 import { Stethoscope } from "lucide-react";
 
 type CalendarDay = {
@@ -2927,6 +2927,7 @@ function KalenderPageInner({
                           type="button"
                           onClick={() => syncPlanEntryToWorkEntry(p)}
                         >
+                          <FontAwesomeIcon icon={faShare} />
                           {t("syncToEntry")}
                         </button>
 
@@ -2938,6 +2939,7 @@ function KalenderPageInner({
                             router.push(`/kalender/dokumente/${encodeURIComponent(p.id)}`);
                           }}
                         >
+                          <FontAwesomeIcon icon={faFilePdf} />
                           {t("documents")}
                         </button>
                       </div>
