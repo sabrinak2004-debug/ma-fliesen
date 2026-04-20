@@ -2832,7 +2832,7 @@ function KalenderPageInner({
                         {p.location ?(
                           <>
                           <FontAwesomeIcon icon ={faMapPin} />
-                        ${p.location}`
+                        {p.location}`
                         </>
                         ) : ( 
                           t("noLocationGiven")
@@ -2841,7 +2841,7 @@ function KalenderPageInner({
                           <>
                           {"."}
                           <FontAwesomeIcon icon={faCarSide} />
-                          ${p.travelMinutes} ${t("travelMinutes")}`
+                          {p.travelMinutes} {t("travelMinutes")}`
                           </>
                         ) : null }
                       </div>
@@ -2923,7 +2923,7 @@ function KalenderPageInner({
                         {p.location ?(
                           <>
                           <FontAwesomeIcon icon={faMapPin} style={{ marginRight: 4, verticalAlign: "middle", color: "var(--muted)" }} />
-                          ${p.location}
+                          {p.location}
                           </>
                          ) : ( 
                           t("noLocationGiven")
@@ -2933,7 +2933,7 @@ function KalenderPageInner({
                           <>
                            {" · "}
                            <FontAwesomeIcon icon={faCarSide} style={{ marginRight: 4, verticalAlign: "middle", color: "var(--muted)" }} />
-                           {p.travelMinutes} ${t("travelMinutes")}
+                           {p.travelMinutes} {t("travelMinutes")}
                           </>
                          ) : null}
                       </div>
