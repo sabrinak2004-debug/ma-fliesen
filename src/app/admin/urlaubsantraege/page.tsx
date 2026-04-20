@@ -1687,10 +1687,9 @@ useEffect(() => {
 
           <div className="admin-workflow-kpi-icon">
             <RemainingVacationIcon
-              size={18}
               style={{
                 color: "var(--tenant-warning-accent)",
-                opacity: 1,
+                opacity: 10,
                 flexShrink: 0,
               }}
             />

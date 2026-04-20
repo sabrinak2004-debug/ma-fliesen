@@ -24,7 +24,7 @@ export default function RemainingVacationIcon({
       style={{
         display: "inline-block",
         verticalAlign: "middle",
-        opacity: 1,
+        opacity: 10,
         color: "inherit",
         ...style,
       }}
@@ -36,8 +36,8 @@ export default function RemainingVacationIcon({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
       <path
         d="M6.45 20.6H4.4C3.35 20.6 2.5 19.75 2.5 18.7V6C2.5 4.95 3.35 4.1 4.4 4.1"
@@ -45,8 +45,8 @@ export default function RemainingVacationIcon({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
 
       {/* Kalender-Ringe */}
@@ -58,8 +58,8 @@ export default function RemainingVacationIcon({
         rx="0.775"
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
       <rect
         x="17.1"
@@ -69,8 +69,8 @@ export default function RemainingVacationIcon({
         rx="0.775"
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
 
 
@@ -80,8 +80,8 @@ export default function RemainingVacationIcon({
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
 
       {/* Schirm-Segmente */}
@@ -90,24 +90,24 @@ export default function RemainingVacationIcon({
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
       <path
         d="M14.65 14.45C14.85 12.55 14.35 11.05 13.35 9.95"
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
       <path
         d="M13.55 9.4L13.35 9.95"
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
 
       {/* Schirmmast */}
@@ -116,8 +116,8 @@ export default function RemainingVacationIcon({
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
 
       {/* Liege Sitzfläche */}
@@ -127,8 +127,8 @@ export default function RemainingVacationIcon({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
       <rect
         x="8.95"
@@ -138,8 +138,8 @@ export default function RemainingVacationIcon({
         rx="0.675"
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
 
       {/* Liege Rückenlehne */}
@@ -149,8 +149,8 @@ export default function RemainingVacationIcon({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
 
       {/* Liegenbeine */}
@@ -159,16 +159,16 @@ export default function RemainingVacationIcon({
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
       <path
         d="M15.05 20.15L15.45 21.65"
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        opacity={1}
-        strokeOpacity={1}
+        opacity={10}
+        strokeOpacity={10}
       />
     </svg>
   );
