@@ -19,7 +19,7 @@ import {
   TreePalm
 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStethoscope, faPencil, faTrashCan, faPenToSquare, faShare, faFilePdf } from "@fortawesome/free-solid-svg-icons";
+import { faStethoscope, faPencil, faTrashCan, faPenToSquare, faShare, faFilePdf, faMapPin } from "@fortawesome/free-solid-svg-icons";
 import { Stethoscope } from "lucide-react";
 
 type CalendarDay = {
@@ -2613,7 +2613,7 @@ function KalenderPageInner({
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              📍 {a.location}
+                              <FontAwesomeIcon icon={faMapPin} /> {a.location}
                             </span>
                           ) : null}
 

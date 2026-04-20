@@ -14,7 +14,7 @@ import {
   ADMIN_WEEKLY_PLAN_UI_TEXTS,
 } from "@/lib/i18n";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
+import { faPenToSquare, faFilePdf } from "@fortawesome/free-solid-svg-icons";
 
 
 type User = { id: string; fullName: string };
@@ -2081,7 +2081,7 @@ export default function AdminWochenplanPage() {
           <div style={{ gridColumn: "1 / -1" }}>
             <div style={{ height: 1, background: "var(--border)", margin: "10px 0", opacity: 0.9 }} />
 
-            <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8 }}>{t("documentsTitle")}</div>
+            <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8 }}><FontAwesomeIcon icon={faFilePdf} />{t("documentsTitle")}</div>
 
             {!editEntryId ? (
               <div style={{ fontSize: 12, color: "var(--muted)" }}>
