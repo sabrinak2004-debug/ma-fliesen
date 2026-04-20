@@ -266,7 +266,7 @@ export default function AdminPasswordResetPage() {
           }
         >
           <div className="admin-password-modal-stack">
-            <div className="admin-password-modal-info"><FontAwesomeIcon icon={faCheck} />{resetInfo}</div>
+            <div className="admin-password-modal-info">{resetInfo}</div>
             <div className="admin-password-modal-code">
               {resetUrl}
             </div>
