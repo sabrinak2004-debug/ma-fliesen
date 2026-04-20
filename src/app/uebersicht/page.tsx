@@ -2073,6 +2073,7 @@ const resetAbsFilters = (): void => {
           </div>
           <div className="app-kpi-icon">
             <RemainingVacationIcon
+              size={45}
               style={{
                 color: "var(--tenant-icon-muted)",
                 opacity: 500,
@@ -2089,7 +2090,7 @@ const resetAbsFilters = (): void => {
           </div>
           <div className="app-kpi-icon">
             <SickDaysIcon
-              size={45}
+              size={55}
               style={{
                 color: "var(--tenant-icon-muted)",
                 opacity: 500,
