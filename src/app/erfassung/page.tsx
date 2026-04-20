@@ -1405,7 +1405,7 @@ useEffect(() => {
       {/* CREATE */}
       <div className="card card-olive" style={{ padding: 18, marginBottom: 16 }}>
         <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <span style={{ color: "var(--accent)" }}><FontAwesomeIcon icon={faPlus} /></span> {t("createEntry")}
+          <span style={{ color: "var(--accent)" }}><FontAwesomeIcon icon={faPlus} style={{strokeWidth:"2"}}/></span> {t("createEntry")}
         </div>
 
         {error && (
