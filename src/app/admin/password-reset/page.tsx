@@ -8,6 +8,8 @@ import {
   translate,
   type AppUiLanguage,
 } from "@/lib/i18n";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCopy, faCheck } from "@fortawesome/free-solid-svg-icons";
 
 export const dynamic = "force-dynamic";
 
@@ -250,6 +252,7 @@ export default function AdminPasswordResetPage() {
                 onClick={copy}
                 className="tenant-action-button"
               >
+                <FontAwesomeIcon icon={faCopy} />
                 {t("copyLink")}
               </button>
               <button
@@ -263,7 +266,7 @@ export default function AdminPasswordResetPage() {
           }
         >
           <div className="admin-password-modal-stack">
-            <div className="admin-password-modal-info">{resetInfo}</div>
+            <div className="admin-password-modal-info"><FontAwesomeIcon icon={faCheck} />{resetInfo}</div>
             <div className="admin-password-modal-code">
               {resetUrl}
             </div>
