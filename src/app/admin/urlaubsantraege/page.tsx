@@ -1712,7 +1712,7 @@ useEffect(() => {
             <div className="small">{t("pendingRequestsKpi")}</div>
             <div className="big">{pendingItems.length}</div>
           </div>
-          <div className="admin-workflow-kpi-icon"><Hourglass /></div>
+          <div className="admin-workflow-kpi-icon"><Hourglass style={{color:"var(--tenant-icon-muted)"}}/></div>
         </div>
 
         <div className="card kpi">
@@ -1728,7 +1728,7 @@ useEffect(() => {
             <div className="small">{t("rejectedKpi")}</div>
             <div className="big">{rejectedItems.length}</div>
           </div>
-          <div className="admin-workflow-kpi-icon"><CircleX /></div>
+          <div className="admin-workflow-kpi-icon"><CircleX style={{color:"var(--tenant-icon-muted"}}/></div>
         </div>
       </div>
 

@@ -766,7 +766,7 @@ export default function NachtragsanfragenPage() {
             <div className="small">{t("rejectedKpi")}</div>
             <div className="big">{rejectedItems.length}</div>
           </div>
-          <div className="admin-workflow-kpi-icon"><CircleX /></div>
+          <div className="admin-workflow-kpi-icon"><CircleX style={{color:"var(--tenant-icon-muted"}}/></div>
         </div>
       </div>
 

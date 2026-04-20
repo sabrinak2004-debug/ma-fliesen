@@ -1936,7 +1936,7 @@ export default function AdminDashboardPage() {
             <div className="big">{dash?.cards.employeesActive ?? t("dash")}</div>
           </div>
 
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}><UserRoundCheck /></div>
+          <div style={{ color: "var(--muted-2)", fontSize: 22 }}><UserRoundCheck style={{color: "var(--tenant-icon-muted)"}}/></div>
         </div>
 
         <div
@@ -2008,7 +2008,9 @@ export default function AdminDashboardPage() {
             <div className="big">{dash?.cards.absencesToday ?? t("dash")}</div>
           </div>
 
-          <div style={{ color: "var(--muted-2)", fontSize: 22 }}><CalendarX2 /></div>
+          <div style={{ color: "var(--muted-2)", fontSize: 22 }}>
+            <CalendarX2 style={{color: "var(--tenant-icon-muted)"}}/>
+          </div>
         </div>
         <div
           className="card kpi group hover:shadow-lg transition"
