@@ -10,6 +10,8 @@ import {
 } from "@/lib/i18n";
 import { CircleCheckBig } from 'lucide-react';
 import { CircleX, SquarePen } from 'lucide-react';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -606,7 +608,7 @@ export default function NachtragsanfragenPage() {
             </div>
 
             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 14 }}>
-              🕘 {t("request")} · {rangeLabel(item.startDate, item.endDate, language)} · {days}{" "}
+              <FontAwesomeIcon icon={faPenToSquare} /> {t("request")} · {rangeLabel(item.startDate, item.endDate, language)} · {days}{" "}
               {days === 1 ? t("day") : t("days")}
             </div>
 
