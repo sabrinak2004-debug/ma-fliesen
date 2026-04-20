@@ -2186,7 +2186,6 @@ const resetAbsFilters = (): void => {
                 size={18}
                 strokeWidth={2.2}
                 style={{
-                  color: "var(--tenant-sick-accent)",
                   flexShrink: 0,
                 }}
               />
