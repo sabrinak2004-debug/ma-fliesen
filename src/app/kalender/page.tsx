@@ -19,7 +19,7 @@ import {
   TreePalm
 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStethoscope, faPencil, faTrashCan, faPenToSquare, faShare, faFilePdf, faMapPin } from "@fortawesome/free-solid-svg-icons";
+import { faStethoscope, faPencil, faTrashCan, faPenToSquare, faShare, faFilePdf, faMapPin, faCarSide } from "@fortawesome/free-solid-svg-icons";
 import { Stethoscope } from "lucide-react";
 
 type CalendarDay = {
@@ -2829,10 +2829,21 @@ function KalenderPageInner({
                       </div>
 
                       <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>
-                        {p.location ? `📍 ${p.location}` : t("noLocationGiven")}
-                        {typeof p.travelMinutes === "number" && p.travelMinutes > 0
-                          ? ` · 🚗 ${p.travelMinutes} ${t("travelMinutes")}`
-                          : ""}
+                        {p.location ?(
+                          <>
+                          <FontAwesomeIcon icon ={faMapPin} />
+                        ${p.location}`
+                        </>
+                        ) : ( 
+                          t("noLocationGiven")
+                        )}
+                        {typeof p.travelMinutes === "number" && p.travelMinutes > 0 ?(
+                          <>
+                          {"."}
+                          <FontAwesomeIcon icon={faCarSide} />
+                          ${p.travelMinutes} ${t("travelMinutes")}`
+                          </>
+                        ) : null }
                       </div>
 
                       {p.noteEmployee ? (
