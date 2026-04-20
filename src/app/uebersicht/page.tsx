@@ -9,7 +9,7 @@ import Modal from "@/components/Modal";
 import { translate, type AppUiLanguage } from "@/lib/i18n";
 import { TreePalm, Stethoscope, HandCoins  } from 'lucide-react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBusinessTime, faListCheck } from "@fortawesome/free-solid-svg-icons";
+import { faBusinessTime, faListCheck, faFileInvoice, faCarSide } from "@fortawesome/free-solid-svg-icons";
 import RemainingVacationIcon from "@/components/icons/RemainingVacationIcon";
 import UnpaidIcon from "@/components/icons/UnpaidIcon";
 import SickDaysIcon from "@/components/icons/SickDaysIcon";
@@ -2261,17 +2261,36 @@ const resetAbsFilters = (): void => {
                         <div style={{ fontWeight: 900 }}>{p.name}</div>
                       </div>
 
-                      <div style={{ color: "var(--muted-2)", marginTop: 8, display: "flex", gap: 18, flexWrap: "wrap" }}>
-                        <span>🧾 {p.entries} {p.entries === 1 ? t("entry") : t("entries")}</span>
-                        <span>🚗 {p.km.toFixed(0)} {t("km")}</span>
+                      <div
+                        style={{
+                          color: "var(--muted-2)",
+                          marginTop: 8,
+                          display: "flex",
+                          gap: 18,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span>
+                          <FontAwesomeIcon icon={faFileInvoice} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                          {p.entries} {p.entries === 1 ? t("entry") : t("entries")}
+                        </span>
+
+                        <span>
+                          <FontAwesomeIcon icon={faCarSide} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                          {p.km.toFixed(0)} {t("km")}
+                        </span>
+
                         {p.sick > 0 ? (
-                          <span style={{ color: "rgba(224, 75, 69, 0.95)" }}>
-                            🌡 {String(p.sick).replace(".", ",")} {t("sick")}
+                          <span style={{ color: "var(--danger)" }}>
+                            <Stethoscope style={{ marginRight: 4, verticalAlign: "middle" }} />
+                            {String(p.sick).replace(".", ",")} {t("sick")}
                           </span>
                         ) : null}
+
                         {p.unpaidVac > 0 ? (
-                          <span style={{ color: "rgba(255, 184, 77, 0.95)" }}>
-                            💸 {String(p.unpaidVac).replace(".", ",")} {t("vacation")} {t("unpaid")}
+                          <span style={{ color: "var(--warning)" }}>
+                            <UnpaidIcon/>
+                            {String(p.unpaidVac).replace(".", ",")} {t("vacation")} {t("unpaid")}
                           </span>
                         ) : null}
                       </div>
