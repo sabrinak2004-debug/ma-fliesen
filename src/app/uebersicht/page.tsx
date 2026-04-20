@@ -2125,23 +2125,78 @@ const resetAbsFilters = (): void => {
 
       {/* ✅ Abwesenheiten + Filter */}
       <div className="card" style={{ padding: 18, marginBottom: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            gap: 14,
+          }}
+        >
           <div className="section-title">
             {t("absences")} – {selectedMonthLabel} {selectedYear}
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 14,
+              flexWrap: "wrap",
+              alignItems: "stretch",
+            }}
+          >
             <span className="app-chip-neutral">
               {t("filtered")}: {filteredAbsenceCounts.total}
             </span>
-            <span className="app-chip-sick">
-              <Stethoscope /> {filteredAbsenceCounts.sick}
+
+            <span
+              className="app-chip-sick"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <Stethoscope
+                size={18}
+                strokeWidth={2.2}
+                style={{
+                  color: "currentColor",
+                  flexShrink: 0,
+                }}
+              />
+              <span>{filteredAbsenceCounts.sick}</span>
             </span>
-            <span className="app-chip-vacation">
-              <TreePalm /> {filteredAbsenceCounts.vac}
+
+            <span
+              className="app-chip-vacation"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <TreePalm
+                size={18}
+                strokeWidth={2.2}
+                style={{
+                  color: "currentColor",
+                  flexShrink: 0,
+                }}
+              />
+              <span>{filteredAbsenceCounts.vac}</span>
             </span>
-            <span className="app-chip-warning">
-              <UnpaidIcon /> {filteredAbsenceCounts.unpaidVac}
+
+            <span
+              className="app-chip-warning"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <UnpaidIcon />
+              <span>{filteredAbsenceCounts.unpaidVac}</span>
             </span>
           </div>
         </div>
@@ -2149,10 +2204,13 @@ const resetAbsFilters = (): void => {
         {/* Filter Controls */}
         <div
           style={{
-            marginTop: 12,
+            marginTop: 14,
             display: "grid",
-            gridTemplateColumns: isAdmin ? "minmax(0,1.4fr) minmax(0,1fr) auto" : "minmax(0,1fr) auto",
-            gap: 10,
+            gridTemplateColumns: isAdmin
+              ? "minmax(0, 1.35fr) minmax(0, 1fr) auto"
+              : "minmax(0, 1fr) auto",
+            gap: 12,
+            alignItems: "stretch",
           }}
         >
           {isAdmin ? (
@@ -2179,6 +2237,9 @@ const resetAbsFilters = (): void => {
             onClick={resetAbsFilters}
             className="app-filter-reset-button"
             title={t("resetFilters")}
+            style={{
+              whiteSpace: "nowrap",
+            }}
           >
             ↺ {t("reset")}
           </button>
@@ -2201,37 +2262,80 @@ const resetAbsFilters = (): void => {
                   key={`${b.user.id}-${b.type}-${b.from}-${b.to}`}
                   className="list-item"
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto",
                     alignItems: "center",
-                    gap: 12,
-                    padding: "12px 12px",
+                    gap: 14,
+                    padding: "14px 14px",
                     borderRadius: 14,
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      minWidth: 0,
+                    }}
+                  >
                     <span
                       style={{
-                        width: 10,
-                        height: 10,
+                        width: 12,
+                        height: 12,
                         borderRadius: 999,
                         display: "inline-block",
                         background: typeColor(b.type),
+                        flexShrink: 0,
                       }}
                     />
-                    <span style={{ fontWeight: 900 }}>{title}</span>
-                    <span style={badgeStyle(b.type)}>{typeLabel(language, b.type, b.compensation)}</span>
-                    <span style={{ color: "var(--muted)" }}>
+
+                    <span
+                      style={{
+                        fontWeight: 900,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {title}
+                    </span>
+
+                    <span style={badgeStyle(b.type)}>
+                      {typeLabel(language, b.type, b.compensation)}
+                    </span>
+
+                    <span
+                      style={{
+                        color: "var(--muted)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       {formatDayCountLocalized(language, b.days)}
                     </span>
+
                     {b.type === "VACATION" && b.compensation === "UNPAID" ? (
-                      <span style={{ color: "rgba(255, 184, 77, 0.95)", fontWeight: 900 }}>
+                      <span
+                        style={{
+                          color: "var(--warning)",
+                          fontWeight: 900,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         {t("unpaid")}
                       </span>
                     ) : null}
                   </div>
 
-                  <div style={{ fontWeight: 900, color: "rgba(255,255,255,0.92)" }}>{b.user.fullName}</div>
+                  <div
+                    style={{
+                      fontWeight: 900,
+                      color: "var(--text)",
+                      textAlign: "right",
+                      lineHeight: 1.25,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {b.user.fullName}
+                  </div>
                 </div>
               );
             })}
