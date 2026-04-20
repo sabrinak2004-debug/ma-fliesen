@@ -1689,6 +1689,15 @@ const filteredBlocks = useMemo((): AbsenceBlock[] => {
   return blocks;
 }, [monthAbsences, absQuery, absType, isAdmin]);
 
+const kpiIconWrapStyle: React.CSSProperties = {
+  width: 45,
+  height: 45,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flex: "0 0 56px",
+};
+
   const filteredAbsenceCounts = useMemo(() => {
     let sick = 0;
     let vac = 0;
@@ -2030,9 +2039,17 @@ const resetAbsFilters = (): void => {
               </button>
             </div>
           </div>
-          <div className="app-kpi-icon">
-            <FontAwesomeIcon icon={faBusinessTime} style={{ fontSize: "40px", fill:"none", strokeWidth:"2" }} />
-            </div>
+          <div style={kpiIconWrapStyle}>
+            <FontAwesomeIcon
+              icon={faBusinessTime}
+              style={{
+                fontSize: 42,
+                color: "var(--tenant-icon-muted)",
+                display: "block",
+                lineHeight: 1,
+              }}
+            />
+          </div>
         </div>
 
 
@@ -2048,16 +2065,17 @@ const resetAbsFilters = (): void => {
               </div>
             ) : null}
           </div>
-          <div className="app-kpi-icon">
-            <TreePalm 
-              size={45}
+          <div style={kpiIconWrapStyle}>
+            <TreePalm
+              size={42}
+              strokeWidth={2.4}
               style={{
-                color: "var(--tenant-icon-muted)",
-                opacity: 500,
-                flexShrink: 0,
-              }} 
+                color: "var(--tenant-vacation-accent)",
+                opacity: 1,
+                display: "block",
+              }}
             />
-            </div>
+          </div>
         </div>
 
         <div className="card kpi">
@@ -2071,15 +2089,15 @@ const resetAbsFilters = (): void => {
               {t("annualEntitlement")} {String(annualVacationDays).replace(".", ",")} {t("daysLabel")}
             </div>
           </div>
-          <div className="app-kpi-icon">
+          <div style={kpiIconWrapStyle}>
             <RemainingVacationIcon
-              size={40}
+              size={42}
               style={{
-                color: "var(--tenant-icon-muted)",
-                opacity: 500,
-                flexShrink: 0,
-              }}
-            />
+              color: "var(--tenant-icon-muted)",
+              opacity: 1,
+              display: "block",
+                }}
+              />
           </div>
         </div>
 
@@ -2088,13 +2106,13 @@ const resetAbsFilters = (): void => {
             <div className="small">{t("sickDays")}</div>
             <div className="big">{sickDays}</div>
           </div>
-          <div className="app-kpi-icon">
+          <div style={kpiIconWrapStyle}>
             <SickDaysIcon
-              size={45}
+              size={42}
               style={{
                 color: "var(--tenant-icon-muted)",
-                opacity: 500,
-                flexShrink: 0,
+                opacity: 1,
+                display: "block",
               }}
             />
           </div>
