@@ -2422,7 +2422,7 @@ export default function AdminDashboardPage() {
                                 "SICK",
                                 t("sickness"),
                                 `${sickRanges.length} ${sickRanges.length === 1 ? t("period") : t("periods")}`,
-                                <Stethoscope />
+                                <Stethoscope style={{opacity:2}}/>
                               )}
                               {cat.SICK ? (
                                 sickRanges.length > 0 ? (
