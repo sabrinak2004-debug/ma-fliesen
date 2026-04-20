@@ -11,13 +11,13 @@ export default function SickBedIcon({
   size = 24,
   color = "currentColor",
   style,
-  strokeWidth = 4,
+  strokeWidth = 2,
 }: SickBedIconProps) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 24 64"
+      viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       style={{
