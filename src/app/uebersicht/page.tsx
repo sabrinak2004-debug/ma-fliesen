@@ -2318,18 +2318,6 @@ const resetAbsFilters = (): void => {
 
                   <div
                     style={{
-                      fontWeight: 900,
-                      color: "var(--text)",
-                      textAlign: "right",
-                      lineHeight: 1.25,
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {b.user.fullName}
-                  </div>
-
-                  <div
-                    style={{
                       display: "flex",
                       alignItems: "center",
                       gap: 10,
