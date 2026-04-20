@@ -2050,7 +2050,6 @@ const resetAbsFilters = (): void => {
           </div>
           <div className="app-kpi-icon">
             <TreePalm
-              size={40}
               strokeWidth={1}
               style={{
                 color: "var(--tenant-icon-muted)",
@@ -2074,7 +2073,6 @@ const resetAbsFilters = (): void => {
           </div>
           <div className="app-kpi-icon">
             <RemainingVacationIcon
-              size={40}
               style={{
               color: "var(--tenant-icon-muted)",
               opacity: 1,
@@ -2091,7 +2089,6 @@ const resetAbsFilters = (): void => {
           </div>
           <div className="app-kpi-icon">
             <SickDaysIcon
-              size={42}
               style={{
                 color: "var(--tenant-icon-muted)",
                 opacity: 1,
