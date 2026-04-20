@@ -4,11 +4,13 @@ type SickBedIconProps = {
   size?: number;
   color?: string;
   strokeWidth?: number;
+  style?: React.CSSProperties;
 };
 
 export default function SickBedIcon({
   size = 24,
   color = "currentColor",
+  style,
   strokeWidth = 4,
 }: SickBedIconProps) {
   return (
@@ -18,6 +20,13 @@ export default function SickBedIcon({
       viewBox="0 0 64 64"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      style={{
+        display: "inline-block",
+        verticalAlign: "middle",
+        opacity: 10,
+        color: "inherit",
+        ...style,
+      }}
     >
       {/* Linkes Bettbein / Pfosten */}
       <path
@@ -25,6 +34,8 @@ export default function SickBedIcon({
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
+        opacity={10}
+        strokeOpacity={10}
       />
 
       {/* Kopf */}
@@ -34,6 +45,8 @@ export default function SickBedIcon({
         r="5"
         stroke={color}
         strokeWidth={strokeWidth}
+        opacity={10}
+        strokeOpacity={10}
       />
 
 
@@ -43,6 +56,8 @@ export default function SickBedIcon({
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="butt"
+        opacity={10}
+        strokeOpacity={10}
       />
 
       {/* Rechte Liegefläche mit Rundung */}
@@ -52,6 +67,8 @@ export default function SickBedIcon({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
+        opacity={10}
+        strokeOpacity={10}
       />
 
       {/* Rechte Rundung runter */}
@@ -60,6 +77,8 @@ export default function SickBedIcon({
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
+        opacity={10}
+        strokeOpacity={10}
       />
 
       {/* Untere Bettlinie */}
@@ -68,6 +87,8 @@ export default function SickBedIcon({
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="butt"
+        opacity={10}
+        strokeOpacity={10}
       />
 
       {/* Medizinisches Kreuz */}
@@ -77,6 +98,8 @@ export default function SickBedIcon({
         strokeWidth={strokeWidth}
         strokeLinejoin="round"
         strokeLinecap="round"
+        opacity={10}
+        strokeOpacity={10}
       />
     </svg>
   );
