@@ -4,29 +4,30 @@ type RemainingVacationIconProps = {
   size?: number;
   className?: string;
   strokeWidth?: number;
+  style?: React.CSSProperties;
 };
 
 export default function RemainingVacationIcon({
   size = 30,
+  style,
   className,
   strokeWidth = 1.9,
 }: RemainingVacationIconProps): React.ReactElement {
   return (
     <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2.6}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        style={{
-          opacity: 1,
-          color: "currentColor",
-        }}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
+      className={className}
+      style={{
+        display: "inline-block",
+        verticalAlign: "middle",
+        opacity: 1,
+        color: "inherit",
+        ...style,
+      }}
     >
       {/* Kalender außen */}
       <path
@@ -35,7 +36,8 @@ export default function RemainingVacationIcon({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
-        style={{opacity:100}}
+        opacity={1}
+        strokeOpacity={1}
       />
       <path
         d="M6.45 20.6H4.4C3.35 20.6 2.5 19.75 2.5 18.7V6C2.5 4.95 3.35 4.1 4.4 4.1"
@@ -43,7 +45,8 @@ export default function RemainingVacationIcon({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
-        style={{opacity:100}}
+        opacity={1}
+        strokeOpacity={1}
       />
 
       {/* Kalender-Ringe */}
@@ -55,7 +58,8 @@ export default function RemainingVacationIcon({
         rx="0.775"
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        style={{opacity:100}}
+        opacity={1}
+        strokeOpacity={1}
       />
       <rect
         x="17.1"
@@ -65,7 +69,8 @@ export default function RemainingVacationIcon({
         rx="0.775"
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        style={{opacity:100}}
+        opacity={1}
+        strokeOpacity={1}
       />
 
 
@@ -74,7 +79,9 @@ export default function RemainingVacationIcon({
         d="M8.1 14.25C8.25 11.7 10.35 9.9 13 9.9C15.75 9.9 17.95 11.95 18.05 14.65L8.1 14.25Z"
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        strokeLinecap="round"style={{opacity:100}}
+        strokeLinecap="round"
+        opacity={1}
+        strokeOpacity={1}
       />
 
       {/* Schirm-Segmente */}
@@ -82,21 +89,25 @@ export default function RemainingVacationIcon({
         d="M10.95 13.95C11.2 12.15 12.05 10.8 13.35 9.95"
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        strokeLinecap="round"style={{opacity:100}}
+        strokeLinecap="round"
+        opacity={1}
+        strokeOpacity={1}
       />
       <path
         d="M14.65 14.45C14.85 12.55 14.35 11.05 13.35 9.95"
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        style={{opacity:100}}
+        opacity={1}
+        strokeOpacity={1}
       />
       <path
         d="M13.55 9.4L13.35 9.95"
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        style={{opacity:100}}
+        opacity={1}
+        strokeOpacity={1}
       />
 
       {/* Schirmmast */}
@@ -105,7 +116,8 @@ export default function RemainingVacationIcon({
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        style={{opacity:100}}
+        opacity={1}
+        strokeOpacity={1}
       />
 
       {/* Liege Sitzfläche */}
@@ -115,7 +127,8 @@ export default function RemainingVacationIcon({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
-        style={{opacity:100}}
+        opacity={1}
+        strokeOpacity={1}
       />
       <rect
         x="8.95"
@@ -125,7 +138,8 @@ export default function RemainingVacationIcon({
         rx="0.675"
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        style={{opacity:100}}
+        opacity={1}
+        strokeOpacity={1}
       />
 
       {/* Liege Rückenlehne */}
@@ -135,7 +149,8 @@ export default function RemainingVacationIcon({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
-        style={{opacity:100}}
+        opacity={1}
+        strokeOpacity={1}
       />
 
       {/* Liegenbeine */}
@@ -144,14 +159,16 @@ export default function RemainingVacationIcon({
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        style={{opacity:100}}
+        opacity={1}
+        strokeOpacity={1}
       />
       <path
         d="M15.05 20.15L15.45 21.65"
         stroke="currentColor"
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        style={{opacity:100}}
+        opacity={1}
+        strokeOpacity={1}
       />
     </svg>
   );

@@ -2060,7 +2060,16 @@ const resetAbsFilters = (): void => {
               {t("annualEntitlement")} {String(annualVacationDays).replace(".", ",")} {t("daysLabel")}
             </div>
           </div>
-          <div className="app-kpi-icon"><RemainingVacationIcon size={30} /></div>
+          <div className="app-kpi-icon">
+            <RemainingVacationIcon
+              size={18}
+              style={{
+                color: "var(--tenant-warning-accent)",
+                opacity: 1,
+                flexShrink: 0,
+              }}
+            />
+          </div>
         </div>
 
         <div className="card kpi">
