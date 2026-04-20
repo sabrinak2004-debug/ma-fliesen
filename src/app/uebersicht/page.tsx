@@ -9,7 +9,7 @@ import Modal from "@/components/Modal";
 import { translate, type AppUiLanguage } from "@/lib/i18n";
 import { TreePalm, Stethoscope, HandCoins  } from 'lucide-react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBusinessTime } from "@fortawesome/free-solid-svg-icons";
+import { faBusinessTime, faListCheck } from "@fortawesome/free-solid-svg-icons";
 import RemainingVacationIcon from "@/components/icons/RemainingVacationIcon";
 import UnpaidIcon from "@/components/icons/UnpaidIcon";
 import SickDaysIcon from "@/components/icons/SickDaysIcon";
@@ -1719,7 +1719,7 @@ const resetAbsFilters = (): void => {
             className="card app-action-card-button app-action-card-button-neutral"
             title={t("myTasks")}
           >
-            📋 {t("tasks")}
+            <FontAwesomeIcon icon={faListCheck} /> {t("tasks")}
           </Link>
         </div>
       ) : null}
