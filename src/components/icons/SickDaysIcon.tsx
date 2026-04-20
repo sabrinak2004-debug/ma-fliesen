@@ -23,7 +23,7 @@ export default function SickBedIcon({
       style={{
         display: "inline-block",
         verticalAlign: "middle",
-        opacity: 10,
+        opacity: 500,
         color: "inherit",
         ...style,
       }}
@@ -34,8 +34,8 @@ export default function SickBedIcon({
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        opacity={10}
-        strokeOpacity={10}
+        opacity={500}
+        strokeOpacity={500}
       />
 
       {/* Kopf */}
@@ -45,8 +45,8 @@ export default function SickBedIcon({
         r="5"
         stroke={color}
         strokeWidth={strokeWidth}
-        opacity={10}
-        strokeOpacity={10}
+        opacity={500}
+        strokeOpacity={500}
       />
 
 
@@ -56,8 +56,8 @@ export default function SickBedIcon({
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="butt"
-        opacity={10}
-        strokeOpacity={10}
+        opacity={500}
+        strokeOpacity={500}
       />
 
       {/* Rechte Liegefläche mit Rundung */}
@@ -67,8 +67,8 @@ export default function SickBedIcon({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
-        opacity={10}
-        strokeOpacity={10}
+        opacity={500}
+        strokeOpacity={500}
       />
 
       {/* Rechte Rundung runter */}
@@ -77,8 +77,8 @@ export default function SickBedIcon({
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
-        opacity={10}
-        strokeOpacity={10}
+        opacity={500}
+        strokeOpacity={500}
       />
 
       {/* Untere Bettlinie */}
@@ -87,8 +87,8 @@ export default function SickBedIcon({
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="butt"
-        opacity={10}
-        strokeOpacity={10}
+        opacity={500}
+        strokeOpacity={500}
       />
 
       {/* Medizinisches Kreuz */}
@@ -98,8 +98,8 @@ export default function SickBedIcon({
         strokeWidth={strokeWidth}
         strokeLinejoin="round"
         strokeLinecap="round"
-        opacity={10}
-        strokeOpacity={10}
+        opacity={500}
+        strokeOpacity={500}
       />
     </svg>
   );

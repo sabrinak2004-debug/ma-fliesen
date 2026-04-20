@@ -2046,7 +2046,15 @@ const resetAbsFilters = (): void => {
               </div>
             ) : null}
           </div>
-          <div className="app-kpi-icon"><TreePalm /></div>
+          <div className="app-kpi-icon">
+            <TreePalm 
+              style={{
+                color: "var(--tenant-warning-accent)",
+                opacity: 500,
+                flexShrink: 0,
+              }} 
+            />
+            </div>
         </div>
 
         <div className="card kpi">
@@ -2064,7 +2072,7 @@ const resetAbsFilters = (): void => {
             <RemainingVacationIcon
               style={{
                 color: "var(--tenant-warning-accent)",
-                opacity: 10,
+                opacity: 500,
                 flexShrink: 0,
               }}
             />
@@ -2194,13 +2202,14 @@ const resetAbsFilters = (): void => {
               }}
             >
               <TreePalm
-                size={18}
                 strokeWidth={2.2}
                 style={{
                   color: "var(--tenant-vacation-accent)",
                   flexShrink: 0,
-                }}
-              />
+                  opacity: 500,
+                  flex: "0 0 auto" 
+                }} 
+                />
               <span>{filteredAbsenceCounts.vac}</span>
             </span>
 

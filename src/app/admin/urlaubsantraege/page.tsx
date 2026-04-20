@@ -1209,7 +1209,13 @@ useEffect(() => {
     const durationText =
       item.dayPortion === "HALF_DAY" ? (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <TreePalm />
+          <TreePalm 
+            style={{
+              color: "var(--tenant-warning-accent)",
+              opacity: 500,
+              flexShrink: 0,
+            }}
+          />
           <span>
             {t("typeVacation")} · {formatDateLocalized(item.startDate, language)} · 0,5{" "}
             {t("day")}
@@ -1217,7 +1223,13 @@ useEffect(() => {
         </span>
       ) : (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <TreePalm />
+          <TreePalm 
+            style={{
+              color: "var(--tenant-warning-accent)",
+              opacity: 500,
+              flexShrink: 0,
+            }}
+          />
           <span>
             {t("typeVacation")} · {rangeLabel(item.startDate, item.endDate, language)} ·{" "}
             {formatVacationDays(requestedDays)}{" "}
@@ -1687,9 +1699,10 @@ useEffect(() => {
 
           <div className="admin-workflow-kpi-icon">
             <RemainingVacationIcon
+              size={50}
               style={{
                 color: "var(--tenant-warning-accent)",
-                opacity: 10,
+                opacity: 500,
                 flexShrink: 0,
               }}
             />
@@ -1723,7 +1736,15 @@ useEffect(() => {
 
       <div className="card card-olive admin-workflow-filter-shell">
         <div className="section-title admin-workflow-filter-title">
-          <span className="admin-workflow-filter-icon"><TreePalm /></span>
+          <span className="admin-workflow-filter-icon">
+            <TreePalm
+              style={{
+                color: "var(--tenant-warning-accent)",
+                opacity: 500,
+                flexShrink: 0,
+              }}
+            />
+            </span>
           {t("pageTitle")}
         </div>
 
