@@ -2049,6 +2049,7 @@ const resetAbsFilters = (): void => {
           <div className="app-kpi-icon">
             <TreePalm 
               style={{
+                color: "var(--tenant-icon-muted)",
                 opacity: 500,
                 flexShrink: 0,
               }} 
@@ -2202,6 +2203,7 @@ const resetAbsFilters = (): void => {
               <TreePalm
                 strokeWidth={2.2}
                 style={{
+                  color: "var(--tenant-icon-muted)",
                   flexShrink: 0,
                   opacity: 500,
                   flex: "0 0 auto" 
@@ -2434,7 +2436,7 @@ const resetAbsFilters = (): void => {
 
                         {p.unpaidVac > 0 ? (
                           <span style={{ color: "var(--warning)" }}>
-                            <UnpaidIcon/>
+                            <UnpaidIcon style={{color: "var(--tenant-icon-muted)",}}/>
                             {String(p.unpaidVac).replace(".", ",")} {t("vacation")} {t("unpaid")}
                           </span>
                         ) : null}

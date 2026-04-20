@@ -4,11 +4,13 @@ type UnpaidIconProps = {
   size?: number;
   className?: string;
   strokeWidth?: number;
+  style?: React.CSSProperties;
 };
 
 export default function UnpaidIcon({
   size = 24,
   className,
+  style,
   strokeWidth = 2,
 }: UnpaidIconProps): React.ReactElement {
   return (
