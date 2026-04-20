@@ -11,7 +11,7 @@ export default function RemainingVacationIcon({
   size = 24,
   style,
   className,
-  strokeWidth = 2,
+  strokeWidth = 1,
 }: RemainingVacationIconProps): React.ReactElement {
   return (
     <svg
