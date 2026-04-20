@@ -2161,7 +2161,7 @@ const resetAbsFilters = (): void => {
                 size={18}
                 strokeWidth={2.2}
                 style={{
-                  color: "currentColor",
+                  color: "var(--danger)",
                   flexShrink: 0,
                 }}
               />
@@ -2180,7 +2180,7 @@ const resetAbsFilters = (): void => {
                 size={18}
                 strokeWidth={2.2}
                 style={{
-                  color: "currentColor",
+                  color: "var(--info)",
                   flexShrink: 0,
                 }}
               />
@@ -2257,6 +2257,15 @@ const resetAbsFilters = (): void => {
                   ? formatDateLocalized(language, b.from)
                   : `${formatDateLocalized(language, b.from)} – ${formatDateLocalized(language, b.to)}`;
 
+              const isSick = b.type === "SICK";
+              const isUnpaidVacation = b.type === "VACATION" && b.compensation === "UNPAID";
+
+              const absenceAccentColor = isSick
+                ? "var(--danger)"
+                : isUnpaidVacation
+                  ? "var(--warning)"
+                  : "var(--info)";
+
               return (
                 <div
                   key={`${b.user.id}-${b.type}-${b.from}-${b.to}`}
@@ -2264,10 +2273,12 @@ const resetAbsFilters = (): void => {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "minmax(0, 1fr) auto",
-                    alignItems: "center",
-                    gap: 14,
+                    gridTemplateRows: "auto auto",
+                    columnGap: 14,
+                    rowGap: 10,
                     padding: "14px 14px",
                     borderRadius: 14,
+                    alignItems: "start",
                   }}
                 >
                   <div
@@ -2275,7 +2286,6 @@ const resetAbsFilters = (): void => {
                       display: "flex",
                       alignItems: "center",
                       gap: 10,
-                      flexWrap: "wrap",
                       minWidth: 0,
                     }}
                   >
@@ -2285,7 +2295,7 @@ const resetAbsFilters = (): void => {
                         height: 12,
                         borderRadius: 999,
                         display: "inline-block",
-                        background: typeColor(b.type),
+                        background: absenceAccentColor,
                         flexShrink: 0,
                       }}
                     />
@@ -2294,35 +2304,12 @@ const resetAbsFilters = (): void => {
                       style={{
                         fontWeight: 900,
                         lineHeight: 1.2,
+                        minWidth: 0,
+                        wordBreak: "break-word",
                       }}
                     >
                       {title}
                     </span>
-
-                    <span style={badgeStyle(b.type)}>
-                      {typeLabel(language, b.type, b.compensation)}
-                    </span>
-
-                    <span
-                      style={{
-                        color: "var(--muted)",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {formatDayCountLocalized(language, b.days)}
-                    </span>
-
-                    {b.type === "VACATION" && b.compensation === "UNPAID" ? (
-                      <span
-                        style={{
-                          color: "var(--warning)",
-                          fontWeight: 900,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {t("unpaid")}
-                      </span>
-                    ) : null}
                   </div>
 
                   <div
@@ -2336,6 +2323,38 @@ const resetAbsFilters = (): void => {
                   >
                     {b.user.fullName}
                   </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      paddingLeft: 22,
+                      minWidth: 0,
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "var(--muted)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {formatDayCountLocalized(language, b.days)}
+                    </span>
+
+                    <span
+                      style={{
+                        ...badgeStyle(b.type),
+                        color: absenceAccentColor,
+                        borderColor: absenceAccentColor,
+                      }}
+                    >
+                      {typeLabel(language, b.type, b.compensation)}
+                    </span>
+                  </div>
+
+                  <div />
                 </div>
               );
             })}
