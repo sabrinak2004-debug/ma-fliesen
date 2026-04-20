@@ -2920,10 +2920,22 @@ function KalenderPageInner({
                       </div>
 
                       <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>
-                        {p.location ? `📍 ${p.location}` : t("noLocationGiven")}
-                        {typeof p.travelMinutes === "number" && p.travelMinutes > 0
-                          ? ` · 🚗 ${p.travelMinutes} ${t("travelMinutes")}`
-                          : ""}
+                        {p.location ?(
+                          <>
+                          <FontAwesomeIcon icon={faMapPin} style={{ marginRight: 4, verticalAlign: "middle", color: "var(--muted)" }} />
+                          ${p.location}
+                          </>
+                         ) : ( 
+                          t("noLocationGiven")
+                         )}
+
+                        {typeof p.travelMinutes === "number" && p.travelMinutes > 0 ? (
+                          <>
+                           {" · "}
+                           <FontAwesomeIcon icon={faCarSide} style={{ marginRight: 4, verticalAlign: "middle", color: "var(--muted)" }} />
+                           {p.travelMinutes} ${t("travelMinutes")}
+                          </>
+                         ) : null}
                       </div>
 
                       {p.noteEmployee ? (
