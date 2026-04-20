@@ -2161,7 +2161,7 @@ const resetAbsFilters = (): void => {
                 size={18}
                 strokeWidth={2.2}
                 style={{
-                  color: "var(--danger)",
+                  color: "var(--tenant-sick-accent)",
                   flexShrink: 0,
                 }}
               />
@@ -2180,7 +2180,7 @@ const resetAbsFilters = (): void => {
                 size={18}
                 strokeWidth={2.2}
                 style={{
-                  color: "var(--info)",
+                  color: "var(--tenant-vacation-accent)",
                   flexShrink: 0,
                 }}
               />
@@ -2237,9 +2237,7 @@ const resetAbsFilters = (): void => {
             onClick={resetAbsFilters}
             className="app-filter-reset-button"
             title={t("resetFilters")}
-            style={{
-              whiteSpace: "nowrap",
-            }}
+            style={{ whiteSpace: "nowrap" }}
           >
             ↺ {t("reset")}
           </button>
@@ -2261,10 +2259,16 @@ const resetAbsFilters = (): void => {
               const isUnpaidVacation = b.type === "VACATION" && b.compensation === "UNPAID";
 
               const absenceAccentColor = isSick
-                ? "var(--danger)"
+                ? "var(--tenant-sick-accent)"
                 : isUnpaidVacation
-                  ? "var(--warning)"
-                  : "var(--info)";
+                  ? "var(--tenant-warning-accent)"
+                  : "var(--tenant-vacation-accent)";
+
+              const absenceSoftBg = isSick
+                ? "var(--tenant-sick-bg-soft)"
+                : isUnpaidVacation
+                  ? "var(--tenant-warning-bg-soft)"
+                  : "var(--tenant-vacation-bg-soft)";
 
               return (
                 <div
@@ -2291,8 +2295,8 @@ const resetAbsFilters = (): void => {
                   >
                     <span
                       style={{
-                        width: 12,
-                        height: 12,
+                        width: 10,
+                        height: 10,
                         borderRadius: 999,
                         display: "inline-block",
                         background: absenceAccentColor,
@@ -2330,13 +2334,14 @@ const resetAbsFilters = (): void => {
                       alignItems: "center",
                       gap: 10,
                       flexWrap: "wrap",
-                      paddingLeft: 22,
+                      paddingLeft: 20,
                       minWidth: 0,
                     }}
                   >
                     <span
                       style={{
-                        color: "var(--muted)",
+                        color: "var(--text)",
+                        fontWeight: 700,
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -2345,15 +2350,21 @@ const resetAbsFilters = (): void => {
 
                     <span
                       style={{
-                        ...badgeStyle(b.type),
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "6px 12px",
+                        borderRadius: 999,
+                        border: `1px solid ${absenceAccentColor}`,
+                        background: absenceSoftBg,
                         color: absenceAccentColor,
-                        borderColor: absenceAccentColor,
+                        fontWeight: 800,
+                        lineHeight: 1,
+                        whiteSpace: "nowrap",
                       }}
                     >
                       {typeLabel(language, b.type, b.compensation)}
                     </span>
                   </div>
-
                   <div />
                 </div>
               );
