@@ -12,7 +12,7 @@ import {
 } from "@/lib/i18n";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStethoscope } from "@fortawesome/free-solid-svg-icons";
-import { CircleCheckBig } from 'lucide-react';
+import { CircleCheckBig, Stethoscope } from 'lucide-react';
 import { CircleX } from 'lucide-react';
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -734,7 +734,7 @@ export default function KrankheitsantraegePage() {
             </div>
 
             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 14 }}>
-              🤒 {t("sickLabel")} · {rangeLabel(item.startDate, item.endDate, language)} · {days} {days === 1 ? t("day") : t("days")}
+              <Stethoscope /> {t("sickLabel")} · {rangeLabel(item.startDate, item.endDate, language)} · {days} {days === 1 ? t("day") : t("days")}
             </div>
 
             <div

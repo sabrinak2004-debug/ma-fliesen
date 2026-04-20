@@ -2448,6 +2448,7 @@ export default function AdminDashboardPage() {
                                             border: "1px solid rgba(224,75,69,0.14)",
                                           }}
                                         >
+                                          <Stethoscope />
                                           {t("sickLabel")} · {text}
                                         </div>
                                       );
