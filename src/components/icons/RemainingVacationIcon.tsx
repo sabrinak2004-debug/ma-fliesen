@@ -13,12 +13,18 @@ export default function RemainingVacationIcon({
 }: RemainingVacationIconProps): React.ReactElement {
   return (
     <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      className={className}
-      style={{opacity:100}}
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{
+          opacity: 1,
+          color: "currentColor",
+        }}
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
