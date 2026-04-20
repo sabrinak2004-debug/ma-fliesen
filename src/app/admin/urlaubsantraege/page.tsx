@@ -1699,6 +1699,7 @@ useEffect(() => {
             <RemainingVacationIcon
               size={50}
               style={{
+                color: "var(--tenant-icon-muted)",
                 opacity: 500,
                 flexShrink: 0,
               }}

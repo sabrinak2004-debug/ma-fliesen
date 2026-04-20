@@ -67,6 +67,7 @@ type TenantThemeBase = {
   dangerSoft: string;
   dangerBorder: string;
   dangerText: string;
+  iconMuted?: string;
 };
 
 const DEFAULT_TENANT_THEME: TenantTheme = buildThemeFromBase({
@@ -146,6 +147,7 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     floatingButtonText: "rgba(0,0,0,0.9)",
     neutralCardBg: "rgba(255,255,255,0.02)",
     neutralCardBgStrong: "rgba(255,255,255,0.04)",
+    iconMuted: "#7F817F",
   }),
   beispielbetrieb: buildThemeFromBase({
     bg: "#f4f2ee",
@@ -225,6 +227,7 @@ export function createTenantTheme(
     floatingButtonText?: string;
     neutralCardBg?: string;
     neutralCardBgStrong?: string;
+    iconMuted?: string;
   }
 ): TenantTheme {
   return buildThemeFromBase({
@@ -313,6 +316,7 @@ function buildThemeFromBase(
     floatingButtonText?: string;
     neutralCardBg?: string;
     neutralCardBgStrong?: string;
+    iconMuted?: string;
   }
 ): TenantTheme {
   const accent = normalizeThemeColor(base.accent);
@@ -384,8 +388,9 @@ function buildThemeFromBase(
     dangerSoft: base.sickBg ?? "rgba(224, 75, 69, 0.18)",
     dangerBorder: base.sickBorder ?? "rgba(224, 75, 69, 0.65)",
     dangerText: base.sickBorder ?? "#e04b45",
+    iconMuted: base.iconMuted,
   };
-}
+};
 
 export function resolveTenantTheme(
   subdomain: string,
@@ -525,6 +530,7 @@ export function getTenantThemeStyle(
     "--text": theme.text,
     "--muted": theme.muted,
     "--muted-2": theme.muted2,
+    "--tenant-icon-muted": theme.iconMuted ?? theme.muted2,
     "--text-soft": theme.textSoft,
     "--text-faint": theme.textFaint,
     "--accent": theme.accent,
@@ -595,6 +601,7 @@ export function applyTenantThemeToDocument(theme: TenantTheme): void {
   root.style.setProperty("--text", theme.text);
   root.style.setProperty("--muted", theme.muted);
   root.style.setProperty("--muted-2", theme.muted2);
+  root.style.setProperty("--tenant-icon-muted", theme.iconMuted ?? theme.muted2);
   root.style.setProperty("--text-soft", theme.textSoft);
   root.style.setProperty("--text-faint", theme.textFaint);
   root.style.setProperty("--accent", theme.accent);
@@ -660,6 +667,7 @@ export function resetTenantThemeOnDocument(): void {
   root.style.removeProperty("--text");
   root.style.removeProperty("--muted");
   root.style.removeProperty("--muted-2");
+  root.style.removeProperty("--tenant-icon-muted");
   root.style.removeProperty("--text-soft");
   root.style.removeProperty("--text-faint");
   root.style.removeProperty("--accent");
