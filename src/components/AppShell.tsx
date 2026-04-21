@@ -752,7 +752,7 @@ export default function AppShell({
   {
     href: "/admin/password-reset",
     labelKey: "passwordReset",
-    icon: <LockIcon size={2400} strokewidth={2} />,
+    icon: <LockIcon size={1024} strokewidth={2} />,
   },
 ];
 
