@@ -14,7 +14,7 @@ import {
   ADMIN_WEEKLY_PLAN_UI_TEXTS,
 } from "@/lib/i18n";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPenToSquare, faFilePdf } from "@fortawesome/free-solid-svg-icons";
+import { faPenToSquare, faFilePdf, faCircleInfo } from "@fortawesome/free-solid-svg-icons";
 
 
 type User = { id: string; fullName: string };
@@ -2248,7 +2248,7 @@ export default function AdminWochenplanPage() {
           </div>
 
           <div style={{ gridColumn: "1 / -1", fontSize: 12, color: "var(--muted)" }}>
-            {t("internalAdminNoteInfo")}
+            <FontAwesomeIcon icon={faCircleInfo} />{t("internalAdminNoteInfo")}
           </div>
         </div>
       </Modal>
