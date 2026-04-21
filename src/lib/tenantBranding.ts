@@ -69,6 +69,8 @@ type TenantThemeBase = {
   dangerText: string;
   iconMuted?: string;
   iconFilter?: string;
+  iconFilterVacation?: string;
+  iconFilterUnpaid?: string;
 };
 
 const DEFAULT_TENANT_THEME: TenantTheme = buildThemeFromBase({
@@ -149,7 +151,9 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     neutralCardBg: "rgba(255,255,255,0.02)",
     neutralCardBgStrong: "rgba(255,255,255,0.04)",
     iconMuted: "#7F817F",
-    iconFilter: "#A63D38"
+    iconFilter: "#A63D38",
+    iconFilterVacation: "#467DBA",
+    iconFilterUnpaid: "#B89007",
   }),
   beispielbetrieb: buildThemeFromBase({
     bg: "#f4f2ee",
@@ -188,7 +192,9 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     floatingButtonText: "#ffffff",
     neutralCardBg: "rgba(200, 193, 184, 0.14)",
     neutralCardBgStrong: "rgba(200, 193, 184, 0.24)",
-    iconFilter: "#DF6362"
+    iconFilter: "#DF6362",
+    iconFilterVacation: "#71A1EF",
+    iconFilterUnpaid: "#84AA97",
   }),
 };
 
@@ -232,6 +238,8 @@ export function createTenantTheme(
     neutralCardBgStrong?: string;
     iconMuted?: string;
     iconFilter?: string;
+    iconFilterVacation?: string;
+    iconFilterUnpaid?: string;
   }
 ): TenantTheme {
   return buildThemeFromBase({
@@ -322,6 +330,8 @@ function buildThemeFromBase(
     neutralCardBgStrong?: string;
     iconMuted?: string;
     iconFilter?: string;
+    iconFilterVacation?: string;
+    iconFilterUnpaid?: string;
   }
 ): TenantTheme {
   const accent = normalizeThemeColor(base.accent);
@@ -395,6 +405,8 @@ function buildThemeFromBase(
     dangerText: base.sickBorder ?? "#e04b45",
     iconMuted: base.iconMuted,
     iconFilter: base.iconFilter,
+    iconFilterVacation: base.iconFilterVacation,
+    iconFilterUnpaid: base.iconFilterUnpaid,
   };
 };
 
@@ -538,6 +550,8 @@ export function getTenantThemeStyle(
     "--muted-2": theme.muted2,
     "--tenant-icon-muted": theme.iconMuted ?? theme.muted2,
     "--tenant-icon-filter": theme.iconFilter ?? theme.muted2,
+    "--tenant-icon-filter-vacation": theme.iconFilterVacation ?? theme.muted2,
+    "--tenant-icon-filter-unpaid": theme.iconFilterUnpaid ?? theme.muted2,
     "--text-soft": theme.textSoft,
     "--text-faint": theme.textFaint,
     "--accent": theme.accent,
@@ -610,6 +624,8 @@ export function applyTenantThemeToDocument(theme: TenantTheme): void {
   root.style.setProperty("--muted-2", theme.muted2);
   root.style.setProperty("--tenant-icon-muted", theme.iconMuted ?? theme.muted2);
   root.style.setProperty("--tenant-icon-filter", theme.iconFilter ?? theme.muted2);
+  root.style.setProperty("--tenant-icon-filter-vacation", theme.iconFilterVacation ?? theme.muted2);
+  root.style.setProperty("--tenant-icon-filter-unpaid", theme.iconFilterUnpaid ?? theme.muted2);
   root.style.setProperty("--text-soft", theme.textSoft);
   root.style.setProperty("--text-faint", theme.textFaint);
   root.style.setProperty("--accent", theme.accent);

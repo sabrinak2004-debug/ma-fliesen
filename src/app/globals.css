@@ -16,6 +16,8 @@
   --muted: #6f6963;
   --tenant-icon-muted: var(--muted-2);
   --tenant-icon-filter: var(--muted-2);
+  --tenant-icon-filter-vacation: var(--muted-2);
+  --tenant-icon-filter-unpaid: var(--muted-2);
   --muted-2: #918a83;
   --text-soft: #4c4748;
   --text-faint: #6a6460;
@@ -95,6 +97,8 @@
   --radius: 18px;
   --tenant-icon-muted: var(--muted-2);
   --tenant-icon-filter: var(--muted-2);
+  --tenant-icon-filter-vacation: var(--muted-2);
+  --tenant-icon-filter-unpaid: var(--muted-2);
 }
 
 

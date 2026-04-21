@@ -2191,7 +2191,7 @@ const resetAbsFilters = (): void => {
                 gap: 8,
               }}
             >
-              <TreePalm style={{color:"var(--tenant-icon-muted)"}}/>
+              <TreePalm style={{color:"var(--tenant-icon-filter-vacation)"}}/>
               <span>{filteredAbsenceCounts.vac}</span>
             </span>
 
@@ -2203,7 +2203,7 @@ const resetAbsFilters = (): void => {
                 gap: 8,
               }}
             >
-              <UnpaidIcon />
+              <UnpaidIcon style={{color:"var(--tenant-icon-filter-unpaid"}}/>
               <span>{filteredAbsenceCounts.unpaidVac}</span>
             </span>
           </div>

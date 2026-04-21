@@ -30,6 +30,7 @@ export default function UnpaidIcon({
         dominantBaseline="middle"
         fontSize="24"
         fontWeight="800"
+        fill="currentcolor"
       >
         €
       </text>
