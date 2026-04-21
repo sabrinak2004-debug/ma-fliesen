@@ -20,6 +20,16 @@ import {
   normalizeAppUiLanguage,
   translate,
 } from "@/lib/i18n";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faCalendar,
+  faChartColumn,
+  faListCheck,
+  faStethoscope,
+} from "@fortawesome/free-solid-svg-icons";
+import { SquarePen, TreePalm } from "lucide-react";
+import NotesClockIcon from "@/components/icons/NotesClockIcon";
+import LockKeyIcon from "@/components/icons/LockKeyIcon";
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
@@ -157,7 +167,7 @@ function initialsFromName(fullName: string) {
 type NavItem = {
   href: string;
   labelKey: AppShellTextKey;
-  icon: string;
+  icon: React.ReactNode;
 };
 
 type OpenTasksApiTask = {
@@ -679,22 +689,70 @@ export default function AppShell({
     : null;
 
   const employeeNavItems: NavItem[] = [
-    { href: "/erfassung", labelKey: "capture", icon: "⊞" },
-    { href: "/kalender", labelKey: "calendar", icon: "🗓" },
-    { href: "/uebersicht", labelKey: "overview", icon: "▦" },
-    { href: "/aufgaben", labelKey: "tasks", icon: "📋" },
+    {
+      href: "/erfassung",
+      labelKey: "capture",
+      icon: <NotesClockIcon size={18} />,
+    },
+    {
+      href: "/kalender",
+      labelKey: "calendar",
+      icon: <FontAwesomeIcon icon={faCalendar} />,
+    },
+    {
+      href: "/uebersicht",
+      labelKey: "overview",
+      icon: <FontAwesomeIcon icon={faChartColumn} />,
+    },
+    {
+      href: "/aufgaben",
+      labelKey: "tasks",
+      icon: <FontAwesomeIcon icon={faListCheck} />,
+    },
   ];
 
   const adminNavItems: NavItem[] = [
-    { href: "/admin/dashboard", labelKey: "dashboard", icon: "▦" },
-    { href: "/admin/appointments", labelKey: "appointments", icon: "🗓" },
-    { href: "/admin/wochenplan", labelKey: "weeklyPlan", icon: "🧑‍💼" },
-    { href: "/admin/urlaubsantraege", labelKey: "vacationRequests", icon: "🌴" },
-    { href: "/admin/krankheitsantraege", labelKey: "sickRequests", icon: "🤒" },
-    { href: "/admin/nachtragsanfragen", labelKey: "correctionRequests", icon: "🕘" },
-    { href: "/admin/tasks", labelKey: "tasks", icon: "📋" },
-    { href: "/admin/password-reset", labelKey: "passwordReset", icon: "🔐" },
-  ];
+  {
+    href: "/admin/dashboard",
+    labelKey: "dashboard",
+    icon: <FontAwesomeIcon icon={faChartColumn} />,
+  },
+  {
+    href: "/admin/appointments",
+    labelKey: "appointments",
+    icon: <FontAwesomeIcon icon={faCalendar} />,
+  },
+  {
+    href: "/admin/wochenplan",
+    labelKey: "weeklyPlan",
+    icon: "🧑‍💼",
+  },
+  {
+    href: "/admin/urlaubsantraege",
+    labelKey: "vacationRequests",
+    icon: <TreePalm />,
+  },
+  {
+    href: "/admin/krankheitsantraege",
+    labelKey: "sickRequests",
+    icon: <FontAwesomeIcon icon={faStethoscope} />,
+  },
+  {
+    href: "/admin/nachtragsanfragen",
+    labelKey: "correctionRequests",
+    icon: <SquarePen size={18} strokeWidth={2} />,
+  },
+  {
+    href: "/admin/tasks",
+    labelKey: "tasks",
+    icon: <FontAwesomeIcon icon={faListCheck} />,
+  },
+  {
+    href: "/admin/password-reset",
+    labelKey: "passwordReset",
+    icon: <LockKeyIcon size={18} />,
+  },
+];
 
   const navItems = isAdmin ? adminNavItems : employeeNavItems;
   const navReady = session !== null || !sessionLoading;
