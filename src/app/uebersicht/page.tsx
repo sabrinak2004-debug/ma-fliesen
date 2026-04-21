@@ -2179,13 +2179,7 @@ const resetAbsFilters = (): void => {
                 gap: 8,
               }}
             >
-              <Stethoscope
-                size={18}
-                strokeWidth={2.2}
-                style={{
-                  flexShrink: 0,
-                }}
-              />
+              <Stethoscope style={{color:"var(--tenant-icon-filter)"}}/>
               <span>{filteredAbsenceCounts.sick}</span>
             </span>
 

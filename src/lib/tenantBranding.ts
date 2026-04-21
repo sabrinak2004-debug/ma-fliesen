@@ -68,6 +68,7 @@ type TenantThemeBase = {
   dangerBorder: string;
   dangerText: string;
   iconMuted?: string;
+  iconFilter?: string;
 };
 
 const DEFAULT_TENANT_THEME: TenantTheme = buildThemeFromBase({
@@ -148,6 +149,7 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     neutralCardBg: "rgba(255,255,255,0.02)",
     neutralCardBgStrong: "rgba(255,255,255,0.04)",
     iconMuted: "#7F817F",
+    iconFilter: "#A63D38"
   }),
   beispielbetrieb: buildThemeFromBase({
     bg: "#f4f2ee",
@@ -186,6 +188,7 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     floatingButtonText: "#ffffff",
     neutralCardBg: "rgba(200, 193, 184, 0.14)",
     neutralCardBgStrong: "rgba(200, 193, 184, 0.24)",
+    iconFilter: "#DF6362"
   }),
 };
 
@@ -228,6 +231,7 @@ export function createTenantTheme(
     neutralCardBg?: string;
     neutralCardBgStrong?: string;
     iconMuted?: string;
+    iconFilter?: string;
   }
 ): TenantTheme {
   return buildThemeFromBase({
@@ -317,6 +321,7 @@ function buildThemeFromBase(
     neutralCardBg?: string;
     neutralCardBgStrong?: string;
     iconMuted?: string;
+    iconFilter?: string;
   }
 ): TenantTheme {
   const accent = normalizeThemeColor(base.accent);
@@ -389,6 +394,7 @@ function buildThemeFromBase(
     dangerBorder: base.sickBorder ?? "rgba(224, 75, 69, 0.65)",
     dangerText: base.sickBorder ?? "#e04b45",
     iconMuted: base.iconMuted,
+    iconFilter: base.iconFilter,
   };
 };
 
@@ -531,6 +537,7 @@ export function getTenantThemeStyle(
     "--muted": theme.muted,
     "--muted-2": theme.muted2,
     "--tenant-icon-muted": theme.iconMuted ?? theme.muted2,
+    "--tenant-icon-filter": theme.iconFilter ?? theme.muted2,
     "--text-soft": theme.textSoft,
     "--text-faint": theme.textFaint,
     "--accent": theme.accent,
@@ -602,6 +609,7 @@ export function applyTenantThemeToDocument(theme: TenantTheme): void {
   root.style.setProperty("--muted", theme.muted);
   root.style.setProperty("--muted-2", theme.muted2);
   root.style.setProperty("--tenant-icon-muted", theme.iconMuted ?? theme.muted2);
+  root.style.setProperty("--tenant-icon-filter", theme.iconFilter ?? theme.muted2);
   root.style.setProperty("--text-soft", theme.textSoft);
   root.style.setProperty("--text-faint", theme.textFaint);
   root.style.setProperty("--accent", theme.accent);

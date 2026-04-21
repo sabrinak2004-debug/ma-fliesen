@@ -15,6 +15,7 @@
   --text: #2f2b2c;
   --muted: #6f6963;
   --tenant-icon-muted: var(--muted-2);
+  --tenant-icon-filter: var(--muted-2);
   --muted-2: #918a83;
   --text-soft: #4c4748;
   --text-faint: #6a6460;
@@ -93,6 +94,7 @@
   --danger-2: #575152;
   --radius: 18px;
   --tenant-icon-muted: var(--muted-2);
+  --tenant-icon-filter: var(--muted-2);
 }
 
 
