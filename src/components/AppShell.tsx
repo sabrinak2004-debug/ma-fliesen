@@ -29,7 +29,6 @@ import {
   faLock
 } from "@fortawesome/free-solid-svg-icons";
 import { SquarePen, TreePalm } from "lucide-react";
-import NotesClockIcon from "@/components/icons/NotesClockIcon";
 import LockIcon from "@/components/icons/LockIcon";
 import MultiUserDashboardIcon from "@/components/icons/MultiUserDashboardIcon";
 import ErfassungsIcon from "@/components/icons/ErfassungsIcon";
