@@ -89,6 +89,7 @@ export default function AdminPasswordResetPage() {
   const [resetUrl, setResetUrl] = useState("");
   const [resetInfo, setResetInfo] = useState("");
   const [language, setLanguage] = useState<AppUiLanguage>("DE");
+  const [copied, setCopied] = useState(false);
 
   function t(key: keyof typeof ADMIN_PASSWORD_RESET_UI_TEXTS): string {
     return translate(language, key, ADMIN_PASSWORD_RESET_UI_TEXTS);
@@ -166,6 +167,7 @@ export default function AdminPasswordResetPage() {
       setResetUrl(data.resetUrl);
       const expiresLabel = new Date(data.expiresAt).toLocaleString("de-DE");
       setResetInfo(`${t("singleUseUntil")} ${expiresLabel}`);
+      setCopied(false);
       setModalOpen(true);
 
       // danach Liste aktualisieren (damit Requests ggf. verschwinden, wenn du sie bei reset schließen willst)
@@ -178,7 +180,7 @@ export default function AdminPasswordResetPage() {
   async function copy() {
     try {
       await navigator.clipboard.writeText(resetUrl);
-      setResetInfo((p) => (p.includes(t("copied")) ? p : `${p} • ${t("copied")}`));
+      setCopied(true);
     } catch {
       setResetInfo((p) => `${p} • ${t("copyNotPossible")}`);
     }
@@ -244,16 +246,20 @@ export default function AdminPasswordResetPage() {
         <Modal
           open={modalOpen}
           title={t("resetLinkTitle")}
-          onClose={() => setModalOpen(false)}
+          onClose={() => {
+            setModalOpen(false);
+            setCopied(false);
+          }}
           footer={
             <div className="admin-password-modal-footer">
               <button
                 type="button"
                 onClick={copy}
                 className="tenant-action-button"
+                style={{ display: "flex", alignItems: "center", gap: 6 }}
               >
-                <FontAwesomeIcon icon={faCopy} />
-                {t("copyLink")}
+                <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
+                <span>{copied ? t("copied") : t("copyLink")}</span>
               </button>
               <button
                 type="button"
