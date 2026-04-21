@@ -32,6 +32,7 @@ import { SquarePen, TreePalm } from "lucide-react";
 import NotesClockIcon from "@/components/icons/NotesClockIcon";
 import LockIcon from "@/components/icons/LockIcon";
 import MultiUserDashboardIcon from "@/components/icons/MultiUserDashboardIcon";
+import ErfassungsIcon from "@/components/icons/ErfassungsIcon";
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
@@ -694,7 +695,7 @@ export default function AppShell({
     {
       href: "/erfassung",
       labelKey: "capture",
-      icon: <NotesClockIcon style={{color:"var(--tenant-icon-filter-unpaid"}} />,
+      icon: <ErfassungsIcon size={24} />,
     },
     {
       href: "/kalender",
@@ -752,7 +753,7 @@ export default function AppShell({
   {
     href: "/admin/password-reset",
     labelKey: "passwordReset",
-    icon: <LockIcon size={24} strokewidth={42.7} />,
+    icon: <LockIcon size={24}/>,
   },
 ];
 
