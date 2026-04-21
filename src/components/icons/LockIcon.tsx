@@ -3,6 +3,7 @@ import * as React from "react";
 type LockIconProps = {
   size?: number | string;
   className?: string;
+  style?: React.CSSProperties;
 };
 
 export default function LockIcon({
