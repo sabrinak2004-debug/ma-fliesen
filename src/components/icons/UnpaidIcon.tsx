@@ -20,7 +20,6 @@ export default function UnpaidIcon({
       viewBox="0 0 24 24"
       fill="none"
       className={className}
-      style={{color:"var(--tenant-icon-muted)"}}
     >
       {/* Großes € */}
       <text

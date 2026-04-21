@@ -2419,7 +2419,7 @@ const resetAbsFilters = (): void => {
 
                         {p.unpaidVac > 0 ? (
                           <span style={{ color: "var(--warning)" }}>
-                            <UnpaidIcon style={{color: "var(--tenant-icon-muted)",}}/>
+                            <UnpaidIcon style={{color: "var(--tenant-icon-muted)"}}/>
                             {String(p.unpaidVac).replace(".", ",")} {t("vacation")} {t("unpaid")}
                           </span>
                         ) : null}
