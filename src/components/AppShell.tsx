@@ -29,7 +29,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { SquarePen, TreePalm } from "lucide-react";
 import NotesClockIcon from "@/components/icons/NotesClockIcon";
-import LockKeyIcon from "@/components/icons/LockKeyIcon";
+import LockIcon from "@/components/icons/LockIcon";
 import WeeklyStaffPlanIcon from "@/components/icons/WeeklyStaffPlanIcon";
 
 function isActive(pathname: string, href: string) {
@@ -751,7 +751,7 @@ export default function AppShell({
   {
     href: "/admin/password-reset",
     labelKey: "passwordReset",
-    icon: <LockKeyIcon style={{color:"var(--tenant-icon-filter-unpaid"}} />,
+    icon: <LockIcon style={{color:"var(--tenant-icon-filter-unpaid"}} />,
   },
 ];
 
