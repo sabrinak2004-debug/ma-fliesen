@@ -1209,12 +1209,7 @@ useEffect(() => {
     const durationText =
       item.dayPortion === "HALF_DAY" ? (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <TreePalm 
-            style={{
-              opacity: 500,
-              flexShrink: 0,
-            }}
-          />
+          <TreePalm style={{color:"var(--tenant-icon-muted)"}}/>
           <span>
             {t("typeVacation")} · {formatDateLocalized(item.startDate, language)} · 0,5{" "}
             {t("day")}
@@ -1222,12 +1217,7 @@ useEffect(() => {
         </span>
       ) : (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <TreePalm 
-            style={{
-              opacity: 500,
-              flexShrink: 0,
-            }}
-          />
+          <TreePalm style={{color:"var(--tenant-icon-muted)"}}/>
           <span>
             {t("typeVacation")} · {rangeLabel(item.startDate, item.endDate, language)} ·{" "}
             {formatVacationDays(requestedDays)}{" "}
@@ -1735,12 +1725,7 @@ useEffect(() => {
       <div className="card card-olive admin-workflow-filter-shell">
         <div className="section-title admin-workflow-filter-title">
           <span className="admin-workflow-filter-icon">
-            <TreePalm
-              style={{
-                opacity: 500,
-                flexShrink: 0,
-              }}
-            />
+            <TreePalm />
             </span>
           {t("pageTitle")}
         </div>

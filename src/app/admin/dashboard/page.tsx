@@ -2465,12 +2465,7 @@ export default function AdminDashboardPage() {
                                 "VACATION",
                                 t("vacationLabel"),
                                 `${vacationRanges.length} ${vacationRanges.length === 1 ? t("period") : t("periods")}`,
-                                <TreePalm 
-                                  style={{
-                                    opacity: 500,
-                                    flexShrink: 0,
-                                  }}
-                                />
+                                <TreePalm style={{color:"var(--tenant-icon-muted)"}}/>
                               )}
                               {cat.VACATION ? (
                                 vacationRanges.length > 0 ? (
@@ -2503,12 +2498,7 @@ export default function AdminDashboardPage() {
                                               gap: 8,
                                             }}
                                           >
-                                            <TreePalm 
-                                              style={{
-                                              opacity: 500,
-                                              flexShrink: 0,
-                                              flex: "0 0 auto" }} 
-                                            />
+                                            <TreePalm style={{color:"var(--tenant-icon-muted)"}} />
                                             <span>
                                               {r.compensation === "UNPAID"
                                                 ? t("vacationUnpaidLabel")

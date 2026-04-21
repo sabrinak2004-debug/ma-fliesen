@@ -2197,14 +2197,7 @@ const resetAbsFilters = (): void => {
                 gap: 8,
               }}
             >
-              <TreePalm
-                strokeWidth={2.2}
-                style={{
-                  flexShrink: 0,
-                  opacity: 500,
-                  flex: "0 0 auto" 
-                }} 
-                />
+              <TreePalm style={{color:"var(--tenant-icon-muted)"}}/>
               <span>{filteredAbsenceCounts.vac}</span>
             </span>
 
