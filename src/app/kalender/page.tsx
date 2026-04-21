@@ -822,7 +822,7 @@ function requestBlockLabel(
   const isVacation = b.type === "VACATION";
 
   const icon = isVacation ? (
-    <TreePalm style={{color:"var(--tenant-icon-muted)"}}/>
+    <TreePalm/>
   ) : (
     <Stethoscope size={14} style={{ flex: "0 0 auto" }} />
   );
@@ -3017,7 +3017,7 @@ function KalenderPageInner({
                             fontWeight: 900,
                           }}
                         >
-                          <TreePalm style={{color:"var(--tenant-icon-muted)"}}/>
+                          <TreePalm />
                           <span>
                             {replaceTemplate(t("vacationConfirmedSingleDay"), { date: selectedDate })}
                           </span>
@@ -3187,7 +3187,7 @@ function KalenderPageInner({
                     width: "100%",
                   }}
                 >
-                  <TreePalm style={{color:"var(--tenant-icon-muted)"}}/>
+                  <TreePalm />
                   <span>{t("absenceTypeVacation")}</span>
                 </span>
               </button>
