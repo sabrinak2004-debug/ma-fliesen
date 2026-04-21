@@ -4,12 +4,14 @@ type NotesClockIconProps = {
   size?: number;
   strokeWidth?: number;
   className?: string;
+  style?: React.CSSProperties;
 };
 
 export default function NotesClockIcon({
   size = 24,
   strokeWidth = 1.9,
   className,
+  style
 }: NotesClockIconProps) {
   const pad = 3;
   const notebookX = 5;

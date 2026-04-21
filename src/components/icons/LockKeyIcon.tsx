@@ -4,12 +4,14 @@ type LockKeyIconProps = {
   size?: number;
   strokeWidth?: number;
   className?: string;
+  style?: React.CSSProperties;
 };
 
 export default function LockKeyIcon({
   size = 24,
   strokeWidth = 1.9,
   className,
+  style,
 }: LockKeyIconProps) {
   return (
     <svg

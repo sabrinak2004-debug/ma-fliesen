@@ -30,6 +30,7 @@ import {
 import { SquarePen, TreePalm } from "lucide-react";
 import NotesClockIcon from "@/components/icons/NotesClockIcon";
 import LockKeyIcon from "@/components/icons/LockKeyIcon";
+import WeeklyStaffPlanIcon from "@/components/icons/WeeklyStaffPlanIcon";
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
@@ -692,7 +693,7 @@ export default function AppShell({
     {
       href: "/erfassung",
       labelKey: "capture",
-      icon: <NotesClockIcon size={18} />,
+      icon: <NotesClockIcon style={{color:"var(--tenant-icon-filter-unpaid"}} />,
     },
     {
       href: "/kalender",
@@ -725,7 +726,7 @@ export default function AppShell({
   {
     href: "/admin/wochenplan",
     labelKey: "weeklyPlan",
-    icon: "🧑‍💼",
+    icon: <WeeklyStaffPlanIcon style={{color:"var(--tenant-icon-muted"}}/>,
   },
   {
     href: "/admin/urlaubsantraege",
@@ -740,7 +741,7 @@ export default function AppShell({
   {
     href: "/admin/nachtragsanfragen",
     labelKey: "correctionRequests",
-    icon: <SquarePen size={18} strokeWidth={2} />,
+    icon: <SquarePen strokeWidth={2} />,
   },
   {
     href: "/admin/tasks",
@@ -750,7 +751,7 @@ export default function AppShell({
   {
     href: "/admin/password-reset",
     labelKey: "passwordReset",
-    icon: <LockKeyIcon size={18} />,
+    icon: <LockKeyIcon style={{color:"var(--tenant-icon-filter-unpaid"}} />,
   },
 ];
 
