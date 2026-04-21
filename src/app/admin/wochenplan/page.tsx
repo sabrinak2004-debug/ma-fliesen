@@ -2081,7 +2081,7 @@ export default function AdminWochenplanPage() {
           <div style={{ gridColumn: "1 / -1" }}>
             <div style={{ height: 1, background: "var(--border)", margin: "10px 0", opacity: 0.9 }} />
 
-            <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8 }}><FontAwesomeIcon icon={faFilePdf} />{t("documentsTitle")}</div>
+            <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 8 }}><FontAwesomeIcon icon={faFilePdf} style={{fontSize:20}} />{t("documentsTitle")}</div>
 
             {!editEntryId ? (
               <div style={{ fontSize: 12, color: "var(--muted)" }}>
