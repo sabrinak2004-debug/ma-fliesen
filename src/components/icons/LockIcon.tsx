@@ -19,7 +19,10 @@ export default function LockIcon({
       width={size}
       height={size}
       className={className}
-      style={style}
+      style={{
+        transform: "scale(0.85)",
+        transformOrigin: "center",
+      }}
       aria-hidden="true"
       focusable="false"
     >
