@@ -4,6 +4,7 @@ type WeeklyStaffPlanIconProps = {
   size?: number;
   strokeWidth?: number;
   className?: string;
+  style?: React.CSSProperties;
 };
 
 export default function WeeklyStaffPlanIcon({
