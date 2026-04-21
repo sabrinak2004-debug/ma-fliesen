@@ -31,7 +31,7 @@ import {
 import { SquarePen, TreePalm } from "lucide-react";
 import NotesClockIcon from "@/components/icons/NotesClockIcon";
 import LockIcon from "@/components/icons/LockIcon";
-import WeeklyStaffPlanIcon from "@/components/icons/WeeklyStaffPlanIcon";
+import TeamPlanIcon from "@/components/icons/TeamPlanIcon";
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
@@ -727,7 +727,7 @@ export default function AppShell({
   {
     href: "/admin/wochenplan",
     labelKey: "weeklyPlan",
-    icon: <WeeklyStaffPlanIcon style={{color:"var(--tenant-icon-muted"}}/>,
+    icon: <TeamPlanIcon size={24} />,
   },
   {
     href: "/admin/urlaubsantraege",
