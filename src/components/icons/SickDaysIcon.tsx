@@ -11,7 +11,7 @@ export default function SickBedIcon({
   size = 24,
   color = "currentColor",
   style,
-  strokeWidth = 2,
+  strokeWidth = 4,
 }: SickBedIconProps) {
   return (
     <svg

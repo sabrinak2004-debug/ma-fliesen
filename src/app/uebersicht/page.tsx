@@ -2031,7 +2031,7 @@ const resetAbsFilters = (): void => {
             </div>
           </div>
           <div className="app-kpi-icon">
-            <FontAwesomeIcon icon={faBusinessTime} style={{ fontSize: "35px", fill:"none", strokeWidth:"2" }} />
+            <FontAwesomeIcon icon={faBusinessTime} />
           </div>
         </div>
 
@@ -2073,8 +2073,6 @@ const resetAbsFilters = (): void => {
             size={28}
               style={{
               color: "var(--tenant-icon-muted)",
-              opacity: 1,
-              flexShrink: 0,
                 }}
               />
           </div>
@@ -2090,8 +2088,6 @@ const resetAbsFilters = (): void => {
             size={30}
               style={{
                 color: "var(--tenant-icon-muted)",
-                opacity: 1,
-                flexShrink: 0,
               }}
             />
           </div>
