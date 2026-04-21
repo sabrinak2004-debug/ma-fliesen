@@ -26,6 +26,7 @@ import {
   faChartColumn,
   faListCheck,
   faStethoscope,
+  faLock
 } from "@fortawesome/free-solid-svg-icons";
 import { SquarePen, TreePalm } from "lucide-react";
 import NotesClockIcon from "@/components/icons/NotesClockIcon";
@@ -751,7 +752,7 @@ export default function AppShell({
   {
     href: "/admin/password-reset",
     labelKey: "passwordReset",
-    icon: <LockIcon style={{color:"var(--tenant-icon-filter-unpaid"}} />,
+    icon: <FontAwesomeIcon icon={faLock} />,
   },
 ];
 
