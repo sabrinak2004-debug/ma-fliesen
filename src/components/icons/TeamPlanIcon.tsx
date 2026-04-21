@@ -7,7 +7,7 @@ type TeamPlanIconProps = {
 };
 
 export default function TeamPlanIcon({
-  size = 100,
+  size = 24,
   className,
   style,
 }: TeamPlanIconProps) {
