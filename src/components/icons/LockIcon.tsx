@@ -8,7 +8,7 @@ type LockIconProps = {
 };
 
 export default function LockIcon({
-  size = 50,
+  size = 100,
   className,
   style,
 }: LockIconProps) {
