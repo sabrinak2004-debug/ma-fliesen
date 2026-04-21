@@ -9,6 +9,8 @@ import {
   type AdminUsersTextKey,
   ADMIN_USERS_UI_TEXTS,
 } from "@/lib/i18n";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCopy, faCheck } from "@fortawesome/free-solid-svg-icons";
 
 type UserRow = {
   id: string;
@@ -136,6 +138,7 @@ export default function AdminUsersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [resetUrl, setResetUrl] = useState("");
   const [resetInfo, setResetInfo] = useState("");
+  const [copied, setCopied] = useState(false);
   const t = (key: AdminUsersTextKey): string =>
     translate(language, key, ADMIN_USERS_UI_TEXTS);
 
@@ -240,6 +243,7 @@ export default function AdminUsersPage() {
       setResetInfo(
         `${t("validUntil")} ${new Date(data.expiresAt).toLocaleString(language.toLowerCase())}`
       );
+      setCopied(false);
       setModalOpen(true);
     } catch {
       setErr(t("resetFailed"));
@@ -249,11 +253,7 @@ export default function AdminUsersPage() {
   async function copyLink(): Promise<void> {
     try {
       await navigator.clipboard.writeText(resetUrl);
-      setResetInfo((previous) =>
-        previous.includes(t("copied"))
-          ? previous
-          : `${previous} • ${t("copied")}`
-      );
+      setCopied(true);
     } catch {
       setResetInfo((previous) => `${previous} • ${t("copyNotPossible")}`);
     }
@@ -303,15 +303,20 @@ export default function AdminUsersPage() {
         <Modal
           open={modalOpen}
           title={t("resetLinkTitle")}
-          onClose={() => setModalOpen(false)}
+          onClose={() => {
+            setModalOpen(false);
+            setCopied(false);
+          }}
           footer={
             <div className="modal-footer-row">
               <button
                 type="button"
                 onClick={() => void copyLink()}
                 className="btn"
+                style={{ display: "flex", alignItems: "center", gap: 6 }}
               >
-                {t("copyLink")}
+                <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
+                <span>{copied ? t("copied") : t("copyLink")}</span>
               </button>
 
               <button
