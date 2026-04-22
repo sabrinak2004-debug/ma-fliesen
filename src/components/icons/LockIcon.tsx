@@ -1,16 +1,16 @@
 import * as React from "react";
 
-type EssenIconProps = {
+type LockIconProps = {
   size?: number;
   color?: string;
   className?: string;
 };
 
-export default function EssenIcon({
+export default function LockIcon({
   size = 24,
   color = "currentColor",
   className,
-}: EssenIconProps) {
+}: LockIconProps) {
   return (
     <svg
       width={size}
