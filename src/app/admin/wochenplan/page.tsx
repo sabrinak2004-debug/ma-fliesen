@@ -1550,7 +1550,7 @@ export default function AdminWochenplanPage() {
                               }}
                             >
                               <div style={{ fontWeight: 1000, fontSize: 12, color: "var(--muted)" }}>
-                                <LockPanelIcon size={12} />
+                                <LockPanelIcon size={20} />
                                 {t("adminNoteLabel")}
                               </div>
                               <div style={{ fontSize: 12, marginTop: 6, color: "var(--muted)" }}>
@@ -1872,7 +1872,7 @@ export default function AdminWochenplanPage() {
                                     title={t("editAdminNoteTitle")}
                                   >
                                     <div style={{ fontWeight: 900, fontSize: 12, color: "var(--muted)" }}>
-                                      <LockPanelIcon size={12} />
+                                      <LockPanelIcon size={20} />
                                       {t("adminNoteLabel")}
                                     </div>
                                     <div style={{ fontSize: 12, marginTop: 6, color: "var(--muted)" }}>
