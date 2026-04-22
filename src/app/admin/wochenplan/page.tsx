@@ -15,6 +15,7 @@ import {
 } from "@/lib/i18n";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare, faFilePdf, faCircleInfo } from "@fortawesome/free-solid-svg-icons";
+import LockPanelIcon from "@/components/icons/LockPanelIcon";
 
 
 type User = { id: string; fullName: string };
@@ -1549,6 +1550,7 @@ export default function AdminWochenplanPage() {
                               }}
                             >
                               <div style={{ fontWeight: 1000, fontSize: 12, color: "var(--muted)" }}>
+                                <LockPanelIcon size={12} />
                                 {t("adminNoteLabel")}
                               </div>
                               <div style={{ fontSize: 12, marginTop: 6, color: "var(--muted)" }}>
@@ -1870,6 +1872,7 @@ export default function AdminWochenplanPage() {
                                     title={t("editAdminNoteTitle")}
                                   >
                                     <div style={{ fontWeight: 900, fontSize: 12, color: "var(--muted)" }}>
+                                      <LockPanelIcon size={12} />
                                       {t("adminNoteLabel")}
                                     </div>
                                     <div style={{ fontSize: 12, marginTop: 6, color: "var(--muted)" }}>
