@@ -1425,6 +1425,10 @@ export default function AdminDashboardPage() {
                     value={exportMonth}
                     onChange={(e) => setExportMonth(e.target.value)}
                     className="input"
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                    }}
                   />
                 </div>
               ) : null}
@@ -1450,18 +1454,33 @@ export default function AdminDashboardPage() {
                 <div style={{ display: "grid", gap: 10 }}>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectRange")}</div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12,
+                    }}
+                  >
                     <input
                       type="date"
                       value={rangeFrom}
                       onChange={(e) => setRangeFrom(e.target.value)}
                       className="input"
+                      style={{
+                        width: "100%",
+                        boxSizing: "border-box",
+                      }}
                     />
+
                     <input
                       type="date"
                       value={rangeTo}
                       onChange={(e) => setRangeTo(e.target.value)}
                       className="input"
+                      style={{
+                        width: "100%",
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
 
