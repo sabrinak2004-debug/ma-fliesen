@@ -467,7 +467,7 @@ function resolveTopbarSubtitle(params: {
   companySubdomain?: string | null;
 }): string {
   if (isMaFliesenCompanySubdomain(params.companySubdomain)) {
-    return "#mafliesen";
+    return "#wirkönnendas";
   }
 
   return params.isAdmin
