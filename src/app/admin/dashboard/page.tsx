@@ -1418,70 +1418,56 @@ export default function AdminDashboardPage() {
               ) : null}
 
               {exportMode === "MONTH" ? (
-                <div style={{ display: "grid", gap: 8 }}>
+                <div className="modal-field" style={{ display: "grid", gap: 8 }}>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectMonth")}</div>
                   <input
                     type="month"
                     value={exportMonth}
                     onChange={(e) => setExportMonth(e.target.value)}
-                    className="input"
-                    style={{
-                      width: "100%",
-                      boxSizing: "border-box",
-                    }}
+                    className="input modal-date-input"
                   />
                 </div>
               ) : null}
 
               {exportMode === "YEAR" ? (
-                <div style={{ display: "grid", gap: 8 }}>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectYear")}</div>
-                  <select
-                    value={exportYear}
-                    onChange={(e) => setExportYear(e.target.value)}
-                    className="select"
-                  >
-                    {years.map((y) => (
-                      <option key={y} value={y} style={{ color: "black" }}>
-                        {y}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
+              <div className="modal-field" style={{ display: "grid", gap: 8 }}>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectYear")}</div>
+                <select
+                  value={exportYear}
+                  onChange={(e) => setExportYear(e.target.value)}
+                  className="select"
+                >
+                  {years.map((y) => (
+                    <option key={y} value={y} style={{ color: "black" }}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
 
               {exportMode === "RANGE" ? (
                 <div style={{ display: "grid", gap: 10 }}>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectRange")}</div>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 12,
-                    }}
-                  >
-                    <input
-                      type="date"
-                      value={rangeFrom}
-                      onChange={(e) => setRangeFrom(e.target.value)}
-                      className="input"
-                      style={{
-                        width: "100%",
-                        boxSizing: "border-box",
-                      }}
-                    />
+                  <div className="modal-grid-2-compact">
+                    <div className="modal-field">
+                      <input
+                        type="date"
+                        value={rangeFrom}
+                        onChange={(e) => setRangeFrom(e.target.value)}
+                        className="input modal-date-input"
+                      />
+                    </div>
 
-                    <input
-                      type="date"
-                      value={rangeTo}
-                      onChange={(e) => setRangeTo(e.target.value)}
-                      className="input"
-                      style={{
-                        width: "100%",
-                        boxSizing: "border-box",
-                      }}
-                    />
+                    <div className="modal-field">
+                      <input
+                        type="date"
+                        value={rangeTo}
+                        onChange={(e) => setRangeTo(e.target.value)}
+                        className="input modal-date-input"
+                      />
+                    </div>
                   </div>
 
                   {rangeError ? (
