@@ -668,6 +668,24 @@ function isMobileDevice(): boolean {
   );
 }
 
+  function getAbsenceBadgeStyle(
+    type: "VACATION" | "SICK"
+  ): React.CSSProperties {
+    if (type === "VACATION") {
+      return {
+        color: "var(--brand-vacation-border)",
+        background: "var(--brand-vacation-bg)",
+        border: "1px solid var(--brand-vacation-border)",
+      };
+    }
+
+    return {
+      color: "var(--brand-sick-border)",
+      background: "var(--brand-sick-bg)",
+      border: "1px solid var(--brand-sick-border)",
+    };
+  }
+
 /* =========================
    Page
    ========================= */
@@ -1557,26 +1575,38 @@ export default function AdminDashboardPage() {
           {kpiModalKind === "ABSENT" ? (
             (dash?.todayAbsentEmployees ?? []).length > 0 ? (
               <div style={{ display: "grid", gap: 8 }}>
-                {(dash?.todayAbsentEmployees ?? []).map((person) => (
+              {(dash?.todayAbsentEmployees ?? []).map((person) => (
+                <div
+                  key={`${person.userId}-${person.type}`}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "var(--surface)",
+                  }}
+                >
+                  <div style={{ fontWeight: 900 }}>{person.fullName}</div>
+
                   <div
-                    key={`${person.userId}-${person.type}`}
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      background: "var(--surface)",
+                      ...getAbsenceBadgeStyle(person.type),
+                      fontSize: 12,
+                      fontWeight: 900,
+                      padding: "6px 10px",
+                      borderRadius: 999,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
                     }}
                   >
-                    <div style={{ fontWeight: 900 }}>{person.fullName}</div>
-                    <div style={{ color: "var(--muted-2)", fontSize: 12, fontWeight: 900 }}>
-                      {absenceTypeLabel(person.type, language)}
-                    </div>
+                    {absenceTypeLabel(person.type, language)}
                   </div>
-                ))}
+                </div>
+              ))}
               </div>
             ) : (
               <div style={{ color: "var(--muted)" }}>{t("noAbsencesToday")}</div>
@@ -1613,9 +1643,9 @@ export default function AdminDashboardPage() {
                       style={{
                         padding: "8px 12px",
                         borderRadius: 10,
-                        border: "1px solid rgba(184,207,58,0.35)",
-                        background: "var(--accent-soft)",
-                        color: "var(--accent)",
+                        border: "1px solid var(--accent)",
+                        background: "var(--accent)",
+                        color: "var(--brand-on-accent)",
                         cursor: remindLoadingUserId === person.userId ? "not-allowed" : "pointer",
                         fontWeight: 1000,
                         opacity: remindLoadingUserId === person.userId ? 0.7 : 1,
