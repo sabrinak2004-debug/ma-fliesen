@@ -1844,9 +1844,9 @@ export default function AdminDashboardPage() {
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.18)",
+                border: "1px solid var(--border)",
                 background: "var(--input-bg)",
-                color: "rgba(255,255,255,0.92)",
+                color: "var(--text)",
                 outline: "none",
               }}
             />
@@ -1861,9 +1861,9 @@ export default function AdminDashboardPage() {
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.18)",
+                border: "1px solid var(--border)",
                 background: "var(--input-bg)",
-                color: "rgba(255,255,255,0.92)",
+                color: "var(--text)",
                 outline: "none",
               }}
             />
@@ -1880,9 +1880,9 @@ export default function AdminDashboardPage() {
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.18)",
+                  border: "1px solid var(--border)",
                   background: "var(--input-bg)",
-                  color: "rgba(255,255,255,0.92)",
+                  color: "var(--text)",
                   outline: "none",
                 }}
               />
