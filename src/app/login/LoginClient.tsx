@@ -1,6 +1,10 @@
 "use client";
 
+"use client";
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import {
   applyTenantHeadBranding,
   applyTenantThemeToDocument,
@@ -1120,7 +1124,7 @@ export default function LoginClient({
                       }
                       style={eyeBtnStyle}
                     >
-                      {showNewPassword ? "🙈" : "👁️"}
+                      <FontAwesomeIcon icon={showNewPassword ? faEyeSlash : faEye} />
                     </button>
                   </div>
                 </div>
@@ -1147,7 +1151,7 @@ export default function LoginClient({
                       }
                       style={eyeBtnStyle}
                     >
-                      {showNewPassword2 ? "🙈" : "👁️"}
+                      <FontAwesomeIcon icon={showNewPassword2 ? faEyeSlash : faEye} />
                     </button>
                   </div>
                 </div>
@@ -1177,7 +1181,7 @@ export default function LoginClient({
                     }
                     style={eyeBtnStyle}
                   >
-                    {showPassword ? "🙈" : "👁️"}
+                    <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
                   </button>
                 </div>
 
