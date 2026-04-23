@@ -461,6 +461,20 @@ function isMaFliesenCompanySubdomain(companySubdomain: string | null | undefined
   return companySubdomain?.trim().toLowerCase() === "ma-fliesen";
 }
 
+function resolveTopbarSubtitle(params: {
+  isAdmin: boolean;
+  language: AppUiLanguage;
+  companySubdomain?: string | null;
+}): string {
+  if (isMaFliesenCompanySubdomain(params.companySubdomain)) {
+    return "#mafliesen";
+  }
+
+  return params.isAdmin
+    ? tAppShell(params.language, "adminArea")
+    : tAppShell(params.language, "employeeArea");
+}
+
 function resolvePageLabelKey(
   pathname: string
 ): AppShellTextKey | null {
@@ -1027,6 +1041,12 @@ export default function AppShell({
     companySubdomain: session?.companySubdomain ?? null,
   });
 
+  const resolvedTopbarSubtitle = resolveTopbarSubtitle({
+    isAdmin,
+    language: currentLanguage,
+    companySubdomain: session?.companySubdomain ?? null,
+  });
+
   return (
     <div style={{ padding: "18px 0 42px" }}>
       <div className="container-app">
@@ -1109,7 +1129,7 @@ export default function AppShell({
                       marginTop: 6,
                     }}
                   >
-                    {brand?.displayName ?? ""}
+                    {resolvedActiveLabel}
                   </div>
                   <div
                     style={{
@@ -1122,7 +1142,7 @@ export default function AppShell({
                       maxWidth: 220,
                     }}
                   >
-                    {resolvedActiveLabel}
+                    {resolvedTopbarSubtitle}
                   </div>
                 </div>
               </div>
@@ -1371,7 +1391,7 @@ export default function AppShell({
                       textOverflow: "ellipsis",
                     }}
                   >
-                    {resolvedActiveLabel}
+                    {brand?.displayName ?? ""}
                   </div>
                 </div>
               </div>
@@ -1530,9 +1550,7 @@ export default function AppShell({
                       marginTop: 4,
                     }}
                   >
-                    {isAdmin
-                      ? tAppShell(currentLanguage, "adminArea")
-                      : tAppShell(currentLanguage, "employeeArea")}
+                    {resolvedTopbarSubtitle}
                   </div>
                 </div>
 
