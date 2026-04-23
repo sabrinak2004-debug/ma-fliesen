@@ -457,6 +457,88 @@ function tAppShell(language: AppUiLanguage, key: AppShellTextKey): string {
   return translate(language, key, APP_SHELL_TEXTS);
 }
 
+function isMaFliesenCompanySubdomain(companySubdomain: string | null | undefined): boolean {
+  return companySubdomain?.trim().toLowerCase() === "ma-fliesen";
+}
+
+function resolvePageLabelKey(
+  pathname: string
+): AppShellTextKey | null {
+  if (pathname === "/erfassung" || pathname.startsWith("/erfassung/")) {
+    return "capture";
+  }
+
+  if (pathname === "/kalender" || pathname.startsWith("/kalender/")) {
+    return "calendar";
+  }
+
+  if (pathname === "/uebersicht" || pathname.startsWith("/uebersicht/")) {
+    return "overview";
+  }
+
+  if (pathname === "/aufgaben" || pathname.startsWith("/aufgaben/")) {
+    return "tasks";
+  }
+
+  if (pathname === "/admin/dashboard" || pathname.startsWith("/admin/dashboard/")) {
+    return "dashboard";
+  }
+
+  if (pathname === "/admin/appointments" || pathname.startsWith("/admin/appointments/")) {
+    return "appointments";
+  }
+
+  if (pathname === "/admin/wochenplan" || pathname.startsWith("/admin/wochenplan/")) {
+    return "weeklyPlan";
+  }
+
+  if (pathname === "/admin/urlaubsantraege" || pathname.startsWith("/admin/urlaubsantraege/")) {
+    return "vacationRequests";
+  }
+
+  if (pathname === "/admin/krankheitsantraege" || pathname.startsWith("/admin/krankheitsantraege/")) {
+    return "sickRequests";
+  }
+
+  if (pathname === "/admin/nachtragsanfragen" || pathname.startsWith("/admin/nachtragsanfragen/")) {
+    return "correctionRequests";
+  }
+
+  if (pathname === "/admin/tasks" || pathname.startsWith("/admin/tasks/")) {
+    return "tasks";
+  }
+
+  if (pathname === "/admin/password-reset" || pathname.startsWith("/admin/password-reset/")) {
+    return "passwordReset";
+  }
+
+  return null;
+}
+
+function resolveActivePageLabel(params: {
+  pathname: string;
+  language: AppUiLanguage;
+  activeLabel?: string;
+  companySubdomain?: string | null;
+}): string {
+  const routeLabelKey = resolvePageLabelKey(params.pathname);
+
+  if (routeLabelKey) {
+    return tAppShell(params.language, routeLabelKey);
+  }
+
+  const trimmedActiveLabel = params.activeLabel?.trim();
+  if (trimmedActiveLabel) {
+    return trimmedActiveLabel;
+  }
+
+  if (isMaFliesenCompanySubdomain(params.companySubdomain)) {
+    return "#wirkönnendas";
+  }
+
+  return "";
+}
+
 function isAdminRequestsApiResponse(v: unknown): v is AdminRequestsApiResponse {
   if (!isRecord(v)) return false;
   if (v["ok"] !== true) return false;
@@ -938,6 +1020,13 @@ export default function AppShell({
           ? "A"
           : "M";
 
+  const resolvedActiveLabel = resolveActivePageLabel({
+    pathname,
+    language: currentLanguage,
+    activeLabel,
+    companySubdomain: session?.companySubdomain ?? null,
+  });
+
   return (
     <div style={{ padding: "18px 0 42px" }}>
       <div className="container-app">
@@ -1033,7 +1122,7 @@ export default function AppShell({
                       maxWidth: 220,
                     }}
                   >
-                    {activeLabel ?? brand?.slogan ?? ""}
+                    {resolvedActiveLabel}
                   </div>
                 </div>
               </div>
@@ -1282,7 +1371,7 @@ export default function AppShell({
                       textOverflow: "ellipsis",
                     }}
                   >
-                    {activeLabel ?? brand?.slogan ?? ""}
+                    {resolvedActiveLabel}
                   </div>
                 </div>
               </div>
@@ -1432,7 +1521,7 @@ export default function AppShell({
                       lineHeight: 1.1,
                     }}
                   >
-                    {activeLabel ?? brand?.slogan ?? ""}
+                    {resolvedActiveLabel}
                   </div>
                   <div
                     style={{
