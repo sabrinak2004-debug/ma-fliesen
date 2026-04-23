@@ -1750,15 +1750,11 @@ const resetAbsFilters = (): void => {
                 key={m.key}
                 type="button"
                 onClick={() => setExportMode(m.key)}
+                className={exportMode === m.key ? "pill pill-active" : "pill"}
                 style={{
-                  borderRadius: 999,
-                  padding: "8px 12px",
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background: exportMode === m.key ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.20)",
-                  color: "rgba(255,255,255,0.92)",
-                  cursor: "pointer",
                   fontSize: 13,
                   fontWeight: 900,
+                  cursor: "pointer",
                 }}
               >
                 {m.label}
@@ -1767,20 +1763,13 @@ const resetAbsFilters = (): void => {
           </div>
 
           {exportMode === "MONTH" ? (
-            <div style={{ display: "grid", gap: 8 }}>
+            <div className="modal-field" style={{ display: "grid", gap: 8 }}>
               <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectMonth")}</div>
               <input
                 type="month"
                 value={exportMonth}
                 onChange={(e) => setExportMonth(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(0,0,0,0.25)",
-                  color: "rgba(255,255,255,0.92)",
-                }}
+                className="input modal-date-input"
               />
               <div style={{ fontSize: 12, color: "var(--muted)" }}>
                 {t("downloadOneCsvFor")} <b>{exportMonth}</b>
@@ -1789,19 +1778,12 @@ const resetAbsFilters = (): void => {
           ) : null}
 
           {exportMode === "YEAR" ? (
-            <div style={{ display: "grid", gap: 8 }}>
+            <div className="modal-field" style={{ display: "grid", gap: 8 }}>
               <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectYear")}</div>
               <select
                 value={exportYear}
                 onChange={(e) => setExportYear(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(0,0,0,0.25)",
-                  color: "rgba(255,255,255,0.92)",
-                }}
+                className="select"
               >
                 {years.map((y) => (
                   <option key={y} value={y} style={{ color: "black" }}>
@@ -1820,44 +1802,32 @@ const resetAbsFilters = (): void => {
             <div style={{ display: "grid", gap: 10 }}>
               <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("selectRange")}</div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div style={{ display: "grid", gap: 6 }}>
+              <div className="modal-grid-2-compact">
+                <div className="modal-field" style={{ display: "grid", gap: 6 }}>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("from")}</div>
                   <input
                     type="date"
                     value={rangeFrom}
                     onChange={(e) => setRangeFrom(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(0,0,0,0.25)",
-                      color: "rgba(255,255,255,0.92)",
-                    }}
+                    className="input modal-date-input"
                   />
                 </div>
 
-                <div style={{ display: "grid", gap: 6 }}>
+                <div className="modal-field" style={{ display: "grid", gap: 6 }}>
                   <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("to")}</div>
                   <input
                     type="date"
                     value={rangeTo}
                     onChange={(e) => setRangeTo(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(0,0,0,0.25)",
-                      color: "rgba(255,255,255,0.92)",
-                    }}
+                    className="input modal-date-input"
                   />
                 </div>
               </div>
 
               {rangeError ? (
-                <div style={{ fontSize: 12, color: "rgba(224, 75, 69, 0.95)", fontWeight: 900 }}>{rangeError}</div>
+                <div className="tenant-status-text-danger" style={{ fontSize: 12, fontWeight: 900 }}>
+                  {rangeError}
+                </div>
               ) : (
                 <div style={{ fontSize: 12, color: "var(--muted)" }}>
                   {t("downloadCsvFromTo")} <b>{rangeFrom}</b> {t("to").toLowerCase()} <b>{rangeTo}</b>
@@ -2203,7 +2173,7 @@ const resetAbsFilters = (): void => {
                 gap: 8,
               }}
             >
-              <UnpaidIcon style={{color:"var(--tenant-icon-filter-unpaid"}}/>
+              <UnpaidIcon style={{color:"var(--tenant-icon-filter-unpaid)"}}/>
               <span>{filteredAbsenceCounts.unpaidVac}</span>
             </span>
           </div>
