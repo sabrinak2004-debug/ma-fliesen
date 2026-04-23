@@ -235,6 +235,69 @@ function categoryLabel(category: TaskCategory, language: AppUiLanguage): string 
   }
 }
 
+function getTaskCategoryBadgeStyle(
+  category: TaskCategory
+): React.CSSProperties {
+  switch (category) {
+    case "WORK_TIME":
+      return {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "6px 10px",
+        borderRadius: 999,
+        border: "1px solid var(--brand-work-border)",
+        background: "var(--brand-work-bg)",
+        color: "var(--text-soft)",
+        fontSize: 12,
+        fontWeight: 900,
+        lineHeight: 1,
+      };
+    case "VACATION":
+      return {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "6px 10px",
+        borderRadius: 999,
+        border: "1px solid var(--brand-vacation-border)",
+        background: "var(--brand-vacation-bg)",
+        color: "var(--info-text)",
+        fontSize: 12,
+        fontWeight: 900,
+        lineHeight: 1,
+      };
+    case "SICKNESS":
+      return {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "6px 10px",
+        borderRadius: 999,
+        border: "1px solid var(--brand-sick-border)",
+        background: "var(--brand-sick-bg)",
+        color: "var(--danger-text)",
+        fontSize: 12,
+        fontWeight: 900,
+        lineHeight: 1,
+      };
+    case "GENERAL":
+      return {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "6px 10px",
+        borderRadius: 999,
+        border: "1px solid var(--border)",
+        background: "var(--surface-strong)",
+        color: "var(--text-soft)",
+        fontSize: 12,
+        fontWeight: 900,
+        lineHeight: 1,
+      };
+  }
+}
+
 function requiredActionLabel(
   requiredAction: TaskRequiredAction,
   language: AppUiLanguage
@@ -702,9 +765,17 @@ export default function AdminTasksPage() {
                     gap: 6,
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      flexWrap: "wrap",
+                      alignItems: "flex-start",
+                    }}
+                  >
                     <div style={{ fontWeight: 1000 }}>{task.title}</div>
-                    <div style={{ fontSize: 12, color: "var(--muted-2)", fontWeight: 900 }}>
+                    <div style={getTaskCategoryBadgeStyle(task.category)}>
                       {categoryLabel(task.category, language)}
                     </div>
                   </div>
@@ -771,9 +842,17 @@ export default function AdminTasksPage() {
                     gap: 6,
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      flexWrap: "wrap",
+                      alignItems: "flex-start",
+                    }}
+                  >
                     <div style={{ fontWeight: 1000 }}>{task.title}</div>
-                    <div style={{ fontSize: 12, color: "var(--muted-2)", fontWeight: 900 }}>
+                    <div style={getTaskCategoryBadgeStyle(task.category)}>
                       {categoryLabel(task.category, language)}
                     </div>
                   </div>
