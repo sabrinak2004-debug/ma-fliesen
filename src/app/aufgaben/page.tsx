@@ -979,6 +979,54 @@ function categoryLabel(language: AppUiLanguage, category: TaskCategory): string 
   }
 }
 
+function getTaskCategoryBadgeStyle(
+  category: TaskCategory,
+  compact = false
+): React.CSSProperties {
+  const baseStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    fontWeight: 900,
+    lineHeight: 1,
+    whiteSpace: "nowrap",
+    padding: compact ? "6px 10px" : "7px 12px",
+    fontSize: compact ? 12 : 13,
+  };
+
+  switch (category) {
+    case "WORK_TIME":
+      return {
+        ...baseStyle,
+        border: "1px solid var(--brand-work-border)",
+        background: "var(--brand-work-bg)",
+        color: "var(--text-soft)",
+      };
+    case "VACATION":
+      return {
+        ...baseStyle,
+        border: "1px solid var(--brand-vacation-border)",
+        background: "var(--brand-vacation-bg)",
+        color: "var(--info-text)",
+      };
+    case "SICKNESS":
+      return {
+        ...baseStyle,
+        border: "1px solid var(--brand-sick-border)",
+        background: "var(--brand-sick-bg)",
+        color: "var(--danger-text)",
+      };
+    case "GENERAL":
+      return {
+        ...baseStyle,
+        border: "1px solid var(--border)",
+        background: "var(--surface-strong)",
+        color: "var(--text-soft)",
+      };
+  }
+}
+
 function requiredActionLabel(
   language: AppUiLanguage,
   requiredAction: TaskRequiredAction
@@ -1087,19 +1135,6 @@ function taskActionText(language: AppUiLanguage, task: TaskRow): string {
       );
     case "NONE":
       return translate(language, "taskActionNone", AUFGABEN_DICTIONARY);
-  }
-}
-
-function categoryAccentClassName(category: TaskCategory): string {
-  switch (category) {
-    case "WORK_TIME":
-      return "tenant-category-label tenant-category-label-work";
-    case "VACATION":
-      return "tenant-category-label tenant-category-label-vacation";
-    case "SICKNESS":
-      return "tenant-category-label tenant-category-label-sick";
-    case "GENERAL":
-      return "tenant-category-label tenant-category-label-neutral";
   }
 }
 
@@ -1312,9 +1347,17 @@ export default function AufgabenPage() {
           gap: 8,
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+          }}
+        >
           <div style={{ fontWeight: 1000 }}>{localizedTitle}</div>
-          <div className={categoryAccentClassName(task.category)}>
+          <div style={getTaskCategoryBadgeStyle(task.category, true)}>
             {categoryLabel(language, task.category)}
           </div>
         </div>
@@ -1490,8 +1533,12 @@ export default function AufgabenPage() {
                 return (
                   <div key={groupKey} style={{ display: "grid", gap: 10 }}>
                     <div
-                      className={categoryAccentClassName(groupKey)}
-                      style={{ fontSize: 16, fontWeight: 1000 }}
+                      style={{
+                        ...getTaskCategoryBadgeStyle(groupKey),
+                        fontSize: 16,
+                        fontWeight: 1000,
+                        justifySelf: "start",
+                      }}
                     >
                       {label}
                     </div>
