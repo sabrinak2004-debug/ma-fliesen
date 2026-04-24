@@ -3,29 +3,29 @@
 /* ===== Base44 Dark + Olive theme (ähnlich wie dein Prototyp) ===== */
 
 :root {
-  --bg: #f4f2ee;
+  --bg: #f7f6f3;
   --panel: #ffffff;
-  --panel-2: #ebe6df;
-  --surface: rgba(0, 0, 0, 0.04);
+  --panel-2: #f0ede7;
+  --surface: rgba(0, 0, 0, 0.035);
   --surface-strong: rgba(0, 0, 0, 0.06);
-  --input-bg: rgba(0, 0, 0, 0.06);
+  --input-bg: rgba(0, 0, 0, 0.05);
   --overlay-bg: rgba(255, 255, 255, 0.96);
-  --border: rgba(63, 59, 61, 0.14);
-  --border-2: rgba(63, 59, 61, 0.18);
-  --text: #2f2b2c;
-  --muted: #6f6963;
+  --border: rgba(40, 40, 40, 0.12);
+  --border-2: rgba(40, 40, 40, 0.18);
+  --text: #2f2f2f;
+  --muted: #6f6b66;
   --tenant-icon-muted: var(--muted-2);
   --tenant-icon-filter: var(--muted-2);
   --tenant-icon-filter-vacation: var(--muted-2);
   --tenant-icon-filter-unpaid: var(--muted-2);
-  --muted-2: #918a83;
+  --muted-2: #918b84;
   --text-soft: #4c4748;
   --text-faint: #6a6460;
-  --accent: #3f3b3d;
-  --accent-rgb: 63, 59, 61;
-  --accent-soft: rgba(63, 59, 61, 0.14);
-  --accent-border: rgba(63, 59, 61, 0.35);
-  --accent-2: #575152;
+  --accent: #6b6b6b;
+  --accent-rgb: 107, 107, 107;
+  --accent-soft: rgba(107, 107, 107, 0.12);
+  --accent-border: rgba(107, 107, 107, 0.28);
+  --accent-2: #6b6b6b;
   --brand-panel-soft: rgba(63, 59, 61, 0.08);
   --brand-panel-strong: rgba(63, 59, 61, 0.18);
   --brand-on-accent: #ffffff;
@@ -37,13 +37,13 @@
   --brand-calendar-today-border: rgba(63, 59, 61, 0.32);
   --brand-work-bg: rgba(63, 59, 61, 0.10);
   --brand-work-border: rgba(63, 59, 61, 0.34);
-  --brand-vacation-bg: rgba(200, 193, 184, 0.32);
-  --brand-vacation-border: rgba(200, 193, 184, 0.62);
-  --brand-sick-bg: rgba(87, 81, 82, 0.14);
-  --brand-sick-border: rgba(87, 81, 82, 0.34);
-  --brand-holiday-bg: rgba(200, 193, 184, 0.24);
-  --brand-holiday-border: rgba(200, 193, 184, 0.52);
-  --brand-holiday-text: #575152;
+  --brand-vacation-bg: rgba(0, 0, 0, 0.05);
+  --brand-vacation-border: rgba(0, 0, 0, 0.2);
+  --brand-sick-bg: rgba(0, 0, 0, 0.05);
+  --brand-sick-border: rgba(0, 0, 0, 0.2);
+  --brand-holiday-bg: rgba(0, 0, 0, 0.05);
+  --brand-holiday-border: rgba(0, 0, 0, 0.2);
+  --brand-holiday-text: #6b6b6b;
   --brand-floating-btn-bg: #3f3b3d;
   --brand-floating-btn-text: #ffffff;
   --button-primary-bg: linear-gradient(
