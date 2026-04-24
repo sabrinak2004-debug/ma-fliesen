@@ -10,7 +10,7 @@ import { translate, type AppUiLanguage } from "@/lib/i18n";
 import { TreePalm, Stethoscope, HandCoins  } from 'lucide-react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBusinessTime, faListCheck, faFileInvoice, faCarSide } from "@fortawesome/free-solid-svg-icons";
-import RemainingVacationIcon from "@/components/icons/RemainingVacationIcon";
+import ResturlaubCalendarIcon from "@/components/icons/ResturlaubCalendarIcon";
 import UnpaidIcon from "@/components/icons/UnpaidIcon";
 import SickDaysIcon from "@/components/icons/SickDaysIcon";
 
@@ -2039,7 +2039,7 @@ const resetAbsFilters = (): void => {
             </div>
           </div>
           <div className="app-kpi-icon">
-            <RemainingVacationIcon
+            <ResturlaubCalendarIcon
             size={28}
               style={{
               color: "var(--tenant-icon-muted)",

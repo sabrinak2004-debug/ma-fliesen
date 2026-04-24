@@ -12,7 +12,7 @@ import {
 } from "@/lib/i18n";
 import { Hourglass, CircleCheckBig, TreePalm, Wallet } from "lucide-react";
 import { CircleX } from 'lucide-react';
-import RemainingVacationIcon from "@/components/icons/RemainingVacationIcon";
+import ResturlaubCalendarIcon from "@/components/icons/ResturlaubCalendarIcon";
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AbsenceType = "VACATION" | "SICK";
@@ -1686,7 +1686,7 @@ useEffect(() => {
           </div>
 
           <div className="admin-workflow-kpi-icon">
-            <RemainingVacationIcon
+            <ResturlaubCalendarIcon
               size={40}
               style={{
                 color: "var(--tenant-icon-muted)",
