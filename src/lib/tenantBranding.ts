@@ -118,8 +118,8 @@ const DEFAULT_TENANT_THEME: TenantTheme = buildThemeFromBase({
 const TENANT_THEMES: Record<string, TenantTheme> = {
   "ma-fliesen": buildThemeFromBase({
     bg: "#0b0f0c",
-    backgroundStart: "#1a1d12",
-    backgroundFadeSoft: "#1a1d12",
+    backgroundStart: "#1f2709",
+    backgroundFadeSoft: "#1f27090e",
     backgroundFadeEnd: "#0b0f0c",
     panel: "#111613",
     panel2: "#0f1411",
@@ -163,8 +163,8 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
   }),
   beispielbetrieb: buildThemeFromBase({
     bg: "#f4f2ee",
-    backgroundStart: "#d8d8d8",
-    backgroundFadeSoft: "#d8d8d8",
+    backgroundStart: "#fff6ed",
+    backgroundFadeSoft: "rgba(216, 216, 216, 0.14)",
     backgroundFadeEnd: "#f4f2ee",
     panel: "#ffffff",
     panel2: "#ebe6df",
