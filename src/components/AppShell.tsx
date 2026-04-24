@@ -1045,12 +1045,7 @@ export default function AppShell({
   });
 
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        padding: "0 0 42px",
-      }}
-    >
+    <div className="page-fullscreen appshell-page">
       <div className="container-app">
         {/* MOBILE TOPBAR (nur < md) */}
         <div
@@ -1563,9 +1558,8 @@ export default function AppShell({
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
-                    padding: "0 0 42px",
+                    padding: "8px 10px",
                     borderRadius: 14,
-                    minHeight: "100dvh",
                   }}
                 >
                   <div
