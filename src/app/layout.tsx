@@ -55,12 +55,13 @@ export default async function RootLayout({
       style={tenantTheme ? getTenantThemeStyle(tenantTheme) : undefined}
     >
       <head>
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+       <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
+          name="theme-color"
+          content={tenantTheme ? tenantTheme.bg : "#f7f6f3"}
         />
-        <meta name="apple-mobile-web-app-title" content="Mitarbeiterportal" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body>
         <div className="app-background" aria-hidden="true" />
