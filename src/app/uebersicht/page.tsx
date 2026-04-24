@@ -1921,7 +1921,7 @@ const resetAbsFilters = (): void => {
               }}
             >
               {t("dataFor")}{" "}
-              <span style={{ fontWeight: 900, color: "rgba(255,255,255,0.92)" }}>
+              <span style={{ fontWeight: 900, color: "var(--muted)" }}>
                 {selectedMonthLabel} {selectedYear}
               </span>
             </div>
