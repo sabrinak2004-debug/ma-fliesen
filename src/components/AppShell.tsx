@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   applyTenantHeadBranding,
   applyTenantThemeToDocument,
@@ -883,7 +890,7 @@ export default function AppShell({
     };
   }, [loadOpenTaskCount, loadAdminRequestCounts]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!brand) {
       resetTenantThemeOnDocument();
       return;
