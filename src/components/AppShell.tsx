@@ -1061,7 +1061,7 @@ export default function AppShell({
             left: 0,
             right: 0,
             padding: 12,
-            paddingTop: 12,
+            paddingTop: "calc(env(safe-area-inset-top) + 12px)",
             marginBottom: 12,
             borderRadius: 18,
           }}
