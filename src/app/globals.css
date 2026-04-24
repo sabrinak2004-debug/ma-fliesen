@@ -111,15 +111,16 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0;
-  background: transparent;
   color: var(--text);
+  background: var(--bg);
   overflow-x: hidden;
 }
 
-.app-background {
+body::before {
+  content: "";
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
   background:
     radial-gradient(
@@ -132,15 +133,7 @@ body {
       rgba(var(--accent-rgb), 0.08),
       transparent 64%
     ),
-    linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
-}
-
-.app-root {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: transparent;
+    var(--bg);
 }
 
 

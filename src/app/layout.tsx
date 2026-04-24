@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import PushBootstrap from "@/components/PushBootstrap";
 import { getSession } from "@/lib/auth";
 import { normalizeAppUiLanguage, toHtmlLang } from "@/lib/i18n";
@@ -10,6 +10,13 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Mitarbeiterportal",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#f7f6f3",
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -48,13 +55,11 @@ export default async function RootLayout({
       style={tenantTheme ? getTenantThemeStyle(tenantTheme) : undefined}
     >
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta
-          name="theme-color"
-          content={tenantTheme ? tenantTheme.bg : "#f7f6f3"}
-        />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
         <meta name="apple-mobile-web-app-title" content="Mitarbeiterportal" />
       </head>
       <body>
