@@ -692,6 +692,9 @@ export function resetTenantThemeOnDocument(): void {
   root.style.removeProperty("--muted");
   root.style.removeProperty("--muted-2");
   root.style.removeProperty("--tenant-icon-muted");
+  root.style.removeProperty("--tenant-icon-filter");
+  root.style.removeProperty("--tenant-icon-filter-vacation");
+  root.style.removeProperty("--tenant-icon-filter-unpaid");
   root.style.removeProperty("--text-soft");
   root.style.removeProperty("--text-faint");
   root.style.removeProperty("--accent");

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   applyTenantHeadBranding,
   applyTenantThemeToDocument,
@@ -781,10 +781,15 @@ export default function AppShell({
   const isAdmin = resolvedRole === "ADMIN";
   const currentLanguage = normalizeAppUiLanguage(session?.language);
 
-  const brand = session ? buildBrandConfig(session) : null;
-  const brandLogoSrc = brand
-    ? normalizeLogoSrc(brand.logoUrl, brand.companySubdomain)
-    : null;
+  const brand = useMemo(() => {
+    return session ? buildBrandConfig(session) : null;
+  }, [session]);
+
+  const brandLogoSrc = useMemo(() => {
+    return brand
+      ? normalizeLogoSrc(brand.logoUrl, brand.companySubdomain)
+      : null;
+  }, [brand]);
 
   const employeeNavItems: NavItem[] = [
     {
@@ -879,7 +884,10 @@ export default function AppShell({
   }, [loadOpenTaskCount, loadAdminRequestCounts]);
 
   useEffect(() => {
-    if (!brand) return;
+    if (!brand) {
+      resetTenantThemeOnDocument();
+      return;
+    }
 
     applyTenantThemeToDocument(brand.theme);
 
