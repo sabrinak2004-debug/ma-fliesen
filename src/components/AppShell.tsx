@@ -890,7 +890,7 @@ export default function AppShell({
 
     applyTenantHeadBranding({
       title: brand.appTitle,
-      themeColor: brand.theme.bg,
+      themeColor: brand.theme.backgroundStart,
       appName: brand.displayName,
       manifestHref: getTenantManifestHref(brand.companySubdomain),
       appleTouchIconHref: getTenantAppleTouchIconHref(brand.companySubdomain),
