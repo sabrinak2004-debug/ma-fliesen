@@ -119,7 +119,7 @@ body {
   min-height: 100dvh;
   margin: 0;
   color: var(--text);
-  background: var(--bg);
+  background: transparent;
   overflow-x: hidden;
   overscroll-behavior-y: none;
   -webkit-text-size-adjust: 100%;
@@ -128,26 +128,25 @@ body {
 .app-background {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
-  background-color: var(--bg);
-  background-image:
+  background:
     radial-gradient(
-      92vmax 68vmax at 8% 0%,
+      1200px 760px at 8% -8%,
       var(--accent-soft),
-      transparent 58%
+      transparent 60%
     ),
     radial-gradient(
-      76vmax 62vmax at 92% 12%,
+      900px 680px at 92% -4%,
       rgba(var(--accent-rgb), 0.08),
       transparent 64%
-    );
-  background-repeat: no-repeat;
+    ),
+    var(--bg);
 }
 
 .app-root {
   position: relative;
-  z-index: 1;
+  z-index: 0;
   width: 100%;
   min-height: 100vh;
   min-height: 100svh;
@@ -160,7 +159,20 @@ body {
   min-height: 100vh;
   min-height: 100svh;
   min-height: 100dvh;
-  background: transparent;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(
+      1200px 760px at 8% -8%,
+      var(--accent-soft),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 680px at 92% -4%,
+      rgba(var(--accent-rgb), 0.08),
+      transparent 64%
+    ),
+    var(--bg);
+  background-repeat: no-repeat;
 }
 
 .legal-screen {
@@ -3652,64 +3664,4 @@ li {
   font-size: 12px;
   line-height: 1.4;
   color: var(--muted);
-}
-html,
-body {
-  background-color: var(--bg) !important;
-}
-
-.app-background {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg) 84%, var(--accent) 16%) 0px,
-      color-mix(in srgb, var(--bg) 90%, var(--accent) 10%) 90px,
-      var(--bg) 320px
-    ),
-    radial-gradient(
-      92vmax 68vmax at 8% 0%,
-      var(--accent-soft),
-      transparent 58%
-    ),
-    radial-gradient(
-      76vmax 62vmax at 92% 12%,
-      rgba(var(--accent-rgb), 0.08),
-      transparent 64%
-    ),
-    var(--bg);
-  background-repeat: no-repeat;
-}
-
-.app-root {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-  min-height: 100svh;
-  min-height: 100dvh;
-  background: transparent;
-}
-
-.page-fullscreen {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg) 84%, var(--accent) 16%) 0px,
-      color-mix(in srgb, var(--bg) 90%, var(--accent) 10%) 90px,
-      var(--bg) 320px
-    ),
-    radial-gradient(
-      92vmax 68vmax at 8% 0%,
-      var(--accent-soft),
-      transparent 58%
-    ),
-    radial-gradient(
-      76vmax 62vmax at 92% 12%,
-      rgba(var(--accent-rgb), 0.08),
-      transparent 64%
-    ),
-    var(--bg) !important;
 }
