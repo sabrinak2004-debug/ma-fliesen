@@ -64,7 +64,8 @@ export default async function RootLayout({
           style={{
             position: "relative",
             zIndex: 1,
-            minHeight: "100vh",
+            minHeight: "100dvh",
+            background: "inherit",
           }}
         >
           <PushBootstrap language={language} />
