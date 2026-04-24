@@ -1,13 +1,13 @@
 import * as React from "react";
 
-type CustomIconProps = React.SVGProps<SVGSVGElement> & {
+type SickDaysIconProps = React.SVGProps<SVGSVGElement> & {
   size?: number | string;
 };
 
 export default function CustomIcon({
   size = 45,
   ...props
-}: CustomIconProps) {
+}: SickDaysIconProps) {
   return (
     <svg
       width={size}
