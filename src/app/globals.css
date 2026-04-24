@@ -3653,3 +3653,56 @@ li {
   line-height: 1.4;
   color: var(--muted);
 }
+html,
+body {
+  background-color: var(--bg) !important;
+  background-image:
+    radial-gradient(
+      92vmax 68vmax at 8% 0%,
+      var(--accent-soft),
+      transparent 58%
+    ),
+    radial-gradient(
+      76vmax 62vmax at 92% 12%,
+      rgba(var(--accent-rgb), 0.08),
+      transparent 64%
+    ) !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+.app-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(
+      92vmax 68vmax at 8% 0%,
+      var(--accent-soft),
+      transparent 58%
+    ),
+    radial-gradient(
+      76vmax 62vmax at 92% 12%,
+      rgba(var(--accent-rgb), 0.08),
+      transparent 64%
+    );
+  background-repeat: no-repeat;
+}
+
+.app-root {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  background: transparent;
+}
+
+.page-fullscreen {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  background-color: transparent !important;
+  background-image: none !important;
+}
