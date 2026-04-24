@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 /* ===== Base44 Dark + Olive theme (ähnlich wie dein Prototyp) ===== */
+.app-root {
+  padding-top: var(--safe-top);
+}
 
 :root {
+  --safe-top: env(safe-area-inset-top);
   --bg: #f7f6f3;
   --panel: #ffffff;
   --panel-2: #f0ede7;
@@ -108,20 +112,8 @@ html {
 }
 
 body {
-  min-height: 100vh;
-  min-height: 100dvh;
   margin: 0;
-  color: var(--text);
-  background: var(--bg);
-  overflow-x: hidden;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
+  min-height: 100dvh;
   background:
     radial-gradient(
       1200px 760px at 8% -8%,
