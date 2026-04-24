@@ -3653,3 +3653,63 @@ li {
   line-height: 1.4;
   color: var(--muted);
 }
+html,
+body {
+  background-color: var(--bg) !important;
+}
+
+.app-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg) 84%, var(--accent) 16%) 0px,
+      color-mix(in srgb, var(--bg) 90%, var(--accent) 10%) 90px,
+      var(--bg) 320px
+    ),
+    radial-gradient(
+      92vmax 68vmax at 8% 0%,
+      var(--accent-soft),
+      transparent 58%
+    ),
+    radial-gradient(
+      76vmax 62vmax at 92% 12%,
+      rgba(var(--accent-rgb), 0.08),
+      transparent 64%
+    ),
+    var(--bg);
+  background-repeat: no-repeat;
+}
+
+.app-root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  background: transparent;
+}
+
+.page-fullscreen {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg) 84%, var(--accent) 16%) 0px,
+      color-mix(in srgb, var(--bg) 90%, var(--accent) 10%) 90px,
+      var(--bg) 320px
+    ),
+    radial-gradient(
+      92vmax 68vmax at 8% 0%,
+      var(--accent-soft),
+      transparent 58%
+    ),
+    radial-gradient(
+      76vmax 62vmax at 92% 12%,
+      rgba(var(--accent-rgb), 0.08),
+      transparent 64%
+    ),
+    var(--bg) !important;
+}
