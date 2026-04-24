@@ -175,6 +175,16 @@ body {
   background-repeat: no-repeat;
 }
 
+.legal-screen {
+  display: flex;
+  flex-direction: column;
+}
+
+.legal-screen-inner {
+  width: 100%;
+  padding: max(18px, env(safe-area-inset-top)) 0 40px;
+}
+
 .appshell-page {
   padding: max(18px, env(safe-area-inset-top)) 0 42px;
 }

@@ -11,8 +11,8 @@ export default function DatenschutzPage() {
   const initialLanguage = "DE" as const;
 
   return (
-    <div className="page-fullscreen" style={getTenantThemeStyle(theme)}>
-      <div className="page-section">
+    <div className="page-fullscreen legal-screen" style={getTenantThemeStyle(theme)}>
+      <div className="legal-screen-inner">
         <div className="container-app">
           <div className="card card-olive legal-page-card">
             <LegalContent
