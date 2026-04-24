@@ -15,7 +15,6 @@ import {
   applyTenantThemeToDocument,
   getTenantAppleTouchIconHref,
   getTenantManifestHref,
-  resetTenantThemeOnDocument,
   resolveTenantTheme,
   TenantTheme,
 } from "@/lib/tenantBranding";
@@ -603,19 +602,7 @@ export default function AppShell({
   activeLabel?: string;
 }) {
   const pathname = usePathname();
-  const [session, setSession] = useState<SessionData | null>(() => {
-    if (typeof window === "undefined") return null;
-
-    try {
-      const raw = window.localStorage.getItem("app_session_cache");
-      if (!raw) return null;
-
-      const parsed: unknown = JSON.parse(raw);
-      return isSessionData(parsed) ? parsed : null;
-    } catch {
-      return null;
-    }
-  });
+  const [session, setSession] = useState<SessionData | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [openTaskCount, setOpenTaskCount] = useState(0);
   const [openVacationRequests, setOpenVacationRequests] = useState(0);
@@ -892,15 +879,10 @@ export default function AppShell({
 
   useLayoutEffect(() => {
     if (!brand) {
-      resetTenantThemeOnDocument();
       return;
     }
 
     applyTenantThemeToDocument(brand.theme);
-
-    return () => {
-      resetTenantThemeOnDocument();
-    };
   }, [brand]);
 
   useEffect(() => {
