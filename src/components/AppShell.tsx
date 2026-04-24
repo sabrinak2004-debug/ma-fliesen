@@ -1045,7 +1045,12 @@ export default function AppShell({
   });
 
   return (
-    <div style={{ padding: "18px 0 42px" }}>
+    <div
+      style={{
+        minHeight: "100dvh",
+        padding: "0 0 42px",
+      }}
+    >
       <div className="container-app">
         {/* MOBILE TOPBAR (nur < md) */}
         <div
@@ -1056,7 +1061,7 @@ export default function AppShell({
             left: 0,
             right: 0,
             padding: 12,
-            paddingTop: "calc(12px + env(safe-area-inset-top))",
+            paddingTop: 12,
             marginBottom: 12,
             borderRadius: 18,
           }}
