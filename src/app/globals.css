@@ -105,27 +105,27 @@
 html {
   min-height: 100%;
   background-color: var(--bg);
+  background-image:
+    radial-gradient(
+      1200px 700px at 10% 0%,
+      var(--accent-soft),
+      transparent 58%
+    ),
+    radial-gradient(
+      900px 650px at 85% 0%,
+      rgba(var(--accent-rgb), 0.06),
+      transparent 62%
+    ),
+    linear-gradient(180deg, var(--bg), var(--bg));
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 body {
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0;
-  background-color: var(--bg);
-  background-image:
-    radial-gradient(
-      1200px 600px at 10% 10%,
-      var(--accent-soft),
-      transparent 55%
-    ),
-    radial-gradient(
-      900px 600px at 80% 20%,
-      rgba(var(--accent-rgb), 0.06),
-      transparent 60%
-    );
-  background-repeat: no-repeat, no-repeat;
-  background-size: 1200px 600px, 900px 600px;
-  background-position: 0 0, 100% 0;
+  background: transparent;
   color: var(--text);
 }
 
