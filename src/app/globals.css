@@ -159,21 +159,22 @@ body {
   min-height: 100vh;
   min-height: 100svh;
   min-height: 100dvh;
+
   background-color: var(--bg);
+
   background-image:
     radial-gradient(
-      1200px 600px at 10% 10%,
+      80% 60% at 10% 10%,
       var(--accent-soft),
-      transparent 55%
+      transparent 60%
     ),
     radial-gradient(
-      900px 600px at 80% 20%,
-      rgba(var(--accent-rgb), 0.06),
-      transparent 60%
+      70% 60% at 90% 20%,
+      rgba(var(--accent-rgb), 0.08),
+      transparent 65%
     );
-  background-repeat: no-repeat, no-repeat;
-  background-size: 1200px 600px, 900px 600px;
-  background-position: 0 0, 100% 0;
+
+  background-repeat: no-repeat;
 }
 
 .legal-screen {
