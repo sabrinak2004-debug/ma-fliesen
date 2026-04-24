@@ -1563,8 +1563,9 @@ export default function AppShell({
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
-                    padding: "8px 10px",
+                    padding: "0 0 42px",
                     borderRadius: 14,
+                    minHeight: "100dvh",
                   }}
                 >
                   <div
