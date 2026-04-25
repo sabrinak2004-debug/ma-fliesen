@@ -4060,3 +4060,55 @@ li {
     z-index: 1100 !important;
   }
 }
+@media (min-width: 768px) {
+  .appshell-desktop-scroll-curtain.is-visible {
+    position: fixed;
+    top: 0;
+    left: 0 !important;
+    right: 0 !important;
+    width: auto !important;
+    height: calc(max(18px, env(safe-area-inset-top)) + 126px);
+    z-index: 900 !important;
+    opacity: 1 !important;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      var(--tenant-background-start) 0%,
+      var(--tenant-background-start) 64%,
+      color-mix(in srgb, var(--tenant-background-start) 92%, transparent) 76%,
+      color-mix(in srgb, var(--tenant-background-start) 58%, transparent) 88%,
+      transparent 100%
+    );
+  }
+
+  .appshell-desktop-scroll-fade.is-visible {
+    position: fixed;
+    top: calc(max(18px, env(safe-area-inset-top)) + 82px);
+    left: 0 !important;
+    right: 0 !important;
+    width: auto !important;
+    height: 54px;
+    z-index: 901 !important;
+    opacity: 1 !important;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      var(--tenant-background-start) 0%,
+      color-mix(in srgb, var(--tenant-background-start) 86%, transparent) 28%,
+      color-mix(in srgb, var(--tenant-background-start) 48%, transparent) 68%,
+      transparent 100%
+    );
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    mask-image: linear-gradient(180deg, black 0%, black 74%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, black 0%, black 74%, transparent 100%);
+  }
+
+  .appshell-sidebar {
+    z-index: 1100 !important;
+  }
+
+  .appshell-desktop-topbar {
+    z-index: 920 !important;
+  }
+}
