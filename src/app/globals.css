@@ -4029,3 +4029,34 @@ li {
     z-index: 1201 !important;
   }
 }
+@media (min-width: 768px) {
+  .appshell-desktop-scroll-curtain.is-visible {
+    opacity: 1 !important;
+  }
+
+  .appshell-desktop-scroll-fade.is-visible {
+    opacity: 1 !important;
+  }
+
+  .appshell-desktop-scroll-curtain {
+    left: 0 !important;
+    right: 0 !important;
+    width: auto !important;
+    z-index: 900 !important;
+  }
+
+  .appshell-desktop-scroll-fade {
+    left: 0 !important;
+    right: 0 !important;
+    width: auto !important;
+    z-index: 901 !important;
+  }
+
+  .appshell-desktop-topbar {
+    z-index: 920 !important;
+  }
+
+  .appshell-sidebar {
+    z-index: 1100 !important;
+  }
+}
