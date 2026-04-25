@@ -110,7 +110,7 @@ html {
   min-width: 100%;
   height: 100%;
   min-height: 100%;
-  background: var(--bg);
+  background: var(--tenant-background-start);
   overflow-x: hidden;
 }
 
@@ -122,7 +122,7 @@ body {
   min-height: 100dvh;
   margin: 0;
   color: var(--text);
-  background: var(--bg);
+  background: transparent;
   overflow-x: hidden;
   overscroll-behavior-y: none;
   -webkit-text-size-adjust: 100%;
@@ -131,7 +131,7 @@ body {
 .app-background {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
   background:
     linear-gradient(
@@ -146,12 +146,55 @@ body {
 
 .app-root {
   position: relative;
-  z-index: 1;
+  z-index: 0;
   width: 100%;
   min-height: 100vh;
   min-height: 100svh;
   min-height: 100dvh;
   background: transparent;
+}
+
+.public-background-theme {
+  --bg: #f7f6f3;
+  --tenant-background-start: #d8d2c8;
+  --tenant-background-fade-soft: rgba(216, 210, 200, 0.58);
+  --tenant-background-fade-end: #f7f6f3;
+  --panel: #ffffff;
+  --panel-2: #f0ede7;
+  --surface: rgba(0, 0, 0, 0.035);
+  --surface-strong: rgba(0, 0, 0, 0.06);
+  --input-bg: rgba(0, 0, 0, 0.05);
+  --overlay-bg: rgba(255, 255, 255, 0.96);
+  --border: rgba(40, 40, 40, 0.12);
+  --border-2: rgba(40, 40, 40, 0.18);
+  --text: #2f2f2f;
+  --muted: #6f6b66;
+  --muted-2: #918b84;
+  --text-soft: #4c4748;
+  --text-faint: #6a6460;
+  --accent: #6b6b6b;
+  --accent-rgb: 107, 107, 107;
+  --accent-soft: rgba(107, 107, 107, 0.12);
+  --accent-border: rgba(107, 107, 107, 0.28);
+  --accent-2: #6b6b6b;
+  --brand-on-accent: #ffffff;
+}
+
+.public-background-theme::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      #d8d2c8 0px,
+      #d8d2c8 180px,
+      rgba(216, 210, 200, 0.58) 380px,
+      #f7f6f3 680px,
+      #f7f6f3 100%
+    );
 }
 
 .page-fullscreen {
@@ -2716,17 +2759,11 @@ li {
 }
 
 .tenant-entry-shell {
-  min-height: 100vh;
-  min-height: 100svh;
   min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding:
-    calc(env(safe-area-inset-top) + 24px)
-    0
-    calc(env(safe-area-inset-bottom) + 24px);
-  box-sizing: border-box;
+  padding: 24px 0;
 }
 
 .tenant-entry-card {
