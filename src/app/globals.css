@@ -3684,14 +3684,16 @@ li {
 
 .appshell-mobile-topbar.is-compact {
   position: fixed;
-  top: calc(env(safe-area-inset-top) + 10px);
-  left: 12px;
-  right: 12px;
+  top: 0;
+  left: 10px;
+  right: 10px;
   z-index: 1000;
-  padding: 8px 10px;
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--panel) 96%, transparent);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+  padding: calc(env(safe-area-inset-top) + 8px) 10px 8px;
+  border-radius: 0 0 24px 24px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .appshell-mobile-topbar-inner {
