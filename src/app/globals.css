@@ -3690,10 +3690,13 @@ li {
   z-index: 1000;
   padding: 8px 10px;
   border-radius: 24px;
-  background: color-mix(in srgb, var(--panel) 96%, transparent);
-  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(60px) saturate(1.4);
-  -webkit-backdrop-filter: blur(60px) saturate(1.4);
+
+  background: color-mix(in srgb, var(--panel) 98%, transparent);
+
+  backdrop-filter: blur(80px) saturate(1.6) brightness(1.05);
+  -webkit-backdrop-filter: blur(80px) saturate(1.6) brightness(1.05);
+
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.38);
 }
 
 .appshell-mobile-topbar-inner {
