@@ -151,7 +151,7 @@ body {
 
 .public-background-theme {
   --bg: #D9D7D3;
-  --tenant-background-start: #d8d2c8;
+  --tenant-background-start: #D9D7D3;
   --tenant-background-fade-soft: #d9d7d337;
   --tenant-background-fade-end: #f7f6f3;
   --panel: #ffffff;
