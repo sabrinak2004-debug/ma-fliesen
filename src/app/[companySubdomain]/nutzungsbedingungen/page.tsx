@@ -35,7 +35,7 @@ export default async function TenantNutzungsbedingungenPage({
     >
       <div className="legal-screen-inner">
         <div className="container-app">
-          <div className="card card-olive legal-page-card">
+          <div className="card legal-page-card">
             <LegalContent type="terms" initialLanguage={language} />
 
             <div className="legal-page-actions">
