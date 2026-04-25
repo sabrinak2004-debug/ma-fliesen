@@ -76,9 +76,9 @@ export default async function TenantDatenschutzPage({
               />
             </div>
           </div>
-          </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
