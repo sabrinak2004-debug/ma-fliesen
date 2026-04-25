@@ -197,10 +197,6 @@ body {
 }
 
 .topbar {
-  position: sticky;
-  top: max(18px, env(safe-area-inset-top));
-  z-index: 60;
-
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -3815,4 +3811,24 @@ li {
   margin-top: 0;
   opacity: 0;
   overflow: hidden;
+}
+@media (min-width: 768px) {
+  .appshell-content {
+    padding-top: 92px;
+  }
+
+  .appshell-desktop-topbar {
+    position: fixed;
+    top: max(18px, env(safe-area-inset-top));
+    left: calc((100vw - min(1100px, calc(100vw - 48px))) / 2 + 340px);
+    width: calc(min(1100px, calc(100vw - 48px)) - 340px);
+    z-index: 70;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1200px) {
+  .appshell-desktop-topbar {
+    left: calc((100vw - min(100vw, calc(100vw - 32px))) / 2 + 296px);
+    width: calc(min(100vw, calc(100vw - 32px)) - 296px);
+  }
 }

@@ -1470,7 +1470,7 @@ export default function AppShell({
           </aside>
 
           <div className="appshell-content">
-            <div className="topbar" style={{ padding: 14, marginBottom: 18 }}>
+            <div className="topbar appshell-desktop-topbar" style={{ padding: 14, marginBottom: 18 }}>
               <div
                 style={{
                   display: "flex",
