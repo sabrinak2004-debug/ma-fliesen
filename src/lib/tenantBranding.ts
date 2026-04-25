@@ -11,9 +11,6 @@ export type TenantTheme = TenantThemeBase;
 
 type TenantThemeBase = {
   bg: string;
-  backgroundStart: string;
-  backgroundFadeSoft: string;
-  backgroundFadeEnd: string;
   panel: string;
   panel2: string;
   surface: string;
@@ -116,52 +113,8 @@ const DEFAULT_TENANT_THEME: TenantTheme = buildThemeFromBase({
 });
 
 const TENANT_THEMES: Record<string, TenantTheme> = {
-  public: buildThemeFromBase({
-    bg: "#d8d2c8",
-    backgroundStart: "#d8d2c8",
-    backgroundFadeSoft: "rgba(216, 210, 200, 0.58)",
-    backgroundFadeEnd: "#f7f6f3",
-    panel: "#ffffff",
-    panel2: "#f0ede7",
-    surface: "rgba(0, 0, 0, 0.035)",
-    surfaceStrong: "rgba(0, 0, 0, 0.06)",
-    inputBg: "rgba(0, 0, 0, 0.05)",
-    overlayBg: "rgba(255, 255, 255, 0.96)",
-    border: "rgba(40, 40, 40, 0.12)",
-    border2: "rgba(40, 40, 40, 0.18)",
-    text: "#2f2f2f",
-    muted: "#6f6b66",
-    muted2: "#918b84",
-    textSoft: "#4c4748",
-    textFaint: "#6a6460",
-    accent: "#6b6b6b",
-    accent2: "#6b6b6b",
-    onAccent: "#ffffff",
-    sidebarStripe: "#6b6b6b",
-    badgeBg: "#6b6b6b",
-    badgeText: "#ffffff",
-    rolePillBg: "rgba(107, 107, 107, 0.14)",
-    todayBg: "rgba(107, 107, 107, 0.12)",
-    todayBorder: "rgba(107, 107, 107, 0.32)",
-    workBg: "rgba(107, 107, 107, 0.10)",
-    workBorder: "rgba(107, 107, 107, 0.34)",
-    vacationBg: "rgba(0, 0, 0, 0.05)",
-    vacationBorder: "rgba(0, 0, 0, 0.2)",
-    sickBg: "rgba(0, 0, 0, 0.05)",
-    sickBorder: "rgba(0, 0, 0, 0.2)",
-    holidayBg: "rgba(0, 0, 0, 0.05)",
-    holidayBorder: "rgba(0, 0, 0, 0.2)",
-    holidayText: "#6b6b6b",
-    floatingButtonBg: "#6b6b6b",
-    floatingButtonText: "#ffffff",
-    neutralCardBg: "rgba(200, 193, 184, 0.14)",
-    neutralCardBgStrong: "rgba(200, 193, 184, 0.24)",
-  }),
   "ma-fliesen": buildThemeFromBase({
     bg: "#0b0f0c",
-    backgroundStart: "#232912",
-    backgroundFadeSoft: "#23291219",
-    backgroundFadeEnd: "#0b0f0c",
     panel: "#111613",
     panel2: "#0f1411",
     surface: "rgba(255, 255, 255, 0.03)",
@@ -204,9 +157,6 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
   }),
   beispielbetrieb: buildThemeFromBase({
     bg: "#f4f2ee",
-    backgroundStart: "#f4f2ee",
-    backgroundFadeSoft: "#f4f2ee",
-    backgroundFadeEnd: "#f4f2ee",
     panel: "#ffffff",
     panel2: "#ebe6df",
     surface: "rgba(0, 0, 0, 0.04)",
@@ -251,9 +201,6 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
 export function createTenantTheme(
   input: {
     bg: string;
-    backgroundStart?: string;
-    backgroundFadeSoft?: string;
-    backgroundFadeEnd?: string;
     panel: string;
     panel2: string;
     surface: string;
@@ -346,9 +293,6 @@ function rgbaFromHex(hex: string, alpha: number, fallback: string): string {
 function buildThemeFromBase(
   base: {
     bg: string;
-    backgroundStart?: string;
-    backgroundFadeSoft?: string;
-    backgroundFadeEnd?: string;
     panel: string;
     panel2: string;
     surface: string;
@@ -398,11 +342,6 @@ function buildThemeFromBase(
 
   return {
     bg: base.bg,
-    backgroundStart: base.backgroundStart ?? base.bg,
-    backgroundFadeSoft:
-      base.backgroundFadeSoft ??
-      rgbaFromHex(accent, 0.16, "rgba(107, 107, 107, 0.16)"),
-    backgroundFadeEnd: base.backgroundFadeEnd ?? base.bg,
     panel: base.panel,
     panel2: base.panel2,
     surface: base.surface,
@@ -598,9 +537,6 @@ export function getTenantThemeStyle(
 
   const style: React.CSSProperties & Record<string, string> = {
     "--bg": theme.bg,
-    "--tenant-background-start": theme.backgroundStart,
-    "--tenant-background-fade-soft": theme.backgroundFadeSoft,
-    "--tenant-background-fade-end": theme.backgroundFadeEnd,
     "--panel": theme.panel,
     "--panel-2": theme.panel2,
     "--surface": theme.surface,
@@ -675,9 +611,6 @@ export function applyTenantThemeToDocument(theme: TenantTheme): void {
   const rgb = hexToRgb(theme.accent);
 
   root.style.setProperty("--bg", theme.bg);
-  root.style.setProperty("--tenant-background-start", theme.backgroundStart);
-  root.style.setProperty("--tenant-background-fade-soft", theme.backgroundFadeSoft);
-  root.style.setProperty("--tenant-background-fade-end", theme.backgroundFadeEnd);
   root.style.setProperty("--panel", theme.panel);
   root.style.setProperty("--panel-2", theme.panel2);
   root.style.setProperty("--surface", theme.surface);
@@ -747,9 +680,6 @@ export function applyTenantThemeToDocument(theme: TenantTheme): void {
 export function resetTenantThemeOnDocument(): void {
   const root = document.documentElement;
   root.style.removeProperty("--bg");
-  root.style.removeProperty("--tenant-background-start");
-  root.style.removeProperty("--tenant-background-fade-soft");
-  root.style.removeProperty("--tenant-background-fade-end");
   root.style.removeProperty("--panel");
   root.style.removeProperty("--panel-2");
   root.style.removeProperty("--surface");
@@ -762,9 +692,6 @@ export function resetTenantThemeOnDocument(): void {
   root.style.removeProperty("--muted");
   root.style.removeProperty("--muted-2");
   root.style.removeProperty("--tenant-icon-muted");
-  root.style.removeProperty("--tenant-icon-filter");
-  root.style.removeProperty("--tenant-icon-filter-vacation");
-  root.style.removeProperty("--tenant-icon-filter-unpaid");
   root.style.removeProperty("--text-soft");
   root.style.removeProperty("--text-faint");
   root.style.removeProperty("--accent");

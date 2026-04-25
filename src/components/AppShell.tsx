@@ -614,7 +614,6 @@ export default function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [languageSaving, setLanguageSaving] = useState(false);
   const [languageMessage, setLanguageMessage] = useState<string | null>(null);
-  const [topbarCompact, setTopbarCompact] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -691,20 +690,6 @@ export default function AppShell({
     return () => {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
-    };
-  }, []);
-
-  useEffect(() => {
-    function handleScroll() {
-      setTopbarCompact(window.scrollY > 48);
-    }
-
-    handleScroll();
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -905,7 +890,7 @@ export default function AppShell({
 
     applyTenantHeadBranding({
       title: brand.appTitle,
-      themeColor: brand.theme.backgroundStart,
+      themeColor: brand.theme.bg,
       appName: brand.displayName,
       manifestHref: getTenantManifestHref(brand.companySubdomain),
       appleTouchIconHref: getTenantAppleTouchIconHref(brand.companySubdomain),
@@ -1060,51 +1045,117 @@ export default function AppShell({
   });
 
   return (
-    <div className="page-fullscreen appshell-page">
+    <div style={{ padding: "18px 0 42px" }}>
       <div className="container-app">
         {/* MOBILE TOPBAR (nur < md) */}
         <div
-          className={`md:hidden appshell-glass-panel appshell-mobile-topbar ${
-            topbarCompact ? "is-compact" : ""
-          }`}
+          className="md:hidden appshell-glass-panel"
+          style={{
+            position: "relative",
+            zIndex: 1,
+            left: 0,
+            right: 0,
+            padding: 12,
+            paddingTop: "calc(12px + env(safe-area-inset-top))",
+            marginBottom: 12,
+            borderRadius: 18,
+          }}
         >
-          <div className="appshell-mobile-topbar-inner">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+            }}
+          >
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
               aria-label={tAppShell(currentLanguage, "menuOpen")}
-              className="appshell-icon-btn appshell-mobile-menu-button"
+              className="appshell-icon-btn"
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                fontSize: 18,
+                fontWeight: 900,
+              }}
             >
               ☰
             </button>
 
-            <div className="appshell-mobile-title-wrap">
-              <div className="appshell-mobile-title-inner">
-                {brandLogoSrc ? (
-                  <img
-                    src={brandLogoSrc}
-                    alt={`${brand?.displayName ?? "Logo"} Logo`}
-                    className="appshell-mobile-logo"
-                  />
-                ) : brand ? (
-                  <div className="brand-logo-fallback appshell-mobile-logo-fallback">
-                    {brand.displayName}
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    minWidth: 0,
+                  }}
+                >
+                  {brandLogoSrc ? (
+                    <img
+                      src={brandLogoSrc}
+                      alt={`${brand?.displayName ?? "Logo"} Logo`}
+                      style={{
+                        width: 92,
+                        height: 92,
+                        objectFit: "contain",
+                        display: "block",
+                      }}
+                    />
+                  ) : brand ? (
+                    <div
+                      className="brand-logo-fallback"
+                      style={{
+                        width: 110,
+                        height: 34,
+                        fontSize: 12,
+                      }}
+                    >
+                      {brand.displayName}
+                    </div>
+                  ) : null}
+                  <div
+                    style={{
+                      fontWeight: 900,
+                      color: "var(--text)",
+                      lineHeight: 1.05,
+                      marginTop: 6,
+                    }}
+                  >
+                    {resolvedActiveLabel}
                   </div>
-                ) : null}
-
-                <div className="appshell-mobile-page-title">
-                  {resolvedActiveLabel}
-                </div>
-
-                <div className="appshell-mobile-subtitle">
-                  {resolvedTopbarSubtitle}
+                  <div
+                    style={{
+                      fontSize: 12,
+                      marginTop: 2,
+                      color: "var(--muted)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      maxWidth: 220,
+                    }}
+                  >
+                    {resolvedTopbarSubtitle}
+                  </div>
                 </div>
               </div>
             </div>
 
             <div
               aria-hidden="true"
-              className="appshell-user-avatar appshell-mobile-avatar"
+              className="appshell-user-avatar"
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
               {userInitials}
             </div>
@@ -1115,7 +1166,7 @@ export default function AppShell({
         {mobileOpen && (
           <div
             className="md:hidden"
-            style={{ position: "fixed", inset: 0, zIndex: 1200, overflow: "hidden" }}
+            style={{ position: "fixed", inset: 0, zIndex: 80, overflow: "hidden" }}
           >
           <button
             type="button"
@@ -1291,14 +1342,7 @@ export default function AppShell({
         )}
 
         {/* MOBILE CONTENT */}
-        <div
-          className={`md:hidden appshell-mobile-content ${
-            topbarCompact ? "has-compact-topbar" : ""
-          }`}
-        >
-          <div className="appshell-mobile-scroll-curtain" />
-          <div className="appshell-mobile-scroll-fade" />
-
+        <div className="md:hidden" style={{ minWidth: 0 }}>
           <PushOnboarding language={currentLanguage} />
           {children}
         </div>
@@ -1477,18 +1521,7 @@ export default function AppShell({
           </aside>
 
           <div className="appshell-content">
-            <div
-              className={`appshell-desktop-scroll-curtain ${
-                topbarCompact ? "is-visible" : ""
-              }`}
-            />
-            <div
-              className={`appshell-desktop-scroll-fade ${
-                topbarCompact ? "is-visible" : ""
-              }`}
-            />
-
-            <div className="topbar appshell-desktop-topbar" style={{ padding: 14, marginBottom: 18 }}>
+            <div className="topbar" style={{ padding: 14, marginBottom: 18 }}>
               <div
                 style={{
                   display: "flex",

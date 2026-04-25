@@ -4,9 +4,6 @@
 
 :root {
   --bg: #f7f6f3;
-  --tenant-background-start: #d8d2c8;
-  --tenant-background-fade-soft: rgba(216, 210, 200, 0.58);
-  --tenant-background-fade-end: var(--bg);
   --panel: #ffffff;
   --panel-2: #f0ede7;
   --surface: rgba(0, 0, 0, 0.035);
@@ -106,92 +103,33 @@
 
 
 html {
-  width: 100%;
-  min-width: 100%;
-  height: 100%;
   min-height: 100%;
-  background: var(--bg);
-  overflow-x: hidden;
+  background-color: var(--bg);
 }
 
 body {
-  width: 100%;
-  min-width: 100%;
   min-height: 100vh;
-  min-height: 100svh;
   min-height: 100dvh;
   margin: 0;
-  color: var(--text);
-  background: var(--bg);
-  overflow-x: hidden;
-  overscroll-behavior-y: none;
-  -webkit-text-size-adjust: 100%;
-}
-
-.app-background {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      180deg,
-      var(--tenant-background-start) 0px,
-      var(--tenant-background-start) 180px,
-      var(--tenant-background-fade-soft) 380px,
-      var(--tenant-background-fade-end) 680px,
-      var(--bg) 100%
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(
+      1200px 600px at 10% 10%,
+      var(--accent-soft),
+      transparent 55%
+    ),
+    radial-gradient(
+      900px 600px at 80% 20%,
+      rgba(var(--accent-rgb), 0.06),
+      transparent 60%
     );
-}
-
-.app-root {
-  position: relative;
-  z-index: 1;
-}
-
-
-.page-fullscreen {
-  width: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
-  min-height: 100dvh;
-  background: transparent;
-}
-
-.legal-screen {
-  display: flex;
-  flex-direction: column;
+  background-repeat: no-repeat, no-repeat;
+  background-size: 1200px 600px, 900px 600px;
+  background-position: 0 0, 100% 0;
   color: var(--text);
-  background:
-    linear-gradient(
-      180deg,
-      var(--bg) 0px,
-      var(--bg) max(92px, env(safe-area-inset-top)),
-      var(--tenant-background-start) max(92px, env(safe-area-inset-top)),
-      var(--tenant-background-start) 170px,
-      var(--tenant-background-fade-soft) 310px,
-      var(--tenant-background-fade-end) 560px,
-      var(--bg) 100%
-    );
-}
-
-.legal-screen-inner {
-  width: 100%;
-  min-height: 100dvh;
-  padding: calc(max(92px, env(safe-area-inset-top)) + 34px) 0 40px;
 }
 
 
-.appshell-page {
-  padding: max(18px, env(safe-area-inset-top)) 0 42px;
-  background: transparent;
-}
-
-@media (max-width: 767px) {
-  .appshell-page {
-    padding-top: 0;
-  }
-}
 
 /* ===== Reusable UI classes ===== */
 
@@ -207,12 +145,11 @@ body {
 }
 
 .topbar {
-  background: var(--panel);
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .brand {
@@ -1421,14 +1358,11 @@ li {
 }
 
 .appshell-sidebar {
-  position: fixed;
-  top: max(18px, env(safe-area-inset-top));
-  width: 320px;
-  height: calc(100dvh - max(36px, env(safe-area-inset-top) + 18px));
-  max-height: calc(100dvh - max(36px, env(safe-area-inset-top) + 18px));
-  overflow-y: auto;
+  position: sticky;
+  top: 18px;
   display: flex;
   flex-direction: column;
+  min-height: calc(100vh - 36px);
   padding: 18px;
   border-radius: 24px;
   border: 1px solid var(--border);
@@ -1462,12 +1396,6 @@ li {
   min-width: 0;
 }
 
-@media (min-width: 768px) {
-  .appshell-content {
-    grid-column: 2;
-  }
-}
-
 @media (max-width: 1200px) {
   .container-app {
     width: min(100%, calc(100% - 32px));
@@ -1479,7 +1407,6 @@ li {
   }
 
   .appshell-sidebar {
-    width: 280px;
     padding: 16px;
   }
 }
@@ -2516,20 +2443,7 @@ li {
   width: min(860px, 100%);
   margin: 0 auto;
   padding: 24px;
-  border-color: var(--accent-border);
-  background:
-    radial-gradient(
-      120% 80% at 50% 0%,
-      color-mix(in srgb, var(--accent) 13%, transparent),
-      transparent 58%
-    ),
-    var(--panel);
-  color: var(--text);
-  box-shadow:
-    0 0 0 3px var(--brand-panel-soft),
-    0 24px 70px rgba(0, 0, 0, 0.24);
 }
-
 
 .legal-page-title {
   margin: 0;
@@ -2587,13 +2501,6 @@ li {
   display: flex;
   justify-content: flex-start;
   margin-top: 24px;
-}
-
-.legal-page-actions .btn {
-  background: var(--accent-soft);
-  border-color: var(--accent-border);
-  color: var(--accent);
-  font-weight: 900;
 }
 .login-legal-links {
   display: flex;
@@ -3699,552 +3606,4 @@ li {
   font-size: 12px;
   line-height: 1.4;
   color: var(--muted);
-}
-.appshell-mobile-topbar {
-  position: relative;
-  z-index: 70;
-  padding: calc(env(safe-area-inset-top) + 12px) 12px 12px;
-  margin: 12px 0 12px;
-  border-radius: 22px;
-  overflow: hidden;
-  isolation: isolate;
-  background: var(--panel) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  transition:
-    padding 0.18s ease,
-    border-radius 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.appshell-mobile-topbar::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  background: var(--panel);
-  pointer-events: none;
-}
-
-.appshell-mobile-topbar.is-compact {
-  position: fixed;
-  top: 6px;
-  left: 10px;
-  right: 10px;
-  z-index: 1000;
-  padding: 8px 10px;
-  border-radius: 24px;
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.38);
-}
-
-.appshell-mobile-topbar-inner {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.appshell-mobile-menu-button {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  font-size: 18px;
-  font-weight: 900;
-  flex: 0 0 auto;
-}
-
-.appshell-mobile-title-wrap {
-  min-width: 0;
-  flex: 1;
-}
-
-.appshell-mobile-title-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 0;
-}
-
-.appshell-mobile-logo {
-  width: 92px;
-  height: 92px;
-  object-fit: contain;
-  display: block;
-  transition:
-    width 0.18s ease,
-    height 0.18s ease,
-    opacity 0.18s ease,
-    transform 0.18s ease,
-    margin 0.18s ease;
-}
-
-.appshell-mobile-logo-fallback {
-  width: 110px;
-  height: 34px;
-  font-size: 12px;
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease,
-    height 0.18s ease,
-    margin 0.18s ease;
-}
-
-.appshell-mobile-page-title {
-  max-width: 220px;
-  margin-top: 6px;
-  color: var(--text);
-  font-weight: 900;
-  line-height: 1.05;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition:
-    margin 0.18s ease,
-    font-size 0.18s ease;
-}
-
-.appshell-mobile-subtitle {
-  max-width: 220px;
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition:
-    opacity 0.18s ease,
-    height 0.18s ease,
-    margin 0.18s ease;
-}
-
-.appshell-mobile-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-.appshell-mobile-topbar.is-compact .appshell-mobile-logo,
-.appshell-mobile-topbar.is-compact .appshell-mobile-logo-fallback {
-  width: 0;
-  height: 0;
-  margin: 0;
-  opacity: 0;
-  transform: scale(0.8);
-  overflow: hidden;
-}
-
-.appshell-mobile-topbar.is-compact .appshell-mobile-page-title {
-  margin-top: 0;
-  font-size: 16px;
-}
-
-.appshell-mobile-topbar.is-compact .appshell-mobile-subtitle {
-  height: 0;
-  margin-top: 0;
-  opacity: 0;
-  overflow: hidden;
-}
-
-/* ===== AppShell fixed Topbar Scroll Curtain + Fade ===== */
-
-@media (min-width: 768px) {
-  .appshell-content {
-    position: relative;
-    padding-top: 118px;
-  }
-
-  .appshell-desktop-topbar {
-    position: fixed;
-    top: max(18px, env(safe-area-inset-top));
-    left: calc((100vw - min(1100px, calc(100vw - 48px))) / 2 + 340px);
-    width: calc(min(1100px, calc(100vw - 48px)) - 340px);
-    z-index: 1004;
-    background: var(--panel) !important;
-    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
-  }
-
-  .appshell-desktop-scroll-curtain {
-    opacity: 0;
-    transition: opacity 0.18s ease;
-    position: fixed;
-    top: 0;
-    left: calc((100vw - min(1100px, calc(100vw - 48px))) / 2 + 324px);
-    width: calc(min(1100px, calc(100vw - 48px)) - 308px);
-    height: calc(max(18px, env(safe-area-inset-top)) + 112px);
-    z-index: 1002;
-    pointer-events: none;
-    background:
-      linear-gradient(
-        90deg,
-        transparent 0%,
-        var(--tenant-background-start) 24px,
-        var(--tenant-background-start) calc(100% - 24px),
-        transparent 100%
-      ),
-      linear-gradient(
-        180deg,
-        var(--tenant-background-start) 0%,
-        var(--tenant-background-start) 72%,
-        color-mix(in srgb, var(--tenant-background-start) 82%, transparent) 84%,
-        color-mix(in srgb, var(--tenant-background-start) 34%, transparent) 94%,
-        transparent 100%
-      );
-  }
-
-  .appshell-desktop-scroll-fade {
-    opacity: 0;
-    transition: opacity 0.18s ease;
-    position: fixed;
-    top: calc(max(18px, env(safe-area-inset-top)) + 78px);
-    left: calc((100vw - min(1100px, calc(100vw - 48px))) / 2 + 324px);
-    width: calc(min(1100px, calc(100vw - 48px)) - 308px);
-    height: 34px;
-    z-index: 1003;
-    pointer-events: none;
-    background:
-      linear-gradient(
-        90deg,
-        transparent 0%,
-        color-mix(in srgb, var(--tenant-background-start) 76%, transparent) 24px,
-        color-mix(in srgb, var(--tenant-background-start) 76%, transparent) calc(100% - 24px),
-        transparent 100%
-      ),
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--tenant-background-start) 76%, transparent) 0%,
-        color-mix(in srgb, var(--tenant-background-start) 32%, transparent) 58%,
-        transparent 100%
-      );
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    mask-image: linear-gradient(
-      180deg,
-      black 0%,
-      black 68%,
-      transparent 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      180deg,
-      black 0%,
-      black 68%,
-      transparent 100%
-    );
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1200px) {
-  .appshell-desktop-topbar {
-    left: calc((100vw - min(100vw, calc(100vw - 32px))) / 2 + 296px);
-    width: calc(min(100vw, calc(100vw - 32px)) - 296px);
-  }
-
-  .appshell-desktop-scroll-curtain,
-  .appshell-desktop-scroll-fade {
-    opacity: 1;
-    left: calc((100vw - min(100vw, calc(100vw - 32px))) / 2 + 280px);
-    width: calc(min(100vw, calc(100vw - 32px)) - 264px);
-  }
-}
-
-@media (max-width: 767px) {
-  .appshell-mobile-content {
-    position: relative;
-    min-width: 0;
-    transition: padding-top 0.18s ease;
-  }
-
-  .appshell-mobile-content.has-compact-topbar {
-    padding-top: 86px;
-  }
-
-  .appshell-mobile-content.has-compact-topbar .appshell-mobile-scroll-curtain {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: calc(env(safe-area-inset-top) + 100px);
-    z-index: 998;
-    pointer-events: none;
-    opacity: 1;
-    background: linear-gradient(
-      180deg,
-      var(--tenant-background-start) 0%,
-      var(--tenant-background-start) 74%,
-      color-mix(in srgb, var(--tenant-background-start) 78%, transparent) 86%,
-      transparent 100%
-    );
-  }
-
-  .appshell-mobile-content.has-compact-topbar .appshell-mobile-scroll-fade {
-    position: fixed;
-    top: calc(env(safe-area-inset-top) + 78px);
-    left: 0;
-    right: 0;
-    height: 30px;
-    z-index: 999;
-    pointer-events: none;
-    opacity: 1;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--tenant-background-start) 74%, transparent) 0%,
-      color-mix(in srgb, var(--tenant-background-start) 28%, transparent) 56%,
-      transparent 100%
-    );
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    mask-image: linear-gradient(180deg, black 0%, black 62%, transparent 100%);
-    -webkit-mask-image: linear-gradient(180deg, black 0%, black 62%, transparent 100%);
-  }
-
-  .appshell-mobile-topbar.is-compact {
-    z-index: 1000;
-  }
-}
-/* ===== AppShell Layer-Reihenfolge ===== */
-
-@media (min-width: 768px) {
-  .appshell-desktop-scroll-curtain {
-    left: 0 !important;
-    right: 0 !important;
-    width: auto !important;
-    z-index: 900 !important;
-  }
-
-  .appshell-desktop-scroll-fade {
-    left: 0 !important;
-    right: 0 !important;
-    width: auto !important;
-    z-index: 901 !important;
-  }
-
-  .appshell-desktop-topbar {
-    z-index: 920 !important;
-  }
-
-  .appshell-sidebar {
-    z-index: 1100 !important;
-  }
-}
-
-@media (max-width: 767px) {
-  .appshell-mobile-content.has-compact-topbar .appshell-mobile-scroll-curtain {
-    z-index: 900 !important;
-  }
-
-  .appshell-mobile-content.has-compact-topbar .appshell-mobile-scroll-fade {
-    z-index: 901 !important;
-  }
-
-  .appshell-mobile-topbar {
-    z-index: 920 !important;
-  }
-
-  .appshell-mobile-topbar.is-compact {
-    z-index: 920 !important;
-  }
-
-  .appshell-mobile-backdrop {
-    z-index: 1200 !important;
-  }
-
-  .appshell-mobile-drawer {
-    z-index: 1201 !important;
-  }
-}
-@media (min-width: 768px) {
-  .appshell-desktop-scroll-curtain.is-visible {
-    opacity: 1 !important;
-  }
-
-  .appshell-desktop-scroll-fade.is-visible {
-    opacity: 1 !important;
-  }
-
-  .appshell-desktop-scroll-curtain {
-    left: 0 !important;
-    right: 0 !important;
-    width: auto !important;
-    z-index: 900 !important;
-  }
-
-  .appshell-desktop-scroll-fade {
-    left: 0 !important;
-    right: 0 !important;
-    width: auto !important;
-    z-index: 901 !important;
-  }
-
-  .appshell-desktop-topbar {
-    z-index: 920 !important;
-  }
-
-  .appshell-sidebar {
-    z-index: 1100 !important;
-  }
-}
-@media (min-width: 768px) {
-  .appshell-desktop-scroll-curtain.is-visible {
-    position: fixed;
-    top: 0;
-    left: 0 !important;
-    right: 0 !important;
-    width: auto !important;
-    height: calc(max(18px, env(safe-area-inset-top)) + 126px);
-    z-index: 900 !important;
-    opacity: 1 !important;
-    pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      var(--tenant-background-start) 0%,
-      var(--tenant-background-start) 64%,
-      color-mix(in srgb, var(--tenant-background-start) 92%, transparent) 76%,
-      color-mix(in srgb, var(--tenant-background-start) 58%, transparent) 88%,
-      transparent 100%
-    );
-  }
-
-  .appshell-desktop-scroll-fade.is-visible {
-    position: fixed;
-    top: calc(max(18px, env(safe-area-inset-top)) + 82px);
-    left: 0 !important;
-    right: 0 !important;
-    width: auto !important;
-    height: 54px;
-    z-index: 901 !important;
-    opacity: 1 !important;
-    pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      var(--tenant-background-start) 0%,
-      color-mix(in srgb, var(--tenant-background-start) 86%, transparent) 28%,
-      color-mix(in srgb, var(--tenant-background-start) 48%, transparent) 68%,
-      transparent 100%
-    );
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    mask-image: linear-gradient(180deg, black 0%, black 74%, transparent 100%);
-    -webkit-mask-image: linear-gradient(180deg, black 0%, black 74%, transparent 100%);
-  }
-
-  .appshell-sidebar {
-    z-index: 1100 !important;
-  }
-
-  .appshell-desktop-topbar {
-    z-index: 920 !important;
-  }
-}
-@media (max-width: 767px) {
-  .appshell-mobile-drawer {
-    top: 0 !important;
-    padding-top: calc(env(safe-area-inset-top) + 16px) !important;
-    background: var(--panel) !important;
-  }
-
-  .appshell-mobile-drawer::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: min(320px, 86vw);
-    height: env(safe-area-inset-top);
-    background: var(--panel);
-    pointer-events: none;
-    z-index: -1;
-  }
-}
-@media (max-width: 767px) {
-  html:has(.appshell-mobile-drawer),
-  body:has(.appshell-mobile-drawer) {
-    background: var(--panel) !important;
-  }
-
-  .app-background:has(~ .app-root .appshell-mobile-drawer) {
-    background: var(--panel) !important;
-  }
-
-  .appshell-mobile-drawer {
-    top: 0 !important;
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    padding-top: calc(env(safe-area-inset-top) + 16px) !important;
-    background: var(--panel) !important;
-  }
-
-  .appshell-mobile-drawer::after {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: min(320px, 86vw);
-    height: calc(env(safe-area-inset-top) + 2px);
-    background: var(--panel) !important;
-    z-index: 1202;
-    pointer-events: none;
-  }
-}
-.login-page-shell {
-  position: relative;
-  isolation: isolate;
-  min-height: 100vh;
-  min-height: 100svh;
-  min-height: 100dvh;
-}
-
-.login-page-background {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      180deg,
-      var(--tenant-background-start) 0px,
-      var(--tenant-background-start) 180px,
-      var(--tenant-background-fade-soft) 380px,
-      var(--tenant-background-fade-end) 680px,
-      var(--bg) 100%
-    );
-}
-
-.login-page-content {
-  position: relative;
-  z-index: 1;
-}
-.legal-full-page {
-  width: 100%;
-  min-height: 100dvh;
-  padding: calc(env(safe-area-inset-top) + 28px) 20px
-    calc(env(safe-area-inset-bottom) + 32px);
-  color: var(--text);
-}
-
-.legal-full-page .legal-page-title,
-.legal-full-page .legal-page-updated,
-.legal-full-page .legal-page-content,
-.legal-full-page .legal-page-actions {
-  width: 100%;
-  max-width: none;
-}
-
-.legal-full-page .legal-page-title {
-  margin-top: 0;
-}
-
-.legal-full-page .legal-page-content {
-  padding-bottom: 24px;
-}
-
-@media (min-width: 768px) {
-  .legal-full-page {
-    padding: 48px 56px 56px;
-  }
 }
