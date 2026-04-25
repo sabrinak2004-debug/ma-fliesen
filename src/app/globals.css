@@ -4112,3 +4112,22 @@ li {
     z-index: 920 !important;
   }
 }
+@media (max-width: 767px) {
+  .appshell-mobile-drawer {
+    top: 0 !important;
+    padding-top: calc(env(safe-area-inset-top) + 16px) !important;
+    background: var(--panel) !important;
+  }
+
+  .appshell-mobile-drawer::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(320px, 86vw);
+    height: env(safe-area-inset-top);
+    background: var(--panel);
+    pointer-events: none;
+    z-index: -1;
+  }
+}
