@@ -1410,13 +1410,14 @@ li {
 }
 
 .appshell-sidebar {
-  position: sticky;
+  position: fixed;
   top: max(18px, env(safe-area-inset-top));
-  display: flex;
-  flex-direction: column;
+  width: 320px;
   height: calc(100dvh - max(36px, env(safe-area-inset-top) + 18px));
   max-height: calc(100dvh - max(36px, env(safe-area-inset-top) + 18px));
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   padding: 18px;
   border-radius: 24px;
   border: 1px solid var(--border);
@@ -1450,6 +1451,12 @@ li {
   min-width: 0;
 }
 
+@media (min-width: 768px) {
+  .appshell-content {
+    grid-column: 2;
+  }
+}
+
 @media (max-width: 1200px) {
   .container-app {
     width: min(100%, calc(100% - 32px));
@@ -1461,6 +1468,7 @@ li {
   }
 
   .appshell-sidebar {
+    width: 280px;
     padding: 16px;
   }
 }
