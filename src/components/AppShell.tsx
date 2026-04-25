@@ -1115,7 +1115,7 @@ export default function AppShell({
         {mobileOpen && (
           <div
             className="md:hidden"
-            style={{ position: "fixed", inset: 0, zIndex: 80, overflow: "hidden" }}
+            style={{ position: "fixed", inset: 0, zIndex: 1200, overflow: "hidden" }}
           >
           <button
             type="button"
