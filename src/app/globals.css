@@ -197,11 +197,16 @@ body {
 }
 
 .topbar {
-  background: color-mix(in srgb, var(--panel) 78%, transparent);
+  position: sticky;
+  top: max(18px, env(safe-area-inset-top));
+  z-index: 60;
+
+  background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .brand {
