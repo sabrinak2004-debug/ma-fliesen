@@ -150,7 +150,6 @@ export default function HomePageClient(): React.ReactElement {
   }, [language]);
 
   return (
-    <div className="page-section public-background-theme">
       <div className="container-app">
         <div className="landing-hero-card card card-olive">
           <div className="landing-badge">saleo</div>
@@ -218,6 +217,5 @@ export default function HomePageClient(): React.ReactElement {
           </div>
         </div>
       </div>
-    </div>
   );
 }
