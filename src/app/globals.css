@@ -150,23 +150,6 @@ body {
 }
 
 
-.public-background-theme::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      180deg,
-      #d8d2c8 0px,
-      #d8d2c8 180px,
-      rgba(216, 210, 200, 0.58) 380px,
-      #f7f6f3 680px,
-      #f7f6f3 100%
-    );
-}
-
 .page-fullscreen {
   width: 100%;
   min-height: 100vh;

@@ -328,7 +328,7 @@ export default function TenantEntryClient() {
 
   return (
     <>
-      <div className="tenant-entry-shell public-background-theme">
+      <div className="tenant-entry-shell">
         <div className="container-app">
           <div className="card tenant-entry-card">
             <div style={{ maxWidth: 260, marginBottom: 18 }}>
