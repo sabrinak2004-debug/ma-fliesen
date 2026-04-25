@@ -169,10 +169,12 @@ body {
   background:
     linear-gradient(
       180deg,
-      var(--tenant-background-start) 0px,
-      var(--tenant-background-start) 80px,
-      var(--tenant-background-fade-soft) 210px,
-      var(--tenant-background-fade-end) 420px,
+      var(--bg) 0px,
+      var(--bg) max(92px, env(safe-area-inset-top)),
+      var(--tenant-background-start) max(92px, env(safe-area-inset-top)),
+      var(--tenant-background-start) 170px,
+      var(--tenant-background-fade-soft) 310px,
+      var(--tenant-background-fade-end) 560px,
       var(--bg) 100%
     );
 }
@@ -180,7 +182,7 @@ body {
 .legal-screen-inner {
   width: 100%;
   min-height: 100dvh;
-  padding: max(18px, env(safe-area-inset-top)) 0 40px;
+  padding: calc(max(92px, env(safe-area-inset-top)) + 34px) 0 40px;
 }
 
 
