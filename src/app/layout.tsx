@@ -47,18 +47,18 @@ export default async function RootLayout({
   const tenantTheme =
     companySubdomain !== null
       ? resolveTenantTheme(companySubdomain, primaryColor)
-      : null;
+      : resolveTenantTheme("public");
 
   return (
     <html
       lang={htmlLang}
-      style={tenantTheme ? getTenantThemeStyle(tenantTheme) : undefined}
+      style={getTenantThemeStyle(tenantTheme)}
     >
       <head>
        <meta
-        name="theme-color"
-        content={tenantTheme ? tenantTheme.bg : "#D9D7D3"}
-      />
+          name="theme-color"
+          content={tenantTheme.bg}
+        />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
