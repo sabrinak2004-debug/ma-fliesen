@@ -3690,9 +3690,9 @@ li {
   z-index: 1000;
   padding: 8px 10px;
   border-radius: 24px;
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  background: color-mix(in srgb, var(--panel) 99%, transparent);
   box-shadow: 0 14px 38px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(40px) saturate(1.25);
+  backdrop-filter: blur(90px) saturate(1.25);
   -webkit-backdrop-filter: blur(28px) saturate(1.25);
 }
 
