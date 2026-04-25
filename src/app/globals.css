@@ -3814,7 +3814,7 @@ li {
 }
 @media (min-width: 768px) {
   .appshell-content {
-    padding-top: 92px;
+    padding-top: 118px;
   }
 
   .appshell-desktop-topbar {
@@ -3822,7 +3822,10 @@ li {
     top: max(18px, env(safe-area-inset-top));
     left: calc((100vw - min(1100px, calc(100vw - 48px))) / 2 + 340px);
     width: calc(min(1100px, calc(100vw - 48px)) - 340px);
-    z-index: 70;
+    z-index: 1000;
+    background: var(--panel);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }
 
