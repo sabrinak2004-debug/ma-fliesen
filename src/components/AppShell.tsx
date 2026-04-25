@@ -1291,7 +1291,14 @@ export default function AppShell({
         )}
 
         {/* MOBILE CONTENT */}
-        <div className="md:hidden" style={{ minWidth: 0 }}>
+        <div
+          className={`md:hidden appshell-mobile-content ${
+            mobileTopbarCompact ? "has-compact-topbar" : ""
+          }`}
+        >
+          <div className="appshell-mobile-scroll-curtain" />
+          <div className="appshell-mobile-scroll-fade" />
+
           <PushOnboarding language={currentLanguage} />
           {children}
         </div>
@@ -1470,6 +1477,9 @@ export default function AppShell({
           </aside>
 
           <div className="appshell-content">
+            <div className="appshell-desktop-scroll-curtain" />
+            <div className="appshell-desktop-scroll-fade" />
+
             <div className="topbar appshell-desktop-topbar" style={{ padding: 14, marginBottom: 18 }}>
               <div
                 style={{
