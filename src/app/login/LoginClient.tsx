@@ -1005,8 +1005,9 @@ export default function LoginClient({
   };
 
   return (
-    <div className="page-fullscreen" style={pageThemeStyle}>
-      <div style={{ padding: "40px 0" }}>
+    <div className="page-fullscreen login-page-shell" style={pageThemeStyle}>
+      <div className="login-page-background" aria-hidden="true" />
+      <div className="login-page-content" style={{ padding: "40px 0" }}>
         <div className="container-app">
         <div
           className="card card-olive"

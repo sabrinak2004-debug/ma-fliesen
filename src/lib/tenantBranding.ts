@@ -204,8 +204,8 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
   }),
   beispielbetrieb: buildThemeFromBase({
     bg: "#f4f2ee",
-    backgroundStart: "#D9D7D3",
-    backgroundFadeSoft: "#d9d7d337",
+    backgroundStart: "#f4f2ee",
+    backgroundFadeSoft: "#f4f2ee",
     backgroundFadeEnd: "#f4f2ee",
     panel: "#ffffff",
     panel2: "#ebe6df",

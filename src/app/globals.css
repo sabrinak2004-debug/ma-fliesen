@@ -4233,3 +4233,31 @@ li {
     pointer-events: none;
   }
 }
+.login-page-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+}
+
+.login-page-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      var(--tenant-background-start) 0px,
+      var(--tenant-background-start) 180px,
+      var(--tenant-background-fade-soft) 380px,
+      var(--tenant-background-fade-end) 680px,
+      var(--bg) 100%
+    );
+}
+
+.login-page-content {
+  position: relative;
+  z-index: 1;
+}
