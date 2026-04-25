@@ -56,9 +56,9 @@ export default async function RootLayout({
     >
       <head>
        <meta
-          name="theme-color"
-        content={tenantTheme ? tenantTheme.backgroundStart : "#d8d2c8"}
-        />
+        name="theme-color"
+        content={tenantTheme ? tenantTheme.bg : "#f7f6f3"}
+      />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
