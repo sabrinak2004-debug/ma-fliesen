@@ -3828,7 +3828,7 @@ li {
 @media (min-width: 768px) {
   .appshell-content {
     position: relative;
-    padding-top: 122px;
+    padding-top: 118px;
   }
 
   .appshell-desktop-topbar {
@@ -3844,39 +3844,65 @@ li {
   .appshell-desktop-scroll-curtain {
     position: fixed;
     top: 0;
-    left: 0;
-    right: 0;
-    height: calc(max(18px, env(safe-area-inset-top)) + 142px);
+    left: calc((100vw - min(1100px, calc(100vw - 48px))) / 2 + 324px);
+    width: calc(min(1100px, calc(100vw - 48px)) - 308px);
+    height: calc(max(18px, env(safe-area-inset-top)) + 112px);
     z-index: 1002;
     pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      var(--tenant-background-start) 0%,
-      var(--tenant-background-start) 58%,
-      color-mix(in srgb, var(--tenant-background-start) 96%, transparent) 66%,
-      color-mix(in srgb, var(--tenant-background-start) 78%, transparent) 76%,
-      color-mix(in srgb, var(--tenant-background-start) 42%, transparent) 88%,
-      transparent 100%
-    );
+    background:
+      linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--tenant-background-start) 24px,
+        var(--tenant-background-start) calc(100% - 24px),
+        transparent 100%
+      ),
+      linear-gradient(
+        180deg,
+        var(--tenant-background-start) 0%,
+        var(--tenant-background-start) 72%,
+        color-mix(in srgb, var(--tenant-background-start) 82%, transparent) 84%,
+        color-mix(in srgb, var(--tenant-background-start) 34%, transparent) 94%,
+        transparent 100%
+      );
   }
 
   .appshell-desktop-scroll-fade {
     position: fixed;
-    top: calc(max(18px, env(safe-area-inset-top)) + 100px);
-    left: 0;
-    right: 0;
-    height: 58px;
+    top: calc(max(18px, env(safe-area-inset-top)) + 78px);
+    left: calc((100vw - min(1100px, calc(100vw - 48px))) / 2 + 324px);
+    width: calc(min(1100px, calc(100vw - 48px)) - 308px);
+    height: 34px;
     z-index: 1003;
     pointer-events: none;
-    background: linear-gradient(
+    background:
+      linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--tenant-background-start) 76%, transparent) 24px,
+        color-mix(in srgb, var(--tenant-background-start) 76%, transparent) calc(100% - 24px),
+        transparent 100%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--tenant-background-start) 76%, transparent) 0%,
+        color-mix(in srgb, var(--tenant-background-start) 32%, transparent) 58%,
+        transparent 100%
+      );
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    mask-image: linear-gradient(
       180deg,
-      var(--tenant-background-start) 0%,
-      color-mix(in srgb, var(--tenant-background-start) 86%, transparent) 22%,
-      color-mix(in srgb, var(--tenant-background-start) 48%, transparent) 62%,
+      black 0%,
+      black 68%,
       transparent 100%
     );
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      black 0%,
+      black 68%,
+      transparent 100%
+    );
   }
 }
 
@@ -3884,6 +3910,12 @@ li {
   .appshell-desktop-topbar {
     left: calc((100vw - min(100vw, calc(100vw - 32px))) / 2 + 296px);
     width: calc(min(100vw, calc(100vw - 32px)) - 296px);
+  }
+
+  .appshell-desktop-scroll-curtain,
+  .appshell-desktop-scroll-fade {
+    left: calc((100vw - min(100vw, calc(100vw - 32px))) / 2 + 280px);
+    width: calc(min(100vw, calc(100vw - 32px)) - 264px);
   }
 }
 
@@ -3895,7 +3927,7 @@ li {
   }
 
   .appshell-mobile-content.has-compact-topbar {
-    padding-top: 92px;
+    padding-top: 86px;
   }
 
   .appshell-mobile-content.has-compact-topbar .appshell-mobile-scroll-curtain {
@@ -3903,39 +3935,38 @@ li {
     top: 0;
     left: 0;
     right: 0;
-    height: calc(env(safe-area-inset-top) + 142px);
+    height: calc(env(safe-area-inset-top) + 100px);
     z-index: 998;
     pointer-events: none;
     opacity: 1;
     background: linear-gradient(
       180deg,
       var(--tenant-background-start) 0%,
-      var(--tenant-background-start) 60%,
-      color-mix(in srgb, var(--tenant-background-start) 94%, transparent) 70%,
-      color-mix(in srgb, var(--tenant-background-start) 66%, transparent) 82%,
-      color-mix(in srgb, var(--tenant-background-start) 30%, transparent) 92%,
+      var(--tenant-background-start) 74%,
+      color-mix(in srgb, var(--tenant-background-start) 78%, transparent) 86%,
       transparent 100%
     );
   }
 
   .appshell-mobile-content.has-compact-topbar .appshell-mobile-scroll-fade {
     position: fixed;
-    top: calc(env(safe-area-inset-top) + 96px);
+    top: calc(env(safe-area-inset-top) + 78px);
     left: 0;
     right: 0;
-    height: 54px;
+    height: 30px;
     z-index: 999;
     pointer-events: none;
     opacity: 1;
     background: linear-gradient(
       180deg,
-      var(--tenant-background-start) 0%,
-      color-mix(in srgb, var(--tenant-background-start) 84%, transparent) 24%,
-      color-mix(in srgb, var(--tenant-background-start) 48%, transparent) 64%,
+      color-mix(in srgb, var(--tenant-background-start) 74%, transparent) 0%,
+      color-mix(in srgb, var(--tenant-background-start) 28%, transparent) 56%,
       transparent 100%
     );
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    mask-image: linear-gradient(180deg, black 0%, black 62%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, black 0%, black 62%, transparent 100%);
   }
 
   .appshell-mobile-topbar.is-compact {
