@@ -3842,6 +3842,8 @@ li {
   }
 
   .appshell-desktop-scroll-curtain {
+    opacity: 0;
+    transition: opacity 0.18s ease;
     position: fixed;
     top: 0;
     left: calc((100vw - min(1100px, calc(100vw - 48px))) / 2 + 324px);
@@ -3868,6 +3870,8 @@ li {
   }
 
   .appshell-desktop-scroll-fade {
+    opacity: 0;
+    transition: opacity 0.18s ease;
     position: fixed;
     top: calc(max(18px, env(safe-area-inset-top)) + 78px);
     left: calc((100vw - min(1100px, calc(100vw - 48px))) / 2 + 324px);
@@ -3914,6 +3918,7 @@ li {
 
   .appshell-desktop-scroll-curtain,
   .appshell-desktop-scroll-fade {
+    opacity: 1;
     left: calc((100vw - min(100vw, calc(100vw - 32px))) / 2 + 280px);
     width: calc(min(100vw, calc(100vw - 32px)) - 264px);
   }

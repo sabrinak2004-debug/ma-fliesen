@@ -614,7 +614,7 @@ export default function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [languageSaving, setLanguageSaving] = useState(false);
   const [languageMessage, setLanguageMessage] = useState<string | null>(null);
-  const [mobileTopbarCompact, setMobileTopbarCompact] = useState(false);
+  const [topbarCompact, setTopbarCompact] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -696,7 +696,7 @@ export default function AppShell({
 
   useEffect(() => {
     function handleScroll() {
-      setMobileTopbarCompact(window.scrollY > 48);
+      setTopbarCompact(window.scrollY > 48);
     }
 
     handleScroll();
@@ -1065,7 +1065,7 @@ export default function AppShell({
         {/* MOBILE TOPBAR (nur < md) */}
         <div
           className={`md:hidden appshell-glass-panel appshell-mobile-topbar ${
-            mobileTopbarCompact ? "is-compact" : ""
+            topbarCompact ? "is-compact" : ""
           }`}
         >
           <div className="appshell-mobile-topbar-inner">
@@ -1293,7 +1293,7 @@ export default function AppShell({
         {/* MOBILE CONTENT */}
         <div
           className={`md:hidden appshell-mobile-content ${
-            mobileTopbarCompact ? "has-compact-topbar" : ""
+            topbarCompact ? "has-compact-topbar" : ""
           }`}
         >
           <div className="appshell-mobile-scroll-curtain" />
@@ -1477,8 +1477,16 @@ export default function AppShell({
           </aside>
 
           <div className="appshell-content">
-            <div className="appshell-desktop-scroll-curtain" />
-            <div className="appshell-desktop-scroll-fade" />
+            <div
+              className={`appshell-desktop-scroll-curtain ${
+                topbarCompact ? "is-visible" : ""
+              }`}
+            />
+            <div
+              className={`appshell-desktop-scroll-fade ${
+                topbarCompact ? "is-visible" : ""
+              }`}
+            />
 
             <div className="topbar appshell-desktop-topbar" style={{ padding: 14, marginBottom: 18 }}>
               <div
