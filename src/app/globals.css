@@ -4219,3 +4219,32 @@ li {
   position: relative;
   z-index: 1;
 }
+.legal-full-page {
+  width: 100%;
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top) + 28px) 20px
+    calc(env(safe-area-inset-bottom) + 32px);
+  color: var(--text);
+}
+
+.legal-full-page .legal-page-title,
+.legal-full-page .legal-page-updated,
+.legal-full-page .legal-page-content,
+.legal-full-page .legal-page-actions {
+  width: 100%;
+  max-width: none;
+}
+
+.legal-full-page .legal-page-title {
+  margin-top: 0;
+}
+
+.legal-full-page .legal-page-content {
+  padding-bottom: 24px;
+}
+
+@media (min-width: 768px) {
+  .legal-full-page {
+    padding: 48px 56px 56px;
+  }
+}
