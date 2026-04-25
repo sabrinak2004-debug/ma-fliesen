@@ -149,31 +149,6 @@ body {
   z-index: 1;
 }
 
-.public-background-theme {
-  --bg: #D9D7D3;
-  --tenant-background-start: #D9D7D3;
-  --tenant-background-fade-soft: #d9d7d337;
-  --tenant-background-fade-end: #f7f6f3;
-  --panel: #ffffff;
-  --panel-2: #f0ede7;
-  --surface: rgba(0, 0, 0, 0.035);
-  --surface-strong: rgba(0, 0, 0, 0.06);
-  --input-bg: rgba(0, 0, 0, 0.05);
-  --overlay-bg: rgba(255, 255, 255, 0.96);
-  --border: rgba(40, 40, 40, 0.12);
-  --border-2: rgba(40, 40, 40, 0.18);
-  --text: #2f2f2f;
-  --muted: #6f6b66;
-  --muted-2: #918b84;
-  --text-soft: #4c4748;
-  --text-faint: #6a6460;
-  --accent: #6b6b6b;
-  --accent-rgb: 107, 107, 107;
-  --accent-soft: rgba(107, 107, 107, 0.12);
-  --accent-border: rgba(107, 107, 107, 0.28);
-  --accent-2: #6b6b6b;
-  --brand-on-accent: #ffffff;
-}
 
 .public-background-theme::before {
   content: "";
