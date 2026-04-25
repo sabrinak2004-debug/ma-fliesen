@@ -3835,3 +3835,11 @@ li {
     width: calc(min(100vw, calc(100vw - 32px)) - 296px);
   }
 }
+.appshell-mobile-topbar,
+.appshell-mobile-topbar.is-compact,
+.topbar,
+.appshell-desktop-topbar {
+  background: var(--panel) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
