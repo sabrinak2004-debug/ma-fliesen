@@ -71,6 +71,7 @@ type TenantThemeBase = {
   iconFilter?: string;
   iconFilterVacation?: string;
   iconFilterUnpaid?: string;
+  verlauf?:string;
 };
 
 const DEFAULT_TENANT_THEME: TenantTheme = buildThemeFromBase({
@@ -154,6 +155,7 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     iconFilter: "#A63D38",
     iconFilterVacation: "#467DBA",
     iconFilterUnpaid: "#B89007",
+    verlauf: "#30361F",
   }),
   beispielbetrieb: buildThemeFromBase({
     bg: "#f4f2ee",
@@ -195,6 +197,7 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     iconFilter: "#DF6362",
     iconFilterVacation: "#71A1EF",
     iconFilterUnpaid: "#84AA97",
+    verlauf: "#D2D0CD",
   }),
 };
 
@@ -240,6 +243,7 @@ export function createTenantTheme(
     iconFilter?: string;
     iconFilterVacation?: string;
     iconFilterUnpaid?: string;
+    verlauf?: string;
   }
 ): TenantTheme {
   return buildThemeFromBase({
@@ -332,6 +336,7 @@ function buildThemeFromBase(
     iconFilter?: string;
     iconFilterVacation?: string;
     iconFilterUnpaid?: string;
+    verlauf?: string;
   }
 ): TenantTheme {
   const accent = normalizeThemeColor(base.accent);
@@ -738,6 +743,7 @@ export function resetTenantThemeOnDocument(): void {
   root.style.removeProperty("--danger-soft");
   root.style.removeProperty("--danger-border");
   root.style.removeProperty("--danger-text");
+  root.style.removeProperty("--verlauf");
 }
 
 export function applyAccentColorToDocument(accent: string): void {
