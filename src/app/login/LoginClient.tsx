@@ -715,7 +715,7 @@ export default function LoginClient({
 
     applyTenantHeadBranding({
       title: `${brand.displayName} Mitarbeiterportal`,
-      themeColor: loginTheme.bg,
+      themeColor: loginTheme.accent,
       appName: brand.displayName,
       manifestHref: getTenantManifestHref(effectiveSubdomain),
       appleTouchIconHref: getTenantAppleTouchIconHref(effectiveSubdomain),
