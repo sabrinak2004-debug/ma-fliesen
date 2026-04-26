@@ -3731,12 +3731,12 @@ body.login-screen-active::before {
   background: transparent !important;
 }
 .appshell-app-frame {
-  padding-top: calc(4px + env(safe-area-inset-top));
+  padding-top: calc(18px + env(safe-area-inset-top));
 }
 
 @media (max-width: 767px) {
   .appshell-app-frame {
-    padding-top: calc(12px + env(safe-area-inset-top));
+    padding-top: calc(10px + env(safe-area-inset-top));
   }
 }
 
