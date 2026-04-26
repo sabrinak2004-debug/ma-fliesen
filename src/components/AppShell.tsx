@@ -614,6 +614,35 @@ export default function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [languageSaving, setLanguageSaving] = useState(false);
   const [languageMessage, setLanguageMessage] = useState<string | null>(null);
+  const mobileTopbarRef = useRef<HTMLDivElement | null>(null);
+  const [mobileTopbarHeight, setMobileTopbarHeight] = useState(0);
+
+useLayoutEffect(() => {
+  const element = mobileTopbarRef.current;
+
+  if (element === null) {
+    return;
+  }
+
+  const updateHeight = (): void => {
+    setMobileTopbarHeight(element.getBoundingClientRect().height);
+  };
+
+  updateHeight();
+
+  const resizeObserver = new ResizeObserver(() => {
+    updateHeight();
+  });
+
+  resizeObserver.observe(element);
+
+  window.addEventListener("resize", updateHeight);
+
+  return () => {
+    resizeObserver.disconnect();
+    window.removeEventListener("resize", updateHeight);
+  };
+}, []);
 
   useEffect(() => {
     let alive = true;
@@ -1049,6 +1078,7 @@ export default function AppShell({
       <div className="container-app">
         {/* MOBILE TOPBAR (nur < md) */}
         <div
+          ref={mobileTopbarRef}
           className="md:hidden appshell-glass-panel"
           style={{
             position: "relative",
@@ -1342,7 +1372,13 @@ export default function AppShell({
         )}
 
         {/* MOBILE CONTENT */}
-        <div className="md:hidden" style={{ minWidth: 0 }}>
+        <div
+          className="md:hidden"
+          style={{
+            minWidth: 0,
+            paddingTop: mobileTopbarHeight > 0 ? 18 : 0,
+          }}
+        >
           <PushOnboarding language={currentLanguage} />
           {children}
         </div>
