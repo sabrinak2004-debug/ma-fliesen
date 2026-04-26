@@ -3751,3 +3751,30 @@ body.login-screen-active::before {
     min-height: calc(100dvh - 92px - env(safe-area-inset-top));
   }
 }
+/* GLOBALER HINTERGRUND-VERLAUF (VORHANG) */
+.appshell-page-shell {
+  position: relative;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.appshell-page-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  background: linear-gradient(
+    180deg,
+    var(--tenant-background-start) 0px,
+    var(--tenant-background-start) 140px,
+    var(--tenant-background-fade-soft) 320px,
+    var(--tenant-background-fade-end) 640px,
+    var(--tenant-background-fade-end) 100%
+  );
+}
+.appshell-app-frame {
+  position: relative;
+  z-index: 1;
+}
