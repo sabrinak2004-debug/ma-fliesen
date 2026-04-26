@@ -3751,30 +3751,39 @@ body.login-screen-active::before {
     min-height: calc(100dvh - 92px - env(safe-area-inset-top));
   }
 }
-/* GLOBALER HINTERGRUND-VERLAUF (VORHANG) */
-.appshell-page-shell {
-  position: relative;
-  min-height: 100vh;
-  background: var(--bg);
+html,
+body {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.42) 0px,
+      rgba(var(--accent-rgb), 0.26) 180px,
+      rgba(var(--accent-rgb), 0.12) 420px,
+      var(--bg) 760px
+    ),
+    var(--bg) !important;
 }
 
-.appshell-page-shell::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-
-  background: linear-gradient(
-    180deg,
-    var(--tenant-background-start) 0px,
-    var(--tenant-background-start) 140px,
-    var(--tenant-background-fade-soft) 320px,
-    var(--tenant-background-fade-end) 640px,
-    var(--tenant-background-fade-end) 100%
-  );
+body::before {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.42) 0px,
+      rgba(var(--accent-rgb), 0.26) 180px,
+      rgba(var(--accent-rgb), 0.12) 420px,
+      transparent 760px
+    ),
+    radial-gradient(
+      1200px 640px at 10% 0%,
+      rgba(var(--accent-rgb), 0.28),
+      transparent 60%
+    ),
+    var(--bg) !important;
 }
-.appshell-app-frame {
-  position: relative;
-  z-index: 1;
+
+.appshell-page-shell,
+.appshell-app-frame,
+.container-app,
+.appshell-content {
+  background: transparent !important;
 }
