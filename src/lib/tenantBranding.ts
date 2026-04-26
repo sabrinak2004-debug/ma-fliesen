@@ -539,7 +539,7 @@ function ensureLinkTag(
 export function getTenantThemeStyle(
   theme: TenantTheme
 ): React.CSSProperties {
-  const rgb = hexToRgb(theme.backgroundAccent ?? theme.accent);
+  const rgb = hexToRgb(theme.accent);
   const bgRgb = hexToRgb(theme.backgroundAccent ?? theme.accent);
 
   const style: React.CSSProperties & Record<string, string> = {
@@ -620,7 +620,7 @@ export function getTenantThemeStyle(
 
 export function applyTenantThemeToDocument(theme: TenantTheme): void {
   const root = document.documentElement;
-  const rgb = hexToRgb(theme.backgroundAccent ?? theme.accent);
+  const rgb = hexToRgb(theme.accent);
   const bgRgb = hexToRgb(theme.backgroundAccent ?? theme.accent);
 
   root.style.setProperty("--bg", theme.bg);
@@ -719,6 +719,7 @@ export function resetTenantThemeOnDocument(): void {
   root.style.removeProperty("--accent-2");
   root.style.removeProperty("--accent-rgb");
   root.style.removeProperty("--background-accent");
+  root.style.removeProperty("--background-accent-rgb");
   root.style.removeProperty("--accent-soft");
   root.style.removeProperty("--accent-border");
   root.style.removeProperty("--brand-panel-soft");
