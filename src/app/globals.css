@@ -3383,7 +3383,7 @@ li {
   width: 320px;
   max-width: 86vw;
   box-shadow: var(--app-shadow-drawer);
-  padding: calc(12px + env(safe-area-inset-top)) 16px
+  padding: calc(34px + env(safe-area-inset-top)) 16px
     calc(12px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
