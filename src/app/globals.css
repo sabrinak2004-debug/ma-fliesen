@@ -1355,11 +1355,11 @@ li {
 @media (max-width: 767px) {
   .appshell-logout-btn {
     position: sticky;
-    bottom: calc(18px + env(safe-area-inset-bottom));
-    margin-top: 20px;
-    margin-bottom: 18px;
+    bottom: 0;
+    margin-top: 12px;
+    margin-bottom: 0;
     border-radius: 22px;
-    padding: 16px 14px;
+    padding: 14px;
     box-shadow:
       inset 4px 0 0 var(--brand-sidebar-stripe),
       0 0 0 1px var(--brand-panel-soft);
@@ -2710,9 +2710,15 @@ li {
 .appshell-page-shell {
   min-height: 100vh;
   min-height: 100dvh;
-  padding: calc(18px + env(safe-area-inset-top)) 0
-    calc(42px + env(safe-area-inset-bottom));
+  padding: 12px 0 24px;
   background: transparent;
+  box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .appshell-page-shell {
+    padding: 8px 0 18px;
+  }
 }
 
 .link-button-inline {
@@ -3373,14 +3379,17 @@ li {
   position: absolute;
   left: 0;
   top: 0;
-  height: 100%;
+  height: 100dvh;
   width: 320px;
   max-width: 86vw;
   box-shadow: var(--app-shadow-drawer);
-  padding: 16px;
+  padding: calc(12px + env(safe-area-inset-top)) 16px
+    calc(12px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .appshell-section-stripe {
