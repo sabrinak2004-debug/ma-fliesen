@@ -1006,18 +1006,10 @@ export default function LoginClient({
 
   return (
     <div
-      style={{
-        ...pageThemeStyle,
-        minHeight: "100dvh",
-        backgroundColor: "var(--bg)",
-        backgroundImage:
-          "radial-gradient(1200px 600px at 10% 10%, var(--accent-soft), transparent 55%), radial-gradient(900px 600px at 80% 20%, rgba(var(--accent-rgb), 0.06), transparent 60%)",
-        backgroundRepeat: "no-repeat, no-repeat",
-        backgroundSize: "1200px 600px, 900px 600px",
-        backgroundPosition: "0 0, 100% 0",
-      }}
+      className="login-page-shell"
+      style={pageThemeStyle}
     >
-      <div style={{ padding: "40px 0" }}>
+      <div className="login-page-inner">
         <div className="container-app">
         <div
           className="card card-olive"
