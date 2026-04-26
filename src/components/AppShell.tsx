@@ -1130,8 +1130,8 @@ useLayoutEffect(() => {
                       src={brandLogoSrc}
                       alt={`${brand?.displayName ?? "Logo"} Logo`}
                       style={{
-                        width: 56,
-                        height: 56,
+                        width: 92,
+                        height: 92,
                         objectFit: "contain",
                         display: "block",
                       }}
