@@ -1045,7 +1045,7 @@ export default function AppShell({
   });
 
   return (
-    <div style={{ padding: "18px 0 42px" }}>
+    <div className="appshell-page-shell">
       <div className="container-app">
         {/* MOBILE TOPBAR (nur < md) */}
         <div

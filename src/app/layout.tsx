@@ -56,13 +56,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Mitarbeiterportal" />
       </head>
       <body>
-        <div
-          style={{
-            position: "relative",
-            zIndex: 1,
-            minHeight: "100vh",
-          }}
-        >
+        <div className="app-root-shell">
           <PushBootstrap language={language} />
           {children}
         </div>
