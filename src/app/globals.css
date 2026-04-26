@@ -3463,7 +3463,12 @@ li {
 }
 
 .legal-page-shell {
-  padding: 40px 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: calc(40px + env(safe-area-inset-top)) 0
+    calc(40px + env(safe-area-inset-bottom));
+  background: transparent;
+  box-sizing: border-box;
 }
 
 .reset-password-shell {
