@@ -540,7 +540,6 @@ export function getTenantThemeStyle(
   theme: TenantTheme
 ): React.CSSProperties {
   const rgb = hexToRgb(theme.backgroundAccent ?? theme.accent);
-  const bgRgb = hexToRgb(theme.backgroundAccent ?? theme.accent);
 
   const style: React.CSSProperties & Record<string, string> = {
     "--bg": theme.bg,
@@ -611,17 +610,12 @@ export function getTenantThemeStyle(
     style["--accent-rgb"] = `${rgb.r}, ${rgb.g}, ${rgb.b}`;
   }
 
-  if (bgRgb) {
-    style["--background-accent-rgb"] = `${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}`;
-  }
-
   return style;
 }
 
 export function applyTenantThemeToDocument(theme: TenantTheme): void {
   const root = document.documentElement;
   const rgb = hexToRgb(theme.backgroundAccent ?? theme.accent);
-  const bgRgb = hexToRgb(theme.backgroundAccent ?? theme.accent);
 
   root.style.setProperty("--bg", theme.bg);
   root.style.setProperty("--panel", theme.panel);
@@ -688,13 +682,6 @@ export function applyTenantThemeToDocument(theme: TenantTheme): void {
 
   if (rgb) {
     root.style.setProperty("--accent-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);
-  }
-
-  if (bgRgb) {
-    root.style.setProperty(
-      "--background-accent-rgb",
-      `${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}`
-    );
   }
 }
 
