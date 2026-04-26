@@ -23,6 +23,7 @@
   --text-faint: #6a6460;
   --accent: #6b6b6b;
   --accent-rgb: 107, 107, 107;
+  --background-accent-rgb: 210, 208, 205;
   --accent-soft: rgba(107, 107, 107, 0.12);
   --accent-border: rgba(107, 107, 107, 0.28);
   --accent-2: #6b6b6b;
@@ -3654,42 +3655,6 @@ li {
   color: var(--muted);
 }
 
-.login-page-shell {
-  position: relative;
-  isolation: isolate;
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: rgba(var(--accent-rgb), 0.34);
-  color: var(--text);
-}
-
-.login-page-shell::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(var(--accent-rgb), 0.34) 0px,
-      rgba(var(--accent-rgb), 0.22) 160px,
-      rgba(var(--accent-rgb), 0.10) 380px,
-      transparent 720px
-    ),
-    radial-gradient(
-      1200px 640px at 10% 0%,
-      rgba(var(--accent-rgb), 0.28),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 620px at 85% 8%,
-      rgba(var(--accent-rgb), 0.12),
-      transparent 62%
-    ),
-    var(--bg);
-}
-
 .login-page-inner {
   min-height: 100vh;
   min-height: 100dvh;
@@ -3730,6 +3695,43 @@ body.login-screen-active::before {
 .login-page-shell {
   background: transparent !important;
 }
+
+.login-page-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: rgba(var(--accent-rgb), 0.34);
+  color: var(--text);
+}
+
+.login-page-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.34) 0px,
+      rgba(var(--accent-rgb), 0.22) 160px,
+      rgba(var(--accent-rgb), 0.10) 380px,
+      transparent 720px
+    ),
+    radial-gradient(
+      1200px 640px at 10% 0%,
+      rgba(var(--accent-rgb), 0.28),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 620px at 85% 8%,
+      rgba(var(--accent-rgb), 0.12),
+      transparent 62%
+    ),
+    var(--bg);
+}
+
 .appshell-app-frame {
   padding-top: calc(18px + env(safe-area-inset-top));
 }
