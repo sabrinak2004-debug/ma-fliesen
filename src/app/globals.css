@@ -3730,3 +3730,24 @@ body.login-screen-active::before {
 .login-page-shell {
   background: transparent !important;
 }
+.appshell-app-frame {
+  padding-top: calc(46px + env(safe-area-inset-top));
+}
+
+@media (max-width: 767px) {
+  .appshell-app-frame {
+    padding-top: calc(84px + env(safe-area-inset-top));
+  }
+}
+
+@media (min-width: 768px) {
+  .appshell-page-shell {
+    padding-top: 0;
+  }
+
+  .appshell-sidebar {
+    top: calc(46px + env(safe-area-inset-top));
+    min-height: calc(100vh - 92px - env(safe-area-inset-top));
+    min-height: calc(100dvh - 92px - env(safe-area-inset-top));
+  }
+}

@@ -1075,7 +1075,7 @@ useLayoutEffect(() => {
 
   return (
     <div className="appshell-page-shell">
-      <div className="container-app">
+      <div className="container-app appshell-app-frame">
         {/* MOBILE TOPBAR (nur < md) */}
         <div
           ref={mobileTopbarRef}
@@ -1376,7 +1376,6 @@ useLayoutEffect(() => {
           className="md:hidden"
           style={{
             minWidth: 0,
-            paddingTop: mobileTopbarHeight > 0 ? 18 : 0,
           }}
         >
           <PushOnboarding language={currentLanguage} />
