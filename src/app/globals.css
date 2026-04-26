@@ -3688,3 +3688,36 @@ li {
     calc(40px + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
+html.login-screen-active,
+body.login-screen-active {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.42) 0px,
+      rgba(var(--accent-rgb), 0.26) 180px,
+      rgba(var(--accent-rgb), 0.12) 420px,
+      var(--bg) 760px
+    ),
+    var(--bg) !important;
+}
+
+body.login-screen-active::before {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.42) 0px,
+      rgba(var(--accent-rgb), 0.26) 180px,
+      rgba(var(--accent-rgb), 0.12) 420px,
+      transparent 760px
+    ),
+    radial-gradient(
+      1200px 640px at 10% 0%,
+      rgba(var(--accent-rgb), 0.28),
+      transparent 60%
+    ),
+    var(--bg) !important;
+}
+
+.login-page-shell {
+  background: transparent !important;
+}

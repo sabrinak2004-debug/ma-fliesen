@@ -713,6 +713,9 @@ export default function LoginClient({
 
     applyTenantThemeToDocument(loginTheme);
 
+    document.documentElement.classList.add("login-screen-active");
+    document.body.classList.add("login-screen-active");
+
     applyTenantHeadBranding({
       title: `${brand.displayName} Mitarbeiterportal`,
       themeColor: loginTheme.accent,
@@ -722,6 +725,8 @@ export default function LoginClient({
     });
 
     return () => {
+      document.documentElement.classList.remove("login-screen-active");
+      document.body.classList.remove("login-screen-active");
       resetTenantThemeOnDocument();
     };
   }, [
