@@ -1055,10 +1055,10 @@ export default function AppShell({
             zIndex: 1,
             left: 0,
             right: 0,
-            padding: 12,
-            paddingTop: "calc(12px + env(safe-area-inset-top))",
-            marginBottom: 12,
-            borderRadius: 18,
+            padding: 10,
+            paddingTop: "calc(6px + env(safe-area-inset-top))",
+            marginBottom: 10,
+            borderRadius: 24,
           }}
         >
           <div
@@ -1100,8 +1100,8 @@ export default function AppShell({
                       src={brandLogoSrc}
                       alt={`${brand?.displayName ?? "Logo"} Logo`}
                       style={{
-                        width: 92,
-                        height: 92,
+                        width: 56,
+                        height: 56,
                         objectFit: "contain",
                         display: "block",
                       }}
@@ -1123,7 +1123,7 @@ export default function AppShell({
                       fontWeight: 900,
                       color: "var(--text)",
                       lineHeight: 1.05,
-                      marginTop: 6,
+                      marginTop: 4,
                     }}
                   >
                     {resolvedActiveLabel}
