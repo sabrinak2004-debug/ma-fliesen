@@ -3736,7 +3736,7 @@ body.login-screen-active::before {
 
 @media (max-width: 767px) {
   .appshell-app-frame {
-    padding-top: calc(42px + env(safe-area-inset-top));
+    padding-top: calc(56px + env(safe-area-inset-top));
   }
 }
 

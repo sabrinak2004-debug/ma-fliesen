@@ -1055,10 +1055,9 @@ export default function AppShell({
             zIndex: 1,
             left: 0,
             right: 0,
-            padding: 12,
-            paddingTop: "calc(12px + env(safe-area-inset-top))",
+            padding: 14,
             marginBottom: 12,
-            borderRadius: 18,
+            borderRadius: 24,
           }}
         >
           <div
@@ -1100,8 +1099,8 @@ export default function AppShell({
                       src={brandLogoSrc}
                       alt={`${brand?.displayName ?? "Logo"} Logo`}
                       style={{
-                        width: 92,
-                        height: 92,
+                        width: 72,
+                        height: 72,
                         objectFit: "contain",
                         display: "block",
                       }}
