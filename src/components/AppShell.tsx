@@ -1085,10 +1085,10 @@ useLayoutEffect(() => {
             zIndex: 1,
             left: 0,
             right: 0,
-            padding: 10,
-            paddingTop: "calc(6px + env(safe-area-inset-top))",
-            marginBottom: 10,
-            borderRadius: 24,
+            padding: 12,
+            paddingTop: "calc(12px + env(safe-area-inset-top))",
+            marginBottom: 12,
+            borderRadius: 18,
           }}
         >
           <div
@@ -1153,7 +1153,7 @@ useLayoutEffect(() => {
                       fontWeight: 900,
                       color: "var(--text)",
                       lineHeight: 1.05,
-                      marginTop: 4,
+                      marginTop: 6,
                     }}
                   >
                     {resolvedActiveLabel}
