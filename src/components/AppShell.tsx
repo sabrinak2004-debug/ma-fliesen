@@ -1376,7 +1376,7 @@ useLayoutEffect(() => {
           className="md:hidden"
           style={{
             minWidth: 0,
-            paddingTop: mobileTopbarHeight > 0 ? 18 : 0,
+            paddingTop: mobileTopbarHeight > 0 ? 28 : 0,
           }}
         >
           <PushOnboarding language={currentLanguage} />
