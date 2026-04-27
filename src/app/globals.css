@@ -3813,7 +3813,7 @@ body::before {
 
   .appshell-content {
     min-width: 0;
-    padding-bottom: 24px;
+    padding-bottom: 30px;
   }
 }
 
@@ -3824,7 +3824,7 @@ body::before {
   left: 0;
   right: 0;
   padding: 14px;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
   border-radius: 24px;
   transition:
     padding 0.18s ease,
