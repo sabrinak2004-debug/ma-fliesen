@@ -3920,43 +3920,44 @@ body::before {
     margin-bottom: 18px;
   }
 }
-/* ===== Desktop Topbar: Inhalt oben ausblenden + Fade unter Topbar ===== */
+/* ===== Desktop Topbar: nur Content-Bereich abdecken, Sidebar bleibt frei ===== */
 
 @media (min-width: 768px) {
   .appshell-content {
     position: relative;
+    isolation: isolate;
+  }
+
+  .appshell-desktop-top-curtain {
+    position: sticky;
+    top: 0;
+    height: calc(104px + env(safe-area-inset-top));
+    margin-bottom: calc(-104px - env(safe-area-inset-top));
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+
+    background:
+      linear-gradient(
+        180deg,
+        rgba(var(--accent-rgb), 0.42) 0px,
+        rgba(var(--accent-rgb), 0.34) calc(48px + env(safe-area-inset-top)),
+        rgba(var(--accent-rgb), 0.18) calc(76px + env(safe-area-inset-top)),
+        transparent calc(104px + env(safe-area-inset-top))
+      );
+  }
+
+  .appshell-desktop-top-curtain.is-visible {
+    opacity: 1;
   }
 
   .appshell-desktop-topbar {
     position: sticky;
     top: calc(18px + env(safe-area-inset-top));
     z-index: 60;
-    overflow: visible;
+    overflow: hidden;
     border-radius: var(--radius);
-  }
-
-  .appshell-desktop-top-curtain {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: calc(138px + env(safe-area-inset-top));
-    z-index: 55;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.18s ease;
-
-    background: linear-gradient(
-      180deg,
-      var(--bg) 0px,
-      var(--bg) calc(92px + env(safe-area-inset-top)),
-      color-mix(in srgb, var(--bg) 82%, transparent) calc(112px + env(safe-area-inset-top)),
-      transparent calc(138px + env(safe-area-inset-top))
-    );
-  }
-
-  .appshell-desktop-top-curtain.is-visible {
-    opacity: 1;
   }
 
   .appshell-desktop-topbar.is-scrolled {
