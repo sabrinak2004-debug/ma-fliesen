@@ -642,6 +642,11 @@ export default function AppShell({
       );
 
       document.documentElement.style.setProperty(
+        "--appshell-topbar-top",
+        `${topbarRect.top}px`
+      );
+
+      document.documentElement.style.setProperty(
         "--appshell-topbar-bottom",
         `${topbarRect.bottom}px`
       );

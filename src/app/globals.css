@@ -3920,7 +3920,7 @@ body::before {
     margin-bottom: 18px;
   }
 }
-/* ===== Desktop Topbar: Inhalt oberhalb ausblenden, Fade unter Topbar ===== */
+//* ===== Desktop Topbar: Hintergrund passend + Topbar bleibt frei ===== */
 
 @media (min-width: 768px) {
   .appshell-content {
@@ -3932,19 +3932,43 @@ body::before {
     top: 0;
     left: var(--appshell-curtain-left, 0px);
     width: var(--appshell-curtain-width, 100%);
-    height: calc(var(--appshell-topbar-bottom, 96px) + 46px);
+    height: calc(var(--appshell-topbar-bottom, 96px) + 58px);
     z-index: 70;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.18s ease;
 
-    background: linear-gradient(
+    background:
+      linear-gradient(
+        180deg,
+        rgba(var(--accent-rgb), 0.42) 0px,
+        rgba(var(--accent-rgb), 0.26) 180px,
+        rgba(var(--accent-rgb), 0.12) 420px,
+        var(--bg) 760px
+      ),
+      var(--bg);
+
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+
+    mask-image: linear-gradient(
       180deg,
-      var(--bg) 0%,
-      var(--bg) calc(var(--appshell-topbar-bottom, 96px) - 2px),
-      color-mix(in srgb, var(--bg) 86%, transparent) calc(var(--appshell-topbar-bottom, 96px) + 14px),
-      color-mix(in srgb, var(--bg) 42%, transparent) calc(var(--appshell-topbar-bottom, 96px) + 30px),
-      transparent 100%
+      black 0,
+      black var(--appshell-topbar-top, 18px),
+      transparent var(--appshell-topbar-top, 18px),
+      transparent var(--appshell-topbar-bottom, 96px),
+      black var(--appshell-topbar-bottom, 96px),
+      transparent calc(var(--appshell-topbar-bottom, 96px) + 58px)
+    );
+
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      black 0,
+      black var(--appshell-topbar-top, 18px),
+      transparent var(--appshell-topbar-top, 18px),
+      transparent var(--appshell-topbar-bottom, 96px),
+      black var(--appshell-topbar-bottom, 96px),
+      transparent calc(var(--appshell-topbar-bottom, 96px) + 58px)
     );
   }
 
@@ -3955,7 +3979,7 @@ body::before {
   .appshell-desktop-topbar {
     position: sticky;
     top: calc(18px + env(safe-area-inset-top));
-    z-index: 80;
+    z-index: 100;
     overflow: hidden;
     border-radius: var(--radius);
   }
