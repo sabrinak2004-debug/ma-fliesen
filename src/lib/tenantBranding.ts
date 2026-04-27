@@ -71,7 +71,6 @@ type TenantThemeBase = {
   iconFilter?: string;
   iconFilterVacation?: string;
   iconFilterUnpaid?: string;
-  backgroundAccent?: string;
 };
 
 const DEFAULT_TENANT_THEME: TenantTheme = buildThemeFromBase({
@@ -132,7 +131,6 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     accent: "#b8cf3a",
     accent2: "#9db02f",
     onAccent: "#111613",
-    backgroundAccent: "#30361F",
     sidebarStripe: "#b8cf3a",
     badgeBg: "#b8cf3a",
     badgeText: "#111613",
@@ -175,7 +173,6 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     accent: "#3f3b3d",
     accent2: "#575152",
     onAccent: "#bebebe",
-    backgroundAccent: "#D2D0CD",
     sidebarStripe: "#3f3b3d",
     badgeBg: "#3f3b3d",
     badgeText: "#ffffff",
@@ -243,7 +240,6 @@ export function createTenantTheme(
     iconFilter?: string;
     iconFilterVacation?: string;
     iconFilterUnpaid?: string;
-    backgroundAccent?: string;
   }
 ): TenantTheme {
   return buildThemeFromBase({
@@ -336,7 +332,6 @@ function buildThemeFromBase(
     iconFilter?: string;
     iconFilterVacation?: string;
     iconFilterUnpaid?: string;
-    backgroundAccent?: string;
   }
 ): TenantTheme {
   const accent = normalizeThemeColor(base.accent);
@@ -412,7 +407,6 @@ function buildThemeFromBase(
     iconFilter: base.iconFilter,
     iconFilterVacation: base.iconFilterVacation,
     iconFilterUnpaid: base.iconFilterUnpaid,
-    backgroundAccent: base.backgroundAccent,
   };
 };
 
@@ -540,7 +534,6 @@ export function getTenantThemeStyle(
   theme: TenantTheme
 ): React.CSSProperties {
   const rgb = hexToRgb(theme.accent);
-  const bgRgb = hexToRgb(theme.backgroundAccent ?? theme.accent);
 
   const style: React.CSSProperties & Record<string, string> = {
     "--bg": theme.bg,
@@ -604,15 +597,10 @@ export function getTenantThemeStyle(
     "--danger-soft": theme.dangerSoft,
     "--danger-border": theme.dangerBorder,
     "--danger-text": theme.dangerText,
-    "--background-accent": theme.backgroundAccent ?? theme.accent,
   };
 
   if (rgb) {
     style["--accent-rgb"] = `${rgb.r}, ${rgb.g}, ${rgb.b}`;
-  }
-
-  if (bgRgb) {
-    style["--background-accent-rgb"] = `${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}`;
   }
 
   return style;
@@ -621,7 +609,6 @@ export function getTenantThemeStyle(
 export function applyTenantThemeToDocument(theme: TenantTheme): void {
   const root = document.documentElement;
   const rgb = hexToRgb(theme.accent);
-  const bgRgb = hexToRgb(theme.backgroundAccent ?? theme.accent);
 
   root.style.setProperty("--bg", theme.bg);
   root.style.setProperty("--panel", theme.panel);
@@ -684,17 +671,9 @@ export function applyTenantThemeToDocument(theme: TenantTheme): void {
   root.style.setProperty("--danger-soft", theme.dangerSoft);
   root.style.setProperty("--danger-border", theme.dangerBorder);
   root.style.setProperty("--danger-text", theme.dangerText);
-  root.style.setProperty("--background-accent", theme.backgroundAccent ?? theme.accent);
 
   if (rgb) {
     root.style.setProperty("--accent-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);
-  }
-
-  if (bgRgb) {
-    root.style.setProperty(
-      "--background-accent-rgb",
-      `${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}`
-    );
   }
 }
 
@@ -718,8 +697,6 @@ export function resetTenantThemeOnDocument(): void {
   root.style.removeProperty("--accent");
   root.style.removeProperty("--accent-2");
   root.style.removeProperty("--accent-rgb");
-  root.style.removeProperty("--background-accent");
-  root.style.removeProperty("--background-accent-rgb");
   root.style.removeProperty("--accent-soft");
   root.style.removeProperty("--accent-border");
   root.style.removeProperty("--brand-panel-soft");
