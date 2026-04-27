@@ -3909,3 +3909,14 @@ body::before {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ===== Desktop Topbar bleibt beim Scrollen oben ===== */
+
+@media (min-width: 768px) {
+  .appshell-content > .topbar {
+    position: sticky;
+    top: calc(18px + env(safe-area-inset-top));
+    z-index: 35;
+    margin-bottom: 18px;
+  }
+}
