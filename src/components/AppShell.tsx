@@ -615,6 +615,7 @@ export default function AppShell({
   const [mobileTopbarCompact, setMobileTopbarCompact] = useState(false);
   const [languageSaving, setLanguageSaving] = useState(false);
   const [languageMessage, setLanguageMessage] = useState<string | null>(null);
+  const [desktopTopbarCompact, setDesktopTopbarCompact] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -691,6 +692,22 @@ export default function AppShell({
     return () => {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleScroll(): void {
+      const isScrolled = window.scrollY > 36;
+      setMobileTopbarCompact(isScrolled);
+      setDesktopTopbarCompact(isScrolled);
+    }
+
+    handleScroll();
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -1475,7 +1492,12 @@ export default function AppShell({
           </aside>
 
           <div className="appshell-content">
-            <div className="topbar" style={{ padding: 14, marginBottom: 18 }}>
+            <div
+              className={`topbar ${
+                desktopTopbarCompact ? "is-scrolled" : ""
+              }`}
+              style={{ padding: 14, marginBottom: 18 }}
+            >
               <div
                 style={{
                   display: "flex",

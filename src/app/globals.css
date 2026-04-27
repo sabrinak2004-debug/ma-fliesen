@@ -3920,3 +3920,67 @@ body::before {
     margin-bottom: 18px;
   }
 }
+/* ===== Desktop Topbar Scroll-Übergang ===== */
+
+@media (min-width: 768px) {
+  .appshell-content > .topbar {
+    position: sticky;
+    top: calc(18px + env(safe-area-inset-top));
+    z-index: 40;
+    margin-bottom: 18px;
+    overflow: visible;
+  }
+
+  /* Overlay verhindert sichtbaren Background über der Topbar */
+  .appshell-content > .topbar::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(120px + env(safe-area-inset-top));
+    pointer-events: none;
+    z-index: -1;
+
+    background:
+      linear-gradient(
+        180deg,
+        var(--panel) 0%,
+        var(--panel) 60%,
+        transparent 100%
+      );
+
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }
+
+  /* Übergang unterhalb der Topbar */
+  .appshell-content > .topbar::after {
+    content: "";
+    position: absolute;
+    left: -40px;
+    right: -40px;
+    bottom: -30px;
+    height: 60px;
+    pointer-events: none;
+
+    background: linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.18),
+      rgba(var(--accent-rgb), 0.08),
+      transparent
+    );
+
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }
+
+  /* Aktiv beim Scrollen */
+  .appshell-content > .topbar.is-scrolled::before {
+    opacity: 1;
+  }
+
+  .appshell-content > .topbar.is-scrolled::after {
+    opacity: 1;
+  }
+}
