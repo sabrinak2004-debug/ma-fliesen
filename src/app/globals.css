@@ -3824,7 +3824,7 @@ body::before {
   left: 0;
   right: 0;
   padding: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   border-radius: 24px;
   transition:
     padding 0.18s ease,
