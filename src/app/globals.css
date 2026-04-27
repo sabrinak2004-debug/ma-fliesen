@@ -3920,7 +3920,7 @@ body::before {
     margin-bottom: 18px;
   }
 }
-/* ===== Desktop Topbar: nur Content-Bereich abdecken, Sidebar bleibt frei ===== */
+/* ===== Desktop Topbar: Hintergrund exakt wie App-Hintergrund ===== */
 
 @media (min-width: 768px) {
   .appshell-content {
@@ -3931,8 +3931,8 @@ body::before {
   .appshell-desktop-top-curtain {
     position: sticky;
     top: 0;
-    height: calc(104px + env(safe-area-inset-top));
-    margin-bottom: calc(-104px - env(safe-area-inset-top));
+    height: calc(118px + env(safe-area-inset-top));
+    margin-bottom: calc(-118px - env(safe-area-inset-top));
     z-index: 50;
     pointer-events: none;
     opacity: 0;
@@ -3942,10 +3942,27 @@ body::before {
       linear-gradient(
         180deg,
         rgba(var(--accent-rgb), 0.42) 0px,
-        rgba(var(--accent-rgb), 0.34) calc(48px + env(safe-area-inset-top)),
-        rgba(var(--accent-rgb), 0.18) calc(76px + env(safe-area-inset-top)),
-        transparent calc(104px + env(safe-area-inset-top))
-      );
+        rgba(var(--accent-rgb), 0.26) 180px,
+        rgba(var(--accent-rgb), 0.12) 420px,
+        var(--bg) 760px
+      ),
+      var(--bg);
+
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+
+    mask-image: linear-gradient(
+      180deg,
+      black 0%,
+      black 68%,
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      black 0%,
+      black 68%,
+      transparent 100%
+    );
   }
 
   .appshell-desktop-top-curtain.is-visible {
@@ -3958,6 +3975,7 @@ body::before {
     z-index: 60;
     overflow: hidden;
     border-radius: var(--radius);
+    background: color-mix(in srgb, var(--panel) 78%, transparent);
   }
 
   .appshell-desktop-topbar.is-scrolled {
