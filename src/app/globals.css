@@ -3920,52 +3920,47 @@ body::before {
     margin-bottom: 18px;
   }
 }
-//* ===== Desktop Topbar: Inhalt oben ausblenden, Topbar bleibt vorne ===== */
+/* ===== Desktop Topbar: Inhalt oberhalb ausblenden, Fade unter Topbar ===== */
 
 @media (min-width: 768px) {
   .appshell-content {
     position: relative;
   }
 
-  .appshell-desktop-top-curtain {
-    display: none;
+  .appshell-desktop-content-curtain {
+    position: fixed;
+    top: 0;
+    left: var(--appshell-curtain-left, 0px);
+    width: var(--appshell-curtain-width, 100%);
+    height: calc(var(--appshell-topbar-bottom, 96px) + 46px);
+    z-index: 70;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+
+    background: linear-gradient(
+      180deg,
+      var(--bg) 0%,
+      var(--bg) calc(var(--appshell-topbar-bottom, 96px) - 2px),
+      color-mix(in srgb, var(--bg) 86%, transparent) calc(var(--appshell-topbar-bottom, 96px) + 14px),
+      color-mix(in srgb, var(--bg) 42%, transparent) calc(var(--appshell-topbar-bottom, 96px) + 30px),
+      transparent 100%
+    );
+  }
+
+  .appshell-desktop-content-curtain.is-visible {
+    opacity: 1;
   }
 
   .appshell-desktop-topbar {
     position: sticky;
     top: calc(18px + env(safe-area-inset-top));
     z-index: 80;
-    overflow: visible;
+    overflow: hidden;
     border-radius: var(--radius);
   }
 
-  .appshell-desktop-topbar::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: var(--appshell-desktop-curtain-left, 0px);
-    right: var(--appshell-desktop-curtain-right, 0px);
-    height: calc(18px + env(safe-area-inset-top));
-    pointer-events: none;
-    z-index: -1;
-    background: inherit;
-  }
-
-  .appshell-desktop-topbar.is-scrolled::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -42px;
-    height: 42px;
-    pointer-events: none;
-    z-index: -1;
-    border-radius: 0 0 24px 24px;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--panel) 72%, transparent) 0%,
-      color-mix(in srgb, var(--panel) 38%, transparent) 45%,
-      transparent 100%
-    );
+  .appshell-desktop-topbar.is-scrolled {
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.2);
   }
 }

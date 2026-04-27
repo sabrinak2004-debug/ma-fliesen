@@ -611,11 +611,52 @@ export default function AppShell({
 
   const [, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const desktopTopbarRef = useRef<HTMLDivElement | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileTopbarCompact, setMobileTopbarCompact] = useState(false);
   const [languageSaving, setLanguageSaving] = useState(false);
   const [languageMessage, setLanguageMessage] = useState<string | null>(null);
   const [desktopTopbarCompact, setDesktopTopbarCompact] = useState(false);
+
+  useEffect(() => {
+    function updateDesktopCurtainBounds(): void {
+      const contentElement = contentRef.current;
+      const topbarElement = desktopTopbarRef.current;
+
+      if (!contentElement || !topbarElement) {
+        return;
+      }
+
+      const contentRect = contentElement.getBoundingClientRect();
+      const topbarRect = topbarElement.getBoundingClientRect();
+
+      document.documentElement.style.setProperty(
+        "--appshell-curtain-left",
+        `${contentRect.left}px`
+      );
+
+      document.documentElement.style.setProperty(
+        "--appshell-curtain-width",
+        `${contentRect.width}px`
+      );
+
+      document.documentElement.style.setProperty(
+        "--appshell-topbar-bottom",
+        `${topbarRect.bottom}px`
+      );
+    }
+
+    updateDesktopCurtainBounds();
+
+    window.addEventListener("resize", updateDesktopCurtainBounds);
+    window.addEventListener("scroll", updateDesktopCurtainBounds, { passive: true });
+
+    return () => {
+      window.removeEventListener("resize", updateDesktopCurtainBounds);
+      window.removeEventListener("scroll", updateDesktopCurtainBounds);
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -1491,8 +1532,15 @@ export default function AppShell({
             </div>
           </aside>
 
-          <div className="appshell-content">
+          <div ref={contentRef} className="appshell-content">
             <div
+              className={`appshell-desktop-content-curtain ${
+                desktopTopbarCompact ? "is-visible" : ""
+              }`}
+              aria-hidden="true"
+            />
+            <div
+              ref={desktopTopbarRef}
               className={`topbar appshell-desktop-topbar ${
                 desktopTopbarCompact ? "is-scrolled" : ""
               }`}
