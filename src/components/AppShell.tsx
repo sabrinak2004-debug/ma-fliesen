@@ -1493,13 +1493,6 @@ export default function AppShell({
 
           <div className="appshell-content">
             <div
-              className={`appshell-desktop-top-curtain ${
-                desktopTopbarCompact ? "is-visible" : ""
-              }`}
-              aria-hidden="true"
-            />
-
-            <div
               className={`topbar appshell-desktop-topbar ${
                 desktopTopbarCompact ? "is-scrolled" : ""
               }`}
