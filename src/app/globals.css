@@ -3751,8 +3751,6 @@ body.login-screen-active::before {
     min-height: calc(100dvh - 92px - env(safe-area-inset-top));
   }
 }
-/* ===== App Hintergrund: eine einzige Quelle für echten Hintergrund + Curtain ===== */
-
 :root {
   --app-real-background:
     linear-gradient(
@@ -3767,23 +3765,7 @@ body.login-screen-active::before {
       rgba(var(--accent-rgb), 0.28),
       transparent 60%
     ),
-    radial-gradient(
-      900px 620px at 85% 8%,
-      rgba(var(--accent-rgb), 0.08),
-      transparent 62%
-    ),
     var(--bg);
-
-  --appshell-curtain-left: 0px;
-  --appshell-curtain-width: 100vw;
-  --appshell-topbar-top: 18px;
-  --appshell-topbar-bottom: 118px;
-  --appshell-topbar-height: 96px;
-  --appshell-desktop-sticky-top: calc(18px + env(safe-area-inset-top));
-
-  --appshell-mobile-curtain-left: 12px;
-  --appshell-mobile-curtain-width: calc(100vw - 24px);
-  --appshell-mobile-topbar-bottom: 110px;
 }
 
 html,
@@ -3792,11 +3774,6 @@ body {
 }
 
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
   background: var(--app-real-background) !important;
   background-repeat: no-repeat;
   background-position: 0 0;
@@ -3809,27 +3786,10 @@ body::before {
 .appshell-content {
   background: transparent !important;
 }
-
 /* ===== AppShell Fix: Desktop Sidebar fest + Mobile Topbar kompakt ===== */
 
-.appshell-app-frame {
-  padding-top: calc(18px + env(safe-area-inset-top));
-}
-
-@media (max-width: 767px) {
-  .appshell-app-frame {
-    padding-top: calc(10px + env(safe-area-inset-top));
-  }
-}
-
 @media (min-width: 768px) {
-  .appshell-page-shell {
-    padding-top: 0;
-  }
-
   .appshell-desktop {
-    position: relative;
-    isolation: isolate;
     align-items: start;
   }
 
@@ -3843,7 +3803,7 @@ body::before {
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;
-    z-index: 90;
+    z-index: 40;
   }
 
   .appshell-sidebar::-webkit-scrollbar {
@@ -3851,62 +3811,15 @@ body::before {
   }
 
   .appshell-content {
-    position: relative;
-    isolation: isolate;
     min-width: 0;
     padding-bottom: 30px;
   }
-
-  .appshell-desktop-topbar {
-    position: sticky;
-    top: var(--appshell-desktop-sticky-top);
-    z-index: 80;
-    transform: translateZ(0);
-  }
-
-  .appshell-desktop-content-curtain {
-    position: fixed;
-    left: var(--appshell-curtain-left);
-    top: 0;
-    width: var(--appshell-curtain-width);
-    height: calc(var(--appshell-topbar-bottom) + 1px);
-    z-index: 70;
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    background: var(--app-real-background);
-    background-repeat: no-repeat;
-    background-position: 0 0;
-    background-size: auto;
-    transition:
-      opacity 0.16s ease,
-      visibility 0.16s ease;
-  }
-
-  .appshell-desktop-content-curtain.is-visible {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .appshell-desktop-topbar.is-scrolled {
-    box-shadow:
-      0 18px 48px rgba(0, 0, 0, 0.24),
-      0 0 0 1px var(--glass-border);
-  }
 }
-
-@media (max-width: 767px) {
-  .appshell-desktop-content-curtain {
-    display: none;
-  }
-}
-
-/* ===== Mobile Topbar ===== */
 
 .appshell-mobile-topbar {
   position: sticky;
   top: calc(8px + env(safe-area-inset-top));
-  z-index: 80;
+  z-index: 50;
   left: 0;
   right: 0;
   padding: 14px;
@@ -3995,10 +3908,94 @@ body::before {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* ===== Desktop Topbar Curtain Fix ===== */
 
-/* ===== Mobile Curtain ===== */
+:root {
+  --appshell-curtain-left: 0px;
+  --appshell-curtain-width: 100vw;
+  --appshell-topbar-top: 18px;
+  --appshell-topbar-bottom: 118px;
+  --appshell-topbar-height: 96px;
+  --appshell-desktop-sticky-top: calc(18px + env(safe-area-inset-top));
+}
+
+@media (min-width: 768px) {
+  .appshell-desktop {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .appshell-sidebar {
+    z-index: 90;
+  }
+
+  .appshell-content {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .appshell-desktop-topbar {
+    position: sticky;
+    top: var(--appshell-desktop-sticky-top);
+    z-index: 80;
+    transform: translateZ(0);
+  }
+
+  .appshell-desktop-content-curtain {
+    position: fixed;
+    left: var(--appshell-curtain-left);
+    top: 0;
+    width: var(--appshell-curtain-width);
+    height: calc(var(--appshell-topbar-bottom) + 1px);
+    z-index: 70;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.16s ease,
+      visibility 0.16s ease;
+
+    background: var(--app-real-background);
+    background-repeat: no-repeat;
+    background-position: calc(0px - var(--appshell-curtain-left)) 0;
+    background-size: auto;
+  }
+
+  .appshell-desktop-content-curtain::after {
+    display: none;
+  }
+
+  .appshell-desktop-content-curtain.is-visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .appshell-desktop-topbar.is-scrolled {
+    box-shadow:
+      0 18px 48px rgba(0, 0, 0, 0.24),
+      0 0 0 1px var(--glass-border);
+  }
+}
 
 @media (max-width: 767px) {
+  .appshell-desktop-content-curtain {
+    display: none;
+  }
+}
+
+/* ===== Mobile Topbar Curtain Fix ===== */
+
+:root {
+  --appshell-mobile-curtain-left: 12px;
+  --appshell-mobile-curtain-width: calc(100vw - 24px);
+  --appshell-mobile-topbar-bottom: 110px;
+}
+
+@media (max-width: 767px) {
+  .appshell-mobile-topbar {
+    z-index: 80;
+  }
+
   .appshell-mobile-content-curtain {
     position: fixed;
     left: var(--appshell-mobile-curtain-left);
@@ -4009,13 +4006,14 @@ body::before {
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
-    background: var(--app-real-background);
-    background-repeat: no-repeat;
-    background-position: 0 0;
-    background-size: auto;
     transition:
       opacity 0.16s ease,
       visibility 0.16s ease;
+
+    background: var(--app-real-background);
+    background-repeat: no-repeat;
+    background-position: calc(0px - var(--appshell-mobile-curtain-left)) 0;
+    background-size: auto;
   }
 
   .appshell-mobile-content-curtain.is-visible {
