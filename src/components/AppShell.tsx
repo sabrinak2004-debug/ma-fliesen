@@ -660,6 +660,10 @@ export default function AppShell({
           "--appshell-topbar-height",
           `${topbarRect.height}px`
         );
+        document.documentElement.style.setProperty(
+          "--appshell-scroll-y",
+          `${window.scrollY}px`
+        );
       });
     }
 

@@ -3971,7 +3971,8 @@ body::before {
       ),
       var(--bg);
 
-    background-attachment: fixed;
+    background-position: 0 calc(var(--appshell-scroll-y, 0px) * -1);
+    background-size: 100% auto;
     background-repeat: no-repeat;
 
     -webkit-mask-image: linear-gradient(
