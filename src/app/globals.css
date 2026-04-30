@@ -99,6 +99,20 @@
   --tenant-icon-filter: var(--muted-2);
   --tenant-icon-filter-vacation: var(--muted-2);
   --tenant-icon-filter-unpaid: var(--muted-2);
+    --app-fixed-background:
+    linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.42) 0px,
+      rgba(var(--accent-rgb), 0.26) 180px,
+      rgba(var(--accent-rgb), 0.12) 420px,
+      transparent 760px
+    ),
+    radial-gradient(
+      1200px 640px at 10% 0%,
+      rgba(var(--accent-rgb), 0.28),
+      transparent 60%
+    ),
+    var(--bg);
 }
 
 
@@ -123,18 +137,7 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(
-      1200px 600px at 10% 0%,
-      var(--accent-soft),
-      transparent 58%
-    ),
-    radial-gradient(
-      900px 620px at 85% 8%,
-      rgba(var(--accent-rgb), 0.08),
-      transparent 62%
-    ),
-    var(--bg);
+  background: var(--app-fixed-background) !important;
   background-repeat: no-repeat;
 }
 
@@ -3909,7 +3912,7 @@ body::before {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* ===== AppShell echter Hintergrund-Vorhang ===== */
+/* ===== AppShell Topbar-Hintergrund-Vorhang ===== */
 
 :root {
   --appshell-topbar-bottom: 118px;
@@ -3925,44 +3928,21 @@ body::before {
     position: sticky;
     top: calc(18px + env(safe-area-inset-top));
     z-index: 90;
-
-    margin-left: -4px;
-    margin-right: -4px;
-    width: calc(100% + 8px);
   }
 
   .appshell-desktop-content-curtain {
     position: fixed;
-    left: 0;
-    top: 0;
-    width: 100vw;
+    inset: 0 0 auto 0;
     height: var(--appshell-topbar-bottom);
     z-index: 80;
     pointer-events: none;
-
     opacity: 0;
     visibility: hidden;
+    background: var(--app-fixed-background);
+    background-repeat: no-repeat;
     transition:
       opacity 0.12s ease,
       visibility 0.12s ease;
-
-    background:
-      linear-gradient(
-        180deg,
-        rgba(var(--accent-rgb), 0.42) 0px,
-        rgba(var(--accent-rgb), 0.26) 180px,
-        rgba(var(--accent-rgb), 0.12) 420px,
-        transparent 760px
-      ),
-      radial-gradient(
-        1200px 640px at 10% 0%,
-        rgba(var(--accent-rgb), 0.28),
-        transparent 60%
-      ),
-      var(--bg);
-
-    background-attachment: fixed;
-    background-repeat: no-repeat;
   }
 
   .appshell-desktop-content-curtain.is-visible {
@@ -3974,44 +3954,21 @@ body::before {
 @media (max-width: 767px) {
   .appshell-mobile-topbar {
     z-index: 90;
-
-    margin-left: -4px;
-    margin-right: -4px;
-    width: calc(100% + 8px);
   }
 
   .appshell-mobile-content-curtain {
     position: fixed;
-    left: 0;
-    top: 0;
-    width: 100vw;
+    inset: 0 0 auto 0;
     height: var(--appshell-mobile-topbar-bottom);
     z-index: 80;
     pointer-events: none;
-
     opacity: 0;
     visibility: hidden;
+    background: var(--app-fixed-background);
+    background-repeat: no-repeat;
     transition:
       opacity 0.12s ease,
       visibility 0.12s ease;
-
-    background:
-      linear-gradient(
-        180deg,
-        rgba(var(--accent-rgb), 0.42) 0px,
-        rgba(var(--accent-rgb), 0.26) 180px,
-        rgba(var(--accent-rgb), 0.12) 420px,
-        transparent 760px
-      ),
-      radial-gradient(
-        1200px 640px at 10% 0%,
-        rgba(var(--accent-rgb), 0.28),
-        transparent 60%
-      ),
-      var(--bg);
-
-    background-attachment: fixed;
-    background-repeat: no-repeat;
   }
 
   .appshell-mobile-content-curtain.is-visible {
