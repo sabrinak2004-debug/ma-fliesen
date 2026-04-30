@@ -3939,9 +3939,9 @@ body::before {
     top: calc(18px + env(safe-area-inset-top));
     z-index: 90;
 
-    margin-left: -18px;
-    margin-right: -18px;
-    width: calc(100% + 36px);
+    margin-left: -6px;
+    margin-right: -6px;
+    width: calc(100% + 12px);
   }
 
   .appshell-desktop-content-curtain {
