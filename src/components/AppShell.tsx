@@ -627,15 +627,20 @@ export default function AppShell({
       window.cancelAnimationFrame(animationFrameId);
 
       animationFrameId = window.requestAnimationFrame(() => {
-        const topbarElement = desktopTopbarRef.current;
+        const desktopTopbarElement = desktopTopbarRef.current;
         const mobileTopbarElement = mobileTopbarRef.current;
 
-        if (topbarElement) {
-          const topbarRect = topbarElement.getBoundingClientRect();
+        document.documentElement.style.setProperty(
+          "--app-background-scroll-y",
+          `${-window.scrollY}px`
+        );
+
+        if (desktopTopbarElement) {
+          const desktopTopbarRect = desktopTopbarElement.getBoundingClientRect();
 
           document.documentElement.style.setProperty(
             "--appshell-topbar-bottom",
-            `${Math.max(0, topbarRect.bottom)}px`
+            `${Math.max(0, desktopTopbarRect.bottom)}px`
           );
         }
 

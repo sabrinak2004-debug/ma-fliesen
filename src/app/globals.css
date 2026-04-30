@@ -3912,19 +3912,20 @@ body::before {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* ===== AppShell Topbar Background Curtain ===== */
+/* ===== 1:1 App Background Curtain ===== */
 
 :root {
   --appshell-topbar-bottom: 118px;
   --appshell-mobile-topbar-bottom: 110px;
+  --app-background-scroll-y: 0px;
 
-  --app-fixed-background:
+  --app-background-image:
     linear-gradient(
       180deg,
       rgba(var(--accent-rgb), 0.42) 0px,
       rgba(var(--accent-rgb), 0.26) 180px,
       rgba(var(--accent-rgb), 0.12) 420px,
-      transparent 760px
+      var(--bg) 760px
     ),
     radial-gradient(
       1200px 640px at 10% 0%,
@@ -3934,14 +3935,23 @@ body::before {
     var(--bg);
 }
 
+html,
+body {
+  background: var(--bg) !important;
+}
+
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: var(--app-fixed-background) !important;
+  background: var(--app-background-image) !important;
   background-repeat: no-repeat;
+  background-position:
+    0 var(--app-background-scroll-y),
+    0 var(--app-background-scroll-y),
+    0 0;
 }
 
 @media (min-width: 768px) {
@@ -3963,7 +3973,12 @@ body::before {
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
-    background: var(--bg);
+    background: var(--app-background-image);
+    background-repeat: no-repeat;
+    background-position:
+      0 var(--app-background-scroll-y),
+      0 var(--app-background-scroll-y),
+      0 0;
     transition:
       opacity 0.12s ease,
       visibility 0.12s ease;
@@ -4003,7 +4018,12 @@ body::before {
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
-    background: var(--bg);
+    background: var(--app-background-image);
+    background-repeat: no-repeat;
+    background-position:
+      0 var(--app-background-scroll-y),
+      0 var(--app-background-scroll-y),
+      0 0;
     transition:
       opacity 0.12s ease,
       visibility 0.12s ease;
