@@ -3912,11 +3912,36 @@ body::before {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* ===== AppShell Topbar-Hintergrund-Vorhang ===== */
+/* ===== AppShell Topbar Background Curtain ===== */
 
 :root {
   --appshell-topbar-bottom: 118px;
   --appshell-mobile-topbar-bottom: 110px;
+
+  --app-fixed-background:
+    linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.42) 0px,
+      rgba(var(--accent-rgb), 0.26) 180px,
+      rgba(var(--accent-rgb), 0.12) 420px,
+      transparent 760px
+    ),
+    radial-gradient(
+      1200px 640px at 10% 0%,
+      rgba(var(--accent-rgb), 0.28),
+      transparent 60%
+    ),
+    var(--bg);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--app-fixed-background) !important;
+  background-repeat: no-repeat;
 }
 
 @media (min-width: 768px) {
@@ -3933,7 +3958,7 @@ body::before {
   .appshell-desktop-content-curtain {
     position: fixed;
     inset: 0 0 auto 0;
-    height: var(--appshell-topbar-bottom);
+    height: calc(var(--appshell-topbar-bottom) + 22px);
     z-index: 80;
     pointer-events: none;
     opacity: 0;
@@ -3943,6 +3968,23 @@ body::before {
     transition:
       opacity 0.12s ease,
       visibility 0.12s ease;
+
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      #000 0,
+      #000 var(--appshell-topbar-bottom),
+      rgba(0, 0, 0, 0.65) calc(var(--appshell-topbar-bottom) + 8px),
+      rgba(0, 0, 0, 0.28) calc(var(--appshell-topbar-bottom) + 15px),
+      transparent calc(var(--appshell-topbar-bottom) + 22px)
+    );
+    mask-image: linear-gradient(
+      180deg,
+      #000 0,
+      #000 var(--appshell-topbar-bottom),
+      rgba(0, 0, 0, 0.65) calc(var(--appshell-topbar-bottom) + 8px),
+      rgba(0, 0, 0, 0.28) calc(var(--appshell-topbar-bottom) + 15px),
+      transparent calc(var(--appshell-topbar-bottom) + 22px)
+    );
   }
 
   .appshell-desktop-content-curtain.is-visible {
@@ -3959,7 +4001,7 @@ body::before {
   .appshell-mobile-content-curtain {
     position: fixed;
     inset: 0 0 auto 0;
-    height: var(--appshell-mobile-topbar-bottom);
+    height: calc(var(--appshell-mobile-topbar-bottom) + 20px);
     z-index: 80;
     pointer-events: none;
     opacity: 0;
@@ -3969,6 +4011,23 @@ body::before {
     transition:
       opacity 0.12s ease,
       visibility 0.12s ease;
+
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      #000 0,
+      #000 var(--appshell-mobile-topbar-bottom),
+      rgba(0, 0, 0, 0.6) calc(var(--appshell-mobile-topbar-bottom) + 7px),
+      rgba(0, 0, 0, 0.25) calc(var(--appshell-mobile-topbar-bottom) + 14px),
+      transparent calc(var(--appshell-mobile-topbar-bottom) + 20px)
+    );
+    mask-image: linear-gradient(
+      180deg,
+      #000 0,
+      #000 var(--appshell-mobile-topbar-bottom),
+      rgba(0, 0, 0, 0.6) calc(var(--appshell-mobile-topbar-bottom) + 7px),
+      rgba(0, 0, 0, 0.25) calc(var(--appshell-mobile-topbar-bottom) + 14px),
+      transparent calc(var(--appshell-mobile-topbar-bottom) + 20px)
+    );
   }
 
   .appshell-mobile-content-curtain.is-visible {
