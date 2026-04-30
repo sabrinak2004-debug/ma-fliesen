@@ -3961,9 +3961,9 @@ body::before {
 
   .appshell-desktop-content-curtain {
     position: fixed;
-    left: var(--appshell-curtain-left);
+    left: 0;
     top: 0;
-    width: var(--appshell-curtain-width);
+    width: 100vw;
     height: calc(var(--appshell-topbar-bottom) + 1px);
     z-index: 70;
     pointer-events: none;
@@ -3979,13 +3979,18 @@ body::before {
         rgba(var(--accent-rgb), 0.42) 0px,
         rgba(var(--accent-rgb), 0.26) 180px,
         rgba(var(--accent-rgb), 0.12) 420px,
-        var(--bg) 760px
+        transparent 760px
+      ),
+      radial-gradient(
+        1200px 640px at 10% 0%,
+        rgba(var(--accent-rgb), 0.28),
+        transparent 60%
       ),
       var(--bg);
     background-repeat: no-repeat;
-    background-attachment: fixed;
     background-position: 0 0;
     background-size: auto;
+    background-attachment: fixed;
   }
 
   .appshell-desktop-content-curtain::after {
@@ -4025,9 +4030,9 @@ body::before {
 
   .appshell-mobile-content-curtain {
     position: fixed;
-    left: var(--appshell-mobile-curtain-left);
+    left: 0;
     top: 0;
-    width: var(--appshell-mobile-curtain-width);
+    width: 100vw;
     height: calc(var(--appshell-mobile-topbar-bottom) + 1px);
     z-index: 70;
     pointer-events: none;
@@ -4043,13 +4048,18 @@ body::before {
         rgba(var(--accent-rgb), 0.42) 0px,
         rgba(var(--accent-rgb), 0.26) 180px,
         rgba(var(--accent-rgb), 0.12) 420px,
-        var(--bg) 760px
+        transparent 760px
+      ),
+      radial-gradient(
+        1200px 640px at 10% 0%,
+        rgba(var(--accent-rgb), 0.28),
+        transparent 60%
       ),
       var(--bg);
     background-repeat: no-repeat;
-    background-attachment: fixed;
     background-position: 0 0;
     background-size: auto;
+    background-attachment: fixed;
   }
 
   .appshell-mobile-content-curtain.is-visible {
