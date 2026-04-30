@@ -3976,8 +3976,8 @@ body::before {
 
     background-repeat: no-repeat;
     background-position:
-      0 var(--appshell-curtain-bg-y),
-      0 var(--appshell-curtain-bg-y),
+      var(--appshell-curtain-bg-x, 0px) var(--appshell-curtain-bg-y, 0px),
+      var(--appshell-curtain-bg-x, 0px) var(--appshell-curtain-bg-y, 0px),
       0 0;
 
     -webkit-mask-image: linear-gradient(
@@ -4042,8 +4042,8 @@ body::before {
 
     background-repeat: no-repeat;
     background-position:
-      0 var(--appshell-curtain-bg-y),
-      0 var(--appshell-curtain-bg-y),
+      var(--appshell-mobile-curtain-bg-x, 0px) var(--appshell-curtain-bg-y, 0px),
+      var(--appshell-mobile-curtain-bg-x, 0px) var(--appshell-curtain-bg-y, 0px),
       0 0;
 
     -webkit-mask-image: linear-gradient(

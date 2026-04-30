@@ -646,7 +646,10 @@ export default function AppShell({
           "--appshell-curtain-width",
           `${contentRect.width}px`
         );
-
+        document.documentElement.style.setProperty(
+          "--appshell-curtain-bg-x",
+          `${-contentRect.left}px`
+        );
         document.documentElement.style.setProperty(
           "--appshell-topbar-top",
           `${Math.max(0, topbarRect.top)}px`
@@ -682,6 +685,11 @@ export default function AppShell({
           document.documentElement.style.setProperty(
             "--appshell-mobile-topbar-bottom",
             `${Math.max(0, mobileTopbarRect.bottom)}px`
+          );
+          
+          document.documentElement.style.setProperty(
+            "--appshell-mobile-curtain-bg-x",
+            `${-mobileTopbarRect.left}px`
           );
         }
 
