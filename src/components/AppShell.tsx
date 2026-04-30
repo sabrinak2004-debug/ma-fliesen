@@ -619,37 +619,48 @@ export default function AppShell({
   const [languageMessage, setLanguageMessage] = useState<string | null>(null);
   const [desktopTopbarCompact, setDesktopTopbarCompact] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    let animationFrameId = 0;
+
     function updateDesktopCurtainBounds(): void {
-      const contentElement = contentRef.current;
-      const topbarElement = desktopTopbarRef.current;
+      window.cancelAnimationFrame(animationFrameId);
 
-      if (!contentElement || !topbarElement) {
-        return;
-      }
+      animationFrameId = window.requestAnimationFrame(() => {
+        const contentElement = contentRef.current;
+        const topbarElement = desktopTopbarRef.current;
 
-      const contentRect = contentElement.getBoundingClientRect();
-      const topbarRect = topbarElement.getBoundingClientRect();
+        if (!contentElement || !topbarElement) {
+          return;
+        }
 
-      document.documentElement.style.setProperty(
-        "--appshell-curtain-left",
-        `${contentRect.left}px`
-      );
+        const contentRect = contentElement.getBoundingClientRect();
+        const topbarRect = topbarElement.getBoundingClientRect();
 
-      document.documentElement.style.setProperty(
-        "--appshell-curtain-width",
-        `${contentRect.width}px`
-      );
+        document.documentElement.style.setProperty(
+          "--appshell-curtain-left",
+          `${contentRect.left}px`
+        );
 
-      document.documentElement.style.setProperty(
-        "--appshell-topbar-top",
-        `${topbarRect.top}px`
-      );
+        document.documentElement.style.setProperty(
+          "--appshell-curtain-width",
+          `${contentRect.width}px`
+        );
 
-      document.documentElement.style.setProperty(
-        "--appshell-topbar-bottom",
-        `${topbarRect.bottom}px`
-      );
+        document.documentElement.style.setProperty(
+          "--appshell-topbar-top",
+          `${Math.max(0, topbarRect.top)}px`
+        );
+
+        document.documentElement.style.setProperty(
+          "--appshell-topbar-bottom",
+          `${Math.max(0, topbarRect.bottom)}px`
+        );
+
+        document.documentElement.style.setProperty(
+          "--appshell-topbar-height",
+          `${topbarRect.height}px`
+        );
+      });
     }
 
     updateDesktopCurtainBounds();
@@ -658,10 +669,11 @@ export default function AppShell({
     window.addEventListener("scroll", updateDesktopCurtainBounds, { passive: true });
 
     return () => {
+      window.cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", updateDesktopCurtainBounds);
       window.removeEventListener("scroll", updateDesktopCurtainBounds);
     };
-  }, []);
+  }, [desktopTopbarCompact]);
 
   useEffect(() => {
     let alive = true;

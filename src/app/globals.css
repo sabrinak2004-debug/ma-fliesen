@@ -3909,3 +3909,99 @@ body::before {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* ===== Desktop Topbar Curtain Fix ===== */
+
+:root {
+  --appshell-curtain-left: 0px;
+  --appshell-curtain-width: 100vw;
+  --appshell-topbar-top: 18px;
+  --appshell-topbar-bottom: 118px;
+  --appshell-topbar-height: 96px;
+  --appshell-desktop-sticky-top: calc(18px + env(safe-area-inset-top));
+}
+
+@media (min-width: 768px) {
+  .appshell-desktop {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .appshell-sidebar {
+    z-index: 90;
+  }
+
+  .appshell-content {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .appshell-desktop-topbar {
+    position: sticky;
+    top: var(--appshell-desktop-sticky-top);
+    z-index: 80;
+    transform: translateZ(0);
+  }
+
+  .appshell-desktop-content-curtain {
+    position: fixed;
+    left: var(--appshell-curtain-left);
+    top: 0;
+    width: var(--appshell-curtain-width);
+    height: calc(var(--appshell-topbar-bottom) + 74px);
+    z-index: 70;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.16s ease,
+      visibility 0.16s ease;
+
+    background:
+      linear-gradient(
+        180deg,
+        rgba(var(--accent-rgb), 0.42) 0px,
+        rgba(var(--accent-rgb), 0.26) 180px,
+        rgba(var(--accent-rgb), 0.12) 420px,
+        var(--bg) 760px
+      ),
+      var(--bg);
+
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+
+  .appshell-desktop-content-curtain::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--appshell-topbar-bottom);
+    height: 74px;
+    pointer-events: none;
+
+    background: linear-gradient(
+      180deg,
+      var(--bg) 0%,
+      color-mix(in srgb, var(--bg) 86%, transparent) 38%,
+      color-mix(in srgb, var(--bg) 42%, transparent) 72%,
+      transparent 100%
+    );
+  }
+
+  .appshell-desktop-content-curtain.is-visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .appshell-desktop-topbar.is-scrolled {
+    box-shadow:
+      0 18px 48px rgba(0, 0, 0, 0.24),
+      0 0 0 1px var(--glass-border);
+  }
+}
+
+@media (max-width: 767px) {
+  .appshell-desktop-content-curtain {
+    display: none;
+  }
+}
