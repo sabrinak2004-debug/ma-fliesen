@@ -3967,7 +3967,7 @@ body::before {
     left: calc(var(--appshell-curtain-left) - 6px);
     top: 0;
     width: calc(var(--appshell-curtain-width) + 12px);
-    height: calc(var(--appshell-topbar-bottom) + 90px);
+    height: calc(var(--appshell-topbar-bottom) + 42px);
     z-index: 70;
     pointer-events: none;
     opacity: 0;
@@ -3997,19 +3997,17 @@ body::before {
     -webkit-mask-image: linear-gradient(
       180deg,
       #000 0,
-      #000 calc(var(--appshell-topbar-bottom) - 18px),
-      rgba(0, 0, 0, 0.96) var(--appshell-topbar-bottom),
-      rgba(0, 0, 0, 0.72) calc(var(--appshell-topbar-bottom) + 34px),
-      rgba(0, 0, 0, 0.32) calc(var(--appshell-topbar-bottom) + 78px),
+      #000 calc(var(--appshell-topbar-bottom) - 10px),
+      rgba(0, 0, 0, 0.86) var(--appshell-topbar-bottom),
+      rgba(0, 0, 0, 0.38) calc(var(--appshell-topbar-bottom) + 22px),
       transparent 100%
     );
     mask-image: linear-gradient(
       180deg,
       #000 0,
-      #000 calc(var(--appshell-topbar-bottom) - 18px),
-      rgba(0, 0, 0, 0.96) var(--appshell-topbar-bottom),
-      rgba(0, 0, 0, 0.72) calc(var(--appshell-topbar-bottom) + 34px),
-      rgba(0, 0, 0, 0.32) calc(var(--appshell-topbar-bottom) + 78px),
+      #000 calc(var(--appshell-topbar-bottom) - 10px),
+      rgba(0, 0, 0, 0.86) var(--appshell-topbar-bottom),
+      rgba(0, 0, 0, 0.38) calc(var(--appshell-topbar-bottom) + 22px),
       transparent 100%
     );
   }
@@ -4054,7 +4052,7 @@ body::before {
     left: var(--appshell-mobile-curtain-left);
     top: 0;
     width: var(--appshell-mobile-curtain-width);
-    height: calc(var(--appshell-mobile-topbar-bottom) + 90px);
+    height: calc(var(--appshell-mobile-topbar-bottom) + 42px);
     z-index: 70;
     pointer-events: none;
     opacity: 0;
@@ -4084,19 +4082,17 @@ body::before {
     -webkit-mask-image: linear-gradient(
       180deg,
       #000 0,
-      #000 calc(var(--appshell-mobile-topbar-bottom) - 14px),
-      rgba(0, 0, 0, 0.96) var(--appshell-mobile-topbar-bottom),
-      rgba(0, 0, 0, 0.72) calc(var(--appshell-mobile-topbar-bottom) + 30px),
-      rgba(0, 0, 0, 0.32) calc(var(--appshell-mobile-topbar-bottom) + 76px),
+      #000 calc(var(--appshell-mobile-topbar-bottom) - 10px),
+      rgba(0, 0, 0, 0.86) var(--appshell-mobile-topbar-bottom),
+      rgba(0, 0, 0, 0.38) calc(var(--appshell-mobile-topbar-bottom) + 22px),
       transparent 100%
     );
     mask-image: linear-gradient(
       180deg,
       #000 0,
-      #000 calc(var(--appshell-mobile-topbar-bottom) - 14px),
-      rgba(0, 0, 0, 0.96) var(--appshell-mobile-topbar-bottom),
-      rgba(0, 0, 0, 0.72) calc(var(--appshell-mobile-topbar-bottom) + 30px),
-      rgba(0, 0, 0, 0.32) calc(var(--appshell-mobile-topbar-bottom) + 76px),
+      #000 calc(var(--appshell-mobile-topbar-bottom) - 10px),
+      rgba(0, 0, 0, 0.86) var(--appshell-mobile-topbar-bottom),
+      rgba(0, 0, 0, 0.38) calc(var(--appshell-mobile-topbar-bottom) + 22px),
       transparent 100%
     );
   }
