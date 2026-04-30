@@ -44,7 +44,7 @@ export default function Modal({
   children,
   footer,
   maxWidth = 920,
-  zIndex = 50,
+  zIndex = 1000,
   disableBackdropClose = false,
   closeAriaLabel,
 }: ModalProps) {
@@ -79,12 +79,15 @@ export default function Modal({
     }, 0);
 
     const previousOverflow = document.body.style.overflow;
+
     document.body.style.overflow = "hidden";
+    document.body.classList.add("app-modal-open");
 
     return () => {
       window.clearTimeout(focusTimer);
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
+      document.body.classList.remove("app-modal-open");
     };
   }, [open]);
 
@@ -94,6 +97,7 @@ export default function Modal({
     <div
       role="dialog"
       aria-modal="true"
+      className="app-modal-backdrop"
       style={{
         position: "fixed",
         inset: 0,
