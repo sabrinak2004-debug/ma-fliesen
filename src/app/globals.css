@@ -3956,18 +3956,7 @@ body::before {
       opacity 0.16s ease,
       visibility 0.16s ease;
 
-    background:
-      linear-gradient(
-        180deg,
-        rgba(var(--accent-rgb), 0.42) 0px,
-        rgba(var(--accent-rgb), 0.26) 180px,
-        rgba(var(--accent-rgb), 0.12) 420px,
-        var(--bg) 760px
-      ),
-      var(--bg);
-
-    background-attachment: fixed;
-    background-repeat: no-repeat;
+    background: var(--bg);
   }
 
   .appshell-desktop-content-curtain::after {
@@ -3982,8 +3971,8 @@ body::before {
     background: linear-gradient(
       180deg,
       var(--bg) 0%,
-      color-mix(in srgb, var(--bg) 86%, transparent) 38%,
-      color-mix(in srgb, var(--bg) 42%, transparent) 72%,
+      color-mix(in srgb, var(--bg) 88%, transparent) 42%,
+      color-mix(in srgb, var(--bg) 45%, transparent) 76%,
       transparent 100%
     );
   }
