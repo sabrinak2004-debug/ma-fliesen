@@ -3956,7 +3956,20 @@ body::before {
       opacity 0.16s ease,
       visibility 0.16s ease;
 
-    background: var(--bg);
+    background:
+      radial-gradient(
+        1200px 600px at 10% 0%,
+        var(--accent-soft),
+        transparent 58%
+      ),
+      radial-gradient(
+        900px 620px at 85% 8%,
+        rgba(var(--accent-rgb), 0.08),
+        transparent 62%
+      ),
+      var(--bg);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 
   .appshell-desktop-content-curtain::after {
