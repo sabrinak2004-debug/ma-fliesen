@@ -623,59 +623,66 @@ export default function AppShell({
   useLayoutEffect(() => {
     let animationFrameId = 0;
 
-    function updateDesktopCurtainBounds(): void {
+    function updateCurtainBounds(): void {
       window.cancelAnimationFrame(animationFrameId);
 
       animationFrameId = window.requestAnimationFrame(() => {
-        const contentElement = contentRef.current;
-        const topbarElement = desktopTopbarRef.current;
+        const root = document.documentElement;
 
-        if (!contentElement || !topbarElement) {
-          return;
+        root.style.setProperty(
+          "--appshell-curtain-bg-y",
+          `-${window.scrollY}px`
+        );
+
+        const contentElement = contentRef.current;
+        const desktopTopbarElement = desktopTopbarRef.current;
+
+        if (contentElement && desktopTopbarElement) {
+          const contentRect = contentElement.getBoundingClientRect();
+          const desktopTopbarRect = desktopTopbarElement.getBoundingClientRect();
+
+          root.style.setProperty(
+            "--appshell-curtain-left",
+            `${contentRect.left}px`
+          );
+
+          root.style.setProperty(
+            "--appshell-curtain-width",
+            `${contentRect.width}px`
+          );
+
+          root.style.setProperty(
+            "--appshell-topbar-top",
+            `${Math.max(0, desktopTopbarRect.top)}px`
+          );
+
+          root.style.setProperty(
+            "--appshell-topbar-bottom",
+            `${Math.max(0, desktopTopbarRect.bottom)}px`
+          );
+
+          root.style.setProperty(
+            "--appshell-topbar-height",
+            `${desktopTopbarRect.height}px`
+          );
         }
 
-        const contentRect = contentElement.getBoundingClientRect();
-        const topbarRect = topbarElement.getBoundingClientRect();
-
-        document.documentElement.style.setProperty(
-          "--appshell-curtain-left",
-          `${contentRect.left}px`
-        );
-
-        document.documentElement.style.setProperty(
-          "--appshell-curtain-width",
-          `${contentRect.width}px`
-        );
-
-        document.documentElement.style.setProperty(
-          "--appshell-topbar-top",
-          `${Math.max(0, topbarRect.top)}px`
-        );
-
-        document.documentElement.style.setProperty(
-          "--appshell-topbar-bottom",
-          `${Math.max(0, topbarRect.bottom)}px`
-        );
-
-        document.documentElement.style.setProperty(
-          "--appshell-topbar-height",
-          `${topbarRect.height}px`
-        );
         const mobileTopbarElement = mobileTopbarRef.current;
+
         if (mobileTopbarElement) {
           const mobileTopbarRect = mobileTopbarElement.getBoundingClientRect();
 
-          document.documentElement.style.setProperty(
+          root.style.setProperty(
             "--appshell-mobile-curtain-left",
             `${mobileTopbarRect.left}px`
           );
 
-          document.documentElement.style.setProperty(
+          root.style.setProperty(
             "--appshell-mobile-curtain-width",
             `${mobileTopbarRect.width}px`
           );
 
-          document.documentElement.style.setProperty(
+          root.style.setProperty(
             "--appshell-mobile-topbar-bottom",
             `${Math.max(0, mobileTopbarRect.bottom)}px`
           );
@@ -683,17 +690,17 @@ export default function AppShell({
       });
     }
 
-    updateDesktopCurtainBounds();
+    updateCurtainBounds();
 
-    window.addEventListener("resize", updateDesktopCurtainBounds);
-    window.addEventListener("scroll", updateDesktopCurtainBounds, { passive: true });
+    window.addEventListener("resize", updateCurtainBounds);
+    window.addEventListener("scroll", updateCurtainBounds, { passive: true });
 
     return () => {
       window.cancelAnimationFrame(animationFrameId);
-      window.removeEventListener("resize", updateDesktopCurtainBounds);
-      window.removeEventListener("scroll", updateDesktopCurtainBounds);
+      window.removeEventListener("resize", updateCurtainBounds);
+      window.removeEventListener("scroll", updateCurtainBounds);
     };
-  }, [desktopTopbarCompact]);
+  }, [desktopTopbarCompact, mobileTopbarCompact]);
 
   useEffect(() => {
     let alive = true;
