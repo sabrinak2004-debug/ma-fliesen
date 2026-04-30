@@ -3979,12 +3979,7 @@ body::before {
         rgba(var(--accent-rgb), 0.42) 0px,
         rgba(var(--accent-rgb), 0.26) 180px,
         rgba(var(--accent-rgb), 0.12) 420px,
-        transparent 760px
-      ),
-      radial-gradient(
-        1200px 640px at 10% 0%,
-        rgba(var(--accent-rgb), 0.28),
-        transparent 60%
+        var(--bg) 760px
       ),
       var(--bg);
     background-repeat: no-repeat;
@@ -4048,12 +4043,7 @@ body::before {
         rgba(var(--accent-rgb), 0.42) 0px,
         rgba(var(--accent-rgb), 0.26) 180px,
         rgba(var(--accent-rgb), 0.12) 420px,
-        transparent 760px
-      ),
-      radial-gradient(
-        1200px 640px at 10% 0%,
-        rgba(var(--accent-rgb), 0.28),
-        transparent 60%
+        var(--bg) 760px
       ),
       var(--bg);
     background-repeat: no-repeat;
