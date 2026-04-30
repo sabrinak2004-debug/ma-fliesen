@@ -623,49 +623,86 @@ export default function AppShell({
   useLayoutEffect(() => {
     let animationFrameId = 0;
 
-    function updateCurtainBounds(): void {
+    function updateDesktopCurtainBounds(): void {
       window.cancelAnimationFrame(animationFrameId);
 
       animationFrameId = window.requestAnimationFrame(() => {
-        const desktopTopbarElement = desktopTopbarRef.current;
-        const mobileTopbarElement = mobileTopbarRef.current;
+        const contentElement = contentRef.current;
+        const topbarElement = desktopTopbarRef.current;
 
-        document.documentElement.style.setProperty(
-          "--app-background-scroll-y",
-          `${-window.scrollY}px`
-        );
-
-        if (desktopTopbarElement) {
-          const desktopTopbarRect = desktopTopbarElement.getBoundingClientRect();
-
-          document.documentElement.style.setProperty(
-            "--appshell-topbar-bottom",
-            `${Math.max(0, desktopTopbarRect.bottom)}px`
-          );
+        if (!contentElement || !topbarElement) {
+          return;
         }
 
+        const contentRect = contentElement.getBoundingClientRect();
+        const topbarRect = topbarElement.getBoundingClientRect();
+
+        document.documentElement.style.setProperty(
+          "--appshell-curtain-left",
+          `${contentRect.left}px`
+        );
+
+        document.documentElement.style.setProperty(
+          "--appshell-curtain-width",
+          `${contentRect.width}px`
+        );
+
+        document.documentElement.style.setProperty(
+          "--appshell-topbar-top",
+          `${Math.max(0, topbarRect.top)}px`
+        );
+
+        document.documentElement.style.setProperty(
+          "--appshell-topbar-bottom",
+          `${Math.max(0, topbarRect.bottom)}px`
+        );
+
+        document.documentElement.style.setProperty(
+          "--appshell-topbar-height",
+          `${topbarRect.height}px`
+        );
+        document.documentElement.style.setProperty(
+          "--appshell-curtain-bg-y",
+          `${-window.scrollY}px`
+        );
+        const mobileTopbarElement = mobileTopbarRef.current;
         if (mobileTopbarElement) {
           const mobileTopbarRect = mobileTopbarElement.getBoundingClientRect();
+
+          document.documentElement.style.setProperty(
+            "--appshell-mobile-curtain-left",
+            `${mobileTopbarRect.left}px`
+          );
+
+          document.documentElement.style.setProperty(
+            "--appshell-mobile-curtain-width",
+            `${mobileTopbarRect.width}px`
+          );
 
           document.documentElement.style.setProperty(
             "--appshell-mobile-topbar-bottom",
             `${Math.max(0, mobileTopbarRect.bottom)}px`
           );
         }
+
+        document.documentElement.style.setProperty(
+          "--appshell-curtain-bg-y",
+          `${-window.scrollY}px`
+        );
       });
     }
 
-    updateCurtainBounds();
+    updateDesktopCurtainBounds();
 
-    window.addEventListener("resize", updateCurtainBounds);
-    window.addEventListener("scroll", updateCurtainBounds, { passive: true });
+    window.addEventListener("resize", updateDesktopCurtainBounds);
+    window.addEventListener("scroll", updateDesktopCurtainBounds, { passive: true });
 
     return () => {
       window.cancelAnimationFrame(animationFrameId);
-      window.removeEventListener("resize", updateCurtainBounds);
-      window.removeEventListener("scroll", updateCurtainBounds);
+      window.removeEventListener("resize", updateDesktopCurtainBounds);
+      window.removeEventListener("scroll", updateDesktopCurtainBounds);
     };
-  }, [desktopTopbarCompact, mobileTopbarCompact]);
+  }, [desktopTopbarCompact]);
 
   useEffect(() => {
     let alive = true;
