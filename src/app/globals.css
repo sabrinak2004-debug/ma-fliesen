@@ -3770,14 +3770,32 @@ body.login-screen-active::before {
 
 html,
 body {
-  background: var(--bg) !important;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.42) 0px,
+      rgba(var(--accent-rgb), 0.26) 180px,
+      rgba(var(--accent-rgb), 0.12) 420px,
+      var(--bg) 760px
+    ),
+    var(--bg) !important;
 }
 
 body::before {
-  background: var(--app-real-background) !important;
-  background-repeat: no-repeat;
-  background-position: 0 0;
-  background-size: auto;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.42) 0px,
+      rgba(var(--accent-rgb), 0.26) 180px,
+      rgba(var(--accent-rgb), 0.12) 420px,
+      transparent 760px
+    ),
+    radial-gradient(
+      1200px 640px at 10% 0%,
+      rgba(var(--accent-rgb), 0.28),
+      transparent 60%
+    ),
+    var(--bg) !important;
 }
 
 .appshell-page-shell,
@@ -3955,9 +3973,18 @@ body::before {
       opacity 0.16s ease,
       visibility 0.16s ease;
 
-    background: var(--app-real-background);
+    background:
+      linear-gradient(
+        180deg,
+        rgba(var(--accent-rgb), 0.42) 0px,
+        rgba(var(--accent-rgb), 0.26) 180px,
+        rgba(var(--accent-rgb), 0.12) 420px,
+        var(--bg) 760px
+      ),
+      var(--bg);
     background-repeat: no-repeat;
-    background-position: calc(0px - var(--appshell-curtain-left)) 0;
+    background-attachment: fixed;
+    background-position: 0 0;
     background-size: auto;
   }
 
@@ -4010,9 +4037,18 @@ body::before {
       opacity 0.16s ease,
       visibility 0.16s ease;
 
-    background: var(--app-real-background);
+    background:
+      linear-gradient(
+        180deg,
+        rgba(var(--accent-rgb), 0.42) 0px,
+        rgba(var(--accent-rgb), 0.26) 180px,
+        rgba(var(--accent-rgb), 0.12) 420px,
+        var(--bg) 760px
+      ),
+      var(--bg);
     background-repeat: no-repeat;
-    background-position: calc(0px - var(--appshell-mobile-curtain-left)) 0;
+    background-attachment: fixed;
+    background-position: 0 0;
     background-size: auto;
   }
 
