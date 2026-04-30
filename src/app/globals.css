@@ -3946,9 +3946,9 @@ body::before {
 
   .appshell-desktop-content-curtain {
     position: fixed;
-    left: calc(var(--appshell-curtain-left) - 18px);
+    left: calc(var(--appshell-curtain-left) - 6px);
     top: 0;
-    width: calc(var(--appshell-curtain-width) + 36px);
+    width: calc(var(--appshell-curtain-width) + 12px);
     height: calc(var(--appshell-topbar-bottom) + 34px);
     z-index: 80;
     pointer-events: none;
