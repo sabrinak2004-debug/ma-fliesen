@@ -629,6 +629,11 @@ export default function AppShell({
       animationFrameId = window.requestAnimationFrame(() => {
         const topbarElement = desktopTopbarRef.current;
         const mobileTopbarElement = mobileTopbarRef.current;
+        
+        document.documentElement.style.setProperty(
+          "--appshell-curtain-scroll-y",
+          `${-window.scrollY}px`
+        );
 
         if (topbarElement) {
           const topbarRect = topbarElement.getBoundingClientRect();

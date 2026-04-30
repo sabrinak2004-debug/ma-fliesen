@@ -3965,6 +3965,10 @@ body::before {
     visibility: hidden;
     background: var(--app-fixed-background);
     background-repeat: no-repeat;
+    background-position:
+      0 var(--appshell-curtain-scroll-y, 0px),
+      0 var(--appshell-curtain-scroll-y, 0px),
+      0 0;
     transition:
       opacity 0.12s ease,
       visibility 0.12s ease;
@@ -4008,6 +4012,10 @@ body::before {
     visibility: hidden;
     background: var(--app-fixed-background);
     background-repeat: no-repeat;
+    background-position:
+      0 var(--appshell-curtain-scroll-y, 0px),
+      0 var(--appshell-curtain-scroll-y, 0px),
+      0 0;
     transition:
       opacity 0.12s ease,
       visibility 0.12s ease;
