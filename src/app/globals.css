@@ -3958,13 +3958,15 @@ body::before {
     top: var(--appshell-desktop-sticky-top);
     z-index: 80;
     transform: translateZ(0);
+    margin-left: -6px;
+    margin-right: -6px;
   }
 
   .appshell-desktop-content-curtain {
     position: fixed;
-    left: var(--appshell-curtain-left);
+    left: calc(var(--appshell-curtain-left) - 6px);
     top: 0;
-    width: var(--appshell-curtain-width);
+    width: calc(var(--appshell-curtain-width) + 12px);
     height: calc(var(--appshell-topbar-bottom) + 90px);
     z-index: 70;
     pointer-events: none;
@@ -4049,9 +4051,9 @@ body::before {
 
   .appshell-mobile-content-curtain {
     position: fixed;
-    left: var(--appshell-mobile-curtain-left);
+    left: calc(var(--appshell-mobile-curtain-left)-4px);
     top: 0;
-    width: var(--appshell-mobile-curtain-width);
+    width: calc(var(--appshell-mobile-curtain-width)+8px);
     height: calc(var(--appshell-mobile-topbar-bottom) + 90px);
     z-index: 70;
     pointer-events: none;
