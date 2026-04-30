@@ -4051,9 +4051,9 @@ body::before {
 
   .appshell-mobile-content-curtain {
     position: fixed;
-    left: calc(var(--appshell-mobile-curtain-left)-4px);
+    left: var(--appshell-mobile-curtain-left);
     top: 0;
-    width: calc(var(--appshell-mobile-curtain-width)+8px);
+    width: var(--appshell-mobile-curtain-width);
     height: calc(var(--appshell-mobile-topbar-bottom) + 90px);
     z-index: 70;
     pointer-events: none;
