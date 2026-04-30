@@ -3958,17 +3958,12 @@ body::before {
   .appshell-desktop-content-curtain {
     position: fixed;
     inset: 0 0 auto 0;
-    height: calc(var(--appshell-topbar-bottom) + 22px);
+    height: calc(var(--appshell-topbar-bottom) + 18px);
     z-index: 80;
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
-    background: var(--app-fixed-background);
-    background-repeat: no-repeat;
-    background-position:
-      0 var(--appshell-curtain-scroll-y, 0px),
-      0 var(--appshell-curtain-scroll-y, 0px),
-      0 0;
+    background: var(--bg);
     transition:
       opacity 0.12s ease,
       visibility 0.12s ease;
@@ -3977,17 +3972,15 @@ body::before {
       180deg,
       #000 0,
       #000 var(--appshell-topbar-bottom),
-      rgba(0, 0, 0, 0.65) calc(var(--appshell-topbar-bottom) + 8px),
-      rgba(0, 0, 0, 0.28) calc(var(--appshell-topbar-bottom) + 15px),
-      transparent calc(var(--appshell-topbar-bottom) + 22px)
+      rgba(0, 0, 0, 0.45) calc(var(--appshell-topbar-bottom) + 8px),
+      transparent calc(var(--appshell-topbar-bottom) + 18px)
     );
     mask-image: linear-gradient(
       180deg,
       #000 0,
       #000 var(--appshell-topbar-bottom),
-      rgba(0, 0, 0, 0.65) calc(var(--appshell-topbar-bottom) + 8px),
-      rgba(0, 0, 0, 0.28) calc(var(--appshell-topbar-bottom) + 15px),
-      transparent calc(var(--appshell-topbar-bottom) + 22px)
+      rgba(0, 0, 0, 0.45) calc(var(--appshell-topbar-bottom) + 8px),
+      transparent calc(var(--appshell-topbar-bottom) + 18px)
     );
   }
 
@@ -4005,17 +3998,12 @@ body::before {
   .appshell-mobile-content-curtain {
     position: fixed;
     inset: 0 0 auto 0;
-    height: calc(var(--appshell-mobile-topbar-bottom) + 20px);
+    height: calc(var(--appshell-mobile-topbar-bottom) + 16px);
     z-index: 80;
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
-    background: var(--app-fixed-background);
-    background-repeat: no-repeat;
-    background-position:
-      0 var(--appshell-curtain-scroll-y, 0px),
-      0 var(--appshell-curtain-scroll-y, 0px),
-      0 0;
+    background: var(--bg);
     transition:
       opacity 0.12s ease,
       visibility 0.12s ease;
@@ -4024,17 +4012,15 @@ body::before {
       180deg,
       #000 0,
       #000 var(--appshell-mobile-topbar-bottom),
-      rgba(0, 0, 0, 0.6) calc(var(--appshell-mobile-topbar-bottom) + 7px),
-      rgba(0, 0, 0, 0.25) calc(var(--appshell-mobile-topbar-bottom) + 14px),
-      transparent calc(var(--appshell-mobile-topbar-bottom) + 20px)
+      rgba(0, 0, 0, 0.4) calc(var(--appshell-mobile-topbar-bottom) + 7px),
+      transparent calc(var(--appshell-mobile-topbar-bottom) + 16px)
     );
     mask-image: linear-gradient(
       180deg,
       #000 0,
       #000 var(--appshell-mobile-topbar-bottom),
-      rgba(0, 0, 0, 0.6) calc(var(--appshell-mobile-topbar-bottom) + 7px),
-      rgba(0, 0, 0, 0.25) calc(var(--appshell-mobile-topbar-bottom) + 14px),
-      transparent calc(var(--appshell-mobile-topbar-bottom) + 20px)
+      rgba(0, 0, 0, 0.4) calc(var(--appshell-mobile-topbar-bottom) + 7px),
+      transparent calc(var(--appshell-mobile-topbar-bottom) + 16px)
     );
   }
 
