@@ -613,6 +613,7 @@ export default function AppShell({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const desktopTopbarRef = useRef<HTMLDivElement | null>(null);
+  const mobileTopbarRef = useRef<HTMLDivElement | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileTopbarCompact, setMobileTopbarCompact] = useState(false);
   const [languageSaving, setLanguageSaving] = useState(false);
@@ -660,6 +661,30 @@ export default function AppShell({
           "--appshell-topbar-height",
           `${topbarRect.height}px`
         );
+        document.documentElement.style.setProperty(
+          "--appshell-curtain-bg-y",
+          `${-window.scrollY}px`
+        );
+        const mobileTopbarElement = mobileTopbarRef.current;
+        if (mobileTopbarElement) {
+          const mobileTopbarRect = mobileTopbarElement.getBoundingClientRect();
+
+          document.documentElement.style.setProperty(
+            "--appshell-mobile-curtain-left",
+            `${mobileTopbarRect.left}px`
+          );
+
+          document.documentElement.style.setProperty(
+            "--appshell-mobile-curtain-width",
+            `${mobileTopbarRect.width}px`
+          );
+
+          document.documentElement.style.setProperty(
+            "--appshell-mobile-topbar-bottom",
+            `${Math.max(0, mobileTopbarRect.bottom)}px`
+          );
+        }
+
         document.documentElement.style.setProperty(
           "--appshell-curtain-bg-y",
           `${-window.scrollY}px`
@@ -1143,6 +1168,7 @@ export default function AppShell({
       <div className="container-app appshell-app-frame">
         {/* MOBILE TOPBAR (nur < md) */}
         <div
+          ref={mobileTopbarRef}
           className={`md:hidden appshell-mobile-topbar appshell-glass-panel ${
             mobileTopbarCompact ? "is-compact" : ""
           }`}
@@ -1189,6 +1215,12 @@ export default function AppShell({
             </div>
           </div>
         </div>
+        <div
+          className={`md:hidden appshell-mobile-content-curtain ${
+            mobileTopbarCompact ? "is-visible" : ""
+          }`}
+          aria-hidden="true"
+        />
 
         {/* MOBILE SIDEBAR (nur < md) */}
         {mobileOpen && (
