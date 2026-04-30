@@ -661,8 +661,8 @@ export default function AppShell({
           `${topbarRect.height}px`
         );
         document.documentElement.style.setProperty(
-          "--appshell-scroll-y",
-          `${window.scrollY}px`
+          "--appshell-curtain-bg-y",
+          `${-window.scrollY}px`
         );
       });
     }
