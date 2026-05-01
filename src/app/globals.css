@@ -1901,17 +1901,26 @@ li {
     width: 100%;
     max-width: 220px;
   }
-
 .calendar-footer-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
-  margin-left: auto;
-  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  margin-left: 0;
+  flex: 1 1 auto;
+}
+
+.calendar-footer-actions .calendar-today-action-btn {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  min-height: 52px;
 }
 
 .calendar-add-action-btn {
+  flex: 0 0 52px;
   width: 52px;
   min-width: 52px;
   height: 52px;
@@ -1937,10 +1946,20 @@ li {
 @media (max-width: 720px) {
   .calendar-footer-actions {
     width: 100%;
-    justify-content: flex-end;
+    justify-content: stretch;
+    gap: 10px;
+  }
+
+  .calendar-footer-actions .calendar-today-action-btn {
+    flex: 1 1 auto;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    min-height: 48px;
   }
 
   .calendar-add-action-btn {
+    flex: 0 0 48px;
     width: 48px;
     min-width: 48px;
     height: 48px;
@@ -4877,4 +4896,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     line-height: 12px;
     -webkit-line-clamp: 1;
   }
+}
+.calendar-footer-actions .calendar-today-action-btn {
+  max-width: none;
 }
