@@ -612,6 +612,7 @@ export default function AppShell({
   const [, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const mobileContentRef = useRef<HTMLDivElement | null>(null);
   const desktopTopbarRef = useRef<HTMLDivElement | null>(null);
   const mobileTopbarRef = useRef<HTMLDivElement | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -781,18 +782,53 @@ export default function AppShell({
   }, []);
 
   useEffect(() => {
+    function hasEnoughMobileContentForCompactTopbar(): boolean {
+      if (!window.matchMedia("(max-width: 767px)").matches) {
+        return true;
+      }
+
+      const mobileContentElement = mobileContentRef.current;
+
+      if (!mobileContentElement) {
+        return false;
+      }
+
+      const visibleChildren = Array.from(mobileContentElement.children).filter(
+        (child): child is HTMLElement => child instanceof HTMLElement
+      );
+
+      if (visibleChildren.length === 0) {
+        return false;
+      }
+
+      const childRects = visibleChildren.map((child) =>
+        child.getBoundingClientRect()
+      );
+
+      const contentTop = Math.min(...childRects.map((rect) => rect.top));
+      const contentBottom = Math.max(...childRects.map((rect) => rect.bottom));
+      const naturalContentHeight = contentBottom - contentTop;
+
+      return naturalContentHeight > window.innerHeight + 120;
+    }
+
     function handleScroll(): void {
       const isScrolled = window.scrollY > 36;
-      setMobileTopbarCompact(isScrolled);
+
       setDesktopTopbarCompact(isScrolled);
+      setMobileTopbarCompact(
+        isScrolled && hasEnoughMobileContentForCompactTopbar()
+      );
     }
 
     handleScroll();
 
     window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
     };
   }, []);
 
@@ -1003,20 +1039,6 @@ export default function AppShell({
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    function handleScroll(): void {
-      setMobileTopbarCompact(window.scrollY > 36);
-    }
-
-    handleScroll();
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -1401,6 +1423,7 @@ export default function AppShell({
 
         {/* MOBILE CONTENT */}
         <div
+          ref={mobileContentRef}
           className="md:hidden"
           style={{
             minWidth: 0,

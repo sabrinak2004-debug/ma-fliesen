@@ -6036,3 +6036,15 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     max-height: 170px;
   }
 }
+@media (max-width: 767px) {
+  body {
+    min-height: 100svh;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+  }
+
+  .app-root-shell {
+    min-height: 100svh;
+    min-height: 100dvh;
+  }
+}
