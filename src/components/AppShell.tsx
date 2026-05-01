@@ -781,56 +781,53 @@ export default function AppShell({
     };
   }, []);
 
-  useEffect(() => {
-    function hasEnoughMobileContentForCompactTopbar(): boolean {
-      if (!window.matchMedia("(max-width: 767px)").matches) {
-        return true;
-      }
-
-      const mobileContentElement = mobileContentRef.current;
-
-      if (!mobileContentElement) {
-        return false;
-      }
-
-      const visibleChildren = Array.from(mobileContentElement.children).filter(
-        (child): child is HTMLElement => child instanceof HTMLElement
-      );
-
-      if (visibleChildren.length === 0) {
-        return false;
-      }
-
-      const childRects = visibleChildren.map((child) =>
-        child.getBoundingClientRect()
-      );
-
-      const contentTop = Math.min(...childRects.map((rect) => rect.top));
-      const contentBottom = Math.max(...childRects.map((rect) => rect.bottom));
-      const naturalContentHeight = contentBottom - contentTop;
-
-      return naturalContentHeight > window.innerHeight + 120;
+useEffect(() => {
+  function hasEnoughMobileScrollForCompactTopbar(): boolean {
+    if (!window.matchMedia("(max-width: 767px)").matches) {
+      return true;
     }
 
-    function handleScroll(): void {
-      const isScrolled = window.scrollY > 36;
+    const documentElement = document.documentElement;
+    const bodyElement = document.body;
 
-      setDesktopTopbarCompact(isScrolled);
-      setMobileTopbarCompact(
-        isScrolled && hasEnoughMobileContentForCompactTopbar()
-      );
+    const fullPageHeight = Math.max(
+      documentElement.scrollHeight,
+      bodyElement.scrollHeight,
+      documentElement.offsetHeight,
+      bodyElement.offsetHeight
+    );
+
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const scrollableDistance = fullPageHeight - viewportHeight;
+
+    return scrollableDistance > 360;
+  }
+
+  function handleScroll(): void {
+    const isScrolled = window.scrollY > 36;
+
+    setDesktopTopbarCompact(isScrolled);
+
+    if (!hasEnoughMobileScrollForCompactTopbar()) {
+      setMobileTopbarCompact(false);
+      return;
     }
 
-    handleScroll();
+    setMobileTopbarCompact(isScrolled);
+  }
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleScroll);
+  handleScroll();
 
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
-    };
-  }, []);
+  window.addEventListener("scroll", handleScroll, { passive: true });
+  window.addEventListener("resize", handleScroll);
+  window.visualViewport?.addEventListener("resize", handleScroll);
+
+  return () => {
+    window.removeEventListener("scroll", handleScroll);
+    window.removeEventListener("resize", handleScroll);
+    window.visualViewport?.removeEventListener("resize", handleScroll);
+  };
+}, []);
 
   const loadOpenTaskCount = useCallback(async (): Promise<void> => {
     if (!session || session.role !== "EMPLOYEE") {
