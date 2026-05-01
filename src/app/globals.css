@@ -4129,16 +4129,26 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 /* ===== App Modal Fix: über Sidebar + kompakter Kalender-Dialog ===== */
 
 body.app-modal-open .appshell-desktop-topbar,
-body.app-modal-open .appshell-mobile-topbar,
+body.app-modal-open .appshell-mobile-topbar {
+  opacity: 0.62 !important;
+  visibility: visible !important;
+  pointer-events: none !important;
+  filter: blur(1.5px);
+}
+
 body.app-modal-open .appshell-desktop-content-curtain,
 body.app-modal-open .appshell-mobile-content-curtain {
-  opacity: 0 !important;
-  visibility: hidden !important;
+  opacity: 0.28 !important;
+  visibility: visible !important;
   pointer-events: none !important;
+  filter: blur(2px);
 }
 
 .app-modal-backdrop {
   z-index: 5000 !important;
+  background: rgba(0, 0, 0, 0.28) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
 }
 
 .app-modal-panel {
