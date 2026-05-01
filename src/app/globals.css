@@ -4306,7 +4306,6 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 
 @media (min-width: 1440px) {
   :root {
-    --appshell-sidebar-top-margin: 22px;
     --appshell-desktop-page-x: 64px;
     --appshell-desktop-sidebar-width: 340px;
     --appshell-desktop-gap: 24px;
