@@ -5823,6 +5823,16 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 @media (min-width: 1680px) {
   :root {
     --appshell-desktop-page-x: 64px;
+    --appshell-desktop-sidebar-width: 350px;
+    --appshell-desktop-gap: 26px;
+
+    --appshell-sidebar-logo-size: 138px;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    --appshell-desktop-page-x: 72px;
     --appshell-desktop-sidebar-width: 360px;
     --appshell-desktop-gap: 28px;
 
@@ -5830,23 +5840,33 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   }
 }
 
-@media (min-width: 1920px) {
+@media (min-width: 2300px) {
   :root {
-    --appshell-desktop-page-x: 80px;
+    --appshell-desktop-page-x: 88px;
     --appshell-desktop-sidebar-width: 380px;
-    --appshell-desktop-gap: 32px;
+    --appshell-desktop-gap: 30px;
 
-    --appshell-sidebar-logo-size: 152px;
+    --appshell-sidebar-logo-size: 150px;
   }
 }
 
-@media (min-width: 2300px) {
+@media (min-width: 3000px) {
   :root {
-    --appshell-desktop-page-x: 104px;
-    --appshell-desktop-sidebar-width: 410px;
-    --appshell-desktop-gap: 36px;
+    --appshell-desktop-page-x: 120px;
+    --appshell-desktop-sidebar-width: 400px;
+    --appshell-desktop-gap: 34px;
 
-    --appshell-sidebar-logo-size: 164px;
+    --appshell-sidebar-logo-size: 156px;
+  }
+}
+
+@media (min-width: 3800px) {
+  :root {
+    --appshell-desktop-page-x: 160px;
+    --appshell-desktop-sidebar-width: 420px;
+    --appshell-desktop-gap: 38px;
+
+    --appshell-sidebar-logo-size: 160px;
   }
 }
 
