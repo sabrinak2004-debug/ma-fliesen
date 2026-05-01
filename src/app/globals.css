@@ -1605,10 +1605,11 @@ li {
 }
 
 .calendar-month-cell {
-  height: 64px;
+  min-height: 96px;
+  height: 96px;
   border-radius: 14px;
   text-align: left;
-  padding: 6px;
+  padding: 8px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -4567,22 +4568,29 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   }
 }
 
-/* ===== Kalender Desktop: quadratische und gleichmäßige Monats-Kacheln ===== */
+/* ===== Kalender Desktop: gleichmäßige Monats-Kacheln wie Mobile, nur breiter ===== */
 
 @media (min-width: 768px) {
   .calendar-month-grid {
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: calc(8px * var(--appshell-ui-scale));
+    grid-auto-rows: clamp(108px, 8.2vw, 148px);
+    gap: clamp(8px, 0.75vw, 14px);
     align-items: stretch;
   }
 
   .calendar-month-cell {
-    aspect-ratio: 1 / 1;
+    aspect-ratio: auto;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
     min-height: 0;
-    height: auto;
-    padding: calc(8px * var(--appshell-ui-scale));
-    border-radius: calc(14px * var(--appshell-ui-scale));
+    padding: clamp(8px, 0.7vw, 12px);
+    border-radius: clamp(14px, 0.9vw, 18px);
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    overflow: hidden;
   }
 
   .calendar-weekday-head {
@@ -4591,5 +4599,10 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 
   .calendar-month-cell .calendar-day-number {
     font-size: calc(14px * var(--appshell-ui-scale));
+  }
+
+  .calendar-month-cell .calendar-day-number,
+  .calendar-month-cell .calendar-day-number-today-mobile {
+    flex: 0 0 auto;
   }
 }
