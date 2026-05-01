@@ -5993,3 +5993,46 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     display: none;
   }
 }
+/* ===== FINAL: Mobile AppShell Short Pages Scroll Fix ===== */
+
+@media (max-width: 767px) {
+  .appshell-page-shell {
+    min-height: 100svh;
+    min-height: 100dvh;
+    padding-bottom: calc(28px + env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box;
+  }
+
+  .appshell-app-frame.container-app {
+    min-height: calc(100svh - env(safe-area-inset-top));
+    min-height: calc(100dvh - env(safe-area-inset-top));
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+
+  .appshell-app-frame > .md\:hidden:last-of-type {
+    flex: 1 1 auto;
+    min-height: calc(
+      100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 138px
+    );
+    min-height: calc(
+      100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 138px
+    );
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
+
+  .appshell-mobile-topbar {
+    top: calc(8px + env(safe-area-inset-top)) !important;
+    margin-bottom: 18px !important;
+  }
+
+  .appshell-mobile-topbar.is-compact {
+    margin-bottom: 18px !important;
+  }
+
+  .appshell-mobile-content-curtain {
+    max-height: 170px;
+  }
+}
