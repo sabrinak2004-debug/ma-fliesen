@@ -5281,3 +5281,70 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     -webkit-overflow-scrolling: touch;
   }
 }
+/* ===== Kalender: Feiertag/Termine-Chips nicht abschneiden ===== */
+
+.calendar-page-card .calendar-week-cell-tags {
+  min-height: 18px;
+  overflow: visible;
+}
+
+.calendar-page-card .calendar-week-cell {
+  overflow: hidden;
+}
+
+.calendar-page-card .calendar-week-cell .calendar-pill {
+  min-height: 18px;
+  padding: 3px 7px;
+  font-size: 9px;
+  line-height: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.calendar-page-card .calendar-week-cell .calendar-pill span[style] {
+  width: 7px !important;
+  height: 7px !important;
+  box-shadow: 0 0 0 2px var(--brand-neutral-card-bg) !important;
+}
+
+@media (min-width: 768px) {
+  .calendar-page-card .calendar-week-cell {
+    justify-content: flex-start;
+    padding: 7px 8px;
+  }
+
+  .calendar-page-card .calendar-week-cell-head {
+    flex: 0 0 auto;
+  }
+
+  .calendar-page-card .calendar-week-cell-tags {
+    flex: 0 0 auto;
+    margin-top: 4px;
+    gap: 5px;
+  }
+
+  .calendar-page-card .calendar-week-cell-preview {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .calendar-page-card .calendar-week-cell {
+    min-height: 64px;
+    height: 64px;
+    justify-content: flex-start;
+    padding: 7px 9px;
+  }
+
+  .calendar-page-card .calendar-week-cell-tags {
+    margin-top: 4px;
+    gap: 5px;
+  }
+
+  .calendar-page-card .calendar-week-cell .calendar-pill {
+    font-size: 9px;
+    line-height: 12px;
+    padding: 3px 7px;
+  }
+}
