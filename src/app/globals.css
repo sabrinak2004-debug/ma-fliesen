@@ -5467,7 +5467,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 /* ===== Wochenplan Final: gleiche Logik wie Kalender, Scroll nur innerhalb der Card ===== */
 
 :root {
-  --wochenplan-visible-card-height-desktop: calc(100dvh - var(--appshell-topbar-bottom) - 92px);
+  --wochenplan-visible-card-height-desktop: calc(100dvh - var(--appshell-topbar-bottom) - 128px);
   --wochenplan-visible-card-height-mobile: calc(100dvh - 230px);
 }
 
@@ -5525,4 +5525,31 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     overscroll-behavior: contain !important;
     -webkit-overflow-scrolling: touch !important;
   }
+}
+/* ===== Kalender: Feiertag-Chip in Wochenansicht sicher sichtbar ===== */
+
+.calendar-page-card .calendar-week-cell-tags {
+  min-height: 22px !important;
+  max-height: 22px !important;
+  overflow: visible !important;
+  align-items: center !important;
+}
+
+.calendar-page-card .calendar-week-cell-tags .calendar-pill {
+  height: 22px !important;
+  min-height: 22px !important;
+  max-height: 22px !important;
+  padding: 2px 7px !important;
+  font-size: 9px !important;
+  line-height: 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+.calendar-page-card .calendar-week-cell-tags .calendar-pill span[style] {
+  width: 6px !important;
+  height: 6px !important;
+  min-width: 6px !important;
+  flex: 0 0 6px !important;
 }
