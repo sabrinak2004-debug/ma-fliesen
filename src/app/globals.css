@@ -4126,84 +4126,55 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   border: 1px solid var(--border);
   background: var(--panel);
 }
-  /* ===== App Modal Fix: über Sidebar + kompakter Kalender-Dialog ===== */
+/* ===== App Modal Fix: über Sidebar + kompakter Kalender-Dialog ===== */
 
+.app-modal-backdrop {
+  z-index: 5000 !important;
+  background: rgba(0, 0, 0, 0.22) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+.app-modal-panel {
+  width: min(760px, calc(100vw - 24px)) !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: min(82dvh, 720px) !important;
+}
+
+.app-modal-header-surface {
+  min-height: 56px;
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.app-modal-body {
+  padding: 14px !important;
+}
+
+@media (min-width: 768px) {
   .app-modal-backdrop {
-    z-index: 5000 !important;
-    background: rgba(0, 0, 0, 0.22) !important;
-    backdrop-filter: blur(4px) !important;
-    -webkit-backdrop-filter: blur(4px) !important;
+    padding-left: max(22px, env(safe-area-inset-left)) !important;
+    padding-right: max(22px, env(safe-area-inset-right)) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .app-modal-backdrop {
+    align-items: center !important;
+    justify-content: center !important;
+    padding:
+      calc(24px + env(safe-area-inset-top))
+      8px
+      calc(14px + env(safe-area-inset-bottom)) !important;
   }
 
   .app-modal-panel {
-    width: min(760px, calc(100vw - 24px)) !important;
-    max-width: calc(100vw - 24px) !important;
-    max-height: min(82dvh, 720px) !important;
-  }
-
-  .app-modal-header-surface {
-    min-height: 56px;
-    background: var(--panel);
-    position: sticky;
-    top: 0;
-    z-index: 2;
-  }
-
-  .app-modal-body {
-    padding: 14px !important;
-  }
-
-  @media (min-width: 768px) {
-    .app-modal-backdrop {
-      padding-left: max(22px, env(safe-area-inset-left)) !important;
-      padding-right: max(22px, env(safe-area-inset-right)) !important;
-    }
-  }
-
-  @media (max-width: 767px) {
-    .app-modal-backdrop {
-      align-items: center !important;
-      justify-content: center !important;
-      padding:
-        calc(24px + env(safe-area-inset-top))
-        8px
-        calc(14px + env(safe-area-inset-bottom)) !important;
-    }
-
-    .app-modal-panel {
-      width: calc(100vw - 16px) !important;
-      max-width: calc(100vw - 16px) !important;
-      max-height: min(91svh, 800px) !important;
-      border-radius: 24px !important;
-    }
-
-    .app-modal-header-surface {
-      min-height: 58px;
-      padding: 12px 14px !important;
-    }
-
-    .app-modal-body {
-      padding: 14px !important;
-    }
-
-    .app-modal-footer {
-      padding: 14px !important;
-    }
-  }
-
-  @media (max-width: 390px) {
-    .app-modal-backdrop {
-      padding:
-        calc(22px + env(safe-area-inset-top))
-        8px
-        calc(12px + env(safe-area-inset-bottom)) !important;
-    }
-
-    .app-modal-panel {
-      width: calc(100vw - 16px) !important;
-      max-width: calc(100vw - 16px) !important;
-      max-height: min(91svh, 760px) !important;
-    }
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: min(91svh, 800px) !important;
+    border-radius: 24px !important;
   }
 
   .app-modal-header-surface {
