@@ -5508,22 +5508,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 
 @media (max-width: 767px) {
   .wochenplan-shell {
-    height: var(--wochenplan-visible-card-height-mobile) !important;
-    max-height: var(--wochenplan-visible-card-height-mobile) !important;
-    min-height: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-  }
-
-  .wochenplan-scroll {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: auto !important;
-    overscroll-behavior: contain !important;
-    -webkit-overflow-scrolling: touch !important;
+    display: none !important;
   }
 }
 /* ===== Kalender: Feiertag-Chip in Wochenansicht sicher sichtbar ===== */
