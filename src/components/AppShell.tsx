@@ -782,11 +782,7 @@ export default function AppShell({
   }, []);
 
 useEffect(() => {
-  function hasEnoughMobileScrollForCompactTopbar(): boolean {
-    if (!window.matchMedia("(max-width: 767px)").matches) {
-      return true;
-    }
-
+  function getMobileScrollableDistance(): number {
     const documentElement = document.documentElement;
     const bodyElement = document.body;
 
@@ -798,22 +794,39 @@ useEffect(() => {
     );
 
     const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-    const scrollableDistance = fullPageHeight - viewportHeight;
 
-    return scrollableDistance > 360;
+    return Math.max(0, fullPageHeight - viewportHeight);
+  }
+
+  function hasEnoughMobileScrollForCompactTopbar(): boolean {
+    if (!window.matchMedia("(max-width: 767px)").matches) {
+      return true;
+    }
+
+    return getMobileScrollableDistance() > 20;
+  }
+
+  function getMobileCompactScrollTrigger(): number {
+    const scrollableDistance = getMobileScrollableDistance();
+
+    if (scrollableDistance <= 20) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    return Math.min(36, Math.max(8, scrollableDistance * 0.35));
   }
 
   function handleScroll(): void {
-    const isScrolled = window.scrollY > 36;
+    const desktopScrolled = window.scrollY > 36;
 
-    setDesktopTopbarCompact(isScrolled);
+    setDesktopTopbarCompact(desktopScrolled);
 
     if (!hasEnoughMobileScrollForCompactTopbar()) {
       setMobileTopbarCompact(false);
       return;
     }
 
-    setMobileTopbarCompact(isScrolled);
+    setMobileTopbarCompact(window.scrollY > getMobileCompactScrollTrigger());
   }
 
   handleScroll();
