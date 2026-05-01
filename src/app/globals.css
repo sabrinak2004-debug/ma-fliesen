@@ -5467,7 +5467,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 /* ===== Wochenplan Final: gleiche Logik wie Kalender, Scroll nur innerhalb der Card ===== */
 
 :root {
-  --wochenplan-visible-card-height-desktop: calc(100dvh - var(--appshell-topbar-bottom) - 150px);
+  --wochenplan-visible-card-height-desktop: calc(100dvh - var(--appshell-topbar-bottom) - 158px);
   --wochenplan-visible-card-height-mobile: calc(100dvh - 230px);
 }
 
