@@ -4120,13 +4120,3 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   visibility: hidden !important;
   pointer-events: none !important;
 }
-/* ===== AppShell Topbar ausblenden, wenn ein App-Modal geöffnet ist ===== */
-
-body.app-modal-open .appshell-desktop-topbar,
-body.app-modal-open .appshell-mobile-topbar,
-body.app-modal-open .appshell-desktop-content-curtain,
-body.app-modal-open .appshell-mobile-content-curtain {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
