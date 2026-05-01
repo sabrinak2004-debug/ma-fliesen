@@ -1414,47 +1414,27 @@ export default function AppShell({
         <div className="appshell-desktop hidden md:grid">
           <aside className="appshell-sidebar">
             <div className="appshell-sidebar-top">
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                {brandLogoSrc ? (
-                  <img
-                    src={brandLogoSrc}
-                    alt={`${brand?.displayName ?? "Logo"} Logo`}
-                    style={{
-                      width: 132,
-                      height: 132,
-                      objectFit: "contain",
-                      display: "block",
-                      flexShrink: 0,
-                    }}
-                  />
-                ) : brand ? (
-                  <div
-                    className="brand-logo-fallback"
-                    style={{
-                      width: 120,
-                      height: 40,
-                      fontSize: 12,
-                    }}
-                  >
-                    {brand.displayName}
-                  </div>
-                ) : null}
-                <div style={{ minWidth: 0, paddingTop: 6 }}>
-                  <div style={{ fontWeight: 900, lineHeight: 1.05 }}>{brand?.displayName ?? ""}</div>
-                  <div
-                    style={{
-                      color: "var(--muted-2)",
-                      fontSize: 12,
-                      marginTop: 2,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {brand?.displayName ?? ""}
-                  </div>
+              <div className="appshell-sidebar-brand-row">
+              {brandLogoSrc ? (
+                <img
+                  src={brandLogoSrc}
+                  alt={`${brand?.displayName ?? "Logo"} Logo`}
+                  className="appshell-sidebar-logo"
+                />
+              ) : brand ? (
+                <div className="brand-logo-fallback appshell-sidebar-logo-fallback">
+                  {brand.displayName}
+                </div>
+              ) : null}
+              <div className="appshell-sidebar-brand-copy">
+                <div className="appshell-sidebar-brand-title">
+                  {brand?.displayName ?? ""}
+                </div>
+                <div className="appshell-sidebar-brand-subtitle">
+                  {brand?.displayName ?? ""}
                 </div>
               </div>
+            </div>
 
               <div
                 className="appshell-section-stripe"
@@ -1595,100 +1575,42 @@ export default function AppShell({
               className={`topbar appshell-desktop-topbar ${
                 desktopTopbarCompact ? "is-scrolled" : ""
               }`}
-              style={{ padding: 14, marginBottom: 18 }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 14,
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontWeight: 900,
-                      fontSize: 22,
-                      lineHeight: 1.1,
-                    }}
-                  >
+              <div className="appshell-desktop-topbar-row">
+                <div className="appshell-desktop-topbar-copy">
+                  <div className="appshell-desktop-topbar-title">
                     {resolvedActiveLabel}
                   </div>
-                  <div
-                    style={{
-                      color: "var(--muted-2)",
-                      fontSize: 13,
-                      marginTop: 4,
-                    }}
-                  >
+                  <div className="appshell-desktop-topbar-subtitle">
                     {resolvedTopbarSubtitle}
                   </div>
                 </div>
 
                 <div
                   ref={menuRef}
-                  className="appshell-user-chip"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "8px 10px",
-                    borderRadius: 14,
-                  }}
+                  className="appshell-user-chip appshell-desktop-user-chip"
                 >
                   <div
-                    className="appshell-user-avatar"
-                    style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 999,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      letterSpacing: 0.5,
-                    }}
+                    className="appshell-user-avatar appshell-desktop-user-avatar"
                     aria-hidden="true"
                   >
                     {userInitials}
                   </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      lineHeight: 1.1,
-                    }}
-                  >
-                    <div
-                      className="appshell-username"
-                      style={{ fontWeight: 800, fontSize: 13 }}
-                    >
+                  <div className="appshell-desktop-user-meta">
+                    <div className="appshell-username appshell-desktop-username">
                       {userName}
                     </div>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        marginTop: 2,
-                      }}
-                    >
+                    <div className="appshell-desktop-role-row">
                       <span className="appshell-role-badge">
                         {isAdmin
                           ? tAppShell(currentLanguage, "admin")
                           : tAppShell(currentLanguage, "employee")}
                       </span>
                     </div>
-                    <div
-                      style={{
-                        color: "var(--muted-2)",
-                        fontSize: 11,
-                        marginTop: 4,
-                      }}
-                    >
+
+                    <div className="appshell-desktop-language-info">
                       {tAppShell(currentLanguage, "language")}:{" "}
                       {getLanguageLabel(currentLanguage)}
                     </div>

@@ -4264,7 +4264,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     --appshell-desktop-page-x: 64px;
     --appshell-desktop-sidebar-width: 340px;
     --appshell-desktop-gap: 24px;
-    --appshell-ui-scale: 1.04;
+    --appshell-ui-scale: 1.06;
   }
 }
 
@@ -4273,7 +4273,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     --appshell-desktop-page-x: 80px;
     --appshell-desktop-sidebar-width: 360px;
     --appshell-desktop-gap: 28px;
-    --appshell-ui-scale: 1.08;
+    --appshell-ui-scale: 1.12;
   }
 }
 
@@ -4282,7 +4282,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     --appshell-desktop-page-x: 96px;
     --appshell-desktop-sidebar-width: 380px;
     --appshell-desktop-gap: 32px;
-    --appshell-ui-scale: 1.12;
+    --appshell-ui-scale: 1.18;
   }
 }
 
@@ -4291,13 +4291,123 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     --appshell-desktop-page-x: 120px;
     --appshell-desktop-sidebar-width: 410px;
     --appshell-desktop-gap: 36px;
-    --appshell-ui-scale: 1.16;
+    --appshell-ui-scale: 1.24;
   }
 }
 
-@media (min-width: 1440px) {
-  .appshell-app-frame {
+@media (min-width: 768px) {
+  .appshell-sidebar-brand-row {
+    display: flex;
+    align-items: flex-start;
+    gap: calc(12px * var(--appshell-ui-scale));
+  }
+
+  .appshell-sidebar-logo {
+    width: calc(132px * var(--appshell-ui-scale));
+    height: calc(132px * var(--appshell-ui-scale));
+    object-fit: contain;
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .appshell-sidebar-logo-fallback {
+    width: calc(120px * var(--appshell-ui-scale));
+    height: calc(40px * var(--appshell-ui-scale));
+    font-size: calc(12px * var(--appshell-ui-scale));
+  }
+
+  .appshell-sidebar-brand-copy {
+    min-width: 0;
+    padding-top: calc(6px * var(--appshell-ui-scale));
+  }
+
+  .appshell-sidebar-brand-title {
+    font-weight: 900;
+    line-height: 1.05;
     font-size: calc(16px * var(--appshell-ui-scale));
+  }
+
+  .appshell-sidebar-brand-subtitle {
+    color: var(--muted-2);
+    font-size: calc(12px * var(--appshell-ui-scale));
+    margin-top: calc(2px * var(--appshell-ui-scale));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .appshell-desktop-topbar {
+    padding: calc(14px * var(--appshell-ui-scale));
+    margin-bottom: calc(18px * var(--appshell-ui-scale));
+    border-radius: calc(var(--radius) * var(--appshell-ui-scale));
+  }
+
+  .appshell-desktop-topbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(14px * var(--appshell-ui-scale));
+  }
+
+  .appshell-desktop-topbar-copy {
+    min-width: 0;
+  }
+
+  .appshell-desktop-topbar-title {
+    font-weight: 900;
+    font-size: calc(22px * var(--appshell-ui-scale));
+    line-height: 1.1;
+  }
+
+  .appshell-desktop-topbar-subtitle {
+    color: var(--muted-2);
+    font-size: calc(13px * var(--appshell-ui-scale));
+    margin-top: calc(4px * var(--appshell-ui-scale));
+  }
+
+  .appshell-desktop-user-chip {
+    display: flex;
+    align-items: center;
+    gap: calc(10px * var(--appshell-ui-scale));
+    padding: calc(8px * var(--appshell-ui-scale))
+      calc(10px * var(--appshell-ui-scale));
+    border-radius: calc(14px * var(--appshell-ui-scale));
+  }
+
+  .appshell-desktop-user-avatar {
+    width: calc(34px * var(--appshell-ui-scale));
+    height: calc(34px * var(--appshell-ui-scale));
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.5px;
+    font-size: calc(13px * var(--appshell-ui-scale));
+  }
+
+  .appshell-desktop-user-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+  }
+
+  .appshell-desktop-username {
+    font-weight: 800;
+    font-size: calc(13px * var(--appshell-ui-scale));
+  }
+
+  .appshell-desktop-role-row {
+    display: flex;
+    align-items: center;
+    gap: calc(6px * var(--appshell-ui-scale));
+    margin-top: calc(2px * var(--appshell-ui-scale));
+  }
+
+  .appshell-desktop-language-info {
+    color: var(--muted-2);
+    font-size: calc(11px * var(--appshell-ui-scale));
+    margin-top: calc(4px * var(--appshell-ui-scale));
   }
 
   .appshell-sidebar {
@@ -4309,10 +4419,13 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     gap: calc(8px * var(--appshell-ui-scale));
   }
 
+  .appshell-sidebar-bottom {
+    padding-top: calc(18px * var(--appshell-ui-scale));
+  }
+
   .appshell-nav-item {
     gap: calc(10px * var(--appshell-ui-scale));
-    padding:
-      calc(13px * var(--appshell-ui-scale))
+    padding: calc(13px * var(--appshell-ui-scale))
       calc(14px * var(--appshell-ui-scale));
     border-radius: calc(18px * var(--appshell-ui-scale));
     font-size: calc(15px * var(--appshell-ui-scale));
@@ -4321,14 +4434,19 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   .appshell-nav-icon {
     width: calc(20px * var(--appshell-ui-scale));
     min-width: calc(20px * var(--appshell-ui-scale));
-    flex-basis: calc(20px * var(--appshell-ui-scale));
+    flex: 0 0 calc(20px * var(--appshell-ui-scale));
     font-size: calc(15px * var(--appshell-ui-scale));
   }
 
   .appshell-language-panel {
     gap: calc(8px * var(--appshell-ui-scale));
+    margin-bottom: calc(12px * var(--appshell-ui-scale));
     padding: calc(12px * var(--appshell-ui-scale));
     border-radius: calc(16px * var(--appshell-ui-scale));
+  }
+
+  .appshell-language-panel-desktop {
+    margin-bottom: calc(14px * var(--appshell-ui-scale));
   }
 
   .appshell-language-label {
@@ -4339,40 +4457,26 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     font-size: calc(12px * var(--appshell-ui-scale));
   }
 
+  .appshell-sidebar-logout-wrap {
+    padding: calc(12px * var(--appshell-ui-scale));
+    border-radius: calc(16px * var(--appshell-ui-scale));
+  }
+
   .appshell-logout-btn {
-    padding:
-      calc(14px * var(--appshell-ui-scale))
+    padding: calc(14px * var(--appshell-ui-scale))
       calc(14px * var(--appshell-ui-scale));
     border-radius: calc(18px * var(--appshell-ui-scale));
     font-size: calc(14px * var(--appshell-ui-scale));
   }
 
-  .topbar {
-    border-radius: calc(var(--radius) * var(--appshell-ui-scale));
-  }
-
-  .appshell-desktop-topbar {
-    padding: calc(14px * var(--appshell-ui-scale)) !important;
-    margin-bottom: calc(18px * var(--appshell-ui-scale)) !important;
-  }
-
-  .appshell-user-chip {
-    gap: calc(10px * var(--appshell-ui-scale)) !important;
-    padding:
-      calc(8px * var(--appshell-ui-scale))
-      calc(10px * var(--appshell-ui-scale)) !important;
-    border-radius: calc(14px * var(--appshell-ui-scale)) !important;
-  }
-
-  .appshell-user-avatar {
-    font-size: calc(13px * var(--appshell-ui-scale));
-  }
-
   .appshell-role-badge {
     font-size: calc(11px * var(--appshell-ui-scale));
-    padding:
-      calc(3px * var(--appshell-ui-scale))
+    padding: calc(3px * var(--appshell-ui-scale))
       calc(8px * var(--appshell-ui-scale));
+  }
+
+  .topbar {
+    border-radius: calc(var(--radius) * var(--appshell-ui-scale));
   }
 
   .card,
@@ -4386,29 +4490,27 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 
   .input,
   .textarea,
-  .select,
-  .btn {
+  .select {
     font-size: calc(14px * var(--appshell-ui-scale));
     border-radius: calc(14px * var(--appshell-ui-scale));
   }
 
   .input,
   .select {
-    padding:
-      calc(12px * var(--appshell-ui-scale))
+    padding: calc(12px * var(--appshell-ui-scale))
       calc(12px * var(--appshell-ui-scale));
   }
 
   .textarea {
-    padding:
-      calc(12px * var(--appshell-ui-scale))
+    padding: calc(12px * var(--appshell-ui-scale))
       calc(12px * var(--appshell-ui-scale));
     min-height: calc(90px * var(--appshell-ui-scale));
   }
 
   .btn {
-    padding:
-      calc(11px * var(--appshell-ui-scale))
+    font-size: calc(14px * var(--appshell-ui-scale));
+    border-radius: calc(14px * var(--appshell-ui-scale));
+    padding: calc(11px * var(--appshell-ui-scale))
       calc(14px * var(--appshell-ui-scale));
   }
 
@@ -4434,8 +4536,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   }
 
   .entry-content {
-    padding:
-      calc(14px * var(--appshell-ui-scale))
+    padding: calc(14px * var(--appshell-ui-scale))
       calc(14px * var(--appshell-ui-scale));
   }
 
@@ -4463,5 +4564,32 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   .app-chip-warning,
   .calendar-pill {
     font-size: calc(12px * var(--appshell-ui-scale));
+  }
+}
+
+/* ===== Kalender Desktop: quadratische und gleichmäßige Monats-Kacheln ===== */
+
+@media (min-width: 768px) {
+  .calendar-month-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: calc(8px * var(--appshell-ui-scale));
+    align-items: stretch;
+  }
+
+  .calendar-month-cell {
+    aspect-ratio: 1 / 1;
+    min-height: 0;
+    height: auto;
+    padding: calc(8px * var(--appshell-ui-scale));
+    border-radius: calc(14px * var(--appshell-ui-scale));
+    box-sizing: border-box;
+  }
+
+  .calendar-weekday-head {
+    font-size: calc(11px * var(--appshell-ui-scale));
+  }
+
+  .calendar-month-cell .calendar-day-number {
+    font-size: calc(14px * var(--appshell-ui-scale));
   }
 }
