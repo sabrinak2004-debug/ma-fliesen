@@ -809,7 +809,7 @@ useEffect(() => {
   function getMobileCompactScrollTrigger(): number {
     const scrollableDistance = getMobileScrollableDistance();
 
-    if (scrollableDistance <= 20) {
+    if (scrollableDistance <= 50) {
       return Number.POSITIVE_INFINITY;
     }
 
