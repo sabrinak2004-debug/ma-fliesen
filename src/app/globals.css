@@ -5230,7 +5230,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 /* ===== Wochenplan: Card nur bis Ende Donnerstag, Rest intern scrollen ===== */
 
 :root {
-  --wochenplan-visible-height-desktop: 612px;
+  --wochenplan-visible-height-desktop: 580px;
   --wochenplan-visible-height-mobile: 560px;
 }
 
