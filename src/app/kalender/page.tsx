@@ -1926,7 +1926,7 @@ function KalenderPageInner({
 
   return (
     <AppShell activeLabel={t("appointments")}>
-      <div className="card card-olive" style={{ padding: 18, position: "relative" }}>
+      <div className="card card-olive calendar-page-card">
         <div className="calendar-mobile-header">
           <button
             className="btn calendar-nav-btn"
