@@ -4751,3 +4751,45 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     min-height: 42px;
   }
 }
+/* ===== Kalender Wochenansicht: Feiertagsname in Tageskarten ausblenden ===== */
+
+.calendar-week-cell:has(.calendar-week-cell-tags) .calendar-week-cell-preview {
+  display: none;
+}
+
+.calendar-week-cell:has(.calendar-week-cell-tags) {
+  justify-content: center;
+}
+
+.calendar-week-cell:has(.calendar-week-cell-tags) .calendar-week-cell-tags {
+  margin-top: 8px;
+}
+
+@media (max-width: 767px) {
+  .calendar-week-cell:has(.calendar-week-cell-tags) {
+    min-height: 68px;
+    height: 68px;
+  }
+
+  .calendar-week-cell:has(.calendar-week-cell-tags) .calendar-week-cell-tags {
+    margin-top: 6px;
+  }
+
+  .calendar-week-cell:has(.calendar-week-cell-tags) .calendar-pill,
+  .calendar-week-cell:has(.calendar-week-cell-tags) .app-chip-warning,
+  .calendar-week-cell:has(.calendar-week-cell-tags) .chip {
+    max-width: 100%;
+    font-size: 10px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 768px) {
+  .calendar-week-cell:has(.calendar-week-cell-tags) .calendar-pill,
+  .calendar-week-cell:has(.calendar-week-cell-tags) .app-chip-warning,
+  .calendar-week-cell:has(.calendar-week-cell-tags) .chip {
+    max-width: 100%;
+    white-space: nowrap;
+  }
+}
