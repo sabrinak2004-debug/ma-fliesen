@@ -5419,7 +5419,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 /* ===== Wochenplan Final Override: Card passt wie Kalender auf eine Seite, Inhalt scrollt innen ===== */
 
 :root {
-  --wochenplan-card-visible-height-desktop: calc(100dvh - var(--appshell-topbar-bottom) - 110px);
+  --wochenplan-card-visible-height-desktop: calc(100dvh - var(--appshell-topbar-bottom) - 150px);
   --wochenplan-card-visible-height-mobile: calc(100dvh - 250px);
 }
 
