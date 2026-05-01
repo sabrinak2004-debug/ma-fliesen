@@ -4194,25 +4194,19 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   border: 1px solid var(--border);
   background: var(--panel);
 }
-/* ===== App Modal Fix: immer über Sidebar/Topbar + Hintergrund deckend geblurt ===== */
-
-body.app-modal-open {
-  overflow: hidden !important;
-}
+/* ===== App Modal Fix: über Sidebar + kompakter Kalender-Dialog ===== */
 
 .app-modal-backdrop {
   z-index: 5000 !important;
-  background: color-mix(in srgb, var(--bg) 42%, rgba(0, 0, 0, 0.64)) !important;
-  backdrop-filter: blur(8px) saturate(0.9) !important;
-  -webkit-backdrop-filter: blur(8px) saturate(0.9) !important;
+  background: rgba(0, 0, 0, 0.22) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
 }
 
 .app-modal-panel {
   width: min(760px, calc(100vw - 24px)) !important;
   max-width: calc(100vw - 24px) !important;
   max-height: min(82dvh, 720px) !important;
-  position: relative !important;
-  z-index: 1 !important;
 }
 
 .app-modal-header-surface {
