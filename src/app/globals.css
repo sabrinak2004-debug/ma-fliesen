@@ -4228,3 +4228,30 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     max-height: min(91svh, 760px) !important;
   }
 }
+/* ===== AppShell Desktop Breite: Laptop/Desktop fast volle Bildschirmbreite ===== */
+
+@media (min-width: 768px) {
+  .appshell-app-frame.container-app {
+    width: calc(100vw - 48px);
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .appshell-desktop {
+    width: 100%;
+    max-width: none;
+  }
+
+  .appshell-content {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+}
+
+@media (min-width: 1440px) {
+  .appshell-app-frame.container-app {
+    width: calc(100vw - 64px);
+  }
+}
