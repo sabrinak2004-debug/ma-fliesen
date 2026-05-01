@@ -5227,3 +5227,57 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     overscroll-behavior: contain;
   }
 }
+/* ===== Wochenplan: Card nur bis Ende Donnerstag, Rest intern scrollen ===== */
+
+:root {
+  --wochenplan-visible-height-desktop: 612px;
+  --wochenplan-visible-height-mobile: 560px;
+}
+
+@media (min-width: 768px) {
+  .wochenplan-shell {
+    max-height: min(
+      var(--wochenplan-visible-height-desktop),
+      calc(100dvh - var(--appshell-topbar-bottom) - 44px)
+    );
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .wochenplan-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: min(
+      var(--wochenplan-visible-height-desktop),
+      calc(100dvh - var(--appshell-topbar-bottom) - 44px)
+    );
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 767px) {
+  .wochenplan-shell {
+    max-height: min(
+      var(--wochenplan-visible-height-mobile),
+      calc(100dvh - 220px)
+    );
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .wochenplan-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: min(
+      var(--wochenplan-visible-height-mobile),
+      calc(100dvh - 220px)
+    );
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
