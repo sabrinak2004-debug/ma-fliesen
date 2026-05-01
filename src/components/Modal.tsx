@@ -135,7 +135,7 @@ export default function Modal({
         style={{
           width: `min(${maxWidth}px, calc(100vw - 24px))`,
           maxWidth: "calc(100vw - 24px)",
-          maxHeight: "min(82dvh, 720px)",
+          maxHeight: "min(88svh, 760px)",
           overflow: "hidden",
           borderRadius: 18,
           boxShadow: "var(--app-shadow-strong)",
