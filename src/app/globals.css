@@ -5348,3 +5348,119 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     padding: 3px 7px;
   }
 }
+/* ===== Kalender Final Override: Feiertag-Chip passt vollständig in die Wochenzeile ===== */
+
+.calendar-page-card .calendar-week-cell {
+  overflow: hidden !important;
+}
+
+.calendar-page-card .calendar-week-cell-head {
+  flex: 0 0 auto !important;
+  min-height: 24px !important;
+}
+
+.calendar-page-card .calendar-week-cell-tags {
+  flex: 0 0 auto !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  margin-top: 4px !important;
+  gap: 5px !important;
+  overflow: visible !important;
+  align-items: center !important;
+}
+
+.calendar-page-card .calendar-week-cell-tags .calendar-pill {
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  padding: 2px 7px !important;
+  font-size: 9px !important;
+  line-height: 10px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.calendar-page-card .calendar-week-cell-tags .calendar-pill span[style] {
+  width: 6px !important;
+  height: 6px !important;
+  min-width: 6px !important;
+  flex: 0 0 6px !important;
+  box-shadow: 0 0 0 2px var(--brand-neutral-card-bg) !important;
+}
+
+@media (min-width: 768px) {
+  .calendar-page-card .calendar-week-cell {
+    padding: 6px 8px !important;
+    justify-content: flex-start !important;
+  }
+
+  .calendar-page-card .calendar-week-cell-preview {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .calendar-page-card .calendar-week-cell {
+    min-height: 66px !important;
+    height: 66px !important;
+    padding: 7px 9px !important;
+    justify-content: flex-start !important;
+  }
+
+  .calendar-page-card .calendar-week-cell-preview {
+    display: none !important;
+  }
+}
+/* ===== Wochenplan Final Override: Card passt wie Kalender auf eine Seite, Inhalt scrollt innen ===== */
+
+:root {
+  --wochenplan-card-visible-height-desktop: calc(100dvh - var(--appshell-topbar-bottom) - 110px);
+  --wochenplan-card-visible-height-mobile: calc(100dvh - 250px);
+}
+
+@media (min-width: 768px) {
+  .wochenplan-shell {
+    height: var(--wochenplan-card-visible-height-desktop) !important;
+    max-height: var(--wochenplan-card-visible-height-desktop) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .wochenplan-scroll {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    overflow: auto !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .wochenplan-shell {
+    height: var(--wochenplan-card-visible-height-mobile) !important;
+    max-height: var(--wochenplan-card-visible-height-mobile) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .wochenplan-scroll {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    overflow: auto !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
