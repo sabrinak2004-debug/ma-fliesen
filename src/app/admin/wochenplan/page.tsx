@@ -1387,6 +1387,7 @@ export default function AdminWochenplanPage() {
               justifyContent: "flex-end",
               flexShrink: 0,
               whiteSpace: "nowrap",
+              marginTop: isDesktop ? 0 : 4,
             }}
           >
             <Link
@@ -1439,6 +1440,80 @@ export default function AdminWochenplanPage() {
             ) : null}
           </div>
         </div>
+        {!isDesktop ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              width: "100%",
+              marginTop: 4,
+            }}
+          >
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto minmax(132px, 1fr) auto",
+                alignItems: "center",
+                gap: 8,
+                width: "min(100%, 390px)",
+              }}
+            >
+              <button
+                className="pill"
+                onClick={() =>
+                  setWeekStart((w) => {
+                    const d = new Date(w);
+                    d.setDate(d.getDate() - 7);
+                    return d;
+                  })
+                }
+                style={{
+                  minWidth: 0,
+                  padding: "8px 10px",
+                  justifyContent: "center",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {t("previousWeek")}
+              </button>
+
+              <input
+                type="date"
+                value={fmtYMD(weekStart)}
+                onChange={(e) => setWeekStart(startOfWeek(new Date(e.target.value)))}
+                className="input"
+                style={{
+                  width: "100%",
+                  minWidth: 0,
+                  boxSizing: "border-box",
+                  padding: "8px 10px",
+                  textAlign: "center",
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                }}
+              />
+
+              <button
+                className="pill"
+                onClick={() =>
+                  setWeekStart((w) => {
+                    const d = new Date(w);
+                    d.setDate(d.getDate() + 7);
+                    return d;
+                  })
+                }
+                style={{
+                  minWidth: 0,
+                  padding: "8px 10px",
+                  justifyContent: "center",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {t("nextWeek")}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {loading ? (
