@@ -5464,3 +5464,65 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     -webkit-overflow-scrolling: touch !important;
   }
 }
+/* ===== Wochenplan Final: gleiche Logik wie Kalender, Scroll nur innerhalb der Card ===== */
+
+:root {
+  --wochenplan-visible-card-height-desktop: calc(100dvh - var(--appshell-topbar-bottom) - 92px);
+  --wochenplan-visible-card-height-mobile: calc(100dvh - 230px);
+}
+
+@media (min-width: 768px) {
+  .wochenplan-shell {
+    height: var(--wochenplan-visible-card-height-desktop) !important;
+    max-height: var(--wochenplan-visible-card-height-desktop) !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .wochenplan-scroll {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: auto !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .wochenplan-scroll table {
+    min-height: 100%;
+  }
+
+  .wochenplan-scroll tbody tr {
+    height: 122px;
+  }
+
+  .wochenplan-scroll tbody td {
+    height: 122px;
+    max-height: 122px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 767px) {
+  .wochenplan-shell {
+    height: var(--wochenplan-visible-card-height-mobile) !important;
+    max-height: var(--wochenplan-visible-card-height-mobile) !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .wochenplan-scroll {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: auto !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}

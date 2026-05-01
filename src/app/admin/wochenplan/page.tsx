@@ -1681,10 +1681,9 @@ export default function AdminWochenplanPage() {
             .filter(Boolean)
             .join(" ")}
           style={{
-            display: isDesktop ? "block" : "none",
+            display: isDesktop ? "flex" : "none",
             width: "100%",
             minWidth: 0,
-            maxHeight: "calc(100vh - 220px)",
             position: "relative",
             overflow: "hidden",
             backdropFilter: "blur(8px)",
@@ -1695,10 +1694,8 @@ export default function AdminWochenplanPage() {
             onScroll={handleDesktopPlanScroll}
             style={{
               width: "100%",
-              height: "100%",
               minWidth: 0,
               overflow: "auto",
-              maxHeight: "calc(100vh - 220px)",
               paddingRight: 28,
               paddingBottom: 18,
               boxSizing: "border-box",
