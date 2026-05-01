@@ -1294,88 +1294,47 @@ export default function AdminWochenplanPage() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
-            flexWrap: isDesktop ? "nowrap" : "wrap",
+            flexWrap: isDesktop ? "nowrap" : "nowrap",
             gap: 14,
+            width: "100%",
+            minWidth: 0,
           }}
         >
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: "var(--text)" }}>
-                {t("pageTitle")}
-              </div>
+          <div
+            style={{
+              minWidth: 0,
+              flex: "1 1 auto",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 22,
+                fontWeight: 900,
+                color: "var(--text)",
+              }}
+            >
+              {t("pageTitle")}
+            </div>
+
             <div style={{ marginTop: 4 }}>
-              <div style={{ fontSize: 18, fontWeight: 800 }}>{t("calendarWeek")} {weekLabel.kw}</div>
-              <div style={{ color: "var(--muted)", fontSize: 13 }}>
+              <div
+                style={{
+                  fontSize: 18,
+                  fontWeight: 800,
+                }}
+              >
+                {t("calendarWeek")} {weekLabel.kw}
+              </div>
+
+              <div
+                style={{
+                  color: "var(--muted)",
+                  fontSize: 13,
+                }}
+              >
                 {weekLabel.dateRange}
               </div>
             </div>
-
-            {!isDesktop ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginTop: 12,
-                  width: "fit-content",
-                  maxWidth: "100%",
-                }}
-              >
-                <button
-                  className="pill"
-                  onClick={() =>
-                    setWeekStart((w) => {
-                      const d = new Date(w);
-                      d.setDate(d.getDate() - 7);
-                      return d;
-                    })
-                  }
-                  style={{
-                    flex: "0 0 auto",
-                    padding: "8px 10px",
-                    justifyContent: "center",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {t("previousWeek")}
-                </button>
-
-                <input
-                  type="date"
-                  value={fmtYMD(weekStart)}
-                  onChange={(e) => setWeekStart(startOfWeek(new Date(e.target.value)))}
-                  className="input"
-                  style={{
-                    flex: "0 0 136px",
-                    width: 136,
-                    minWidth: 136,
-                    maxWidth: 136,
-                    boxSizing: "border-box",
-                    padding: "8px 10px",
-                    appearance: "none",
-                    WebkitAppearance: "none",
-                  }}
-                />
-
-                <button
-                  className="pill"
-                  onClick={() =>
-                    setWeekStart((w) => {
-                      const d = new Date(w);
-                      d.setDate(d.getDate() + 7);
-                      return d;
-                    })
-                  }
-                  style={{
-                    flex: "0 0 auto",
-                    padding: "8px 10px",
-                    justifyContent: "center",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {t("nextWeek")}
-                </button>
-              </div>
-            ) : null}
           </div>
 
           <div
@@ -1383,17 +1342,20 @@ export default function AdminWochenplanPage() {
               display: "flex",
               gap: 8,
               alignItems: "center",
-              flexWrap: isDesktop ? "nowrap" : "wrap",
+              flexWrap: "nowrap",
               justifyContent: "flex-end",
               flexShrink: 0,
               whiteSpace: "nowrap",
-              marginTop: isDesktop ? 0 : 4,
             }}
           >
             <Link
               href="/admin/appointments"
               className="pill"
-              style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+              style={{
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+              }}
             >
               {t("appointmentsBack")}
             </Link>
@@ -1440,6 +1402,7 @@ export default function AdminWochenplanPage() {
             ) : null}
           </div>
         </div>
+
         {!isDesktop ? (
           <div
             style={{
