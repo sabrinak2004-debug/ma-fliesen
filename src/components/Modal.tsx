@@ -121,7 +121,7 @@ export default function Modal({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="app-modal-panel app-modal-panel-surface"
+        className="app-modal-panel app-modal-panel-solid"
         style={{
           width: `min(${maxWidth}px, calc(100vw - 24px))`,
           maxWidth: "calc(100vw - 24px)",

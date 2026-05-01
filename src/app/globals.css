@@ -4120,3 +4120,9 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+/* ===== Modal: Panel deckend, Hintergrund weiterhin verschwommen ===== */
+
+.app-modal-panel-solid {
+  border: 1px solid var(--border);
+  background: var(--panel);
+}
