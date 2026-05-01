@@ -758,12 +758,12 @@ body::before {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: grid;
   place-items: center;
-  z-index: 50;
+  z-index: 5000;
   padding: 18px;
 }
 
@@ -4102,22 +4102,24 @@ body::before {
     visibility: visible;
   }
 }
-/* ===== Topbar ausblenden, wenn große Modals geöffnet sind ===== */
+/* ===== Modals: Topbar sichtbar lassen, Hintergrund nur über Backdrop abdunkeln ===== */
 
 body:has(.modal-backdrop) .appshell-desktop-topbar,
 body:has(.modal-backdrop) .appshell-mobile-topbar,
-body:has(.modal-backdrop) .appshell-desktop-content-curtain,
-body:has(.modal-backdrop) .appshell-mobile-content-curtain,
 body:has(.tenant-modal-overlay) .appshell-desktop-topbar,
 body:has(.tenant-modal-overlay) .appshell-mobile-topbar,
+body:has(.app-document-preview-overlay) .appshell-desktop-topbar,
+body:has(.app-document-preview-overlay) .appshell-mobile-topbar {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+body:has(.modal-backdrop) .appshell-desktop-content-curtain,
+body:has(.modal-backdrop) .appshell-mobile-content-curtain,
 body:has(.tenant-modal-overlay) .appshell-desktop-content-curtain,
 body:has(.tenant-modal-overlay) .appshell-mobile-content-curtain,
-body:has(.app-document-preview-overlay) .appshell-desktop-topbar,
-body:has(.app-document-preview-overlay) .appshell-mobile-topbar,
 body:has(.app-document-preview-overlay) .appshell-desktop-content-curtain,
 body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
-  opacity: 0 !important;
-  visibility: hidden !important;
   pointer-events: none !important;
 }
 /* ===== Modal: Panel deckend, Hintergrund weiterhin verschwommen ===== */
