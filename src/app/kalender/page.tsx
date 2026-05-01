@@ -16,7 +16,8 @@ import {
   Flower2,
   Sun,
   PartyPopper,
-  TreePalm
+  TreePalm,
+  Plus,
 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStethoscope, faPencil, faTrashCan, faPenToSquare, faShare, faFilePdf, faMapPin, faCarSide } from "@fortawesome/free-solid-svg-icons";
@@ -2208,9 +2209,8 @@ function KalenderPageInner({
               </div>
             </div>
             <div
+              className="calendar-footer-actions"
               style={{
-                display: "flex",
-                justifyContent: "flex-end",
                 marginTop: 14,
               }}
             >
@@ -2221,6 +2221,18 @@ function KalenderPageInner({
               >
                 {t("today")}
               </button>
+
+              {isAdminOwnCalendar ? (
+                <button
+                  type="button"
+                  aria-label={t("newAppointment")}
+                  title={t("newAppointment")}
+                  onClick={openNewEventGlobal}
+                  className="btn calendar-add-action-btn"
+                >
+                  <Plus size={20} strokeWidth={2.6} />
+                </button>
+              ) : null}
             </div>
           </>
         ) : (
@@ -2431,7 +2443,7 @@ function KalenderPageInner({
                 ) : null}
               </div>
 
-              <div className="calendar-today-action-wrap">
+              <div className="calendar-footer-actions">
                 <button
                   className="btn calendar-today-action-btn"
                   type="button"
@@ -2439,23 +2451,23 @@ function KalenderPageInner({
                 >
                   {t("today")}
                 </button>
+
+                {isAdminOwnCalendar ? (
+                  <button
+                    type="button"
+                    aria-label={t("newAppointment")}
+                    title={t("newAppointment")}
+                    onClick={openNewEventGlobal}
+                    className="btn calendar-add-action-btn"
+                  >
+                    <Plus size={20} strokeWidth={2.6} />
+                  </button>
+                ) : null}
               </div>
             </div>
           </>
         )}
       </div>
-
-      {isAdminOwnCalendar ? (
-        <button
-          type="button"
-          aria-label={t("newAppointment")}
-          title={t("newAppointment")}
-          onClick={openNewEventGlobal}
-          className="calendar-floating-button"
-        >
-          +
-        </button>
-      ) : null}
 
       <Modal
         open={open}
