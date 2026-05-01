@@ -2152,9 +2152,21 @@ function KalenderPageInner({
                           </span>
                         </div>
 
-                        <span className="calendar-week-cell-datefull">
-                          {w.date}
-                        </span>
+                        <div className="calendar-week-cell-date-meta">
+                          {info?.hasHoliday ? (
+                            <span
+                              className="calendar-week-holiday-inline"
+                              title={info.holidayName ?? t("publicHolidayDefault")}
+                            >
+                              <span style={smallDot(holidayDotColor())} />
+                              {t("holiday")}
+                            </span>
+                          ) : null}
+
+                          <span className="calendar-week-cell-datefull">
+                            {w.date}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="calendar-week-cell-tags">
@@ -2162,12 +2174,6 @@ function KalenderPageInner({
                           <span className={pillClassName()}>
                             <span style={smallDot("var(--tenant-work-accent)")} />{" "}
                             {showEmployeeCalendarLegend ? t("work") : t("appointments")}
-                          </span>
-                        ) : null}
-
-                        {info?.hasHoliday ? (
-                          <span className={pillClassName()} title={info.holidayName ?? t("publicHolidayDefault")}>
-                            <span style={smallDot(holidayDotColor())} /> {t("holiday")}
                           </span>
                         ) : null}
 

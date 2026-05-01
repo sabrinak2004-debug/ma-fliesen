@@ -5538,3 +5538,54 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   min-width: 6px !important;
   flex: 0 0 6px !important;
 }
+/* ===== Kalender Wochenansicht: Feiertag neben Datum ===== */
+
+.calendar-week-cell-date-meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.calendar-week-holiday-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 120px;
+  min-width: 0;
+  height: 20px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--brand-holiday-border);
+  background: var(--brand-holiday-bg);
+  color: var(--brand-holiday-text);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-week-holiday-inline span[style] {
+  width: 6px !important;
+  height: 6px !important;
+  min-width: 6px !important;
+  flex: 0 0 6px !important;
+  box-shadow: 0 0 0 2px var(--brand-neutral-card-bg) !important;
+}
+
+@media (max-width: 767px) {
+  .calendar-week-cell-date-meta {
+    gap: 6px;
+  }
+
+  .calendar-week-holiday-inline {
+    max-width: 86px;
+    height: 18px;
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+}
