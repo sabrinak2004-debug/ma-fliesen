@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   normalizeAppUiLanguage,
   translate,
@@ -37,24 +38,29 @@ function tModal(language: AppUiLanguage, key: ModalTextKey): string {
   return translate(language, key, MODAL_UI_TEXTS);
 }
 
+function resolveDocumentLanguage(): AppUiLanguage {
+  if (typeof document === "undefined") {
+    return "DE";
+  }
+
+  return normalizeAppUiLanguage(document.documentElement.lang.toUpperCase());
+}
+
 export default function Modal({
   open,
   title,
   onClose,
   children,
   footer,
-  maxWidth = 920,
-  zIndex = 1000,
+  maxWidth = 760,
+  zIndex = 5000,
   disableBackdropClose = false,
   closeAriaLabel,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
-
   const onCloseRef = useRef(onClose);
 
-  const resolvedLanguage = normalizeAppUiLanguage(
-    typeof document !== "undefined" ? document.documentElement.lang.toUpperCase() : "DE"
-  );
+  const resolvedLanguage = resolveDocumentLanguage();
 
   const resolvedCloseAriaLabel =
     closeAriaLabel ?? tModal(resolvedLanguage, "close");
@@ -66,8 +72,8 @@ export default function Modal({
   useEffect(() => {
     if (!open) return;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") {
         onCloseRef.current();
       }
     };
@@ -78,22 +84,25 @@ export default function Modal({
       panelRef.current?.focus();
     }, 0);
 
-    const previousOverflow = document.body.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
 
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     document.body.classList.add("app-modal-open");
 
     return () => {
       window.clearTimeout(focusTimer);
       document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
       document.body.classList.remove("app-modal-open");
     };
   }, [open]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -105,15 +114,16 @@ export default function Modal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 12,
+        padding: "clamp(10px, 2.4vw, 22px)",
         background: "var(--app-overlay-backdrop)",
-        backdropFilter: "blur(3px)",
-        WebkitBackdropFilter: "blur(3px)",
+        backdropFilter: "blur(5px)",
+        WebkitBackdropFilter: "blur(5px)",
         boxSizing: "border-box",
       }}
-      onMouseDown={(e) => {
+      onMouseDown={(event) => {
         if (disableBackdropClose) return;
-        if (e.target === e.currentTarget) {
+
+        if (event.target === event.currentTarget) {
           onCloseRef.current();
         }
       }}
@@ -125,19 +135,20 @@ export default function Modal({
         style={{
           width: `min(${maxWidth}px, calc(100vw - 24px))`,
           maxWidth: "calc(100vw - 24px)",
-          maxHeight: "calc(100dvh - 24px)",
+          maxHeight: "min(82dvh, 720px)",
           overflow: "hidden",
-          borderRadius: 16,
+          borderRadius: 18,
           boxShadow: "var(--app-shadow-strong)",
           display: "flex",
           flexDirection: "column",
           boxSizing: "border-box",
+          outline: "none",
         }}
       >
         <div
           className="app-modal-header-surface"
           style={{
-            padding: "14px 16px",
+            padding: "12px 14px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -149,10 +160,13 @@ export default function Modal({
         >
           <div
             style={{
-              fontSize: 16,
-              fontWeight: 700,
+              fontSize: 15,
+              fontWeight: 800,
               color: "var(--text)",
               minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
             {title ?? ""}
@@ -178,7 +192,7 @@ export default function Modal({
         <div
           className="app-modal-body"
           style={{
-            padding: 16,
+            padding: 14,
             overflowY: "auto",
             overflowX: "hidden",
             overscrollBehavior: "contain",
@@ -203,7 +217,7 @@ export default function Modal({
           <div
             className="app-modal-footer app-modal-footer-surface"
             style={{
-              padding: 16,
+              padding: 14,
               display: "flex",
               justifyContent: "flex-end",
               gap: 10,
@@ -219,6 +233,7 @@ export default function Modal({
           </div>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

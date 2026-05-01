@@ -2476,11 +2476,11 @@ function KalenderPageInner({
           isAdmin && adminMode === "create-global"
             ? t("newAppointment")
             : selectedDate
-            ? fmtDateTitle(selectedDate, language)
-            : t("day")
+              ? fmtDateTitle(selectedDate, language)
+              : t("day")
         }
         onClose={() => setOpen(false)}
-        maxWidth={980}
+        maxWidth={760}
       >
         {isAdminOwnCalendar ? (
           <>

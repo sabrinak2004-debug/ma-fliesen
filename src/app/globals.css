@@ -4126,3 +4126,60 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   border: 1px solid var(--border);
   background: var(--panel);
 }
+/* ===== App Modal Fix: über Sidebar + kompakter Kalender-Dialog ===== */
+
+body.app-modal-open .appshell-desktop-topbar,
+body.app-modal-open .appshell-mobile-topbar,
+body.app-modal-open .appshell-desktop-content-curtain,
+body.app-modal-open .appshell-mobile-content-curtain {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.app-modal-backdrop {
+  z-index: 5000 !important;
+}
+
+.app-modal-panel {
+  width: min(760px, calc(100vw - 24px)) !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: min(82dvh, 720px) !important;
+}
+
+.app-modal-body {
+  padding: 14px !important;
+}
+
+.app-modal-header-surface {
+  min-height: 58px;
+}
+
+@media (min-width: 768px) {
+  .app-modal-backdrop {
+    padding-left: max(22px, env(safe-area-inset-left)) !important;
+    padding-right: max(22px, env(safe-area-inset-right)) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .app-modal-backdrop {
+    align-items: flex-end !important;
+    padding: 10px !important;
+  }
+
+  .app-modal-panel {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 20px) !important;
+    border-radius: 20px 20px 16px 16px !important;
+  }
+
+  .app-modal-body {
+    padding: 12px !important;
+  }
+
+  .app-modal-footer {
+    padding: 12px !important;
+  }
+}
