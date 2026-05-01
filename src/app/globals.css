@@ -5854,7 +5854,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   :root {
     --appshell-sidebar-logo-size: 96px;
     --appshell-sidebar-padding: 14px;
-    --appshell-sidebar-top-margin: 8px;
+    --appshell-sidebar-top-margin: 16px;
     --appshell-sidebar-nav-gap: 5px;
     --appshell-sidebar-nav-padding-y: 9px;
     --appshell-sidebar-nav-padding-x: 12px;
@@ -5883,7 +5883,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     --appshell-sidebar-logo-size: 78px;
     --appshell-sidebar-padding: 12px;
     --appshell-sidebar-brand-gap: 9px;
-    --appshell-sidebar-top-margin: 7px;
+    --appshell-sidebar-top-margin: 14px;
     --appshell-sidebar-nav-gap: 4px;
     --appshell-sidebar-nav-padding-y: 7px;
     --appshell-sidebar-nav-padding-x: 10px;
@@ -5930,7 +5930,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     --appshell-sidebar-logo-size: 62px;
     --appshell-sidebar-padding: 10px;
     --appshell-sidebar-brand-gap: 8px;
-    --appshell-sidebar-top-margin: 6px;
+    --appshell-sidebar-top-margin: 12px;
     --appshell-sidebar-nav-gap: 3px;
     --appshell-sidebar-nav-padding-y: 6px;
     --appshell-sidebar-nav-padding-x: 9px;
