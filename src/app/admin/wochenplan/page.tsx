@@ -1294,6 +1294,7 @@ export default function AdminWochenplanPage() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
+            flexWrap: isDesktop ? "nowrap" : "wrap",
             gap: 14,
           }}
         >
@@ -1382,9 +1383,10 @@ export default function AdminWochenplanPage() {
               display: "flex",
               gap: 8,
               alignItems: "center",
-              flexWrap: "wrap",
+              flexWrap: isDesktop ? "nowrap" : "wrap",
               justifyContent: "flex-end",
               flexShrink: 0,
+              whiteSpace: "nowrap",
             }}
           >
             <Link
