@@ -4751,45 +4751,105 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     min-height: 42px;
   }
 }
-/* ===== Kalender Wochenansicht: Feiertagsname in Tageskarten ausblenden ===== */
+/* ===== Kalender Wochenansicht Final: kompakt, aber ohne abgeschnittene Labels ===== */
 
-.calendar-week-cell:has(.calendar-week-cell-tags) .calendar-week-cell-preview {
-  display: none;
+.calendar-week-cell-tags {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
-.calendar-week-cell:has(.calendar-week-cell-tags) {
-  justify-content: center;
-}
-
-.calendar-week-cell:has(.calendar-week-cell-tags) .calendar-week-cell-tags {
-  margin-top: 8px;
+.calendar-week-cell-tags .calendar-pill {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 767px) {
-  .calendar-week-cell:has(.calendar-week-cell-tags) {
-    min-height: 68px;
-    height: 68px;
+  .calendar-week-cell {
+    min-height: 72px;
+    height: 72px;
+    padding: 8px 10px;
+    border-radius: 14px;
+    box-sizing: border-box;
   }
 
-  .calendar-week-cell:has(.calendar-week-cell-tags) .calendar-week-cell-tags {
-    margin-top: 6px;
+  .calendar-week-cell-head {
+    align-items: center;
+    gap: 8px;
   }
 
-  .calendar-week-cell:has(.calendar-week-cell-tags) .calendar-pill,
-  .calendar-week-cell:has(.calendar-week-cell-tags) .app-chip-warning,
-  .calendar-week-cell:has(.calendar-week-cell-tags) .chip {
-    max-width: 100%;
+  .calendar-week-cell-daylabel {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .calendar-week-cell-weekday {
+    font-size: 12px;
+    min-width: 22px;
+    line-height: 1.1;
+  }
+
+  .calendar-week-cell-daynumber,
+  .calendar-week-cell-daynumber-today {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .calendar-week-cell-datefull {
     font-size: 10px;
     line-height: 1.1;
-    white-space: nowrap;
+  }
+
+  .calendar-week-cell-tags {
+    margin-top: 6px;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+
+  .calendar-week-cell-tags .calendar-pill {
+    font-size: 11px;
+    line-height: 1.1;
+    padding: 5px 8px;
+  }
+
+  .calendar-week-cell-preview {
+    margin-top: 4px;
+    font-size: 10px;
+    line-height: 12px;
+    -webkit-line-clamp: 1;
   }
 }
 
 @media (min-width: 768px) {
-  .calendar-week-cell:has(.calendar-week-cell-tags) .calendar-pill,
-  .calendar-week-cell:has(.calendar-week-cell-tags) .app-chip-warning,
-  .calendar-week-cell:has(.calendar-week-cell-tags) .chip {
-    max-width: 100%;
-    white-space: nowrap;
+  .calendar-week-cell {
+    min-height: clamp(56px, calc((100dvh - 500px) / 7), 76px);
+    height: auto;
+    padding: 8px 10px;
+    border-radius: 14px;
+    box-sizing: border-box;
+  }
+
+  .calendar-week-cell-tags {
+    margin-top: 6px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .calendar-week-cell-tags .calendar-pill {
+    font-size: 11px;
+    line-height: 1.1;
+    padding: 5px 8px;
+  }
+
+  .calendar-week-cell-preview {
+    margin-top: 4px;
+    font-size: 10px;
+    line-height: 12px;
+    -webkit-line-clamp: 1;
   }
 }

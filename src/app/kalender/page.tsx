@@ -2202,19 +2202,6 @@ function KalenderPageInner({
                           {info.planPreview}
                         </div>
                       ) : null}
-
-                      {info?.hasHoliday && info.holidayName ? (
-                        <div
-                          className="calendar-week-cell-preview"
-                          title={info.holidayName}
-                          style={{ color: "var(--brand-holiday-text)" }}
-                        >
-                          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            {getHolidayIcon(info.holidayName)}
-                            {info.holidayName}
-                          </span>
-                        </div>
-                      ) : null}
                     </button>
                   );
                 })}
