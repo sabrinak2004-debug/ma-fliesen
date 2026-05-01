@@ -3022,24 +3022,45 @@ li {
 .tenant-modal-overlay {
   position: fixed;
   inset: 0;
-  background: var(--tenant-overlay);
+  z-index: 5000;
+  padding: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  z-index: 1000;
+  background: rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .tenant-modal-panel {
-  width: 100%;
-  max-width: 460px;
-  border-radius: 18px;
+  width: min(620px, calc(100vw - 48px));
+  max-width: 620px;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  border-radius: 22px;
   border: 1px solid var(--tenant-danger-border);
-  background: var(--tenant-modal-panel);
+  background: color-mix(in srgb, var(--tenant-modal-panel) 96%, transparent);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
-  padding: 18px;
+  padding: 24px;
   display: grid;
-  gap: 14px;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .tenant-modal-overlay {
+    padding: 12px;
+    align-items: center;
+  }
+
+  .tenant-modal-panel {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    padding: 18px;
+    border-radius: 20px;
+    gap: 14px;
+  }
 }
 
 .tenant-divider {
