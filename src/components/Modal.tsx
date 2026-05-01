@@ -84,18 +84,11 @@ export default function Modal({
       panelRef.current?.focus();
     }, 0);
 
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
     document.body.classList.add("app-modal-open");
 
     return () => {
       window.clearTimeout(focusTimer);
       document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
       document.body.classList.remove("app-modal-open");
     };
   }, [open]);
