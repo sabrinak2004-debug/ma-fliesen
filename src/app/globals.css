@@ -4168,12 +4168,12 @@ body.app-modal-open .appshell-mobile-content-curtain {
 
 @media (max-width: 767px) {
   .app-modal-backdrop {
-    align-items: flex-end !important;
+    align-items: center !important;
     justify-content: center !important;
     padding:
-      calc(16px + env(safe-area-inset-top))
+      calc(18px + env(safe-area-inset-top))
       10px
-      calc(16px + env(safe-area-inset-bottom)) !important;
+      calc(18px + env(safe-area-inset-bottom)) !important;
   }
 
   .app-modal-panel {
@@ -4199,6 +4199,6 @@ body.app-modal-open .appshell-mobile-content-curtain {
 
 @media (max-width: 390px) {
   .app-modal-panel {
-    max-height: min(74svh, 560px) !important;
+    max-height: min(76svh, 560px) !important;
   }
 }
