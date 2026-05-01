@@ -2,9 +2,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
+import Modal from "@/components/Modal";
 import { useRouter } from "next/navigation";
 import {
   translate,
@@ -356,134 +356,6 @@ async function normalizeUploadFile(
     type: file.type || "application/octet-stream",
     lastModified: file.lastModified,
   });
-}
-
-/* -------------------- Scroll-Modal (Header/Footer fix, Body scroll) -------------------- */
-function useLockBodyScroll(locked: boolean) {
-  useEffect(() => {
-    if (!locked) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [locked]);
-}
-
-function Modal({
-  open,
-  title,
-  onClose,
-  children,
-  footer,
-  maxWidth = 720,
-  zIndex = 50,
-}: {
-  open: boolean;
-  title: string;
-  onClose: () => void;
-  children: ReactNode;
-  footer?: ReactNode;
-  maxWidth?: number;
-  zIndex?: number;
-}) {
-  useLockBodyScroll(open);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "var(--overlay-bg)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-        zIndex,
-      }}
-    >
-      <div
-        className="app-modal-panel app-modal-panel-surface"
-        style={{
-          width: "100%",
-          maxWidth,
-          maxHeight: "85vh",
-          borderRadius: 16,
-          color: "var(--text)",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          boxShadow: "0 18px 70px rgba(0,0,0,0.55)",
-        }}
-      >
-        <div
-          className="app-modal-header-surface"
-          style={{
-            padding: 16,
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "flex-start",
-          }}
-        >
-          <div style={{ fontSize: 18, fontWeight: 900 }}>{title}</div>
-          <button
-            className="btn"
-            onClick={onClose}
-            type="button"
-            aria-label={title}
-          >
-            ✕
-          </button>
-        </div>
-
-        <div
-          className="app-modal-body"
-          style={{
-            padding: 16,
-            paddingRight: 10,
-            overflowY: "auto",
-            overflowX: "hidden",
-            overscrollBehavior: "contain",
-          }}
-        >
-          {children}
-        </div>
-
-        {footer ? (
-          <div
-            className="app-modal-footer app-modal-footer-surface"
-            style={{
-              padding: 16,
-              paddingRight: 10,
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            {footer}
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
 }
 
 /* -------------------- Page -------------------- */
@@ -2294,12 +2166,12 @@ export default function AdminWochenplanPage() {
       </Modal>
 
             <Modal
-        open={previewOpen}
-        title={previewDocTitle || t("document")}
-        onClose={closePreview}
-        maxWidth={980}
-        zIndex={70}
-        footer={
+              open={previewOpen}
+              title={previewDocTitle || t("document")}
+              onClose={closePreview}
+              maxWidth={980}
+              zIndex={5100}
+              footer={
           <div style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
             <button className="pill" onClick={closePreview} type="button">
                 {t("close")}
@@ -2345,7 +2217,6 @@ export default function AdminWochenplanPage() {
           users.find((x) => x.id === noteForm.userId)?.fullName ?? ""
         }`}
         onClose={closeNoteModal}
-        zIndex={60}
         footer={
           <>
             {editNoteId ? (
