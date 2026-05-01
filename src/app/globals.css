@@ -4306,6 +4306,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 
 @media (min-width: 1440px) {
   :root {
+    --appshell-sidebar-top-margin: 22px;
     --appshell-desktop-page-x: 64px;
     --appshell-desktop-sidebar-width: 340px;
     --appshell-desktop-gap: 24px;
@@ -5599,7 +5600,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   --appshell-sidebar-logo-size: 92px;
   --appshell-sidebar-padding: 14px;
   --appshell-sidebar-brand-gap: 10px;
-  --appshell-sidebar-top-margin: 10px;
+  --appshell-sidebar-top-margin: 18px;
   --appshell-sidebar-nav-gap: 5px;
   --appshell-sidebar-nav-padding-y: 9px;
   --appshell-sidebar-nav-padding-x: 12px;
@@ -5792,6 +5793,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 
     --appshell-sidebar-logo-size: 112px;
     --appshell-sidebar-padding: 16px;
+    --appshell-sidebar-top-margin: 20px;
     --appshell-sidebar-nav-gap: 7px;
     --appshell-sidebar-nav-padding-y: 11px;
     --appshell-sidebar-nav-padding-x: 13px;
@@ -5808,6 +5810,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 
     --appshell-sidebar-logo-size: 132px;
     --appshell-sidebar-padding: 18px;
+    --appshell-sidebar-top-margin: 22px;
     --appshell-sidebar-nav-gap: 8px;
     --appshell-sidebar-nav-padding-y: 13px;
     --appshell-sidebar-nav-padding-x: 14px;
