@@ -6117,7 +6117,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   min-height: 100vh;
   min-height: 100dvh;
   color: var(--text);
-  background: var(--bg) !important;
+  background-color: var(--bg) !important;
   overflow-x: hidden;
 }
 
@@ -6153,13 +6153,17 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 body:has(.legal-page-public-shell)::before,
 body:has(.legal-page-tenant-shell)::before {
   background: transparent !important;
+  opacity: 0 !important;
 }
 
 html:has(body .legal-page-public-shell),
-body:has(.legal-page-public-shell),
+body:has(.legal-page-public-shell) {
+  background: var(--bg) !important;
+}
+
 html:has(body .legal-page-tenant-shell),
 body:has(.legal-page-tenant-shell) {
-  background: transparent !important;
+  background-color: inherit !important;
 }
 
 @media (display-mode: standalone) {
@@ -6190,5 +6194,30 @@ body:has(.legal-page-tenant-shell) {
 
   .legal-page-public-shell::before {
     background: var(--bg) !important;
+  }
+}
+/* ===== Tenant Legal Safari: feste Tenant-Fläche auch hinter der Safe Area ===== */
+
+.legal-page-tenant-shell::after {
+  content: "";
+  position: fixed;
+  inset: -120px 0 0 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--bg);
+}
+
+.legal-page-tenant-shell::before {
+  z-index: 1;
+}
+
+.legal-page-tenant-shell > * {
+  position: relative;
+  z-index: 2;
+}
+
+@media (display-mode: standalone) {
+  .legal-page-tenant-shell::after {
+    background-color: var(--bg);
   }
 }

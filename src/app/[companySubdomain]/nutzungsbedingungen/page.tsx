@@ -31,7 +31,10 @@ export default async function TenantNutzungsbedingungenPage({
    return (
   <div
     className="legal-page-tenant-shell"
-    style={getTenantThemeStyle(theme)}
+    style={{
+      ...getTenantThemeStyle(theme),
+      backgroundColor: theme.bg,
+    }}
   >
     <div className="legal-page-shell">
       <div className="container-app">
