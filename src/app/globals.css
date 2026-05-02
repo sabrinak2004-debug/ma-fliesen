@@ -6037,3 +6037,57 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     max-height: 170px;
   }
 }
+/* ===== Legal-Seiten: Safari einfarbig, PWA behält Verlauf ===== */
+
+html:has(body .legal-page-shell),
+body:has(.legal-page-shell) {
+  background: var(--bg) !important;
+}
+
+body:has(.legal-page-shell)::before {
+  background: var(--bg) !important;
+}
+
+.legal-page-shell {
+  background: transparent !important;
+}
+
+@media (display-mode: standalone) {
+  html:has(body .legal-page-shell),
+  body:has(.legal-page-shell) {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(var(--accent-rgb), 0.42) 0px,
+        rgba(var(--accent-rgb), 0.26) 180px,
+        rgba(var(--accent-rgb), 0.12) 420px,
+        var(--bg) 760px
+      ),
+      var(--bg) !important;
+  }
+
+  body:has(.legal-page-shell)::before {
+    background: var(--app-real-background) !important;
+  }
+}
+
+/* ===== Legal-Seiten: Zurück-Button in dunklen Tenant-Themes sichtbar ===== */
+
+.legal-page-actions .btn {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 900;
+  opacity: 1;
+}
+
+.legal-page-actions .btn:hover {
+  background: color-mix(in srgb, var(--accent-soft) 78%, var(--accent) 22%);
+  color: var(--accent);
+}
+
+.legal-page-actions .btn:disabled,
+.legal-page-actions .btn[aria-disabled="true"] {
+  opacity: 0.75;
+  color: var(--muted);
+}
