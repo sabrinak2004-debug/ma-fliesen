@@ -72,7 +72,7 @@ async function main() {
       isDemo: true,
     },
     create: {
-      name: "demo",
+      name: "Demo",
       subdomain: "demo",
       primaryColor: "#CCC6BC",
       isDemo: true,
