@@ -47,7 +47,7 @@ const MISSING_ENTRIES_RULES_BY_COMPANY_SUBDOMAIN: Readonly<
     },
   },
   beispielbetrieb: {
-    activationStartYMD: "2026-03-01",
+    activationStartYMD: "2026-04-01",
     useFirstBusinessDayOfMonth: false,
   },
 };
