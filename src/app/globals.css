@@ -3810,7 +3810,37 @@ body.pwa-standalone.login-screen-active::before {
   background: var(--app-real-background) !important;
 }
 
+html:has(body .appshell-app-frame),
+body:has(.appshell-app-frame) {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.42) 0px,
+      rgba(var(--accent-rgb), 0.26) 180px,
+      rgba(var(--accent-rgb), 0.12) 420px,
+      var(--bg) 760px
+    ),
+    var(--bg) !important;
+}
+
 body:has(.appshell-app-frame)::before {
+  background: var(--app-real-background) !important;
+}
+
+html.pwa-standalone:has(body .appshell-app-frame),
+body.pwa-standalone:has(.appshell-app-frame) {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.42) 0px,
+      rgba(var(--accent-rgb), 0.26) 180px,
+      rgba(var(--accent-rgb), 0.12) 420px,
+      var(--bg) 760px
+    ),
+    var(--bg) !important;
+}
+
+body.pwa-standalone:has(.appshell-app-frame)::before {
   background: var(--app-real-background) !important;
 }
 
