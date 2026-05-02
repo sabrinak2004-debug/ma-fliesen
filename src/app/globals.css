@@ -6108,7 +6108,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     min-height: 48px;
   }
 }
-/* ===== Legal-Seiten: Public immer einfarbig, Tenant nur in PWA mit Verlauf ===== */
+/* ===== Legal-Seiten Final: Public immer einfarbig, Tenant nur in PWA mit Verlauf ===== */
 
 .legal-page-public-shell,
 .legal-page-tenant-shell {
@@ -6118,6 +6118,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   min-height: 100dvh;
   color: var(--text);
   background: var(--bg) !important;
+  overflow-x: hidden;
 }
 
 .legal-page-public-shell::before,
@@ -6125,14 +6126,18 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   pointer-events: none;
   background: var(--bg);
 }
 
-.legal-page-shell {
+.legal-page-public-shell > *,
+.legal-page-tenant-shell > * {
   position: relative;
   z-index: 1;
+}
+
+.legal-page-shell {
   min-height: 100vh;
   min-height: 100dvh;
   padding: calc(40px + env(safe-area-inset-top)) 0
@@ -6141,37 +6146,28 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   box-sizing: border-box;
 }
 
-html:has(body .legal-page-public-shell),
-body:has(.legal-page-public-shell),
-html:has(body .legal-page-tenant-shell),
-body:has(.legal-page-tenant-shell) {
-  background: var(--bg) !important;
+.legal-page-public-shell .page-section {
+  background: transparent !important;
 }
 
 body:has(.legal-page-public-shell)::before,
 body:has(.legal-page-tenant-shell)::before {
-  background: var(--bg) !important;
+  background: transparent !important;
+}
+
+html:has(body .legal-page-public-shell),
+body:has(.legal-page-public-shell),
+html:has(body .legal-page-tenant-shell),
+body:has(.legal-page-tenant-shell) {
+  background: transparent !important;
 }
 
 @media (display-mode: standalone) {
   .legal-page-tenant-shell {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(var(--accent-rgb), 0.42) 0px,
-        rgba(var(--accent-rgb), 0.26) 180px,
-        rgba(var(--accent-rgb), 0.12) 420px,
-        var(--bg) 760px
-      ),
-      var(--bg) !important;
+    background: var(--bg) !important;
   }
 
   .legal-page-tenant-shell::before {
-    background: var(--app-real-background);
-  }
-
-  html:has(body .legal-page-tenant-shell),
-  body:has(.legal-page-tenant-shell) {
     background:
       linear-gradient(
         180deg,
@@ -6180,16 +6176,19 @@ body:has(.legal-page-tenant-shell)::before {
         rgba(var(--accent-rgb), 0.12) 420px,
         var(--bg) 760px
       ),
-      var(--bg) !important;
+      radial-gradient(
+        1200px 640px at 10% 0%,
+        rgba(var(--accent-rgb), 0.28),
+        transparent 60%
+      ),
+      var(--bg);
   }
 
-  body:has(.legal-page-tenant-shell)::before {
-    background: var(--app-real-background) !important;
+  .legal-page-public-shell {
+    background: var(--bg) !important;
   }
 
-  html:has(body .legal-page-public-shell),
-  body:has(.legal-page-public-shell),
-  body:has(.legal-page-public-shell)::before {
+  .legal-page-public-shell::before {
     background: var(--bg) !important;
   }
 }
