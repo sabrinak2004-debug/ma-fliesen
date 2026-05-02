@@ -3721,64 +3721,8 @@ li {
   color: var(--muted);
 }
 
-.login-page-shell {
-  position: relative;
-  isolation: isolate;
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: rgba(var(--accent-rgb), 0.34);
-  color: var(--text);
-}
-
-.login-page-shell::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(var(--accent-rgb), 0.34) 0px,
-      rgba(var(--accent-rgb), 0.22) 160px,
-      rgba(var(--accent-rgb), 0.10) 380px,
-      transparent 720px
-    ),
-    radial-gradient(
-      1200px 640px at 10% 0%,
-      rgba(var(--accent-rgb), 0.28),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 620px at 85% 8%,
-      rgba(var(--accent-rgb), 0.12),
-      transparent 62%
-    ),
-    var(--bg);
-}
-
-.login-page-inner {
-  min-height: 100vh;
-  min-height: 100dvh;
-  padding: calc(40px + env(safe-area-inset-top)) 0
-    calc(40px + env(safe-area-inset-bottom));
-  box-sizing: border-box;
-}
-html.login-screen-active,
-body.login-screen-active {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(var(--accent-rgb), 0.42) 0px,
-      rgba(var(--accent-rgb), 0.26) 180px,
-      rgba(var(--accent-rgb), 0.12) 420px,
-      var(--bg) 760px
-    ),
-    var(--bg) !important;
-}
-
-body.login-screen-active::before {
-  background:
+:root {
+  --app-real-background:
     linear-gradient(
       180deg,
       rgba(var(--accent-rgb), 0.42) 0px,
@@ -3791,12 +3735,85 @@ body.login-screen-active::before {
       rgba(var(--accent-rgb), 0.28),
       transparent 60%
     ),
-    var(--bg) !important;
+    var(--bg);
+}
+
+html,
+body {
+  background: var(--bg) !important;
+}
+
+body::before {
+  background: var(--bg) !important;
 }
 
 .login-page-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  min-height: 100dvh;
   background: transparent !important;
+  color: var(--text);
 }
+
+.login-page-inner {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: calc(40px + env(safe-area-inset-top)) 0
+    calc(40px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+html.login-screen-active,
+body.login-screen-active {
+  background: var(--bg) !important;
+}
+
+body.login-screen-active::before {
+  background: var(--bg) !important;
+}
+
+@media (display-mode: standalone) {
+  html.login-screen-active,
+  body.login-screen-active {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(var(--accent-rgb), 0.42) 0px,
+        rgba(var(--accent-rgb), 0.26) 180px,
+        rgba(var(--accent-rgb), 0.12) 420px,
+        var(--bg) 760px
+      ),
+      var(--bg) !important;
+  }
+
+  body.login-screen-active::before {
+    background: var(--app-real-background) !important;
+  }
+}
+
+html.pwa-standalone.login-screen-active,
+body.pwa-standalone.login-screen-active {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--accent-rgb), 0.42) 0px,
+      rgba(var(--accent-rgb), 0.26) 180px,
+      rgba(var(--accent-rgb), 0.12) 420px,
+      var(--bg) 760px
+    ),
+    var(--bg) !important;
+}
+
+html.pwa-standalone body.login-screen-active::before,
+body.pwa-standalone.login-screen-active::before {
+  background: var(--app-real-background) !important;
+}
+
+body:has(.appshell-app-frame)::before {
+  background: var(--app-real-background) !important;
+}
+
 .appshell-app-frame {
   padding-top: calc(18px + env(safe-area-inset-top));
 }
@@ -3817,52 +3834,6 @@ body.login-screen-active::before {
     min-height: calc(100vh - 92px - env(safe-area-inset-top));
     min-height: calc(100dvh - 92px - env(safe-area-inset-top));
   }
-}
-:root {
-  --app-real-background:
-    linear-gradient(
-      180deg,
-      rgba(var(--accent-rgb), 0.42) 0px,
-      rgba(var(--accent-rgb), 0.26) 180px,
-      rgba(var(--accent-rgb), 0.12) 420px,
-      transparent 760px
-    ),
-    radial-gradient(
-      1200px 640px at 10% 0%,
-      rgba(var(--accent-rgb), 0.28),
-      transparent 60%
-    ),
-    var(--bg);
-}
-
-html,
-body {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(var(--accent-rgb), 0.42) 0px,
-      rgba(var(--accent-rgb), 0.26) 180px,
-      rgba(var(--accent-rgb), 0.12) 420px,
-      var(--bg) 760px
-    ),
-    var(--bg) !important;
-}
-
-body::before {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(var(--accent-rgb), 0.42) 0px,
-      rgba(var(--accent-rgb), 0.26) 180px,
-      rgba(var(--accent-rgb), 0.12) 420px,
-      transparent 760px
-    ),
-    radial-gradient(
-      1200px 640px at 10% 0%,
-      rgba(var(--accent-rgb), 0.28),
-      transparent 60%
-    ),
-    var(--bg) !important;
 }
 
 .appshell-page-shell,

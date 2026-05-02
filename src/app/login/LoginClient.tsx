@@ -595,6 +595,25 @@ function extractCompanySubdomainFromBrowser(): string {
   return parts[0] ?? "";
 }
 
+type NavigatorWithStandalone = Navigator & {
+  standalone?: boolean;
+};
+
+function isRunningAsStandaloneApp(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const displayModeStandalone = window.matchMedia(
+    "(display-mode: standalone)"
+  ).matches;
+
+  const navigatorWithStandalone = window.navigator as NavigatorWithStandalone;
+  const appleStandalone = navigatorWithStandalone.standalone === true;
+
+  return displayModeStandalone || appleStandalone;
+}
+
 function normalizeLogoSrc(
   value: string | null,
   companySubdomain: string
@@ -711,10 +730,17 @@ export default function LoginClient({
       brand.primaryColor
     );
 
+    const isStandaloneApp = isRunningAsStandaloneApp();
+
     applyTenantThemeToDocument(loginTheme);
 
     document.documentElement.classList.add("login-screen-active");
     document.body.classList.add("login-screen-active");
+
+    if (isStandaloneApp) {
+      document.documentElement.classList.add("pwa-standalone");
+      document.body.classList.add("pwa-standalone");
+    }
 
     applyTenantHeadBranding({
       title: `${brand.displayName} Mitarbeiterportal`,
@@ -725,8 +751,14 @@ export default function LoginClient({
     });
 
     return () => {
-      document.documentElement.classList.remove("login-screen-active");
-      document.body.classList.remove("login-screen-active");
+      document.documentElement.classList.remove(
+        "login-screen-active",
+        "pwa-standalone"
+      );
+      document.body.classList.remove(
+        "login-screen-active",
+        "pwa-standalone"
+      );
       resetTenantThemeOnDocument();
     };
   }, [
