@@ -65,15 +65,15 @@ async function main() {
   });
 
   const demoCompany = await prisma.company.upsert({
-    where: { subdomain: "beispielbetrieb" },
+    where: { subdomain: "demo" },
     update: {
-      name: "Beispielbetrieb",
+      name: "Demo",
       primaryColor: "#CCC6BC",
       isDemo: true,
     },
     create: {
-      name: "Beispielbetrieb",
-      subdomain: "beispielbetrieb",
+      name: "demo",
+      subdomain: "demo",
       primaryColor: "#CCC6BC",
       isDemo: true,
     },

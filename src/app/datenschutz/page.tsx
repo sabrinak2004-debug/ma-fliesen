@@ -6,7 +6,7 @@ import {
 } from "@/lib/tenantBranding";
 
 export default function DatenschutzPage() {
-  const theme = resolveTenantTheme("beispielbetrieb");
+  const theme = resolveTenantTheme("demo");
   const fallbackHref = "/";
   const initialLanguage = "DE" as const;
 

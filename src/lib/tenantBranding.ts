@@ -155,7 +155,7 @@ const TENANT_THEMES: Record<string, TenantTheme> = {
     iconFilterVacation: "#467DBA",
     iconFilterUnpaid: "#B89007",
   }),
-  beispielbetrieb: buildThemeFromBase({
+  demo: buildThemeFromBase({
     bg: "#f4f2ee",
     panel: "#ffffff",
     panel2: "#ebe6df",

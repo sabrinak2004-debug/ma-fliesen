@@ -46,7 +46,7 @@ const MISSING_ENTRIES_RULES_BY_COMPANY_SUBDOMAIN: Readonly<
       "max mustermann": "2026-03-01",
     },
   },
-  beispielbetrieb: {
+  demo: {
     activationStartYMD: "2026-05-01",
     useFirstBusinessDayOfMonth: false,
   },
