@@ -6040,29 +6040,6 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
 
 /* ===== Safari Desktop Fixes: Legal Pages + Login + AppShell ===== */
 
-/* --- 1) Legal-Seiten: im Browser/Safari einfarbig, in PWA weiterhin Verlauf --- */
-
-.legal-page-shell {
-  position: relative;
-  isolation: isolate;
-  background: transparent !important;
-}
-
-.legal-page-shell::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: var(--bg);
-}
-
-@media (display-mode: standalone) {
-  .legal-page-shell::before {
-    background: var(--app-real-background);
-  }
-}
-
 /* --- 2) Desktop: Mobile-AppShell-Elemente hart ausblenden --- */
 
 @media (min-width: 768px) {
