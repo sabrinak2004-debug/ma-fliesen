@@ -6037,59 +6037,6 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     max-height: 170px;
   }
 }
-/* ===== Legal-Seiten Hintergrund final ===== */
-
-.public-legal-root,
-.tenant-legal-root {
-  position: relative;
-  isolation: isolate;
-  min-height: 100vh;
-  min-height: 100dvh;
-  color: var(--text);
-  background: var(--bg) !important;
-}
-
-.public-legal-root::before,
-.tenant-legal-root::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: var(--bg) !important;
-}
-
-html:has(body .public-legal-root),
-body:has(.public-legal-root),
-html:has(body .tenant-legal-root),
-body:has(.tenant-legal-root) {
-  background: var(--bg) !important;
-}
-
-body:has(.public-legal-root)::before,
-body:has(.tenant-legal-root)::before {
-  background: var(--bg) !important;
-}
-
-@media (display-mode: standalone) {
-  html:has(body .tenant-legal-root),
-  body:has(.tenant-legal-root) {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(var(--accent-rgb), 0.42) 0px,
-        rgba(var(--accent-rgb), 0.26) 180px,
-        rgba(var(--accent-rgb), 0.12) 420px,
-        var(--bg) 760px
-      ),
-      var(--bg) !important;
-  }
-
-  body:has(.tenant-legal-root)::before,
-  .tenant-legal-root::before {
-    background: var(--app-real-background) !important;
-  }
-}
 
 /* ===== Safari Desktop Fixes: Legal Pages + Login + AppShell ===== */
 
@@ -6182,5 +6129,58 @@ body:has(.tenant-legal-root)::before {
   .tenant-entry-submit-btn {
     width: 100%;
     min-height: 48px;
+  }
+}
+/* ===== Legal-Seiten Hintergrund final ===== */
+
+.public-legal-root,
+.tenant-legal-root {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  min-height: 100dvh;
+  color: var(--text);
+  background: var(--bg) !important;
+}
+
+.public-legal-root::before,
+.tenant-legal-root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--bg) !important;
+}
+
+html:has(body .public-legal-root),
+body:has(.public-legal-root),
+html:has(body .tenant-legal-root),
+body:has(.tenant-legal-root) {
+  background: var(--bg) !important;
+}
+
+body:has(.public-legal-root)::before,
+body:has(.tenant-legal-root)::before {
+  background: var(--bg) !important;
+}
+
+@media (display-mode: standalone) {
+  html:has(body .tenant-legal-root),
+  body:has(.tenant-legal-root) {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(var(--accent-rgb), 0.42) 0px,
+        rgba(var(--accent-rgb), 0.26) 180px,
+        rgba(var(--accent-rgb), 0.12) 420px,
+        var(--bg) 760px
+      ),
+      var(--bg) !important;
+  }
+
+  body:has(.tenant-legal-root)::before,
+  .tenant-legal-root::before {
+    background: var(--app-real-background) !important;
   }
 }
