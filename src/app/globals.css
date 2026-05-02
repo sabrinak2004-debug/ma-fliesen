@@ -6161,11 +6161,6 @@ body:has(.legal-page-public-shell) {
   background: var(--bg) !important;
 }
 
-html:has(body .legal-page-tenant-shell),
-body:has(.legal-page-tenant-shell) {
-  background-color: inherit !important;
-}
-
 @media (display-mode: standalone) {
   .legal-page-tenant-shell {
     background: var(--bg) !important;
@@ -6219,5 +6214,36 @@ body:has(.legal-page-tenant-shell) {
 @media (display-mode: standalone) {
   .legal-page-tenant-shell::after {
     background-color: var(--bg);
+  }
+}
+/* ===== Tenant Legal Safari Fix: Theme auch auf html/body anwenden ===== */
+
+html.tenant-legal-active,
+body.tenant-legal-active {
+  background-color: var(--bg) !important;
+}
+
+body.tenant-legal-active::before {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+html.tenant-legal-active:has(body .legal-page-tenant-shell),
+body.tenant-legal-active:has(.legal-page-tenant-shell) {
+  background-color: var(--bg) !important;
+}
+
+@media (display-mode: standalone) {
+  html.tenant-legal-active:has(body .legal-page-tenant-shell),
+  body.tenant-legal-active:has(.legal-page-tenant-shell) {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(var(--accent-rgb), 0.42) 0px,
+        rgba(var(--accent-rgb), 0.26) 180px,
+        rgba(var(--accent-rgb), 0.12) 420px,
+        var(--bg) 760px
+      ),
+      var(--bg) !important;
   }
 }
