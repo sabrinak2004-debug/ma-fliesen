@@ -6037,24 +6037,43 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
     max-height: 170px;
   }
 }
-/* ===== Legal-Seiten: Safari einfarbig, PWA behält Verlauf ===== */
+/* ===== Legal-Seiten Hintergrund final ===== */
 
-html:has(body .legal-page-shell),
-body:has(.legal-page-shell) {
+.public-legal-root,
+.tenant-legal-root {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  min-height: 100dvh;
+  color: var(--text);
   background: var(--bg) !important;
 }
 
-body:has(.legal-page-shell)::before {
+.public-legal-root::before,
+.tenant-legal-root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background: var(--bg) !important;
 }
 
-.legal-page-shell {
-  background: transparent !important;
+html:has(body .public-legal-root),
+body:has(.public-legal-root),
+html:has(body .tenant-legal-root),
+body:has(.tenant-legal-root) {
+  background: var(--bg) !important;
+}
+
+body:has(.public-legal-root)::before,
+body:has(.tenant-legal-root)::before {
+  background: var(--bg) !important;
 }
 
 @media (display-mode: standalone) {
-  html:has(body .legal-page-shell),
-  body:has(.legal-page-shell) {
+  html:has(body .tenant-legal-root),
+  body:has(.tenant-legal-root) {
     background:
       linear-gradient(
         180deg,
@@ -6066,7 +6085,8 @@ body:has(.legal-page-shell)::before {
       var(--bg) !important;
   }
 
-  body:has(.legal-page-shell)::before {
+  body:has(.tenant-legal-root)::before,
+  .tenant-legal-root::before {
     background: var(--app-real-background) !important;
   }
 }
