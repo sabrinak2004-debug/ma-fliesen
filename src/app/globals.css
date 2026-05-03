@@ -261,6 +261,9 @@ body::before {
   padding: 12px 12px;
   color: var(--text);
   outline: none;
+  font-size: 16px;
+  line-height: 1.35;
+  box-sizing: border-box;
 }
 
 .calendar-user-select {
@@ -552,6 +555,9 @@ body::before {
   background: var(--input-bg);
   color: var(--text);
   outline: none;
+  font-size: 16px;
+  line-height: 1.35;
+  box-sizing: border-box;
 }
 
 .app-filter-reset-button {
@@ -4537,7 +4543,7 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   .input,
   .textarea,
   .select {
-    font-size: calc(14px * var(--appshell-ui-scale));
+    font-size: max(16px, calc(14px * var(--appshell-ui-scale)));
     border-radius: calc(14px * var(--appshell-ui-scale));
   }
 
@@ -5756,7 +5762,8 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   .appshell-language-select {
     min-height: 36px;
     padding: 8px 10px !important;
-    font-size: 13px !important;
+    font-size: 16px !important;
+    line-height: 1.35 !important;
     border-radius: 10px !important;
   }
 
@@ -5938,7 +5945,8 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   .appshell-language-select {
     min-height: 32px;
     padding: 6px 9px !important;
-    font-size: 12px !important;
+    font-size: 16px !important;
+    line-height: 1.35 !important;
   }
 
   .appshell-sidebar-logout-wrap {
@@ -5976,7 +5984,8 @@ body:has(.app-document-preview-overlay) .appshell-mobile-content-curtain {
   .appshell-language-select {
     min-height: 30px;
     padding: 5px 8px !important;
-    font-size: 11px !important;
+    font-size: 16px !important;
+    line-height: 1.35 !important;
   }
 
   .appshell-sidebar-logout-wrap {
@@ -6245,5 +6254,38 @@ body.tenant-legal-active:has(.legal-page-tenant-shell) {
         var(--bg) 760px
       ),
       var(--bg) !important;
+  }
+}
+/* ===== iOS Safari/PWA: Auto-Zoom bei Formularfeldern verhindern ===== */
+
+@supports (-webkit-touch-callout: none) {
+  input,
+  textarea,
+  select,
+  .input,
+  .textarea,
+  .select,
+  .app-filter-input,
+  .app-filter-select,
+  .admin-workflow-filter-input,
+  .erfassung-time-input,
+  .modal-date-input,
+  .admin-task-date-input,
+  .calendar-admin-date-input-compact,
+  .calendar-admin-meta-input,
+  .calendar-admin-date-display,
+  .date-display-native-input {
+    font-size: 16px !important;
+    line-height: 1.35 !important;
+    box-sizing: border-box;
+  }
+
+  input::placeholder,
+  textarea::placeholder,
+  .input::placeholder,
+  .textarea::placeholder,
+  .app-filter-input::placeholder {
+    font-size: 16px !important;
+    line-height: 1.35 !important;
   }
 }
