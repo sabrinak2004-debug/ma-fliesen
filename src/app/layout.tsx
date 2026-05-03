@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import PushBootstrap from "@/components/PushBootstrap";
+import DesktopPwaWindowMode from "@/components/DesktopPwaWindowMode";
 import { getSession } from "@/lib/auth";
 import { normalizeAppUiLanguage, toHtmlLang } from "@/lib/i18n";
 import {
@@ -65,6 +66,7 @@ export default async function RootLayout({
       </head>
       <body>
         <div className="app-root-shell">
+          <DesktopPwaWindowMode />
           <PushBootstrap language={language} />
           {children}
         </div>
