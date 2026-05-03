@@ -6379,3 +6379,38 @@ body.tenant-legal-active:has(.legal-page-tenant-shell) {
     opacity: 1 !important;
   }
 }
+/* ===== Desktop-PWA Windowed: Scroll-Curtain einfarbig halten ===== */
+
+@media (min-width: 768px) {
+  html.app-standalone-windowed .appshell-desktop-content-curtain,
+  html.app-standalone-windowed .appshell-mobile-content-curtain {
+    background: var(--bg) !important;
+    background-color: var(--bg) !important;
+    background-image: none !important;
+  }
+
+  html.app-standalone-windowed .appshell-desktop-topbar,
+  html.app-standalone-windowed .appshell-mobile-topbar {
+    background: color-mix(in srgb, var(--panel) 94%, transparent) !important;
+  }
+
+  html.app-standalone-fullscreen .appshell-desktop-content-curtain {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(var(--accent-rgb), 0.42) 0px,
+        rgba(var(--accent-rgb), 0.26) 180px,
+        rgba(var(--accent-rgb), 0.12) 420px,
+        var(--bg) 760px
+      ),
+      var(--bg) !important;
+
+    background-repeat: no-repeat !important;
+    background-position:
+      0 var(--appshell-curtain-bg-y, 0px),
+      0 0 !important;
+    background-size:
+      100% 760px,
+      auto !important;
+  }
+}
