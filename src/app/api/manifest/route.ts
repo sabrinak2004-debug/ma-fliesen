@@ -4,11 +4,10 @@ import {
   DEFAULT_APP_NAME,
   DEFAULT_APP_SHORT_NAME,
   DEFAULT_THEME_COLOR,
-  getTenantAppleTouchIconHref,
   getTenantIcon192Href,
   getTenantIcon512Href,
   normalizeTenantSubdomain,
-  normalizeThemeColor,
+  resolveTenantTheme,
 } from "@/lib/tenantBranding";
 
 type ManifestIcon = {
@@ -86,7 +85,12 @@ export async function GET(req: Request): Promise<Response> {
     );
   }
 
-  const themeColor = "#0b0f0c";
+  const tenantTheme = resolveTenantTheme(
+    company.subdomain,
+    company.primaryColor
+  );
+
+  const themeColor = tenantTheme.bg;
   const appName = `${company.name} Mitarbeiterportal`;
   const shortName =
     company.name.length > 12 ? company.name.slice(0, 12) : company.name;
