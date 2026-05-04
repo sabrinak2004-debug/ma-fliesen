@@ -523,7 +523,8 @@ export async function POST(req: Request, context: RouteContext) {
   let nextCompensationLockedBySystem = existing.compensationLockedBySystem;
 
   if (finalType === AbsenceType.VACATION) {
-    const balanceYear = finalEndDate.getUTCFullYear();
+    const decisionDate = new Date();
+    const balanceYear = decisionDate.getUTCFullYear();
     const yearStart = startOfUtcYear(balanceYear);
     const nextYearStart = startOfNextUtcYear(balanceYear);
 
@@ -537,11 +538,10 @@ export async function POST(req: Request, context: RouteContext) {
         id: {
           not: existing.id,
         },
-        startDate: {
-          lt: nextYearStart,
-        },
-        endDate: {
+        createdAt: {
           gte: yearStart,
+          lt: nextYearStart,
+          lte: decisionDate,
         },
       },
       select: {
@@ -562,7 +562,7 @@ export async function POST(req: Request, context: RouteContext) {
           ).length * 2;
 
     const accruedUnits = Math.round(
-      getAccruedVacationDaysForYearAtEffectiveDate(balanceYear, new Date()) * 2
+      getAccruedVacationDaysForYearAtEffectiveDate(balanceYear, decisionDate) * 2
     );
 
     const reservedPaidUnits = otherVacationRequests.reduce((sum, request) => {
