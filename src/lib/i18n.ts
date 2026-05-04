@@ -846,6 +846,7 @@ export type KalenderTextKey =
   | "halfVacationDay"
   | "compensationLabel"
   | "compensationLockedHint"
+  | "compensationPartialUnpaidHint"
   | "compensationFlexibleHint"
   | "noteToAdmin"
   | "requestNotePlaceholder"
@@ -2086,6 +2087,15 @@ export const KALENDER_DICTIONARY: Record<KalenderTextKey, Record<AppUiLanguage, 
     SQ: "Aktualisht nuk ka mjaftueshëm pushim të paguar për këtë kërkesë. Prandaj kërkesa dërgohet përkohësisht si e papaguar. Gjatë shqyrtimit, admini mund ta ndajë plotësisht ose pjesërisht në pushim të paguar dhe të papaguar.",
     KU: "Ji bo vê daxwazê niha bêhnvedana bi mûçe têr nîne. Ji ber vê yekê daxwaz demkî wekî bê mûçe tê şandin. Di dema vekolînê de admin dikare wê bi tevahî an beşekî bike bêhnvedana bi mûçe û bê mûçe.",
     RO: "În prezent nu există suficientă vacanță plătită disponibilă pentru această cerere. Prin urmare, cererea este trimisă temporar ca neplătită. În timpul revizuirii, adminul poate să o împartă complet sau parțial în vacanță plătită și neplătită.",
+  },
+  compensationPartialUnpaidHint: {
+    DE: "Für diesen Antrag ist aktuell nicht genug bezahlter Urlaub verfügbar. {paid} {paidDayLabel} werden voraussichtlich bezahlt und {unpaid} {unpaidDayLabel} werden voraussichtlich unbezahlt eingereicht.",
+    EN: "There is currently not enough paid vacation available for this request. {paid} {paidDayLabel} will probably be paid and {unpaid} {unpaidDayLabel} will probably be submitted as unpaid.",
+    IT: "Al momento non ci sono abbastanza ferie pagate disponibili per questa richiesta. {paid} {paidDayLabel} saranno probabilmente pagati e {unpaid} {unpaidDayLabel} saranno probabilmente inviati come non retribuiti.",
+    TR: "Bu talep için şu anda yeterli ücretli izin mevcut değil. {paid} {paidDayLabel} muhtemelen ücretli, {unpaid} {unpaidDayLabel} ise muhtemelen ücretsiz olarak gönderilecektir.",
+    SQ: "Aktualisht nuk ka mjaftueshëm pushim të paguar për këtë kërkesë. {paid} {paidDayLabel} pritet të jenë të paguara dhe {unpaid} {unpaidDayLabel} pritet të dërgohen si të papaguara.",
+    KU: "Ji bo vê daxwazê niha bêhnvedana bi mûçe têr nîne. {paid} {paidDayLabel} bi îhtîmaleke mezin bi mûçe û {unpaid} {unpaidDayLabel} bi îhtîmaleke mezin bê mûçe têne şandin.",
+    RO: "În prezent nu există suficientă vacanță plătită disponibilă pentru această cerere. {paid} {paidDayLabel} vor fi probabil plătite și {unpaid} {unpaidDayLabel} vor fi probabil trimise ca neplătite.",
   },
   compensationFlexibleHint: {
     DE: "Falls bezahlter Resturlaub nicht vollständig ausreicht, kann der Antrag bei der Prüfung ganz oder teilweise in bezahlten und unbezahlten Urlaub aufgeteilt werden.",

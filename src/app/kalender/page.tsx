@@ -700,6 +700,17 @@ function formatVacationDays(value: number): string {
   });
 }
 
+function vacationDayLabel(
+  value: number,
+  language: AppUiLanguage
+): string {
+  return translate(
+    language,
+    Math.abs(value) === 1 ? "dayLabel" : "daysLabel",
+    KALENDER_DICTIONARY
+  );
+}
+
 function getRequestCompensationSummary(
   language: AppUiLanguage,
   paidVacationUnits: number,
@@ -1067,6 +1078,48 @@ function KalenderPageInner({
   const [compensationLockedBySystem, setCompensationLockedBySystem] = useState<boolean>(false);
   const [selectedRequestBlock, setSelectedRequestBlock] = useState<AbsenceRequestBlock | null>(null);
 
+    const requestedVacationDaysPreview = useMemo(() => {
+    if (absenceType !== "VACATION") {
+      return 0;
+    }
+
+    if (!absenceStart || !absenceEnd || absenceEnd < absenceStart) {
+      return 0;
+    }
+
+    return getRequestedVacationDays(
+      absenceStart,
+      absenceEnd,
+      absenceDayPortion
+    );
+  }, [absenceStart, absenceEnd, absenceType, absenceDayPortion]);
+
+  const unpaidVacationDaysPreview = useMemo(() => {
+    if (absenceType !== "VACATION") {
+      return 0;
+    }
+
+    return Math.max(
+      0,
+      requestedVacationDaysPreview - remainingPaidVacationDaysForMonth
+    );
+  }, [
+    absenceType,
+    requestedVacationDaysPreview,
+    remainingPaidVacationDaysForMonth,
+  ]);
+
+  const paidVacationDaysPreview = useMemo(() => {
+    if (absenceType !== "VACATION") {
+      return 0;
+    }
+
+    return Math.max(
+      0,
+      requestedVacationDaysPreview - unpaidVacationDaysPreview
+    );
+  }, [absenceType, requestedVacationDaysPreview, unpaidVacationDaysPreview]);
+
   const [dayAppointments, setDayAppointments] = useState<CalendarEventDTO[]>([]);
   const [apptLoading, setApptLoading] = useState(false);
   const [apptError, setApptError] = useState<string | null>(null);
@@ -1343,7 +1396,7 @@ function KalenderPageInner({
       remainingPaidVacationDaysForMonth + 1e-9 < requiredDays;
 
     if (mustForceUnpaid) {
-      setAbsenceCompensation("UNPAID");
+      setAbsenceCompensation("PAID");
       setCompensationLockedBySystem(true);
       return;
     }
@@ -3287,7 +3340,21 @@ function KalenderPageInner({
                     }}
                   >
                     {compensationLockedBySystem
-                      ? t("compensationLockedHint")
+                      ? replaceTemplate(
+                          t("compensationPartialUnpaidHint"),
+                          {
+                            paid: formatVacationDays(paidVacationDaysPreview),
+                            paidDayLabel: vacationDayLabel(
+                              paidVacationDaysPreview,
+                              language
+                            ),
+                            unpaid: formatVacationDays(unpaidVacationDaysPreview),
+                            unpaidDayLabel: vacationDayLabel(
+                              unpaidVacationDaysPreview,
+                              language
+                            ),
+                          }
+                        )
                       : t("compensationFlexibleHint")}
                   </div>
                 ) : null}
@@ -3328,7 +3395,9 @@ function KalenderPageInner({
                       onClick={() => setAbsenceCompensation("PAID")}
                       disabled={!!selectedRequestBlock || compensationLockedBySystem}
                     >
-                      {t("paid")}
+                      {compensationLockedBySystem
+                        ? `${formatVacationDays(paidVacationDaysPreview)} ${t("paid")}`
+                        : t("paid")}
                     </button>
                     <button
                       className={`btn ${
@@ -3340,7 +3409,9 @@ function KalenderPageInner({
                       onClick={() => setAbsenceCompensation("UNPAID")}
                       disabled={!!selectedRequestBlock || compensationLockedBySystem}
                     >
-                      {t("unpaid")}
+                      {compensationLockedBySystem
+                        ? `${formatVacationDays(unpaidVacationDaysPreview)} ${t("unpaid")}`
+                        : t("unpaid")}
                     </button>
                   </div>
                 )}
