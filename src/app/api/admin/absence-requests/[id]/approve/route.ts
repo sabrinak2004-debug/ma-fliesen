@@ -231,6 +231,91 @@ function getCompensationLabel(
     : translateAdminAbsenceRequestText(language, "paid");
 }
 
+function formatVacationDaysForPush(value: number): string {
+  if (Number.isInteger(value)) {
+    return String(value);
+  }
+
+  return value.toLocaleString("de-DE", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+}
+
+function toHtmlLocale(language: AppUiLanguage): string {
+  if (language === "DE") return "de-DE";
+  if (language === "EN") return "en-US";
+  if (language === "IT") return "it-IT";
+  if (language === "TR") return "tr-TR";
+  if (language === "SQ") return "sq-AL";
+  if (language === "KU") return "ku";
+  if (language === "RO") return "ro-RO";
+  return "de-DE";
+}
+
+function getVacationDayLabelForPush(
+  language: AppUiLanguage,
+  value: number
+): string {
+  const labels: Record<AppUiLanguage, { singular: string; plural: string }> = {
+    DE: { singular: "Tag", plural: "Tage" },
+    EN: { singular: "day", plural: "days" },
+    IT: { singular: "giorno", plural: "giorni" },
+    TR: { singular: "gün", plural: "gün" },
+    SQ: { singular: "ditë", plural: "ditë" },
+    KU: { singular: "roj", plural: "roj" },
+    RO: { singular: "zi", plural: "zile" },
+  };
+
+  return Math.abs(value) === 1
+    ? labels[language].singular
+    : labels[language].plural;
+}
+
+function buildApprovedVacationCompensationPushLabel(
+  language: AppUiLanguage,
+  paidUnits: number,
+  unpaidUnits: number,
+  fallbackCompensation: AbsenceCompensation
+): string {
+  const paidDays = paidUnits / 2;
+  const unpaidDays = unpaidUnits / 2;
+
+  const paidLabel = getCompensationLabel(
+    language,
+    AbsenceCompensation.PAID
+  ).toLocaleLowerCase(toHtmlLocale(language));
+
+  const unpaidLabel = getCompensationLabel(
+    language,
+    AbsenceCompensation.UNPAID
+  ).toLocaleLowerCase(toHtmlLocale(language));
+
+  if (paidDays > 0 && unpaidDays > 0) {
+    return `${formatVacationDaysForPush(paidDays)} ${getVacationDayLabelForPush(
+      language,
+      paidDays
+    )} ${paidLabel} · ${formatVacationDaysForPush(
+      unpaidDays
+    )} ${getVacationDayLabelForPush(language, unpaidDays)} ${unpaidLabel}`;
+  }
+
+  if (paidDays > 0) {
+    return `${formatVacationDaysForPush(paidDays)} ${getVacationDayLabelForPush(
+      language,
+      paidDays
+    )} ${paidLabel}`;
+  }
+
+  if (unpaidDays > 0) {
+    return `${formatVacationDaysForPush(
+      unpaidDays
+    )} ${getVacationDayLabelForPush(language, unpaidDays)} ${unpaidLabel}`;
+  }
+
+  return getCompensationLabel(language, fallbackCompensation);
+}
+
 function buildVacationAbsenceRowsWithSplit(
   userId: string,
   days: Date[],
@@ -647,10 +732,15 @@ export async function POST(req: Request, context: RouteContext) {
   const endDate = toIsoDateUTC(finalEndDate);
 
   const typeLabel = getRequestTypeLabel(employeeLanguage, finalType);
-  const compensationLabel = getCompensationLabel(
-    employeeLanguage,
-    finalCompensation
-  );
+  const compensationLabel =
+    finalType === AbsenceType.VACATION
+      ? buildApprovedVacationCompensationPushLabel(
+          employeeLanguage,
+          finalPaidVacationUnits,
+          finalUnpaidVacationUnits,
+          finalCompensation
+        )
+      : getCompensationLabel(employeeLanguage, finalCompensation);
 
   const dateLabel = portionLabel(
     employeeLanguage,
