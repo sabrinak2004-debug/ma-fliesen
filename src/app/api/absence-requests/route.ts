@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import Holidays from "date-holidays";
 import {
   AbsenceCompensation,
   AbsenceDayPortion,
@@ -99,12 +100,49 @@ function isUtcWeekday(date: Date): boolean {
   return day >= 1 && day <= 5;
 }
 
-function countVacationRequestDaysExcludingWeekends(
+function getBadenWuerttembergNonWorkingHolidaySetForYears(
+  startYear: number,
+  endYear: number
+): Set<string> {
+  const holidays = new Holidays("DE", "BW");
+  const result = new Set<string>();
+
+  for (let year = startYear; year <= endYear; year += 1) {
+    for (const holiday of holidays.getHolidays(year)) {
+      if (holiday.type === "public") {
+        result.add(holiday.date.slice(0, 10));
+      }
+    }
+  }
+
+  return result;
+}
+
+function isBadenWuerttembergNonWorkingHolidayUtc(
+  date: Date,
+  holidaySet: Set<string>
+): boolean {
+  return holidaySet.has(toIsoDateUTC(date));
+}
+
+function countVacationRequestDaysExcludingWeekendsAndHolidays(
   startDate: Date,
   endDate: Date,
   dayPortion: AbsenceDayPortion
 ): number {
+  const holidaySet = getBadenWuerttembergNonWorkingHolidaySetForYears(
+    startDate.getUTCFullYear(),
+    endDate.getUTCFullYear()
+  );
+
   if (dayPortion === AbsenceDayPortion.HALF_DAY) {
+    if (
+      !isUtcWeekday(startDate) ||
+      isBadenWuerttembergNonWorkingHolidayUtc(startDate, holidaySet)
+    ) {
+      return 0;
+    }
+
     return 0.5;
   }
 
@@ -112,9 +150,13 @@ function countVacationRequestDaysExcludingWeekends(
   const current = new Date(startDate);
 
   while (current <= endDate) {
-    if (isUtcWeekday(current)) {
+    if (
+      isUtcWeekday(current) &&
+      !isBadenWuerttembergNonWorkingHolidayUtc(current, holidaySet)
+    ) {
       count += 1;
     }
+
     current.setUTCDate(current.getUTCDate() + 1);
   }
 
@@ -127,7 +169,20 @@ function buildEffectiveAbsenceDays(
   type: AbsenceType,
   dayPortion: AbsenceDayPortion
 ): Date[] {
+  const holidaySet = getBadenWuerttembergNonWorkingHolidaySetForYears(
+    startDate.getUTCFullYear(),
+    endDate.getUTCFullYear()
+  );
+
   if (dayPortion === AbsenceDayPortion.HALF_DAY) {
+    if (
+      type === AbsenceType.VACATION &&
+      (!isUtcWeekday(startDate) ||
+        isBadenWuerttembergNonWorkingHolidayUtc(startDate, holidaySet))
+    ) {
+      return [];
+    }
+
     return [new Date(startDate)];
   }
 
@@ -138,7 +193,10 @@ function buildEffectiveAbsenceDays(
     const copy = new Date(current);
 
     if (type === AbsenceType.VACATION) {
-      if (isUtcWeekday(copy)) {
+      if (
+        isUtcWeekday(copy) &&
+        !isBadenWuerttembergNonWorkingHolidayUtc(copy, holidaySet)
+      ) {
         out.push(copy);
       }
     } else {
@@ -304,7 +362,7 @@ function getRequestVacationUnits(
   endDate: Date,
   dayPortion: AbsenceDayPortion
 ): number {
-  const days = countVacationRequestDaysExcludingWeekends(
+  const days = countVacationRequestDaysExcludingWeekendsAndHolidays(
     startDate,
     endDate,
     dayPortion
@@ -1091,15 +1149,13 @@ export async function POST(req: Request) {
     );
   }
 
-  if (
-    typeRaw === "VACATION" &&
-    dayPortion === AbsenceDayPortion.FULL_DAY
-  ) {
-    const effectiveVacationDays = countVacationRequestDaysExcludingWeekends(
-      start,
-      end,
-      dayPortion
-    );
+  if (typeRaw === "VACATION") {
+    const effectiveVacationDays =
+      countVacationRequestDaysExcludingWeekendsAndHolidays(
+        start,
+        end,
+        dayPortion
+      );
 
     if (effectiveVacationDays <= 0) {
       return NextResponse.json(

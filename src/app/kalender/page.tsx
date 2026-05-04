@@ -597,6 +597,14 @@ function getRequestedVacationDays(
   dayPortion: AbsenceDayPortion
 ): number {
   if (dayPortion === "HALF_DAY") {
+    const startDate = ymdToDateLocal(start);
+    const day = startDate.getDay();
+    const isWeekday = day >= 1 && day <= 5;
+
+    if (!isWeekday || isBadenWuerttembergNonWorkingHolidayYMD(start)) {
+      return 0;
+    }
+
     return 0.5;
   }
 
@@ -607,10 +615,11 @@ function getRequestedVacationDays(
   const current = new Date(startDate);
 
   while (current <= endDate) {
+    const ymd = toYMDLocal(current);
     const day = current.getDay();
     const isWeekday = day >= 1 && day <= 5;
 
-    if (isWeekday) {
+    if (isWeekday && !isBadenWuerttembergNonWorkingHolidayYMD(ymd)) {
       count += 1;
     }
 
@@ -630,6 +639,63 @@ function toYMDLocal(d: Date): string {
 function ymdToDateLocal(ymd: string): Date {
   const [y, m, d] = ymd.split("-").map(Number);
   return new Date(y, m - 1, d);
+}
+
+function addDaysLocal(date: Date, days: number): Date {
+  const copy = new Date(date.getTime());
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
+
+function getEasterSundayDateLocal(year: number): Date {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+  return new Date(year, month - 1, day);
+}
+
+function getBadenWuerttembergNonWorkingHolidaySet(year: number): Set<string> {
+  const holidayDates = new Set<string>([
+    `${year}-01-01`,
+    `${year}-01-06`,
+    `${year}-05-01`,
+    `${year}-10-03`,
+    `${year}-11-01`,
+    `${year}-12-25`,
+    `${year}-12-26`,
+  ]);
+
+  const easterSunday = getEasterSundayDateLocal(year);
+
+  holidayDates.add(toYMDLocal(addDaysLocal(easterSunday, -2)));
+  holidayDates.add(toYMDLocal(addDaysLocal(easterSunday, 1)));
+  holidayDates.add(toYMDLocal(addDaysLocal(easterSunday, 39)));
+  holidayDates.add(toYMDLocal(addDaysLocal(easterSunday, 50)));
+  holidayDates.add(toYMDLocal(addDaysLocal(easterSunday, 60)));
+
+  return holidayDates;
+}
+
+function isBadenWuerttembergNonWorkingHolidayYMD(ymd: string): boolean {
+  const [year] = ymd.split("-").map(Number);
+
+  if (!Number.isFinite(year)) {
+    return false;
+  }
+
+  return getBadenWuerttembergNonWorkingHolidaySet(year).has(ymd);
 }
 
 function startOfWeekMonday(d: Date): Date {

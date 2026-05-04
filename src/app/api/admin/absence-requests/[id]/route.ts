@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import Holidays from "date-holidays";
 import {
   AbsenceCompensation,
   AbsenceDayPortion,
@@ -80,13 +81,51 @@ function isUtcWeekday(date: Date): boolean {
   return day >= 1 && day <= 5;
 }
 
+function getBadenWuerttembergNonWorkingHolidaySetForYears(
+  startYear: number,
+  endYear: number
+): Set<string> {
+  const holidays = new Holidays("DE", "BW");
+  const result = new Set<string>();
+
+  for (let year = startYear; year <= endYear; year += 1) {
+    for (const holiday of holidays.getHolidays(year)) {
+      if (holiday.type === "public") {
+        result.add(holiday.date.slice(0, 10));
+      }
+    }
+  }
+
+  return result;
+}
+
+function isBadenWuerttembergNonWorkingHolidayUtc(
+  date: Date,
+  holidaySet: Set<string>
+): boolean {
+  return holidaySet.has(toIsoDateUTC(date));
+}
+
 function buildEffectiveAbsenceDays(
   startDate: Date,
   endDate: Date,
   type: AbsenceType,
   dayPortion: AbsenceDayPortion
 ): Date[] {
+  const holidaySet = getBadenWuerttembergNonWorkingHolidaySetForYears(
+    startDate.getUTCFullYear(),
+    endDate.getUTCFullYear()
+  );
+
   if (dayPortion === AbsenceDayPortion.HALF_DAY) {
+    if (
+      type === AbsenceType.VACATION &&
+      (!isUtcWeekday(startDate) ||
+        isBadenWuerttembergNonWorkingHolidayUtc(startDate, holidaySet))
+    ) {
+      return [];
+    }
+
     return [new Date(startDate)];
   }
 
@@ -97,7 +136,10 @@ function buildEffectiveAbsenceDays(
     const copy = new Date(current);
 
     if (type === AbsenceType.VACATION) {
-      if (isUtcWeekday(copy)) {
+      if (
+        isUtcWeekday(copy) &&
+        !isBadenWuerttembergNonWorkingHolidayUtc(copy, holidaySet)
+      ) {
         out.push(copy);
       }
     } else {
