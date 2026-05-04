@@ -6969,12 +6969,12 @@ export const ADMIN_VACATION_REQUESTS_UI_TEXTS: Record<
   },
   month: {
     DE: "Antragsmonat",
-    EN: "Month",
-    IT: "Mese",
-    TR: "Ay",
-    SQ: "Muaji",
-    KU: "Meh",
-    RO: "Lună",
+    EN: "Month of application",
+    IT: "Mese di presentazione della domanda",
+    TR: "Başvuru ayı",
+    SQ: "Muaji i aplikimit",
+    KU: "Meha serîlêdanê",
+    RO: "Luna de aplicare",
   },
   loadError: {
     DE: "Urlaubsanträge konnten nicht geladen werden.",
