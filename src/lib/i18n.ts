@@ -6968,7 +6968,7 @@ export const ADMIN_VACATION_REQUESTS_UI_TEXTS: Record<
     RO: "Angajat",
   },
   month: {
-    DE: "Monat",
+    DE: "Antragsmonat",
     EN: "Month",
     IT: "Mese",
     TR: "Ay",

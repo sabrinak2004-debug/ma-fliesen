@@ -157,8 +157,10 @@ export async function GET(req: Request) {
     type?: AbsenceType;
     status?: AbsenceRequestStatus;
     userId?: string;
-    startDate?: { lt: Date };
-    endDate?: { gte: Date };
+    createdAt?: {
+      gte: Date;
+      lt: Date;
+    };
     user?: { companyId: string };
   } = {
     user: {
@@ -201,11 +203,13 @@ export async function GET(req: Request) {
     const year = Number(monthParam.slice(0, 4));
     const month = Number(monthParam.slice(5, 7));
 
-    const monthStart = new Date(Date.UTC(year, month - 1, 1));
-    const nextMonthStart = new Date(Date.UTC(year, month, 1));
+    const monthStart = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+    const nextMonthStart = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
 
-    where.startDate = { lt: nextMonthStart };
-    where.endDate = { gte: monthStart };
+    where.createdAt = {
+      gte: monthStart,
+      lt: nextMonthStart,
+    };
   }
 
   const rebalanceYear = new Date().getUTCFullYear();
