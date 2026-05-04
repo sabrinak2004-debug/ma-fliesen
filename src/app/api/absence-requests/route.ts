@@ -67,6 +67,33 @@ function toIsoDateUTC(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+function getBerlinYearMonth(date: Date = new Date()): {
+  year: number;
+  month: number;
+} {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(date);
+
+  const yearText = parts.find((part) => part.type === "year")?.value;
+  const monthText = parts.find((part) => part.type === "month")?.value;
+
+  const year = Number(yearText);
+  const month = Number(monthText);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month)) {
+    const fallback = new Date();
+    return {
+      year: fallback.getUTCFullYear(),
+      month: fallback.getUTCMonth() + 1,
+    };
+  }
+
+  return { year, month };
+}
+
 function isUtcWeekday(date: Date): boolean {
   const day = date.getUTCDay();
   return day >= 1 && day <= 5;
@@ -830,29 +857,21 @@ export async function GET(req: Request) {
     where.endDate = { gte: monthStart };
   }
 
-  const balanceYear = monthParam
-    ? Number(monthParam.slice(0, 4))
-    : new Date().getUTCFullYear();
-
-  const balanceMonth = monthParam
-    ? Number(monthParam.slice(5, 7))
-    : new Date().getUTCMonth() + 1;
-
   const now = new Date();
+  const currentBerlinYearMonth = getBerlinYearMonth(now);
 
-  if (balanceYear === now.getUTCFullYear()) {
   await rebalanceAutoUnpaidVacationRequestsForYear(
     session.userId,
-    balanceYear,
-    new Date()
+    currentBerlinYearMonth.year,
+    now
   );
-  }
 
-  const remainingPaidVacationDaysForMonth = await getRemainingPaidVacationDaysForMonth(
-    session.userId,
-    balanceYear,
-    balanceMonth
-  );
+  const remainingPaidVacationDaysForMonth =
+    await getRemainingPaidVacationDaysForMonth(
+      session.userId,
+      currentBerlinYearMonth.year,
+      currentBerlinYearMonth.month
+    );
 
   const requests = await prisma.absenceRequest.findMany({
     where,
