@@ -19,7 +19,7 @@ const MA_FLIESEN_EMPLOYEES: string[] = [
   "Max Mustermann",
   "Ilija Nikic",
   "Cosmin Alexandroae",
-  "Francesco Cascania",
+  "Francesco Casciana",
   "Elvis Sulejmani",
   "Leon Meinhold",
   "Behar Mehmeti",
