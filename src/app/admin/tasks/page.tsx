@@ -836,16 +836,24 @@ export default function AdminTasksPage() {
                     </div>
                   ) : null}
 
-                  {adminTaskOpenHref(task) ? (
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                      <Link
-                        href={adminTaskOpenHref(task) ?? "/admin/tasks"}
-                        className="tenant-action-link"
-                      >
-                        {t("open")}
-                      </Link>
-                    </div>
-                  ) : null}
+                  {(() => {
+                    const openHref = adminTaskOpenHref(task);
+
+                    if (!openHref) {
+                      return null;
+                    }
+
+                    return (
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <Link
+                          href={openHref}
+                          className="tenant-action-link"
+                        >
+                          {t("open")}
+                        </Link>
+                      </div>
+                    );
+                  })()}
                 </div>
               ))}
             </div>
