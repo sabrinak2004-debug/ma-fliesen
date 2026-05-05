@@ -2356,6 +2356,7 @@ export type ErfassungTextKey =
   | "details"
   | "cancel"
   | "enterActivity"
+  | "enterLocation"
   | "loginAgain"
   | "saveFailed"
   | "networkSaveError"
@@ -2822,6 +2823,15 @@ export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage
     RO: "Te rugăm să introduci o activitate.",
     KU: "Ji kerema xwe çalakiyek binivîse.",
   },
+  enterLocation: {
+    DE: "Bitte Einsatzort eingeben.",
+    EN: "Please enter a location.",
+    IT: "Inserisci un luogo di lavoro.",
+    TR: "Lütfen çalışma yerini girin.",
+    SQ: "Ju lutem vendosni vendndodhjen e punës.",
+    RO: "Te rugăm să introduci locația.",
+    KU: "Ji kerema xwe cihê karê binivîse.",
+  },
   loginAgain: {
     DE: "Bitte neu einloggen.",
     EN: "Please log in again.",
@@ -2940,31 +2950,31 @@ export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage
     KU: "Di şandina daxwaza rastkirinê de şaşiya torê.",
   },
   syncTaskTaken: {
-    DE: "Aufgabe übernommen. Bitte Start- und Endzeit ergänzen.",
-    EN: "Task imported. Please add start and end time.",
-    IT: "Attività importata. Aggiungi ora di inizio e fine.",
-    TR: "Görev aktarıldı. Lütfen başlangıç ve bitiş saatini ekleyin.",
-    SQ: "Detyra u mor. Ju lutem shtoni orën e fillimit dhe përfundimit.",
-    RO: "Sarcina a fost preluată. Te rugăm să completezi ora de început și de sfârșit.",
-    KU: "Erk hate standin. Ji kerema xwe dema destpêk û dawiyê zêde bike.",
+    DE: "Aufgabe übernommen. Start- und Endzeit sind voreingestellt und können angepasst werden.",
+    EN: "Task imported. Start and end time are prefilled and can be adjusted.",
+    IT: "Attività importata. Ora di inizio e fine sono preimpostate e possono essere modificate.",
+    TR: "Görev aktarıldı. Başlangıç ve bitiş saati önceden dolduruldu ve değiştirilebilir.",
+    SQ: "Detyra u mor. Ora e fillimit dhe përfundimit janë të paracaktuara dhe mund të ndryshohen.",
+    RO: "Sarcina a fost preluată. Ora de început și de sfârșit sunt completate automat și pot fi modificate.",
+    KU: "Erk hate standin. Dema destpêk û dawiyê pêşdagirtî ne û dikarin bên guherandin.",
   },
   syncDateTaken: {
-    DE: "Datum aus der Benachrichtigung übernommen. Bitte Start- und Endzeit ergänzen.",
-    EN: "Date imported from the notification. Please add start and end time.",
-    IT: "Data importata dalla notifica. Aggiungi ora di inizio e fine.",
-    TR: "Tarih bildirimden alındı. Lütfen başlangıç ve bitiş saatini ekleyin.",
-    SQ: "Data u mor nga njoftimi. Ju lutem shtoni orën e fillimit dhe përfundimit.",
-    RO: "Data a fost preluată din notificare. Te rugăm să completezi ora de început și de sfârșit.",
-    KU: "Dîrok ji hişyariyê hate standin. Ji kerema xwe dema destpêk û dawiyê zêde bike.",
+    DE: "Datum aus der Benachrichtigung übernommen. Start- und Endzeit sind voreingestellt und können angepasst werden.",
+    EN: "Date imported from the notification. Start and end time are prefilled and can be adjusted.",
+    IT: "Data importata dalla notifica. Ora di inizio e fine sono preimpostate e possono essere modificate.",
+    TR: "Tarih bildirimden alındı. Başlangıç ve bitiş saati önceden dolduruldu ve değiştirilebilir.",
+    SQ: "Data u mor nga njoftimi. Ora e fillimit dhe përfundimit janë të paracaktuara dhe mund të ndryshohen.",
+    RO: "Data a fost preluată din notificare. Ora de început și de sfârșit sunt completate automat și pot fi modificate.",
+    KU: "Dîrok ji hişyariyê hate standin. Dema destpêk û dawiyê pêşdagirtî ne û dikarin bên guherandin.",
   },
   syncPlanTaken: {
-    DE: "Planeintrag übernommen. Bitte Start- und Endzeit ergänzen.",
-    EN: "Schedule entry imported. Please add start and end time.",
-    IT: "Voce pianificata importata. Aggiungi ora di inizio e fine.",
-    TR: "Plan kaydı aktarıldı. Lütfen başlangıç ve bitiş saatini ekleyin.",
-    SQ: "Regjistrimi i planit u mor. Ju lutem shtoni orën e fillimit dhe përfundimit.",
-    RO: "Intrarea din plan a fost preluată. Te rugăm să completezi ora de început și de sfârșit.",
-    KU: "Tomara planê hate standin. Ji kerema xwe dema destpêk û dawiyê zêde bike.",
+    DE: "Planeintrag übernommen. Start- und Endzeit sind voreingestellt und können angepasst werden.",
+    EN: "Schedule entry imported. Start and end time are prefilled and can be adjusted.",
+    IT: "Voce pianificata importata. Ora di inizio e fine sono preimpostate e possono essere modificate.",
+    TR: "Plan kaydı aktarıldı. Başlangıç ve bitiş saati önceden dolduruldu ve değiştirilebilir.",
+    SQ: "Regjistrimi i planit u mor. Ora e fillimit dhe përfundimit janë të paracaktuara dhe mund të ndryshohen.",
+    RO: "Intrarea din plan a fost preluată. Ora de început și de sfârșit sunt completate automat și pot fi modificate.",
+    KU: "Tomara planê hate standin. Dema destpêk û dawiyê pêşdagirtî ne û dikarin bên guherandin.",
   },
   createEntry: {
     DE: "Stunden erfassen",

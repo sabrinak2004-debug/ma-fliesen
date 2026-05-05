@@ -7,7 +7,6 @@ import Toast from "@/components/Toast";
 import Modal from "@/components/Modal";
 import { translate, type AppUiLanguage } from "@/lib/i18n";
 import { type ErfassungTextKey, ERFASSUNG_DICTIONARY } from "@/lib/i18n";
-import { Pause } from 'lucide-react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPencil, faTrashCan, faPause, faInfo, faPenToSquare, faPlus } from "@fortawesome/free-solid-svg-icons";
 
@@ -925,7 +924,7 @@ useEffect(() => {
     setError(null);
 
     if (!activity.trim()) return setError(t("enterActivity"));
-    if (!location.trim()) return setError("Bitte gib einen Einsatzort an.");
+    if (!location.trim()) return setError(t("enterLocation"));
     if (!me || !me.ok) return setError(t("loginAgain"));
 
     setSaving(true);
@@ -1038,6 +1037,7 @@ useEffect(() => {
 
     setEditError(null);
     if (!edit.activity.trim()) return setEditError(t("enterActivity"));
+    if (!edit.location.trim()) return setEditError(t("enterLocation"));
     if (!edit.workDate || !edit.startTime || !edit.endTime) {
       return setEditError(t("dateStartEndMissing"));
     }
@@ -1667,12 +1667,13 @@ useEffect(() => {
         </div>
 
         <div style={{ marginBottom: 12 }}>
-          <div className="label">{t("activityPerformed")}</div>
+          <div className="label">{t("activityPerformed")} *</div>
           <textarea
             className="textarea"
             placeholder={t("activityPlaceholder")}
             value={activity}
             onChange={(e) => setActivity(e.target.value)}
+            required
           />
         </div>
 
@@ -2475,20 +2476,22 @@ useEffect(() => {
             </div>
 
             <div>
-              <div className="label">{t("performedActivity")}</div>
+              <div className="label">{t("performedActivity")} *</div>
               <textarea
                 className="textarea"
                 value={edit.activity}
                 onChange={(e) => setEdit((p) => (p ? { ...p, activity: e.target.value } : p))}
+                required
               />
             </div>
 
             <div>
-              <div className="label">{t("location")}</div>
+              <div className="label">{t("location")} *</div>
               <input
                 className="input"
                 value={edit.location}
                 onChange={(e) => setEdit((p) => (p ? { ...p, location: e.target.value } : p))}
+                required
               />
             </div>
 

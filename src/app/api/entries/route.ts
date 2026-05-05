@@ -678,9 +678,16 @@ export async function POST(req: Request) {
   const noteEmployee = getString(body.noteEmployee).trim();
   const sourceTaskId = getString(body.sourceTaskId).trim();
 
-  if (!workDate || !startTime || !endTime || !activity || !location) {
+  if (!workDate || !startTime || !endTime || !activity) {
     return NextResponse.json(
       { error: translateEntryText(language, "invalidData") },
+      { status: 400 }
+    );
+  }
+
+  if (!location) {
+    return NextResponse.json(
+      { error: translate(language, "enterLocation", ERFASSUNG_DICTIONARY) },
       { status: 400 }
     );
   }
@@ -969,9 +976,16 @@ export async function PATCH(req: Request) {
     ? existing.noteEmployee ?? ""
     : getString(body.noteEmployee).trim();
 
-  if (!isAdmin && (!workDate || !startTime || !endTime || !activity || !location)) {
+  if (!isAdmin && (!workDate || !startTime || !endTime || !activity)) {
     return NextResponse.json(
       { error: translateEntryText(language, "invalidData") },
+      { status: 400 }
+    );
+  }
+
+  if (!isAdmin && !location) {
+    return NextResponse.json(
+      { error: translate(language, "enterLocation", ERFASSUNG_DICTIONARY) },
       { status: 400 }
     );
   }
