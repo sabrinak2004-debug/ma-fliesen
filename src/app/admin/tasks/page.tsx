@@ -321,18 +321,7 @@ function adminTaskOpenHref(task: TaskRow): string | null {
 
   const params = new URLSearchParams();
   params.set("employeeId", task.assignedToUser.id);
-
-  if (task.category === "WORK_TIME") {
-    params.set("taskCategory", "WORK_TIME");
-  }
-
-  if (task.category === "VACATION") {
-    params.set("taskCategory", "VACATION");
-  }
-
-  if (task.category === "SICKNESS") {
-    params.set("taskCategory", "SICKNESS");
-  }
+  params.set("taskCategory", task.category);
 
   const referenceDate =
     task.referenceStartDate ||

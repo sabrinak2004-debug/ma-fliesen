@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
@@ -726,6 +726,9 @@ export default function AdminDashboardPage() {
   const [openUsers, setOpenUsers] = useState<Set<string>>(new Set());
   const [openCats, setOpenCats] = useState<Record<string, CatState>>({});
   const [openWorkDays, setOpenWorkDays] = useState<Set<string>>(new Set());
+  const [scrollTargetUserId, setScrollTargetUserId] = useState<string>("");
+
+  const employeeCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
@@ -1185,6 +1188,8 @@ export default function AdminDashboardPage() {
                 return next;
               });
             }
+
+            setScrollTargetUserId(taskEmployeeId);
           }
         }
 
@@ -1219,6 +1224,31 @@ export default function AdminDashboardPage() {
     taskCategoryFromUrl,
     taskDateParam,
   ]);
+
+  useEffect(() => {
+    if (!scrollTargetUserId || loading) {
+      return;
+    }
+
+    const target = employeeCardRefs.current[scrollTargetUserId];
+
+    if (!target) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+
+      setScrollTargetUserId("");
+    }, 120);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [scrollTargetUserId, loading, openUsers, openCats, openWorkDays]);
 
   const exportFooter = (
     <>
@@ -2247,14 +2277,18 @@ export default function AdminDashboardPage() {
                   .filter((i): i is AdminTimelineWork => i.type === "WORK")
                   .reduce((sum, it) => sum + it.workMinutes, 0);
 
-                return (
-                  <div
-                    key={u.userId}
-                    className="list-item"
-                    style={{
-                      listStyle: "none",
-                    }}
-                  >
+                  return (
+                    <div
+                      key={u.userId}
+                      ref={(element) => {
+                        employeeCardRefs.current[u.userId] = element;
+                      }}
+                      className="list-item"
+                      style={{
+                        listStyle: "none",
+                        scrollMarginTop: "120px",
+                      }}
+                    >
                     <div
                       style={{
                         display: "flex",
