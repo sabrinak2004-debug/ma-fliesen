@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/admin/dashboard/remind-admin-missing",
-      "schedule": "0 19 * * *"
+      "schedule": "0 19,20 * * *"
     },
     {
       "path": "/api/admin/vacation-rebalance",
