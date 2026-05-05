@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
@@ -70,6 +70,28 @@ type CatKey = "WORK" | "SICK" | "VACATION";
 type CatState = Record<CatKey, boolean>;
 
 const defaultCatState: CatState = { WORK: false, SICK: false, VACATION: false };
+
+type AdminTaskUrlCategory = "WORK_TIME" | "VACATION" | "SICKNESS";
+
+function isAdminTaskUrlCategory(value: string | null): value is AdminTaskUrlCategory {
+  return (
+    value === "WORK_TIME" ||
+    value === "VACATION" ||
+    value === "SICKNESS"
+  );
+}
+
+function taskUrlCategoryToCatKey(category: AdminTaskUrlCategory): CatKey {
+  if (category === "WORK_TIME") {
+    return "WORK";
+  }
+
+  if (category === "VACATION") {
+    return "VACATION";
+  }
+
+  return "SICK";
+}
 
 /* =========================
    Types (Dashboard + Overview)
@@ -692,6 +714,7 @@ function isMobileDevice(): boolean {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const ym = useMemo(() => monthKey(new Date()), []);
   const [month, setMonth] = useState<string>(ym);
 
@@ -728,6 +751,13 @@ export default function AdminDashboardPage() {
   const [exportBusy, setExportBusy] = useState(false);
   const [exportActionError, setExportActionError] = useState<string>("");
   const language: AppUiLanguage = session?.language ?? "DE";
+
+  const taskEmployeeId = searchParams.get("employeeId");
+  const taskCategoryParam = searchParams.get("taskCategory");
+  const taskDateParam = searchParams.get("date");
+  const taskCategoryFromUrl = isAdminTaskUrlCategory(taskCategoryParam)
+    ? taskCategoryParam
+    : null;
 
   function t(key: keyof typeof ADMIN_DASHBOARD_UI_TEXTS): string {
     return translate(language, key, ADMIN_DASHBOARD_UI_TEXTS);
@@ -1035,6 +1065,14 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
+    if (!taskDateParam || !/^\d{4}-\d{2}-\d{2}$/.test(taskDateParam)) {
+      return;
+    }
+
+    setMonth(taskDateParam.slice(0, 7));
+  }, [taskDateParam]);
+
+  useEffect(() => {
     let alive = true;
 
     (async () => {
@@ -1114,6 +1152,42 @@ export default function AdminDashboardPage() {
           return;
         }
 
+        if (taskEmployeeId && taskCategoryFromUrl) {
+          const employeeExists = jd.employeesTimeline.some(
+            (employee) => employee.userId === taskEmployeeId
+          );
+
+          if (employeeExists) {
+            const catKey = taskUrlCategoryToCatKey(taskCategoryFromUrl);
+
+            setOpenUsers((prev) => {
+              const next = new Set(prev);
+              next.add(taskEmployeeId);
+              return next;
+            });
+
+            setOpenCats((prev) => {
+              const current = prev[taskEmployeeId] ?? defaultCatState;
+
+              return {
+                ...prev,
+                [taskEmployeeId]: {
+                  ...current,
+                  [catKey]: true,
+                },
+              };
+            });
+
+            if (catKey === "WORK" && taskDateParam) {
+              setOpenWorkDays((prev) => {
+                const next = new Set(prev);
+                next.add(`${taskEmployeeId}__${taskDateParam}`);
+                return next;
+              });
+            }
+          }
+        }
+
         if (!ro.ok || !isOverviewApiResponse(jo) || jo.isAdmin !== true) {
           setDash(jd);
           setOverview(null);
@@ -1136,7 +1210,15 @@ export default function AdminDashboardPage() {
     return () => {
       alive = false;
     };
-  }, [month, reloadTick, sessionChecked, session?.role]);
+  }, [
+    month,
+    reloadTick,
+    sessionChecked,
+    session?.role,
+    taskEmployeeId,
+    taskCategoryFromUrl,
+    taskDateParam,
+  ]);
 
   const exportFooter = (
     <>
