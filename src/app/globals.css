@@ -3810,7 +3810,7 @@ body.login-screen-active::before {
   background: var(--bg) !important;
 }
 
-@media (display-mode: standalone) {
+@media (display-mode: standalone) and (min-width: 768px) {
   html.login-screen-active,
   body.login-screen-active {
     background:

@@ -18,7 +18,7 @@ function isStandaloneDisplayMode(): boolean {
 }
 
 function isDesktopViewport(): boolean {
-  return window.matchMedia("(min-width: 768px)").matches;
+  return window.matchMedia("(hover: hover) and (pointer: fine) and (min-width: 768px)").matches;
 }
 
 function isProbablyFullscreenWindow(): boolean {
