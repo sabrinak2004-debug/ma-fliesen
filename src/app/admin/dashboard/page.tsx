@@ -712,6 +712,36 @@ function isMobileDevice(): boolean {
    Page
    ========================= */
 
+function scrollElementIntoAppView(element: HTMLElement): void {
+  const scrollParent = element.closest(
+    ".appshell-main, .appshell-content, main"
+  );
+
+  if (scrollParent instanceof HTMLElement) {
+    const parentRect = scrollParent.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+
+    scrollParent.scrollTo({
+      top:
+        scrollParent.scrollTop +
+        elementRect.top -
+        parentRect.top -
+        120,
+      behavior: "smooth",
+    });
+
+    return;
+  }
+
+  const absoluteTop =
+    element.getBoundingClientRect().top + window.scrollY - 120;
+
+  window.scrollTo({
+    top: absoluteTop,
+    behavior: "smooth",
+  });
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1226,29 +1256,35 @@ export default function AdminDashboardPage() {
   ]);
 
   useEffect(() => {
-    if (!scrollTargetUserId || loading) {
+    if (!scrollTargetUserId || loading || !dash) {
       return;
     }
 
-    const target = employeeCardRefs.current[scrollTargetUserId];
+    let frameOne = 0;
+    let frameTwo = 0;
+    let timeoutId = 0;
 
-    if (!target) {
-      return;
-    }
+    frameOne = window.requestAnimationFrame(() => {
+      frameTwo = window.requestAnimationFrame(() => {
+        timeoutId = window.setTimeout(() => {
+          const target = employeeCardRefs.current[scrollTargetUserId];
 
-    const timeoutId = window.setTimeout(() => {
-      target.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
+          if (!target) {
+            return;
+          }
+
+          scrollElementIntoAppView(target);
+          setScrollTargetUserId("");
+        }, 180);
       });
-
-      setScrollTargetUserId("");
-    }, 120);
+    });
 
     return () => {
+      window.cancelAnimationFrame(frameOne);
+      window.cancelAnimationFrame(frameTwo);
       window.clearTimeout(timeoutId);
     };
-  }, [scrollTargetUserId, loading, openUsers, openCats, openWorkDays]);
+  }, [scrollTargetUserId, loading, dash, openUsers, openCats, openWorkDays]);
 
   const exportFooter = (
     <>
