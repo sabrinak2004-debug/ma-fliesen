@@ -56,7 +56,9 @@ export async function GET(req: Request): Promise<Response> {
     return NextResponse.json(fallbackManifest, {
       headers: {
         "Content-Type": "application/manifest+json; charset=utf-8",
-        "Cache-Control": "no-store, max-age=0",
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     });
   }
@@ -79,7 +81,9 @@ export async function GET(req: Request): Promise<Response> {
         status: 404,
         headers: {
           "Content-Type": "application/json; charset=utf-8",
-          "Cache-Control": "no-store, max-age=0",
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            Pragma: "no-cache",
+            Expires: "0",
         },
       }
     );
@@ -123,7 +127,9 @@ export async function GET(req: Request): Promise<Response> {
   return NextResponse.json(manifest, {
     headers: {
       "Content-Type": "application/manifest+json; charset=utf-8",
-      "Cache-Control": "no-store, max-age=0",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      Pragma: "no-cache",
+      Expires: "0",
     },
   });
 }

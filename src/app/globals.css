@@ -6472,3 +6472,91 @@ body.tenant-legal-active:has(.legal-page-tenant-shell) {
     }
   }
 }
+/* ===== FINAL FIX: iPhone PWA Safe-Area oben nicht schwarz ===== */
+
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) and (max-width: 767px) {
+    html,
+    body,
+    .app-root-shell {
+      background:
+        linear-gradient(
+          180deg,
+          rgba(var(--accent-rgb), 0.42) 0px,
+          rgba(var(--accent-rgb), 0.26) 180px,
+          rgba(var(--accent-rgb), 0.12) 420px,
+          var(--bg) 760px
+        ),
+        var(--bg) !important;
+      background-color: var(--bg) !important;
+      background-repeat: no-repeat !important;
+      background-attachment: fixed !important;
+    }
+
+    body::before {
+      z-index: 0 !important;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(var(--accent-rgb), 0.42) 0px,
+          rgba(var(--accent-rgb), 0.26) 180px,
+          rgba(var(--accent-rgb), 0.12) 420px,
+          var(--bg) 760px
+        ),
+        radial-gradient(
+          1200px 640px at 10% 0%,
+          rgba(var(--accent-rgb), 0.28),
+          transparent 60%
+        ),
+        var(--bg) !important;
+      opacity: 1 !important;
+    }
+
+    .app-root-shell {
+      position: relative;
+      isolation: isolate;
+      overflow-x: hidden;
+    }
+
+    .app-root-shell::before {
+      content: "";
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: calc(env(safe-area-inset-top) + 84px);
+      z-index: 1;
+      pointer-events: none;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(var(--accent-rgb), 0.42) 0px,
+          rgba(var(--accent-rgb), 0.26) 180px,
+          rgba(var(--accent-rgb), 0.12) 420px,
+          var(--bg) 760px
+        ),
+        var(--bg);
+      background-repeat: no-repeat;
+    }
+
+    .appshell-page-shell,
+    .appshell-app-frame,
+    .appshell-mobile-topbar,
+    .appshell-mobile-content-curtain {
+      position: relative;
+    }
+
+    .appshell-page-shell,
+    .appshell-app-frame {
+      z-index: 2;
+    }
+
+    .appshell-mobile-topbar {
+      z-index: 80;
+    }
+
+    .appshell-mobile-content-curtain {
+      z-index: 70;
+    }
+  }
+}
