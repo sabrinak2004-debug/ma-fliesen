@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
@@ -712,68 +712,6 @@ function isMobileDevice(): boolean {
    Page
    ========================= */
 
-function getScrollableParent(element: HTMLElement): HTMLElement | null {
-  let current: HTMLElement | null = element.parentElement;
-
-  while (current) {
-    const style = window.getComputedStyle(current);
-    const overflowY = style.overflowY;
-
-    const canScroll =
-      (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") &&
-      current.scrollHeight > current.clientHeight + 8;
-
-    if (canScroll) {
-      return current;
-    }
-
-    current = current.parentElement;
-  }
-
-  const scrollingElement = document.scrollingElement;
-
-  if (scrollingElement instanceof HTMLElement) {
-    return scrollingElement;
-  }
-
-  return document.documentElement;
-}
-
-function scrollElementIntoAppView(element: HTMLElement): void {
-  const offsetTop = 130;
-  const scrollParent = getScrollableParent(element);
-
-  if (!scrollParent) {
-    return;
-  }
-
-  const parentRect = scrollParent.getBoundingClientRect();
-  const elementRect = element.getBoundingClientRect();
-
-  if (
-    scrollParent === document.documentElement ||
-    scrollParent === document.body ||
-    scrollParent === document.scrollingElement
-  ) {
-    const absoluteTop = elementRect.top + window.scrollY - offsetTop;
-
-    window.scrollTo({
-      top: Math.max(0, absoluteTop),
-      behavior: "smooth",
-    });
-
-    return;
-  }
-
-  scrollParent.scrollTo({
-    top: Math.max(
-      0,
-      scrollParent.scrollTop + elementRect.top - parentRect.top - offsetTop
-    ),
-    behavior: "smooth",
-  });
-}
-
 export default function AdminDashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -788,9 +726,6 @@ export default function AdminDashboardPage() {
   const [openUsers, setOpenUsers] = useState<Set<string>>(new Set());
   const [openCats, setOpenCats] = useState<Record<string, CatState>>({});
   const [openWorkDays, setOpenWorkDays] = useState<Set<string>>(new Set());
-  const [scrollTargetUserId, setScrollTargetUserId] = useState<string>("");
-
-  const employeeCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
@@ -1250,8 +1185,6 @@ export default function AdminDashboardPage() {
                 return next;
               });
             }
-
-            setScrollTargetUserId(taskEmployeeId);
           }
         }
 
@@ -1286,52 +1219,6 @@ export default function AdminDashboardPage() {
     taskCategoryFromUrl,
     taskDateParam,
   ]);
-
-  useLayoutEffect(() => {
-    if (!scrollTargetUserId || loading || !dash) {
-      return;
-    }
-
-    let cancelled = false;
-    const timeoutIds: number[] = [];
-
-    const scrollToTarget = (): void => {
-      if (cancelled) {
-        return;
-      }
-
-      const target = employeeCardRefs.current[scrollTargetUserId];
-
-      if (!target) {
-        return;
-      }
-
-      scrollElementIntoAppView(target);
-    };
-
-    const delays = [80, 180, 360, 650];
-
-    delays.forEach((delay) => {
-      const timeoutId = window.setTimeout(scrollToTarget, delay);
-      timeoutIds.push(timeoutId);
-    });
-
-    const clearTimeoutId = window.setTimeout(() => {
-      if (!cancelled) {
-        setScrollTargetUserId("");
-      }
-    }, 900);
-
-    timeoutIds.push(clearTimeoutId);
-
-    return () => {
-      cancelled = true;
-
-      timeoutIds.forEach((timeoutId) => {
-        window.clearTimeout(timeoutId);
-      });
-    };
-  }, [scrollTargetUserId, loading, dash, openUsers, openCats, openWorkDays]);
 
   const exportFooter = (
     <>
@@ -2360,19 +2247,14 @@ export default function AdminDashboardPage() {
                   .filter((i): i is AdminTimelineWork => i.type === "WORK")
                   .reduce((sum, it) => sum + it.workMinutes, 0);
 
-                  return (
-                    <div
-                      key={u.userId}
-                      ref={(element) => {
-                        employeeCardRefs.current[u.userId] = element;
-                      }}
-                      data-employee-id={u.userId}
-                      className="list-item"
-                      style={{
-                        listStyle: "none",
-                        scrollMarginTop: 130,
-                      }}
-                    >
+                return (
+                  <div
+                    key={u.userId}
+                    className="list-item"
+                    style={{
+                      listStyle: "none",
+                    }}
+                  >
                     <div
                       style={{
                         display: "flex",
