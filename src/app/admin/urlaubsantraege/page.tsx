@@ -535,6 +535,39 @@ function adminHolidayExclusionHint(
   return `${labels[language]} ${dates.join(", ")}`;
 }
 
+function adminRequestHintText(
+  item: AbsenceRequestItem,
+  language: AppUiLanguage,
+  excludedHolidayDates: string[]
+): string | null {
+  const isMixedCompensation =
+    item.type === "VACATION" &&
+    item.paidVacationUnits > 0 &&
+    item.unpaidVacationUnits > 0;
+
+  const parts: string[] = [];
+
+  if (isMixedCompensation) {
+    const mixedCompensationText: Record<AppUiLanguage, string> = {
+      DE: "Für diesen Antrag ist aktuell eine gemischte Vergütung vorgesehen.",
+      EN: "Mixed compensation is currently planned for this request.",
+      IT: "Per questa richiesta è attualmente prevista una retribuzione mista.",
+      TR: "Bu talep için şu anda karma ücretlendirme öngörülmektedir.",
+      SQ: "Për këtë kërkesë aktualisht parashikohet kompensim i përzier.",
+      KU: "Ji bo vê daxwazê niha mûçeya tevlihev hatiye plansaz kirin.",
+      RO: "Pentru această cerere este prevăzută momentan o compensare mixtă.",
+    };
+
+    parts.push(mixedCompensationText[language]);
+  }
+
+  if (excludedHolidayDates.length > 0) {
+    parts.push(adminHolidayExclusionHint(language, excludedHolidayDates));
+  }
+
+  return parts.length > 0 ? parts.join(" ") : null;
+}
+
 function formatDateTimeLocalized(
   iso: string | null,
   language: AppUiLanguage
@@ -1348,10 +1381,13 @@ useEffect(() => {
     const isSaving = busyAction?.id === item.id && busyAction.action === "save";
     const isBusy = busyAction?.id === item.id;
     const isEditing = editingItemId === item.id;
-    const isMixedCompensation =
-      item.paidVacationUnits > 0 && item.unpaidVacationUnits > 0;
     const requestedDays = totalRequestedVacationDays(item);
     const excludedHolidayDates = getExcludedVacationHolidayDatesForRequest(item);
+    const requestHintText = adminRequestHintText(
+      item,
+      language,
+      excludedHolidayDates
+    );
     const durationText =
       item.dayPortion === "HALF_DAY" ? (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -1394,24 +1430,9 @@ useEffect(() => {
             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 14 }}>
               {durationText}
             </div>
-            {excludedHolidayDates.length > 0 ? (
+            {requestHintText ? (
               <div className="admin-workflow-mixed-hint">
-                {adminHolidayExclusionHint(language, excludedHolidayDates)}
-              </div>
-            ) : null}
-
-            {item.type === "VACATION" ? (
-              <div className="admin-workflow-breakdown-text">
-                {compensationBreakdownLabel(item, language) ??
-                  compensationSummaryLabel(item, language)}
-              </div>
-            ) : null}
-
-            {item.type === "VACATION" && item.autoUnpaidBecauseNoBalance ? (
-              <div className="admin-workflow-mixed-hint">
-                {mixedCompensationHint(item, language)
-                  ? `${t("mixedCompensationPrefix")} ${mixedCompensationHint(item, language)}`
-                  : t("insufficientPaidVacationHint")}
+                {requestHintText}
               </div>
             ) : null}
 
