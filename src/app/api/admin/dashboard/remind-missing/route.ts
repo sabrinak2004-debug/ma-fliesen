@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { Role, TaskCategory, TaskRequiredAction, TaskStatus } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendPushToUser } from "@/lib/webpush";
-import { berlinTodayYMD, getMissingRequiredWorkDates } from "@/lib/timesheetLock";
+import { sendLocalizedPushToAdmins, sendPushToUser } from "@/lib/webpush";
+import { berlinHour, berlinTodayYMD, getMissingRequiredWorkDates } from "@/lib/timesheetLock";
 import { normalizeAppUiLanguage, type AppUiLanguage } from "@/lib/i18n";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -190,6 +190,226 @@ function getLocalizedPushBody(
     default:
       return `Dir fehlen noch Arbeitseinträge für ${oldestMissingDate === newestMissingDate ? oldestMissingDate : `${oldestMissingDate} bis ${newestMissingDate}`}. Bitte prüfe deine Aufgaben und trage zuerst den ältesten fehlenden Tag nach.`;
   }
+}
+
+type AdminMissingSummary = {
+  companyId: string;
+  companySubdomain: string;
+  missingEmployeesCount: number;
+  missingEntriesCount: number;
+  employeeNames: string[];
+};
+
+function getLocalizedAdminMissingPushTitle(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Missing work entries";
+    case "IT":
+      return "Registrazioni di lavoro mancanti";
+    case "TR":
+      return "Eksik çalışma kayıtları";
+    case "SQ":
+      return "Regjistrime pune që mungojnë";
+    case "KU":
+      return "Tomarên karê yên winda";
+    case "RO":
+      return "Înregistrări de lucru lipsă";
+    case "DE":
+    default:
+      return "Fehlende Arbeitseinträge";
+  }
+}
+
+function buildEmployeeNamePreview(names: string[]): string {
+  const visibleNames = names.slice(0, 5);
+  const remainingCount = Math.max(0, names.length - visibleNames.length);
+
+  if (remainingCount === 0) {
+    return visibleNames.join(", ");
+  }
+
+  return `${visibleNames.join(", ")} und ${remainingCount} weitere`;
+}
+
+function getLocalizedAdminMissingPushBody(
+  language: AppUiLanguage,
+  summary: AdminMissingSummary
+): string {
+  const employeePreview = buildEmployeeNamePreview(summary.employeeNames);
+
+  switch (language) {
+    case "EN":
+      return summary.missingEmployeesCount === 1
+        ? `1 employee is missing work entries: ${employeePreview}.`
+        : `${summary.missingEmployeesCount} employees are missing work entries: ${employeePreview}.`;
+    case "IT":
+      return summary.missingEmployeesCount === 1
+        ? `A 1 dipendente mancano registrazioni di lavoro: ${employeePreview}.`
+        : `A ${summary.missingEmployeesCount} dipendenti mancano registrazioni di lavoro: ${employeePreview}.`;
+    case "TR":
+      return summary.missingEmployeesCount === 1
+        ? `1 çalışanın çalışma kaydı eksik: ${employeePreview}.`
+        : `${summary.missingEmployeesCount} çalışanın çalışma kaydı eksik: ${employeePreview}.`;
+    case "SQ":
+      return summary.missingEmployeesCount === 1
+        ? `1 punonjësi i mungojnë regjistrimet e punës: ${employeePreview}.`
+        : `${summary.missingEmployeesCount} punonjësve u mungojnë regjistrimet e punës: ${employeePreview}.`;
+    case "KU":
+      return summary.missingEmployeesCount === 1
+        ? `Ji 1 karmendî tomarên karê kêm in: ${employeePreview}.`
+        : `Ji ${summary.missingEmployeesCount} karmendan tomarên karê kêm in: ${employeePreview}.`;
+    case "RO":
+      return summary.missingEmployeesCount === 1
+        ? `Unui angajat îi lipsesc înregistrări de lucru: ${employeePreview}.`
+        : `${summary.missingEmployeesCount} angajați au înregistrări de lucru lipsă: ${employeePreview}.`;
+    case "DE":
+    default:
+      return summary.missingEmployeesCount === 1
+        ? `Bei 1 Mitarbeiter fehlen Arbeitseinträge: ${employeePreview}.`
+        : `Bei ${summary.missingEmployeesCount} Mitarbeitern fehlen Arbeitseinträge: ${employeePreview}.`;
+  }
+}
+
+export async function GET(req: Request) {
+  const cronSecret = process.env.CRON_SECRET;
+  const authorization = req.headers.get("authorization") ?? "";
+  const expected = cronSecret ? `Bearer ${cronSecret}` : "";
+
+  if (!cronSecret || authorization !== expected) {
+    return NextResponse.json(
+      { ok: false, error: "UNAUTHORIZED" },
+      { status: 401 }
+    );
+  }
+
+  const berlinCurrentHour = berlinHour();
+
+  if (berlinCurrentHour !== 20) {
+    return NextResponse.json({
+      ok: true,
+      sent: false,
+      reason: "NOT_20_BERLIN",
+      berlinCurrentHour,
+    });
+  }
+
+  const todayYMD = berlinTodayYMD();
+
+  const employees = await prisma.appUser.findMany({
+    where: {
+      role: Role.EMPLOYEE,
+      isActive: true,
+    },
+    select: {
+      id: true,
+      fullName: true,
+      companyId: true,
+      company: {
+        select: {
+          subdomain: true,
+        },
+      },
+    },
+    orderBy: [{ companyId: "asc" }, { fullName: "asc" }],
+  });
+
+  const employeeResults = await Promise.all(
+    employees.map(async (employee) => {
+      const missingDates = await getMissingRequiredWorkDates(
+        employee.id,
+        todayYMD,
+        {
+          includeUntilDate: true,
+        }
+      );
+
+      return {
+        userId: employee.id,
+        fullName: employee.fullName,
+        companyId: employee.companyId,
+        companySubdomain: employee.company?.subdomain ?? "",
+        missingDatesCount: missingDates.length,
+      };
+    })
+  );
+
+  const adminSummaryMap = new Map<string, AdminMissingSummary>();
+
+  for (const item of employeeResults) {
+    if (item.missingDatesCount <= 0) {
+      continue;
+    }
+
+    const existing = adminSummaryMap.get(item.companyId);
+
+    if (existing) {
+      existing.missingEmployeesCount += 1;
+      existing.missingEntriesCount += item.missingDatesCount;
+      existing.employeeNames.push(item.fullName);
+      continue;
+    }
+
+    adminSummaryMap.set(item.companyId, {
+      companyId: item.companyId,
+      companySubdomain: item.companySubdomain,
+      missingEmployeesCount: 1,
+      missingEntriesCount: item.missingDatesCount,
+      employeeNames: [item.fullName],
+    });
+  }
+
+  const adminSummaries = Array.from(adminSummaryMap.values());
+
+  const adminPushResults = await Promise.all(
+    adminSummaries.map(async (summary) => {
+      const tenantIcon192 = summary.companySubdomain
+        ? `/tenant-assets/${summary.companySubdomain}/icon-192.jpeg`
+        : undefined;
+
+      const tenantBadge = summary.companySubdomain
+        ? `/tenant-assets/${summary.companySubdomain}/apple-touch-icon.png`
+        : undefined;
+
+      const sentCount = await sendLocalizedPushToAdmins({
+        companyId: summary.companyId,
+        companySubdomain: summary.companySubdomain,
+        url: "/admin/dashboard",
+        icon: tenantIcon192,
+        badge: tenantBadge,
+        title: (language) => getLocalizedAdminMissingPushTitle(language),
+        body: (language) => getLocalizedAdminMissingPushBody(language, summary),
+      });
+
+      return {
+        companyId: summary.companyId,
+        companySubdomain: summary.companySubdomain,
+        missingEmployeesCount: summary.missingEmployeesCount,
+        missingEntriesCount: summary.missingEntriesCount,
+        sentCount,
+      };
+    })
+  );
+
+  const adminPushSentCount = adminPushResults.reduce(
+    (sum, item) => sum + item.sentCount,
+    0
+  );
+
+  return NextResponse.json({
+    ok: true,
+    sent: adminPushSentCount > 0,
+    adminPushSentCount,
+    missingCompaniesCount: adminSummaries.length,
+    missingEmployeesCount: adminSummaries.reduce(
+      (sum, summary) => sum + summary.missingEmployeesCount,
+      0
+    ),
+    missingEntriesCount: adminSummaries.reduce(
+      (sum, summary) => sum + summary.missingEntriesCount,
+      0
+    ),
+    adminSummaries: adminPushResults,
+  });
 }
 
 export async function POST(req: Request) {
