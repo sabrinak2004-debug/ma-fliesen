@@ -1,22 +1,141 @@
 // src/app/api/admin/dashboard/remind-admin-missing/route.ts
 import { NextResponse } from "next/server";
-import { Role } from "@prisma/client";
+import { Role, TaskCategory, TaskRequiredAction, TaskStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { sendLocalizedPushToAdmins } from "@/lib/webpush";
-import {
-  berlinHour,
-  berlinTodayYMD,
-  getMissingRequiredWorkDates,
-} from "@/lib/timesheetLock";
-import type { AppUiLanguage } from "@/lib/i18n";
+import { sendPushToUser } from "@/lib/webpush";
+import { berlinHour, berlinTodayYMD, getMissingRequiredWorkDates } from "@/lib/timesheetLock";
+import { normalizeAppUiLanguage, type AppUiLanguage } from "@/lib/i18n";
 
-type AdminMissingTodaySummary = {
-  companyId: string;
-  companySubdomain: string;
-  missingEmployeesCount: number;
-};
+function dateOnlyUTC(yyyyMmDd: string): Date {
+  return new Date(`${yyyyMmDd}T00:00:00.000Z`);
+}
 
-function getLocalizedAdminMissingPushTitle(language: AppUiLanguage): string {
+function formatDateForLanguage(language: AppUiLanguage, iso: string): string {
+  const normalized = iso.length >= 10 ? iso.slice(0, 10) : iso;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return iso;
+  }
+
+  const [year, month, day] = normalized.split("-");
+
+  switch (language) {
+    case "EN":
+      return `${month}/${day}/${year}`;
+    case "IT":
+      return `${day}/${month}/${year}`;
+    case "TR":
+      return `${day}.${month}.${year}`;
+    case "SQ":
+      return `${day}.${month}.${year}`;
+    case "KU":
+      return `${day}.${month}.${year}`;
+    case "DE":
+    default:
+      return `${day}.${month}.${year}`;
+    case "RO":
+      return `${day}.${month}.${year}`;
+  }
+}
+
+function getLocalizedWorkTaskTitle(
+  language: AppUiLanguage,
+  referenceDate: string,
+  isSingleDay: boolean
+): string {
+  const dateLabel = formatDateForLanguage(language, referenceDate);
+
+  switch (language) {
+    case "EN":
+      return isSingleDay
+        ? `Add work time for ${dateLabel}`
+        : `Add work times from ${dateLabel}`;
+    case "IT":
+      return isSingleDay
+        ? `Inserisci l'orario di lavoro per il ${dateLabel}`
+        : `Inserisci gli orari di lavoro a partire dal ${dateLabel}`;
+    case "TR":
+      return isSingleDay
+        ? `${dateLabel} için çalışma süresini gir`
+        : `${dateLabel} tarihinden itibaren çalışma sürelerini gir`;
+    case "SQ":
+      return isSingleDay
+        ? `Regjistro kohën e punës për ${dateLabel}`
+        : `Regjistro kohët e punës nga ${dateLabel}`;
+    case "KU":
+      return isSingleDay
+        ? `Dema karê ji bo ${dateLabel} binivîse`
+        : `Demên karê ji ${dateLabel} û pê ve binivîse`;
+    case "DE":
+    default:
+      return isSingleDay
+        ? `Arbeitszeit für ${referenceDate} nachtragen`
+        : `Arbeitszeiten ab ${referenceDate} nachtragen`;
+    case "RO":
+      return isSingleDay
+        ? `Adaugă timpul de lucru pentru ${dateLabel}`
+        : `Adaugă timpii de lucru începând cu ${dateLabel}`;
+  }
+}
+
+function getLocalizedWorkTaskDescription(args: {
+  language: AppUiLanguage;
+  referenceDate: string;
+  oldestMissingDate: string;
+  newestMissingDate: string;
+  missingDatesCount: number;
+}): string {
+  const {
+    language,
+    referenceDate,
+    oldestMissingDate,
+    newestMissingDate,
+    missingDatesCount,
+  } = args;
+
+  const referenceDateLabel = formatDateForLanguage(language, referenceDate);
+  const fromLabel = formatDateForLanguage(language, oldestMissingDate);
+  const toLabel = formatDateForLanguage(language, newestMissingDate);
+
+  if (missingDatesCount === 1) {
+    switch (language) {
+      case "EN":
+        return `Please add your missing work time for ${referenceDateLabel} in the app.`;
+      case "IT":
+        return `Inserisci nell'app il tuo orario di lavoro mancante per il ${referenceDateLabel}.`;
+      case "TR":
+        return `Lütfen uygulamada ${referenceDateLabel} için eksik çalışma sürenizi girin.`;
+      case "SQ":
+        return `Ju lutem shtoni në aplikacion kohën tuaj të munguar të punës për ${referenceDateLabel}.`;
+      case "KU":
+        return `Ji kerema xwe dema karê xwe ya winda ji bo ${referenceDateLabel} di sepanê de binivîse.`;
+      case "DE":
+      default:
+        return `Bitte trage deine fehlende Arbeitszeit für ${referenceDate} in der App nach.`;
+      case "RO":
+        return `Vă rugăm să adăugați în aplicație timpul de lucru lipsă pentru ${referenceDateLabel}.`;
+    }
+  }
+
+  switch (language) {
+    case "EN":
+      return `You are missing work time entries for multiple days (${fromLabel} to ${toLabel}). Please start with the oldest open day ${referenceDateLabel}.`;
+    case "IT":
+      return `Mancano registrazioni dell'orario di lavoro per più giorni (${fromLabel} fino al ${toLabel}). Inizia dal giorno aperto più vecchio: ${referenceDateLabel}.`;
+    case "TR":
+      return `Birden fazla gün için çalışma süresi kaydınız eksik (${fromLabel} ile ${toLabel} arası). Lütfen en eski açık gün olan ${referenceDateLabel} ile başlayın.`;
+    case "SQ":
+      return `Ju mungojnë regjistrimet e kohës së punës për disa ditë (${fromLabel} deri më ${toLabel}). Ju lutem filloni me ditën më të vjetër të hapur ${referenceDateLabel}.`;
+    case "KU":
+      return `Ji bo çend rojan tomarên dema karê te kêm in (${fromLabel} heta ${toLabel}). Ji kerema xwe bi roja herî kevn a vekirî ${referenceDateLabel} dest pê bike.`;
+    case "RO":
+      return `Vă lipsesc înregistrări ale timpului de lucru pentru mai multe zile (${fromLabel} până la ${toLabel}). Vă rugăm să începeți cu cea mai veche zi deschisă ${referenceDateLabel}.`;
+    case "DE":
+    default:
+      return `Dir fehlen Arbeitszeiteinträge für mehrere Tage (${oldestMissingDate} bis ${newestMissingDate}). Bitte beginne mit dem ältesten offenen Tag ${referenceDate}.`;
+  }
+}
+
+function getLocalizedPushTitle(language: AppUiLanguage): string {
   switch (language) {
     case "EN":
       return "Missing work entries";
@@ -36,40 +155,31 @@ function getLocalizedAdminMissingPushTitle(language: AppUiLanguage): string {
   }
 }
 
-function getLocalizedAdminMissingPushBody(
+function getLocalizedPushBody(
   language: AppUiLanguage,
-  missingEmployeesCount: number
+  oldestMissingDate: string,
+  newestMissingDate: string
 ): string {
+  const fromLabel = formatDateForLanguage(language, oldestMissingDate);
+  const toLabel = formatDateForLanguage(language, newestMissingDate);
+  const rangeLabel = fromLabel === toLabel ? fromLabel : `${fromLabel} – ${toLabel}`;
+
   switch (language) {
     case "EN":
-      return missingEmployeesCount === 1
-        ? "By 8:00 PM, 1 employee has not entered any work entries today."
-        : `By 8:00 PM, ${missingEmployeesCount} employees have not entered any work entries today.`;
+      return `You still have missing work entries for ${rangeLabel}. Please open your tasks and start with the oldest missing day.`;
     case "IT":
-      return missingEmployeesCount === 1
-        ? "Entro le 20:00, 1 dipendente non ha inserito alcuna registrazione di lavoro oggi."
-        : `Entro le 20:00, ${missingEmployeesCount} dipendenti non hanno inserito alcuna registrazione di lavoro oggi.`;
+      return `Hai ancora registrazioni di lavoro mancanti per ${rangeLabel}. Apri le tue attività e inizia dal giorno mancante più vecchio.`;
     case "TR":
-      return missingEmployeesCount === 1
-        ? "Saat 20:00'ye kadar 1 çalışan bugün çalışma kaydı girmedi."
-        : `Saat 20:00'ye kadar ${missingEmployeesCount} çalışan bugün çalışma kaydı girmedi.`;
+      return `${rangeLabel} için hâlâ eksik çalışma kayıtlarınız var. Lütfen görevlerinizi açın ve en eski eksik günle başlayın.`;
     case "SQ":
-      return missingEmployeesCount === 1
-        ? "Deri në orën 20:00, 1 punonjës nuk ka regjistruar asnjë hyrje pune sot."
-        : `Deri në orën 20:00, ${missingEmployeesCount} punonjës nuk kanë regjistruar asnjë hyrje pune sot.`;
+      return `Ju mungojnë ende regjistrime pune për ${rangeLabel}. Ju lutem hapni detyrat tuaja dhe filloni me ditën më të vjetër që mungon.`;
     case "KU":
-      return missingEmployeesCount === 1
-        ? "Heta saet 20:00, 1 karmend îro tu tomarê karê nekiriye."
-        : `Heta saet 20:00, ${missingEmployeesCount} karmendan îro tu tomarê karê nekiriye.`;
+      return `Hîn jî ji bo ${rangeLabel} tomarên karê te kêm in. Ji kerema xwe erkên xwe veke û bi roja herî kevn a winda dest pê bike.`;
     case "RO":
-      return missingEmployeesCount === 1
-        ? "Până la ora 20:00, 1 angajat nu a introdus nicio înregistrare de lucru astăzi."
-        : `Până la ora 20:00, ${missingEmployeesCount} angajați nu au introdus nicio înregistrare de lucru astăzi.`;
+      return `Încă vă lipsesc înregistrări de lucru pentru ${rangeLabel}. Vă rugăm să deschideți sarcinile și să începeți cu cea mai veche zi care lipsește.`;
     case "DE":
     default:
-      return missingEmployeesCount === 1
-        ? "Bis 21 Uhr hat 1 Mitarbeiter heute keinen Arbeitseintrag erfasst."
-        : `Bis 21 Uhr haben ${missingEmployeesCount} Mitarbeiter heute keine Arbeitseinträge erfasst.`;
+      return `Dir fehlen noch Arbeitseinträge für ${oldestMissingDate === newestMissingDate ? oldestMissingDate : `${oldestMissingDate} bis ${newestMissingDate}`}. Bitte öffne deine Aufgaben und beginne mit dem ältesten fehlenden Tag.`;
   }
 }
 
@@ -79,20 +189,15 @@ export async function GET(req: Request) {
   const expected = cronSecret ? `Bearer ${cronSecret}` : "";
 
   if (!cronSecret || authorization !== expected) {
-    return NextResponse.json(
-      { ok: false, error: "UNAUTHORIZED" },
-      { status: 401 }
-    );
+    return NextResponse.json({ ok: false, error: "UNAUTHORIZED" }, { status: 401 });
   }
 
   const berlinCurrentHour = berlinHour();
-
-  if (berlinCurrentHour !== 20) {
+  if (berlinCurrentHour < 18) {
     return NextResponse.json({
       ok: true,
       sent: false,
-      reason: "NOT_20_BERLIN",
-      berlinCurrentHour,
+      reason: "BEFORE_18_BERLIN",
     });
   }
 
@@ -107,6 +212,7 @@ export async function GET(req: Request) {
       id: true,
       fullName: true,
       companyId: true,
+      language: true,
       company: {
         select: {
           subdomain: true,
@@ -116,104 +222,144 @@ export async function GET(req: Request) {
     orderBy: [{ companyId: "asc" }, { fullName: "asc" }],
   });
 
-  const employeeResults = await Promise.all(
+  const results = await Promise.all(
     employees.map(async (employee) => {
-      const missingDates = await getMissingRequiredWorkDates(
-        employee.id,
-        todayYMD,
-        {
-          includeUntilDate: true,
+      const language = normalizeAppUiLanguage(employee.language);
+      const missingDates = await getMissingRequiredWorkDates(employee.id, todayYMD);
+
+      if (missingDates.length === 0) {
+        return {
+          userId: employee.id,
+          fullName: employee.fullName,
+          companyId: employee.companyId,
+          missingDatesCount: 0,
+          oldestMissingDate: null as string | null,
+          sentCount: 0,
+          referenceDate: null as string | null,
+          taskCreated: false,
+        };
+      }
+
+      if (missingDates.length < 5) {
+        return {
+          userId: employee.id,
+          fullName: employee.fullName,
+          companyId: employee.companyId,
+          missingDatesCount: missingDates.length,
+          oldestMissingDate: missingDates[0],
+          sentCount: 0,
+          referenceDate: null as string | null,
+          taskCreated: false,
+        };
+      }
+
+      const oldestMissingDate = missingDates[0];
+      const newestMissingDate = missingDates[missingDates.length - 1];
+      const referenceDate = oldestMissingDate;
+
+      const existingTask = await prisma.task.findFirst({
+        where: {
+          assignedToUserId: employee.id,
+          category: TaskCategory.WORK_TIME,
+          status: TaskStatus.OPEN,
+          requiredAction: TaskRequiredAction.WORK_ENTRY_FOR_DATE,
+          referenceDate: dateOnlyUTC(referenceDate),
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      let createdTaskId: string | null = null;
+
+      if (!existingTask) {
+        const systemAdmin = await prisma.appUser.findFirst({
+          where: {
+            role: Role.ADMIN,
+            isActive: true,
+            companyId: employee.companyId,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (systemAdmin) {
+          const createdTask = await prisma.task.create({
+            data: {
+              assignedToUserId: employee.id,
+              createdByUserId: systemAdmin.id,
+              title: getLocalizedWorkTaskTitle(language, referenceDate, missingDates.length === 1),
+              description: getLocalizedWorkTaskDescription({
+                language,
+                referenceDate,
+                oldestMissingDate,
+                newestMissingDate,
+                missingDatesCount: missingDates.length,
+              }),
+              category: TaskCategory.WORK_TIME,
+              status: TaskStatus.OPEN,
+              requiredAction: TaskRequiredAction.WORK_ENTRY_FOR_DATE,
+              referenceDate: dateOnlyUTC(referenceDate),
+            },
+            select: {
+              id: true,
+            },
+          });
+
+          createdTaskId = createdTask.id;
         }
-      );
+      }
 
-      return {
-        userId: employee.id,
+      const companySubdomain = employee.company?.subdomain ?? "";
+      const tenantIcon192 = companySubdomain
+        ? `/tenant-assets/${companySubdomain}/icon-192.jpeg`
+        : undefined;
+      const tenantBadge = companySubdomain
+        ? `/tenant-assets/${companySubdomain}/apple-touch-icon.png`
+        : undefined;
+
+      const sentCount = await sendPushToUser(employee.id, {
         companyId: employee.companyId,
-        companySubdomain: employee.company?.subdomain ?? "",
-        isMissingToday: missingDates.includes(todayYMD),
-      };
-    })
-  );
-
-  const adminSummaryMap = new Map<string, AdminMissingTodaySummary>();
-
-  for (const item of employeeResults) {
-    if (!item.isMissingToday) {
-      continue;
-    }
-
-    const existing = adminSummaryMap.get(item.companyId);
-
-    if (existing) {
-      existing.missingEmployeesCount += 1;
-      continue;
-    }
-
-    adminSummaryMap.set(item.companyId, {
-      companyId: item.companyId,
-      companySubdomain: item.companySubdomain,
-      missingEmployeesCount: 1,
-    });
-  }
-
-  const adminSummaries = Array.from(adminSummaryMap.values());
-
-  if (adminSummaries.length === 0) {
-    return NextResponse.json({
-      ok: true,
-      sent: false,
-      reason: "NO_MISSING_WORK_ENTRIES_TODAY",
-      missingEmployeesCount: 0,
-    });
-  }
-
-  const adminPushResults = await Promise.all(
-    adminSummaries.map(async (summary) => {
-      const tenantIcon192 = summary.companySubdomain
-        ? `/tenant-assets/${summary.companySubdomain}/icon-192.jpeg`
-        : undefined;
-
-      const tenantBadge = summary.companySubdomain
-        ? `/tenant-assets/${summary.companySubdomain}/apple-touch-icon.png`
-        : undefined;
-
-      const sentCount = await sendLocalizedPushToAdmins({
-        companyId: summary.companyId,
-        companySubdomain: summary.companySubdomain,
-        url: "/admin/dashboard",
+        companySubdomain,
+        title: getLocalizedPushTitle(language),
+        body: getLocalizedPushBody(language, oldestMissingDate, newestMissingDate),
+        url: "/aufgaben",
         icon: tenantIcon192,
         badge: tenantBadge,
-        title: (language) => getLocalizedAdminMissingPushTitle(language),
-        body: (language) =>
-          getLocalizedAdminMissingPushBody(
-            language,
-            summary.missingEmployeesCount
-          ),
       });
 
       return {
-        companyId: summary.companyId,
-        companySubdomain: summary.companySubdomain,
-        missingEmployeesCount: summary.missingEmployeesCount,
+        userId: employee.id,
+        fullName: employee.fullName,
+        companyId: employee.companyId,
+        missingDatesCount: missingDates.length,
+        oldestMissingDate,
         sentCount,
+        referenceDate,
+        taskCreated: Boolean(createdTaskId),
       };
     })
   );
 
-  const adminPushSentCount = adminPushResults.reduce(
-    (sum, item) => sum + item.sentCount,
-    0
-  );
+  const notifiedEmployees = results.filter((item) => item.sentCount > 0);
 
   return NextResponse.json({
     ok: true,
-    sent: adminPushSentCount > 0,
-    adminPushSentCount,
-    missingCompaniesCount: adminSummaries.length,
-    missingEmployeesCount: adminSummaries.reduce(
-      (sum, summary) => sum + summary.missingEmployeesCount,
-      0
-    ),
-    adminSummaries: adminPushResults,
+    sent: notifiedEmployees.length > 0,
+    sentCount: notifiedEmployees.reduce((sum, item) => sum + item.sentCount, 0),
+    notifiedEmployeesCount: notifiedEmployees.length,
+    notifiedEmployees: notifiedEmployees.map((item) => ({
+      userId: item.userId,
+      fullName: item.fullName,
+      companyId: item.companyId,
+      missingDatesCount: item.missingDatesCount,
+      oldestMissingDate: item.oldestMissingDate,
+      referenceDate: item.referenceDate,
+      taskCreated: item.taskCreated,
+    })),
   });
 }
