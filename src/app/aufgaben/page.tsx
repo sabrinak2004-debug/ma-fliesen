@@ -1408,7 +1408,7 @@ export default function AufgabenPage() {
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent: task.category === "GENERAL" ? "flex-end" : "space-between",
               alignItems: "center",
               gap: 10,
               flexWrap: "wrap",
