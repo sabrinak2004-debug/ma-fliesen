@@ -1,11 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import PushBootstrap from "@/components/PushBootstrap";
-import DesktopPwaWindowMode from "@/components/DesktopPwaWindowMode";
 import { getSession } from "@/lib/auth";
 import { normalizeAppUiLanguage, toHtmlLang } from "@/lib/i18n";
 import {
-  getTenantAppleTouchIconHref,
-  getTenantManifestHref,
   getTenantThemeStyle,
   resolveTenantTheme,
 } from "@/lib/tenantBranding";
@@ -52,36 +49,22 @@ export default async function RootLayout({
       ? resolveTenantTheme(companySubdomain, primaryColor)
       : null;
 
-  const manifestHref =
-    companySubdomain !== null
-      ? getTenantManifestHref(companySubdomain)
-      : "/manifest.json";
-
-  const appleTouchIconHref =
-    companySubdomain !== null
-      ? getTenantAppleTouchIconHref(companySubdomain)
-      : "/image_2.jpeg";
-
-  const themeColor = tenantTheme ? tenantTheme.bg : "#f4f2ee";
-
   return (
     <html
       lang={htmlLang}
       style={tenantTheme ? getTenantThemeStyle(tenantTheme) : undefined}
     >
       <head>
-        <meta name="theme-color" content={themeColor} />
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content={themeColor} />
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content={themeColor} />
+        <meta
+          name="theme-color"
+          content={tenantTheme ? tenantTheme.bg : "#f4f2ee"}
+        />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Mitarbeiterportal" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <link rel="manifest" href={manifestHref} />
-        <link rel="apple-touch-icon" href={appleTouchIconHref} />
       </head>
       <body>
         <div className="app-root-shell">
-          <DesktopPwaWindowMode />
           <PushBootstrap language={language} />
           {children}
         </div>
