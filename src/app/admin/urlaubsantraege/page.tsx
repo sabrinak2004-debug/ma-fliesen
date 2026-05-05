@@ -390,6 +390,151 @@ function formatDateLocalized(ymd: string, language: AppUiLanguage): string {
   }).format(date);
 }
 
+function toYMDLocal(date: Date): string {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function ymdToDateLocal(ymd: string): Date {
+  const [year, month, day] = ymd.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function addDaysLocal(date: Date, days: number): Date {
+  const copy = new Date(date.getTime());
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
+
+function getEasterSundayDateLocal(year: number): Date {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+  return new Date(year, month - 1, day);
+}
+
+function getBadenWuerttembergNonWorkingHolidaySet(year: number): Set<string> {
+  const holidayDates = new Set<string>([
+    `${year}-01-01`,
+    `${year}-01-06`,
+    `${year}-05-01`,
+    `${year}-10-03`,
+    `${year}-11-01`,
+    `${year}-12-25`,
+    `${year}-12-26`,
+  ]);
+
+  const easterSunday = getEasterSundayDateLocal(year);
+
+  holidayDates.add(toYMDLocal(addDaysLocal(easterSunday, -2)));
+  holidayDates.add(toYMDLocal(addDaysLocal(easterSunday, 1)));
+  holidayDates.add(toYMDLocal(addDaysLocal(easterSunday, 39)));
+  holidayDates.add(toYMDLocal(addDaysLocal(easterSunday, 50)));
+  holidayDates.add(toYMDLocal(addDaysLocal(easterSunday, 60)));
+
+  return holidayDates;
+}
+
+function isBadenWuerttembergNonWorkingHolidayYMD(ymd: string): boolean {
+  const [year] = ymd.split("-").map(Number);
+
+  if (!Number.isFinite(year)) {
+    return false;
+  }
+
+  return getBadenWuerttembergNonWorkingHolidaySet(year).has(ymd);
+}
+
+function getExcludedVacationHolidayDatesForRequest(
+  item: AbsenceRequestItem
+): string[] {
+  if (item.type !== "VACATION") {
+    return [];
+  }
+
+  if (item.dayPortion === "HALF_DAY") {
+    const date = ymdToDateLocal(item.startDate);
+    const day = date.getDay();
+    const isWeekday = day >= 1 && day <= 5;
+
+    return isWeekday &&
+      isBadenWuerttembergNonWorkingHolidayYMD(item.startDate)
+      ? [item.startDate]
+      : [];
+  }
+
+  const startDate = ymdToDateLocal(item.startDate);
+  const endDate = ymdToDateLocal(item.endDate);
+  const excludedDates: string[] = [];
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    const ymd = toYMDLocal(current);
+    const day = current.getDay();
+    const isWeekday = day >= 1 && day <= 5;
+
+    if (isWeekday && isBadenWuerttembergNonWorkingHolidayYMD(ymd)) {
+      excludedDates.push(ymd);
+    }
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  return excludedDates;
+}
+
+function adminHolidayExclusionHint(
+  language: AppUiLanguage,
+  dates: string[]
+): string {
+  const labels: Record<AppUiLanguage, string> = {
+    DE:
+      dates.length === 1
+        ? "1 gesetzlicher Feiertag wird nicht als Urlaubstag mitgezählt:"
+        : `${dates.length} gesetzliche Feiertage werden nicht als Urlaubstage mitgezählt:`,
+    EN:
+      dates.length === 1
+        ? "1 public holiday is not counted as a vacation day:"
+        : `${dates.length} public holidays are not counted as vacation days:`,
+    IT:
+      dates.length === 1
+        ? "1 giorno festivo legale non viene conteggiato come giorno di ferie:"
+        : `${dates.length} giorni festivi legali non vengono conteggiati come giorni di ferie:`,
+    TR:
+      dates.length === 1
+        ? "1 resmî tatil izin günü sayılmaz:"
+        : `${dates.length} resmî tatil izin günü sayılmaz:`,
+    SQ:
+      dates.length === 1
+        ? "1 festë zyrtare nuk llogaritet si ditë pushimi:"
+        : `${dates.length} festa zyrtare nuk llogariten si ditë pushimi:`,
+    KU:
+      dates.length === 1
+        ? "1 cejna fermî wekî roja bêhnvedanê nayê hesibandin:"
+        : `${dates.length} cejnên fermî wekî rojên bêhnvedanê nayên hesibandin:`,
+    RO:
+      dates.length === 1
+        ? "1 sărbătoare legală nu este numărată ca zi de vacanță:"
+        : `${dates.length} sărbători legale nu sunt numărate ca zile de vacanță:`,
+  };
+
+  return `${labels[language]} ${dates.join(", ")}`;
+}
+
 function formatDateTimeLocalized(
   iso: string | null,
   language: AppUiLanguage
@@ -1206,6 +1351,7 @@ useEffect(() => {
     const isMixedCompensation =
       item.paidVacationUnits > 0 && item.unpaidVacationUnits > 0;
     const requestedDays = totalRequestedVacationDays(item);
+    const excludedHolidayDates = getExcludedVacationHolidayDatesForRequest(item);
     const durationText =
       item.dayPortion === "HALF_DAY" ? (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -1248,6 +1394,11 @@ useEffect(() => {
             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 14 }}>
               {durationText}
             </div>
+            {excludedHolidayDates.length > 0 ? (
+              <div className="admin-workflow-mixed-hint">
+                {adminHolidayExclusionHint(language, excludedHolidayDates)}
+              </div>
+            ) : null}
 
             {item.type === "VACATION" ? (
               <div className="admin-workflow-breakdown-text">

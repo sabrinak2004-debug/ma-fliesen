@@ -698,6 +698,83 @@ function isBadenWuerttembergNonWorkingHolidayYMD(ymd: string): boolean {
   return getBadenWuerttembergNonWorkingHolidaySet(year).has(ymd);
 }
 
+function getExcludedVacationHolidayDates(
+  start: string,
+  end: string,
+  dayPortion: AbsenceDayPortion
+): string[] {
+  if (!start || !end || end < start) {
+    return [];
+  }
+
+  if (dayPortion === "HALF_DAY") {
+    const startDate = ymdToDateLocal(start);
+    const day = startDate.getDay();
+    const isWeekday = day >= 1 && day <= 5;
+
+    return isWeekday && isBadenWuerttembergNonWorkingHolidayYMD(start)
+      ? [start]
+      : [];
+  }
+
+  const startDate = ymdToDateLocal(start);
+  const endDate = ymdToDateLocal(end);
+  const excludedDates: string[] = [];
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    const ymd = toYMDLocal(current);
+    const day = current.getDay();
+    const isWeekday = day >= 1 && day <= 5;
+
+    if (isWeekday && isBadenWuerttembergNonWorkingHolidayYMD(ymd)) {
+      excludedDates.push(ymd);
+    }
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  return excludedDates;
+}
+
+function holidayExclusionHint(
+  language: AppUiLanguage,
+  dates: string[]
+): string {
+  const labels: Record<AppUiLanguage, string> = {
+    DE:
+      dates.length === 1
+        ? "Dieser gesetzliche Feiertag wird automatisch nicht als Urlaubstag mitgezählt:"
+        : "Diese gesetzlichen Feiertage werden automatisch nicht als Urlaubstage mitgezählt:",
+    EN:
+      dates.length === 1
+        ? "This public holiday is automatically not counted as a vacation day:"
+        : "These public holidays are automatically not counted as vacation days:",
+    IT:
+      dates.length === 1
+        ? "Questo giorno festivo legale non viene conteggiato automaticamente come giorno di ferie:"
+        : "Questi giorni festivi legali non vengono conteggiati automaticamente come giorni di ferie:",
+    TR:
+      dates.length === 1
+        ? "Bu resmî tatil otomatik olarak izin günü sayılmaz:"
+        : "Bu resmî tatiller otomatik olarak izin günü sayılmaz:",
+    SQ:
+      dates.length === 1
+        ? "Kjo festë zyrtare nuk llogaritet automatikisht si ditë pushimi:"
+        : "Këto festa zyrtare nuk llogariten automatikisht si ditë pushimi:",
+    KU:
+      dates.length === 1
+        ? "Ev cejna fermî bixweber wekî roja bêhnvedanê nayê hesibandin:"
+        : "Ev cejnên fermî bixweber wekî rojên bêhnvedanê nayên hesibandin:",
+    RO:
+      dates.length === 1
+        ? "Această sărbătoare legală nu este numărată automat ca zi de vacanță:"
+        : "Aceste sărbători legale nu sunt numărate automat ca zile de vacanță:",
+  };
+
+  return `${labels[language]} ${dates.join(", ")}`;
+}
+
 function startOfWeekMonday(d: Date): Date {
   const x = new Date(d);
   const day = (x.getDay() + 6) % 7;
@@ -1185,6 +1262,18 @@ function KalenderPageInner({
       requestedVacationDaysPreview - unpaidVacationDaysPreview
     );
   }, [absenceType, requestedVacationDaysPreview, unpaidVacationDaysPreview]);
+
+  const excludedVacationHolidayDatesPreview = useMemo(() => {
+    if (absenceType !== "VACATION") {
+      return [];
+    }
+
+    return getExcludedVacationHolidayDates(
+      absenceStart,
+      absenceEnd,
+      absenceDayPortion
+    );
+  }, [absenceStart, absenceEnd, absenceType, absenceDayPortion]);
 
   const [dayAppointments, setDayAppointments] = useState<CalendarEventDTO[]>([]);
   const [apptLoading, setApptLoading] = useState(false);
@@ -3356,6 +3445,22 @@ function KalenderPageInner({
                 >
                   {t("scopeHint")}
                 </div>
+                {!selectedRequestBlock &&
+                excludedVacationHolidayDatesPreview.length > 0 ? (
+                  <div
+                    className="card calendar-status-card calendar-status-card-neutral"
+                    style={{
+                      marginBottom: 10,
+                      fontSize: 13,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {holidayExclusionHint(
+                      language,
+                      excludedVacationHolidayDatesPreview
+                    )}
+                  </div>
+                ) : null}
                 <div className="calendar-form-grid-2">
                   <button
                     className={`btn ${
