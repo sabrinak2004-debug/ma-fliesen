@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
@@ -712,32 +712,64 @@ function isMobileDevice(): boolean {
    Page
    ========================= */
 
+function getScrollableParent(element: HTMLElement): HTMLElement | null {
+  let current: HTMLElement | null = element.parentElement;
+
+  while (current) {
+    const style = window.getComputedStyle(current);
+    const overflowY = style.overflowY;
+
+    const canScroll =
+      (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") &&
+      current.scrollHeight > current.clientHeight + 8;
+
+    if (canScroll) {
+      return current;
+    }
+
+    current = current.parentElement;
+  }
+
+  const scrollingElement = document.scrollingElement;
+
+  if (scrollingElement instanceof HTMLElement) {
+    return scrollingElement;
+  }
+
+  return document.documentElement;
+}
+
 function scrollElementIntoAppView(element: HTMLElement): void {
-  const scrollParent = element.closest(
-    ".appshell-main, .appshell-content, main"
-  );
+  const offsetTop = 130;
+  const scrollParent = getScrollableParent(element);
 
-  if (scrollParent instanceof HTMLElement) {
-    const parentRect = scrollParent.getBoundingClientRect();
-    const elementRect = element.getBoundingClientRect();
+  if (!scrollParent) {
+    return;
+  }
 
-    scrollParent.scrollTo({
-      top:
-        scrollParent.scrollTop +
-        elementRect.top -
-        parentRect.top -
-        120,
+  const parentRect = scrollParent.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+
+  if (
+    scrollParent === document.documentElement ||
+    scrollParent === document.body ||
+    scrollParent === document.scrollingElement
+  ) {
+    const absoluteTop = elementRect.top + window.scrollY - offsetTop;
+
+    window.scrollTo({
+      top: Math.max(0, absoluteTop),
       behavior: "smooth",
     });
 
     return;
   }
 
-  const absoluteTop =
-    element.getBoundingClientRect().top + window.scrollY - 120;
-
-  window.scrollTo({
-    top: absoluteTop,
+  scrollParent.scrollTo({
+    top: Math.max(
+      0,
+      scrollParent.scrollTop + elementRect.top - parentRect.top - offsetTop
+    ),
     behavior: "smooth",
   });
 }
@@ -1255,34 +1287,49 @@ export default function AdminDashboardPage() {
     taskDateParam,
   ]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!scrollTargetUserId || loading || !dash) {
       return;
     }
 
-    let frameOne = 0;
-    let frameTwo = 0;
-    let timeoutId = 0;
+    let cancelled = false;
+    const timeoutIds: number[] = [];
 
-    frameOne = window.requestAnimationFrame(() => {
-      frameTwo = window.requestAnimationFrame(() => {
-        timeoutId = window.setTimeout(() => {
-          const target = employeeCardRefs.current[scrollTargetUserId];
+    const scrollToTarget = (): void => {
+      if (cancelled) {
+        return;
+      }
 
-          if (!target) {
-            return;
-          }
+      const target = employeeCardRefs.current[scrollTargetUserId];
 
-          scrollElementIntoAppView(target);
-          setScrollTargetUserId("");
-        }, 180);
-      });
+      if (!target) {
+        return;
+      }
+
+      scrollElementIntoAppView(target);
+    };
+
+    const delays = [80, 180, 360, 650];
+
+    delays.forEach((delay) => {
+      const timeoutId = window.setTimeout(scrollToTarget, delay);
+      timeoutIds.push(timeoutId);
     });
 
+    const clearTimeoutId = window.setTimeout(() => {
+      if (!cancelled) {
+        setScrollTargetUserId("");
+      }
+    }, 900);
+
+    timeoutIds.push(clearTimeoutId);
+
     return () => {
-      window.cancelAnimationFrame(frameOne);
-      window.cancelAnimationFrame(frameTwo);
-      window.clearTimeout(timeoutId);
+      cancelled = true;
+
+      timeoutIds.forEach((timeoutId) => {
+        window.clearTimeout(timeoutId);
+      });
     };
   }, [scrollTargetUserId, loading, dash, openUsers, openCats, openWorkDays]);
 
@@ -2319,10 +2366,11 @@ export default function AdminDashboardPage() {
                       ref={(element) => {
                         employeeCardRefs.current[u.userId] = element;
                       }}
+                      data-employee-id={u.userId}
                       className="list-item"
                       style={{
                         listStyle: "none",
-                        scrollMarginTop: "120px",
+                        scrollMarginTop: 130,
                       }}
                     >
                     <div
