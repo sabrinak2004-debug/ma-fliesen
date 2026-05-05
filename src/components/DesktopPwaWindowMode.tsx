@@ -33,28 +33,30 @@ export default function DesktopPwaWindowMode() {
     let animationFrameId = 0;
 
     function updateWindowModeClass(): void {
-      window.cancelAnimationFrame(animationFrameId);
+  window.cancelAnimationFrame(animationFrameId);
 
-      animationFrameId = window.requestAnimationFrame(() => {
-        const root = document.documentElement;
+  animationFrameId = window.requestAnimationFrame(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const standaloneMode = isStandaloneDisplayMode();
 
-        const shouldTrack =
-          isStandaloneDisplayMode() && isDesktopViewport();
+    root.classList.toggle("pwa-standalone", standaloneMode);
+    body.classList.toggle("pwa-standalone", standaloneMode);
 
-        if (!shouldTrack) {
-          root.classList.remove(
-            "app-standalone-windowed",
-            "app-standalone-fullscreen"
-          );
-          return;
-        }
-
-        const fullscreenWindow = isProbablyFullscreenWindow();
-
-        root.classList.toggle("app-standalone-fullscreen", fullscreenWindow);
-        root.classList.toggle("app-standalone-windowed", !fullscreenWindow);
-      });
+    if (!standaloneMode || !isDesktopViewport()) {
+      root.classList.remove(
+        "app-standalone-windowed",
+        "app-standalone-fullscreen"
+      );
+      return;
     }
+
+    const fullscreenWindow = isProbablyFullscreenWindow();
+
+    root.classList.toggle("app-standalone-fullscreen", fullscreenWindow);
+    root.classList.toggle("app-standalone-windowed", !fullscreenWindow);
+  });
+}
 
     updateWindowModeClass();
 
@@ -70,9 +72,12 @@ export default function DesktopPwaWindowMode() {
       );
 
       document.documentElement.classList.remove(
+        "pwa-standalone",
         "app-standalone-windowed",
         "app-standalone-fullscreen"
       );
+
+      document.body.classList.remove("pwa-standalone");
     };
   }, []);
 

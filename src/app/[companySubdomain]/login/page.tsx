@@ -70,7 +70,7 @@ export async function generateMetadata({
     appleWebApp: {
       capable: true,
       title: company.name,
-      statusBarStyle: "default",
+      statusBarStyle: "black-translucent",
     },
     icons: {
       apple: getTenantAppleTouchIconHref(company.subdomain),
