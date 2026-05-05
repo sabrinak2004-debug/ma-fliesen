@@ -575,8 +575,8 @@ function ErfassungPageInner() {
 
   // Create-Form (ohne fullName)
   const [workDate, setWorkDate] = useState<string>(() => toIsoDateLocal(new Date()));
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startTime, setStartTime] = useState("07:00");
+  const [endTime, setEndTime] = useState("14:00");
   const [activity, setActivity] = useState("");
   const [location, setLocation] = useState("");
   const [travelMinutes, setTravelMinutes] = useState<string>("0");
@@ -749,8 +749,8 @@ function ErfassungPageInner() {
       setLocation(syncLocation);
     }
 
-    setStartTime("");
-    setEndTime("");
+    setStartTime("07:00");
+    setEndTime("14:00");
     setShowSyncToast(true);
   }, [searchParams, sourceTaskId, syncDateParam]);
 
@@ -925,6 +925,7 @@ useEffect(() => {
     setError(null);
 
     if (!activity.trim()) return setError(t("enterActivity"));
+    if (!location.trim()) return setError("Bitte gib einen Einsatzort an.");
     if (!me || !me.ok) return setError(t("loginAgain"));
 
     setSaving(true);
@@ -970,8 +971,8 @@ useEffect(() => {
         return;
       }
 
-      setStartTime("");
-      setEndTime("");
+      setStartTime("07:00");
+      setEndTime("14:00");
       setActivity("");
       setLocation("");
       setTravelMinutes("0");
@@ -1676,12 +1677,13 @@ useEffect(() => {
         </div>
 
         <div style={{ marginBottom: 12 }}>
-          <div className="label">{t("location")}</div>
+          <div className="label">{t("location")} *</div>
           <input
             className="input"
             placeholder={t("locationPlaceholder")}
             value={location}
             onChange={(e) => setLocation(e.target.value)}
+            required
           />
         </div>
 
@@ -1717,8 +1719,8 @@ useEffect(() => {
             type="button"
             onClick={() => {
               setWorkDate(syncDateParam || toIsoDateLocal(new Date()));
-              setStartTime("");
-              setEndTime("");
+              setStartTime("07:00");
+              setEndTime("14:00");
               setActivity("");
               setLocation("");
               setTravelMinutes("0");

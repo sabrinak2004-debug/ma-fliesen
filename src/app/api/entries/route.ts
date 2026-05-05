@@ -678,7 +678,7 @@ export async function POST(req: Request) {
   const noteEmployee = getString(body.noteEmployee).trim();
   const sourceTaskId = getString(body.sourceTaskId).trim();
 
-  if (!workDate || !startTime || !endTime || !activity) {
+  if (!workDate || !startTime || !endTime || !activity || !location) {
     return NextResponse.json(
       { error: translateEntryText(language, "invalidData") },
       { status: 400 }
@@ -969,7 +969,7 @@ export async function PATCH(req: Request) {
     ? existing.noteEmployee ?? ""
     : getString(body.noteEmployee).trim();
 
-  if (!isAdmin && (!workDate || !startTime || !endTime || !activity)) {
+  if (!isAdmin && (!workDate || !startTime || !endTime || !activity || !location)) {
     return NextResponse.json(
       { error: translateEntryText(language, "invalidData") },
       { status: 400 }
