@@ -314,6 +314,38 @@ function requiredActionLabel(
   }
 }
 
+function adminTaskOpenHref(task: TaskRow): string | null {
+  if (task.category === "GENERAL") {
+    return null;
+  }
+
+  const params = new URLSearchParams();
+  params.set("employeeId", task.assignedToUser.id);
+
+  if (task.category === "WORK_TIME") {
+    params.set("taskCategory", "WORK_TIME");
+  }
+
+  if (task.category === "VACATION") {
+    params.set("taskCategory", "VACATION");
+  }
+
+  if (task.category === "SICKNESS") {
+    params.set("taskCategory", "SICKNESS");
+  }
+
+  const referenceDate =
+    task.referenceStartDate ||
+    task.referenceDate ||
+    task.referenceEndDate;
+
+  if (referenceDate) {
+    params.set("date", referenceDate.slice(0, 10));
+  }
+
+  return `/admin/dashboard?${params.toString()}`;
+}
+
 function sortTasksByDateDesc(tasks: TaskRow[]): TaskRow[] {
   return tasks.slice().sort((a, b) => {
     const aPrimary =
@@ -804,20 +836,16 @@ export default function AdminTasksPage() {
                     </div>
                   ) : null}
 
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <Link
-                      href={
-                        task.category === "WORK_TIME"
-                          ? "/erfassung"
-                          : task.category === "VACATION" || task.category === "SICKNESS"
-                          ? "/kalender"
-                          : "/admin/tasks"
-                      }
-                      className="tenant-action-link"
-                    >
-                      {t("open")}
-                    </Link>
-                  </div>
+                  {adminTaskOpenHref(task) ? (
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <Link
+                        href={adminTaskOpenHref(task) ?? "/admin/tasks"}
+                        className="tenant-action-link"
+                      >
+                        {t("open")}
+                      </Link>
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>

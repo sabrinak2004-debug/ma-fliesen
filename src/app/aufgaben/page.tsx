@@ -1414,18 +1414,18 @@ export default function AufgabenPage() {
               flexWrap: "wrap",
             }}
           >
-            <Link
-              href={taskActionHref(task)}
-              className="tenant-action-link"
-            >
-              {task.category === "WORK_TIME"
-                ? t("openCapture")
-                : task.category === "VACATION"
-                ? t("openVacation")
-                : task.category === "SICKNESS"
-                ? t("openSickness")
-                : t("openGeneric")}
-            </Link>
+            {task.category !== "GENERAL" ? (
+              <Link
+                href={taskActionHref(task)}
+                className="tenant-action-link"
+              >
+                {task.category === "WORK_TIME"
+                  ? t("openCapture")
+                  : task.category === "VACATION"
+                  ? t("openVacation")
+                  : t("openSickness")}
+              </Link>
+            ) : null}
 
             <button
               type="button"
