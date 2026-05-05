@@ -768,16 +768,6 @@ export function applyTenantHeadBranding(
   });
   themeMeta.content = input.themeColor;
 
-  const appleStatusBarMeta = ensureMetaTag(
-    'meta[name="apple-mobile-web-app-status-bar-style"]',
-    () => {
-      const element = document.createElement("meta");
-      element.name = "apple-mobile-web-app-status-bar-style";
-      return element;
-    }
-  );
-  appleStatusBarMeta.content = "black-translucent";
-
   const appleTitleMeta = ensureMetaTag(
     'meta[name="apple-mobile-web-app-title"]',
     () => {

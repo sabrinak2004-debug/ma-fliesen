@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import PushBootstrap from "@/components/PushBootstrap";
+import DesktopPwaWindowMode from "@/components/DesktopPwaWindowMode";
 import { getSession } from "@/lib/auth";
 import { normalizeAppUiLanguage, toHtmlLang } from "@/lib/i18n";
 import {
@@ -61,10 +62,11 @@ export default async function RootLayout({
         />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Mitarbeiterportal" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body>
         <div className="app-root-shell">
+          <DesktopPwaWindowMode />
           <PushBootstrap language={language} />
           {children}
         </div>
