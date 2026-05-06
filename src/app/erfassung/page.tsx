@@ -352,6 +352,96 @@ function minutesBetween(startHHMM: string, endHHMM: string): number {
   const end = eh * 60 + em;
   return Math.max(0, end - start);
 }
+
+type EntryTimeDefaults = {
+  startTime: string;
+  endTime: string;
+};
+
+const DEFAULT_ENTRY_START_TIME = "07:00";
+const DEFAULT_ENTRY_END_TIME = "14:00";
+const FOLLOW_UP_ENTRY_MINUTES = 120;
+
+function hhmmToMinutes(value: string): number | null {
+  if (!/^\d{2}:\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const [hourValue, minuteValue] = value.split(":");
+  const hours = Number(hourValue);
+  const minutes = Number(minuteValue);
+
+  if (
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+}
+
+function minutesToHHMM(totalMinutes: number): string {
+  const clampedMinutes = Math.min(23 * 60 + 59, Math.max(0, Math.round(totalMinutes)));
+  const hours = Math.floor(clampedMinutes / 60);
+  const minutes = clampedMinutes % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function getNextEntryTimeDefaults(
+  entries: WorkEntry[],
+  workDate: string
+): EntryTimeDefaults {
+  const entriesForDay = entries
+    .filter((entry) => toYMD(entry.workDate) === workDate)
+    .map((entry) => {
+      const endMinutes = hhmmToMinutes(entry.endTime);
+      const startMinutes = hhmmToMinutes(entry.startTime);
+
+      if (endMinutes === null || startMinutes === null) {
+        return null;
+      }
+
+      return {
+        startMinutes,
+        endMinutes,
+      };
+    })
+    .filter((entry): entry is { startMinutes: number; endMinutes: number } => entry !== null)
+    .sort((a, b) => {
+      if (a.endMinutes !== b.endMinutes) {
+        return a.endMinutes - b.endMinutes;
+      }
+
+      return a.startMinutes - b.startMinutes;
+    });
+
+  if (entriesForDay.length === 0) {
+    return {
+      startTime: DEFAULT_ENTRY_START_TIME,
+      endTime: DEFAULT_ENTRY_END_TIME,
+    };
+  }
+
+  const lastEntry = entriesForDay[entriesForDay.length - 1];
+  const defaultEndMinutes = hhmmToMinutes(DEFAULT_ENTRY_END_TIME) ?? 14 * 60;
+  const nextStartMinutes = lastEntry.endMinutes;
+  const nextEndMinutes =
+    nextStartMinutes < defaultEndMinutes
+      ? defaultEndMinutes
+      : nextStartMinutes + FOLLOW_UP_ENTRY_MINUTES;
+
+  return {
+    startTime: minutesToHHMM(nextStartMinutes),
+    endTime: minutesToHHMM(Math.max(nextStartMinutes, nextEndMinutes)),
+  };
+}
+
 function legalBreakMinutes(grossMinutes: number): number {
   if (!Number.isFinite(grossMinutes) || grossMinutes <= 0) return 0;
   if (grossMinutes > 9 * 60) return 45;
@@ -748,8 +838,8 @@ function ErfassungPageInner() {
       setLocation(syncLocation);
     }
 
-    setStartTime("07:00");
-    setEndTime("14:00");
+    const nextWorkDate = syncDateParam || workDate;
+    applyEntryTimeDefaultsForDate(nextWorkDate, entries);
     setShowSyncToast(true);
   }, [searchParams, sourceTaskId, syncDateParam]);
 
@@ -814,12 +904,14 @@ useEffect(() => {
   };
 }, [router]);
 
-  async function loadEntries() {
+  async function loadEntries(): Promise<WorkEntry[]> {
     setLoadingEntries(true);
+
     try {
       const r = await fetch("/api/entries", {
         credentials: "include",
       });
+
       const j = (await r.json()) as unknown;
 
       const entriesList =
@@ -827,7 +919,7 @@ useEffect(() => {
         j !== null &&
         "entries" in j &&
         Array.isArray((j as { entries: unknown }).entries)
-          ? (((j as { entries: WorkEntry[] }).entries ?? []) as WorkEntry[])
+          ? ((j as { entries: WorkEntry[] }).entries ?? [])
           : [];
 
       const dayBreakList =
@@ -835,11 +927,13 @@ useEffect(() => {
         j !== null &&
         "dayBreaks" in j &&
         Array.isArray((j as { dayBreaks: unknown }).dayBreaks)
-          ? (((j as { dayBreaks: DayBreak[] }).dayBreaks ?? []) as DayBreak[])
+          ? ((j as { dayBreaks: DayBreak[] }).dayBreaks ?? [])
           : [];
 
       setEntries(entriesList);
       setDayBreaks(dayBreakList);
+
+      return entriesList;
     } finally {
       setLoadingEntries(false);
     }
@@ -906,9 +1000,22 @@ useEffect(() => {
     }
   }, [sourceTaskId]);
 
+  function applyEntryTimeDefaultsForDate(
+    nextWorkDate: string,
+    nextEntries: WorkEntry[]
+  ) {
+    const defaults = getNextEntryTimeDefaults(nextEntries, nextWorkDate);
+
+    setStartTime(defaults.startTime);
+    setEndTime(defaults.endTime);
+  }
+
   useEffect(() => {
-    loadEntries();
-    loadCorrectionRequests();
+    void (async () => {
+      const loadedEntries = await loadEntries();
+      applyEntryTimeDefaultsForDate(workDate, loadedEntries);
+      await loadCorrectionRequests();
+    })();
   }, []);
   useEffect(() => {
     void loadSelectedCorrectionStatus(workDate);
@@ -970,14 +1077,14 @@ useEffect(() => {
         return;
       }
 
-      setStartTime("07:00");
-      setEndTime("14:00");
       setActivity("");
       setLocation("");
       setTravelMinutes("0");
       setNoteEmployee("");
 
-      await loadEntries();
+      const refreshedEntries = await loadEntries();
+      applyEntryTimeDefaultsForDate(workDate, refreshedEntries);
+
       await loadCorrectionRequests();
       await loadSelectedCorrectionStatus(workDate);
     } catch {
@@ -1444,7 +1551,12 @@ useEffect(() => {
               className="input erfassung-date-desktop"
               type="date"
               value={workDate}
-              onChange={(e) => setWorkDate(e.target.value)}
+              onChange={(e) => {
+                const nextWorkDate = e.target.value;
+
+                setWorkDate(nextWorkDate);
+                applyEntryTimeDefaultsForDate(nextWorkDate, entries);
+              }}
             />
 
             <div className="date-display-input erfassung-date-mobile">
@@ -1453,7 +1565,12 @@ useEffect(() => {
                 className="date-display-native-input"
                 type="date"
                 value={workDate}
-                onChange={(e) => setWorkDate(e.target.value)}
+                onChange={(e) => {
+                  const nextWorkDate = e.target.value;
+
+                  setWorkDate(nextWorkDate);
+                  applyEntryTimeDefaultsForDate(nextWorkDate, entries);
+                }}
                 aria-label={t("selectDate")}
               />
             </div>
@@ -1719,9 +1836,10 @@ useEffect(() => {
             className="btn"
             type="button"
             onClick={() => {
-              setWorkDate(syncDateParam || toIsoDateLocal(new Date()));
-              setStartTime("07:00");
-              setEndTime("14:00");
+              const resetWorkDate = syncDateParam || toIsoDateLocal(new Date());
+
+              setWorkDate(resetWorkDate);
+              applyEntryTimeDefaultsForDate(resetWorkDate, entries);
               setActivity("");
               setLocation("");
               setTravelMinutes("0");
