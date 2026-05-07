@@ -41,6 +41,38 @@ function toIsoDateUTC(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
+function toBerlinDateYMD(d: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "0000";
+  const month = parts.find((part) => part.type === "month")?.value ?? "00";
+  const day = parts.find((part) => part.type === "day")?.value ?? "00";
+
+  return `${year}-${month}-${day}`;
+}
+
+function requiresEmployeeEditRequestForEntry(args: {
+  workDateYMD: string;
+  updatedAt: Date;
+  now?: Date;
+}): boolean {
+  const now = args.now ?? new Date();
+  const todayYMD = berlinTodayYMD(now);
+
+  if (args.workDateYMD >= todayYMD) {
+    return false;
+  }
+
+  const lastEditedYMD = toBerlinDateYMD(args.updatedAt);
+
+  return lastEditedYMD < todayYMD;
+}
+
 function toHHMMUTC(d: Date) {
   const hh = String(d.getUTCHours()).padStart(2, "0");
   const mm = String(d.getUTCMinutes()).padStart(2, "0");
@@ -410,6 +442,7 @@ type EntryDTO = {
   workDate: string;
   startTime: string;
   endTime: string;
+  updatedAt: string;
   activity: string;
   location: string;
   travelMinutes: number;
@@ -550,6 +583,7 @@ type WorkEntryRow = {
   workDate: Date;
   startTime: Date;
   endTime: Date;
+  updatedAt: Date;
   activity: string;
   activitySourceLanguage: string | null;
   activityTranslations: Prisma.JsonValue | null;
@@ -807,6 +841,7 @@ export async function GET(req: Request) {
     workDate: row.workDate,
     startTime: row.startTime,
     endTime: row.endTime,
+    updatedAt: row.updatedAt,
     activity: row.activity ?? "",
     activitySourceLanguage: row.activitySourceLanguage ?? null,
     activityTranslations: row.activityTranslations ?? null,
@@ -838,6 +873,7 @@ export async function GET(req: Request) {
       workDate: toIsoDateUTC(row.workDate),
       startTime: toHHMMUTC(row.startTime),
       endTime: toHHMMUTC(row.endTime),
+      updatedAt: row.updatedAt.toISOString(),
       activity: getTranslatedText(
         row.activity,
         row.activityTranslations,
@@ -1072,6 +1108,7 @@ if (location) {
     workDate: toIsoDateUTC(createdFresh.workDate),
     startTime: toHHMMUTC(createdFresh.startTime),
     endTime: toHHMMUTC(createdFresh.endTime),
+    updatedAt: createdFresh.updatedAt.toISOString(),
     activity: getTranslatedText(
       createdFresh.activity,
       createdFresh.activityTranslations,
@@ -1168,6 +1205,26 @@ export async function PATCH(req: Request) {
       { error: translateEntryText(language, "notAllowed") },
       { status: 403 }
     );
+  }
+
+  if (!isAdmin) {
+    const existingYMD = toIsoDateUTC(existing.workDate);
+
+    if (
+      requiresEmployeeEditRequestForEntry({
+        workDateYMD: existingYMD,
+        updatedAt: existing.updatedAt,
+      })
+    ) {
+      return NextResponse.json(
+        {
+          error: translate(language, "editRequestRequiredForOldEntry", ERFASSUNG_DICTIONARY),
+          requiresEditRequest: true,
+          workEntryId: existing.id,
+        },
+        { status: 409 }
+      );
+    }
   }
 
   if (!isAdmin) {
@@ -1481,6 +1538,7 @@ export async function PATCH(req: Request) {
     workDate: toIsoDateUTC(updatedFresh.workDate),
     startTime: toHHMMUTC(updatedFresh.startTime),
     endTime: toHHMMUTC(updatedFresh.endTime),
+    updatedAt: updatedFresh.updatedAt.toISOString(),
     activity: getTranslatedText(
       updatedFresh.activity,
       updatedFresh.activityTranslations,

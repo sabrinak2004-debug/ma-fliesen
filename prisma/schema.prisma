@@ -52,6 +52,8 @@ model AppUser {
   pushSubscriptions                  PushSubscription[]
   timeEntryCorrectionRequests        TimeEntryCorrectionRequest[]
   decidedTimeEntryCorrectionRequests TimeEntryCorrectionRequest[] @relation("TimeEntryCorrectionRequestDecidedBy")
+  workEntryEditRequests             WorkEntryEditRequest[] @relation("WorkEntryEditRequestUser")
+  decidedWorkEntryEditRequests      WorkEntryEditRequest[] @relation("WorkEntryEditRequestDecidedBy")
   timeEntryUnlocks                   TimeEntryUnlock[]
   tasks                              Task[]                       @relation("TaskAssignedTo")
   createdTasks                       Task[]                       @relation("TaskCreatedBy")
@@ -188,6 +190,7 @@ model WorkEntry {
   noteEmployee  String? // ✅ Notiz vom Mitarbeiter (für Admin sichtbar)
 
   changeReports WorkEntryChangeReport[]
+  editRequests  WorkEntryEditRequest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -222,6 +225,53 @@ model WorkEntryChangeReport {
   @@index([targetUserId, createdAt])
   @@index([changedByUserId, createdAt])
   @@index([action])
+}
+
+model WorkEntryEditRequest {
+  id String @id @default(uuid())
+
+  userId String
+  user   AppUser @relation("WorkEntryEditRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  workEntryId String
+  workEntry   WorkEntry @relation(fields: [workEntryId], references: [id], onDelete: Cascade)
+
+  requestedWorkDate      DateTime @db.Date
+  requestedStartTime     DateTime @db.Time
+  requestedEndTime       DateTime @db.Time
+  requestedActivity      String
+  requestedLocation      String
+  requestedTravelMinutes Int      @default(0)
+  requestedNoteEmployee  String?
+
+  requestedActivitySourceLanguage AppLanguage?
+  requestedActivityTranslations   Json?
+  requestedLocationSourceLanguage AppLanguage?
+  requestedLocationTranslations   Json?
+  requestedNoteSourceLanguage     AppLanguage?
+  requestedNoteTranslations       Json?
+
+  reason               String
+  reasonSourceLanguage AppLanguage?
+  reasonTranslations   Json?
+
+  status WorkEntryEditRequestStatus @default(PENDING)
+
+  noteAdmin               String?
+  noteAdminSourceLanguage AppLanguage?
+  noteAdminTranslations   Json?
+
+  decidedAt   DateTime?
+  decidedById String?
+  decidedBy   AppUser? @relation("WorkEntryEditRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([workEntryId])
+  @@index([decidedById])
+  @@index([status, createdAt])
 }
 
 model DayBreak {
@@ -549,4 +599,10 @@ enum AppLanguage {
 enum WorkEntryChangeAction {
   UPDATE
   DELETE
+}
+
+enum WorkEntryEditRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

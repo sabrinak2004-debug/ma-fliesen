@@ -40,6 +40,7 @@ type WorkEntry = {
   workDate: string; // YYYY-MM-DD
   startTime: string; // HH:MM
   endTime: string; // HH:MM
+  updatedAt: string;
   activity: string;
   location: string;
   travelMinutes: number;

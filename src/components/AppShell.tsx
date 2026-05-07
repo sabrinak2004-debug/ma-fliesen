@@ -205,6 +205,7 @@ type AppShellTextKey =
   | "vacationRequests"
   | "sickRequests"
   | "correctionRequests"
+  | "editRequests"
   | "passwordReset"
   | "menuOpen"
   | "menuClose"
@@ -312,6 +313,15 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     SQ: "Kërkesat për Korrigjim",
     KU: "Daxwazên Rastkirinê",
     RO: "Cereri de corecție",
+  },
+  editRequests: {
+    DE: "Änderungsanfragen",
+    EN: "Edit Requests",
+    IT: "Richieste di modifica",
+    TR: "Değişiklik talepleri",
+    SQ: "Kërkesat për ndryshim",
+    KU: "Daxwazên guherandinê",
+    RO: "Cereri de modificare",
   },
   passwordReset: {
     DE: "Passwort-Reset",
@@ -524,6 +534,10 @@ function resolvePageLabelKey(
     return "correctionRequests";
   }
 
+  if (pathname === "/admin/aenderungsanfragen" || pathname.startsWith("/admin/aenderungsanfragen/")) {
+    return "editRequests";
+  }
+
   if (pathname === "/admin/tasks" || pathname.startsWith("/admin/tasks/")) {
     return "tasks";
   }
@@ -608,6 +622,7 @@ export default function AppShell({
   const [openVacationRequests, setOpenVacationRequests] = useState(0);
   const [openSickRequests, setOpenSickRequests] = useState(0);
   const [openCorrectionRequests, setOpenCorrectionRequests] = useState(0);
+  const [openEditRequests, setOpenEditRequests] = useState(0);
 
   const [, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -877,11 +892,12 @@ useEffect(() => {
       setOpenVacationRequests(0);
       setOpenSickRequests(0);
       setOpenCorrectionRequests(0);
+      setOpenEditRequests(0);
       return;
     }
 
     try {
-      const [vacRes, sickRes, corrRes] = await Promise.all([
+      const [vacRes, sickRes, corrRes, editRes] = await Promise.all([
         fetch("/api/admin/absence-requests?type=VACATION&status=PENDING", {
           cache: "no-store",
           credentials: "include",
@@ -894,11 +910,16 @@ useEffect(() => {
           cache: "no-store",
           credentials: "include",
         }),
+        fetch("/api/admin/work-entry-edit-requests?status=PENDING", {
+          cache: "no-store",
+          credentials: "include",
+        }),
       ]);
 
       const vacJson: unknown = await vacRes.json().catch(() => ({}));
       const sickJson: unknown = await sickRes.json().catch(() => ({}));
       const corrJson: unknown = await corrRes.json().catch(() => ({}));
+      const editJson: unknown = await editRes.json().catch(() => ({}));
 
       if (vacRes.ok && isAdminRequestsApiResponse(vacJson)) {
         setOpenVacationRequests(vacJson.requests.length);
@@ -911,10 +932,14 @@ useEffect(() => {
       if (corrRes.ok && isAdminRequestsApiResponse(corrJson)) {
         setOpenCorrectionRequests(corrJson.requests.length);
       }
+      if (editRes.ok && isAdminRequestsApiResponse(editJson)) {
+        setOpenEditRequests(editJson.requests.length);
+      }
     } catch {
       setOpenVacationRequests(0);
       setOpenSickRequests(0);
       setOpenCorrectionRequests(0);
+      setOpenEditRequests(0);
     }
   }, [session]);
 
@@ -986,6 +1011,11 @@ useEffect(() => {
   {
     href: "/admin/nachtragsanfragen",
     labelKey: "correctionRequests",
+    icon: <SquarePen strokeWidth={2} />,
+  },
+  {
+    href: "/admin/aenderungsanfragen",
+    labelKey: "editRequests",
     icon: <SquarePen strokeWidth={2} />,
   },
   {
@@ -1340,6 +1370,8 @@ useEffect(() => {
 
                   const showCorrectionBadge =
                     isAdmin && item.href === "/admin/nachtragsanfragen" && openCorrectionRequests > 0;
+                  const showEditBadge =
+                    isAdmin && item.href === "/admin/aenderungsanfragen" && openEditRequests > 0;
 
                   return (
                     <Link
@@ -1365,7 +1397,7 @@ useEffect(() => {
                           {tAppShell(currentLanguage, item.labelKey)}
                         </span>
 
-                        {showTaskBadge || showVacationBadge || showSickBadge || showCorrectionBadge ? (
+                        {showTaskBadge || showVacationBadge || showSickBadge || showCorrectionBadge || showEditBadge ? (
                           <span
                             aria-label={tAppShell(currentLanguage, "openItems")}
                             className="appshell-nav-badge appshell-nav-badge-mobile"
@@ -1376,7 +1408,9 @@ useEffect(() => {
                                 ? openVacationRequests
                                 : showSickBadge
                                   ? openSickRequests
-                                  : openCorrectionRequests}
+                                  : showCorrectionBadge
+                                    ? openCorrectionRequests
+                                    : openEditRequests}
                           </span>
                         ) : null}
                       </span>
@@ -1494,6 +1528,9 @@ useEffect(() => {
                 const showCorrectionBadge =
                   isAdmin && item.href === "/admin/nachtragsanfragen" && openCorrectionRequests > 0;
 
+                const showEditBadge =
+                  isAdmin && item.href === "/admin/aenderungsanfragen" && openEditRequests > 0;
+
                 return (
                   <Link
                     key={item.href}
@@ -1527,7 +1564,8 @@ useEffect(() => {
                       {showTaskBadge ||
                       showVacationBadge ||
                       showSickBadge ||
-                      showCorrectionBadge ? (
+                      showCorrectionBadge ||
+                      showEditBadge ? (
                         <span
                           aria-label={`${openTaskCount} ${tAppShell(
                             currentLanguage,
@@ -1541,7 +1579,9 @@ useEffect(() => {
                               ? openVacationRequests
                               : showSickBadge
                                 ? openSickRequests
-                                : openCorrectionRequests}
+                                : showCorrectionBadge
+                                  ? openCorrectionRequests
+                                  : openEditRequests}
                         </span>
                       ) : null}
                     </span>

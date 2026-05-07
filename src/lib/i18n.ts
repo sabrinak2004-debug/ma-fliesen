@@ -2508,6 +2508,16 @@ export type ErfassungTextKey =
   | "changeReportLoadFailed"
   | "entryUpdated"
   | "entryDeleted"
+  | "editRequestRequiredForOldEntry"
+  | "editRequestTitle"
+  | "editRequestDescription"
+  | "editRequestReason"
+  | "editRequestReasonPlaceholder"
+  | "editRequestReasonRequired"
+  | "editRequestSentSuccess"
+  | "editRequestCreateFailed"
+  | "networkEditRequestError"
+  | "sendEditRequest"
   | "timesheetLockedDayRequiresCorrection";
 
 export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage, string>> = {
@@ -3860,6 +3870,96 @@ export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage
     SQ: "Kjo ditë e kaluar është e bllokuar. Ju lutem dërgoni një kërkesë korrigjimi që admini ta miratojë.",
     RO: "Această zi trecută este blocată. Te rugăm să trimiți o cerere de corectare pentru ca adminul să o poată aproba.",
     KU: "Ev roja borî hatiye girtin. Ji kerema xwe daxwaza rastkirinê bişîne da ku admin wê veke.",
+  },
+  editRequestRequiredForOldEntry: {
+    DE: "Dieser Eintrag ist gesperrt. Bitte stelle eine Änderungsanfrage, damit der Admin die Änderung prüfen kann.",
+    EN: "This entry is locked. Please submit an edit request so the admin can review the change.",
+    IT: "Questa voce è bloccata. Invia una richiesta di modifica affinché l'admin possa verificarla.",
+    TR: "Bu kayıt kilitli. Lütfen yöneticinin değişikliği inceleyebilmesi için bir değişiklik talebi gönderin.",
+    SQ: "Ky regjistrim është i bllokuar. Ju lutem dërgoni një kërkesë ndryshimi që admini ta kontrollojë.",
+    KU: "Ev tomar girtî ye. Ji kerema xwe daxwaza guherandinê bişîne da ku admin wê kontrol bike.",
+    RO: "Această înregistrare este blocată. Te rugăm să trimiți o cerere de modificare pentru ca adminul să o poată verifica.",
+  },
+  editRequestTitle: {
+    DE: "Änderungsanfrage stellen",
+    EN: "Submit edit request",
+    IT: "Invia richiesta di modifica",
+    TR: "Değişiklik talebi gönder",
+    SQ: "Dërgo kërkesë ndryshimi",
+    KU: "Daxwaza guherandinê bişîne",
+    RO: "Trimite cerere de modificare",
+  },
+  editRequestDescription: {
+    DE: "Der Eintrag ist bereits gesperrt. Deine Änderungen werden als Anfrage an den Admin gesendet.",
+    EN: "The entry is already locked. Your changes will be sent to the admin as a request.",
+    IT: "La voce è già bloccata. Le tue modifiche verranno inviate all'admin come richiesta.",
+    TR: "Kayıt zaten kilitli. Değişiklikleriniz yöneticiye talep olarak gönderilecek.",
+    SQ: "Regjistrimi është tashmë i bllokuar. Ndryshimet tuaja do t'i dërgohen adminit si kërkesë.",
+    KU: "Tomar jixwe girtî ye. Guherandinên te wekî daxwaz ji admin re têne şandin.",
+    RO: "Înregistrarea este deja blocată. Modificările tale vor fi trimise adminului ca cerere.",
+  },
+  editRequestReason: {
+    DE: "Grund der Änderung",
+    EN: "Reason for the change",
+    IT: "Motivo della modifica",
+    TR: "Değişiklik nedeni",
+    SQ: "Arsyeja e ndryshimit",
+    KU: "Sedema guherandinê",
+    RO: "Motivul modificării",
+  },
+  editRequestReasonPlaceholder: {
+    DE: "Bitte begründe kurz, warum dieser Eintrag geändert werden soll.",
+    EN: "Please briefly explain why this entry should be changed.",
+    IT: "Spiega brevemente perché questa voce deve essere modificata.",
+    TR: "Lütfen bu kaydın neden değiştirilmesi gerektiğini kısaca açıklayın.",
+    SQ: "Ju lutem shpjegoni shkurt pse duhet ndryshuar ky regjistrim.",
+    KU: "Ji kerema xwe bi kurtî rave bike çima divê ev tomar were guhertin.",
+    RO: "Te rugăm să explici pe scurt de ce trebuie modificată această înregistrare.",
+  },
+  editRequestReasonRequired: {
+    DE: "Bitte gib einen Grund für die Änderung an.",
+    EN: "Please enter a reason for the change.",
+    IT: "Inserisci un motivo per la modifica.",
+    TR: "Lütfen değişiklik için bir neden girin.",
+    SQ: "Ju lutem vendosni një arsye për ndryshimin.",
+    KU: "Ji kerema xwe sedemek ji bo guherandinê binivîse.",
+    RO: "Te rugăm să introduci un motiv pentru modificare.",
+  },
+  editRequestSentSuccess: {
+    DE: "Änderungsanfrage wurde erfolgreich gesendet.",
+    EN: "The edit request was sent successfully.",
+    IT: "La richiesta di modifica è stata inviata con successo.",
+    TR: "Değişiklik talebi başarıyla gönderildi.",
+    SQ: "Kërkesa për ndryshim u dërgua me sukses.",
+    KU: "Daxwaza guherandinê bi serkeftî hate şandin.",
+    RO: "Cererea de modificare a fost trimisă cu succes.",
+  },
+  editRequestCreateFailed: {
+    DE: "Änderungsanfrage konnte nicht erstellt werden.",
+    EN: "The edit request could not be created.",
+    IT: "Non è stato possibile creare la richiesta di modifica.",
+    TR: "Değişiklik talebi oluşturulamadı.",
+    SQ: "Kërkesa për ndryshim nuk mund të krijohej.",
+    KU: "Daxwaza guherandinê nehat afirandin.",
+    RO: "Cererea de modificare nu a putut fi creată.",
+  },
+  networkEditRequestError: {
+    DE: "Netzwerkfehler beim Senden der Änderungsanfrage.",
+    EN: "Network error while sending the edit request.",
+    IT: "Errore di rete durante l'invio della richiesta di modifica.",
+    TR: "Değişiklik talebi gönderilirken ağ hatası.",
+    SQ: "Gabim rrjeti gjatë dërgimit të kërkesës për ndryshim.",
+    KU: "Di şandina daxwaza guherandinê de şaşiya torê.",
+    RO: "Eroare de rețea la trimiterea cererii de modificare.",
+  },
+  sendEditRequest: {
+    DE: "Änderungsanfrage senden",
+    EN: "Send edit request",
+    IT: "Invia richiesta di modifica",
+    TR: "Değişiklik talebi gönder",
+    SQ: "Dërgo kërkesën për ndryshim",
+    KU: "Daxwaza guherandinê bişîne",
+    RO: "Trimite cererea de modificare",
   },
 };
 
