@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Prisma, Role, WorkEntryChangeAction } from "@prisma/client";
+import { type SupportedLang } from "@/lib/translate";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -12,7 +13,11 @@ type RouteContext = {
 type ChangeReportDTO = {
   id: string;
   action: WorkEntryChangeAction;
+  entryWorkDate: string;
+  entryStartHHMM: string;
+  entryEndHHMM: string;
   reason: string;
+  changeDescription: string;
   createdAt: string;
   changedBy: {
     id: string;
@@ -21,6 +26,50 @@ type ChangeReportDTO = {
   oldValues: Prisma.JsonValue;
   newValues: Prisma.JsonValue | null;
 };
+
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU" ||
+    language === "RO"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function getTranslatedText(
+  originalText: string,
+  translations: Prisma.JsonValue | null | undefined,
+  language: string | null | undefined
+): string {
+  const targetLanguage = toSupportedLang(language);
+
+  if (!isTranslationMap(translations)) {
+    return originalText;
+  }
+
+  const translated = translations[targetLanguage];
+
+  return typeof translated === "string" && translated.trim()
+    ? translated
+    : originalText;
+}
 
 export async function GET(
   _req: Request,
@@ -76,7 +125,19 @@ export async function GET(
   const result: ChangeReportDTO[] = reports.map((report) => ({
     id: report.id,
     action: report.action,
-    reason: report.reason,
+    entryWorkDate: report.entryWorkDate.toISOString().slice(0, 10),
+    entryStartHHMM: report.entryStartHHMM,
+    entryEndHHMM: report.entryEndHHMM,
+    reason: getTranslatedText(
+      report.reason,
+      report.reasonTranslations,
+      session.language
+    ),
+    changeDescription: getTranslatedText(
+      report.changeDescription,
+      report.changeDescriptionTranslations,
+      session.language
+    ),
     createdAt: report.createdAt.toISOString(),
     changedBy: {
       id: report.changedByUser.id,

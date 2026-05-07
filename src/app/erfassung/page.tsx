@@ -72,7 +72,11 @@ type WorkEntryChangeSnapshot = {
 type WorkEntryChangeReport = {
   id: string;
   action: WorkEntryChangeAction;
+  entryWorkDate: string;
+  entryStartHHMM: string;
+  entryEndHHMM: string;
   reason: string;
+  changeDescription: string;
   createdAt: string;
   changedBy: {
     id: string;
@@ -98,7 +102,11 @@ function isWorkEntryChangeReport(value: unknown): value is WorkEntryChangeReport
   return (
     isString(value["id"]) &&
     (value["action"] === "UPDATE" || value["action"] === "DELETE") &&
+    isString(value["entryWorkDate"]) &&
+    isString(value["entryStartHHMM"]) &&
+    isString(value["entryEndHHMM"]) &&
     isString(value["reason"]) &&
+    isString(value["changeDescription"]) &&
     isString(value["createdAt"]) &&
     isRecord(changedBy) &&
     isString(changedBy["id"]) &&
@@ -2771,6 +2779,12 @@ useEffect(() => {
                     <span style={{ color: "var(--muted)", fontSize: 12 }}>{t("changeReason")}</span>
                     <div style={{ whiteSpace: "pre-wrap", fontWeight: 800 }}>
                       {report.reason}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ color: "var(--muted)", fontSize: 12 }}>{t("changeDescription")}</span>
+                    <div style={{ whiteSpace: "pre-wrap", fontWeight: 800 }}>
+                      {report.changeDescription}
                     </div>
                   </div>
                 </div>

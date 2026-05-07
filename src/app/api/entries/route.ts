@@ -121,6 +121,7 @@ async function createAdminWorkEntryChangeNotification(args: {
   startTime: string;
   endTime: string;
   reason: string;
+  changeDescription: string;
   companyId: string;
   companySubdomain?: string | null;
 }): Promise<void> {
@@ -141,6 +142,7 @@ async function createAdminWorkEntryChangeNotification(args: {
     `Eintrag: ${dateLine}`,
     `Durch: ${args.adminName}`,
     `Grund: ${args.reason}`,
+    `Änderungen: ${args.changeDescription}`,
   ].join("\n");
 
   await prisma.task.create({
@@ -238,6 +240,42 @@ function toPrismaNullableJsonInput(
   return value as Prisma.InputJsonValue;
 }
 
+async function buildTranslatedRequiredReportText(
+  value: string
+): Promise<{
+  text: string;
+  sourceLanguage: SupportedLang | null;
+  translations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput;
+}> {
+  const text = value.trim();
+
+  if (!text) {
+    return {
+      text: "",
+      sourceLanguage: null,
+      translations: Prisma.JsonNull,
+    };
+  }
+
+  try {
+    const translationResult = await translateAllLanguages(text);
+
+    return {
+      text,
+      sourceLanguage: translationResult.sourceLanguage,
+      translations: toPrismaNullableJsonInput(translationResult.translations),
+    };
+  } catch (error) {
+    console.error("Translation for work entry change report failed:", error);
+
+    return {
+      text,
+      sourceLanguage: null,
+      translations: Prisma.JsonNull,
+    };
+  }
+}
+
 function toAppUiLanguage(value: string | null | undefined): AppUiLanguage {
   if (
     value === "DE" ||
@@ -327,6 +365,7 @@ type EntryBody = {
   noteEmployee?: unknown;
   sourceTaskId?: unknown;
   changeReason?: unknown;
+  changeDescription?: unknown;
 };
 
 type EntryDTO = {
@@ -1040,6 +1079,7 @@ export async function PATCH(req: Request) {
 
   const id = getString(body.id).trim();
   const changeReason = getString(body.changeReason).trim();
+  const changeDescription = getString(body.changeDescription).trim();
   if (!id) {
     return NextResponse.json(
       { error: translateEntryText(language, "idMissing") },
@@ -1048,7 +1088,14 @@ export async function PATCH(req: Request) {
   }
   if (isAdmin && !changeReason) {
     return NextResponse.json(
-      { error: "Änderungsgrund fehlt." },
+      { error: "Bitte gib den Grund der Änderung ein." },
+      { status: 400 }
+    );
+  }
+
+  if (isAdmin && !changeDescription) {
+    return NextResponse.json(
+      { error: "Bitte gib an, was geändert wurde." },
       { status: 400 }
     );
   }
@@ -1187,6 +1234,14 @@ export async function PATCH(req: Request) {
   const oldWorkDateYMD = toIsoDateUTC(existing.workDate);
   const oldUserId = existing.userId;
   const oldSnapshot = buildWorkEntrySnapshot(existing);
+
+  const translatedChangeReason = isAdmin
+    ? await buildTranslatedRequiredReportText(changeReason)
+    : null;
+
+  const translatedChangeDescription = isAdmin
+    ? await buildTranslatedRequiredReportText(changeDescription)
+    : null;
 
   let nextNoteEmployeeSourceLanguage: SupportedLang | null =
     (existing.noteEmployeeSourceLanguage as SupportedLang | null) ?? null;
@@ -1344,13 +1399,28 @@ export async function PATCH(req: Request) {
     const changedFields = getChangedSnapshotFields(oldSnapshot, newSnapshot);
 
     if (changedFields.length > 0) {
+      if (!translatedChangeReason || !translatedChangeDescription) {
+        return NextResponse.json(
+          { error: "Änderungsreport konnte nicht vorbereitet werden." },
+          { status: 500 }
+        );
+      }
+
       await prisma.workEntryChangeReport.create({
         data: {
           workEntryId: updatedFresh.id,
           targetUserId: updatedFresh.userId,
           changedByUserId: session.userId,
           action: WorkEntryChangeAction.UPDATE,
-          reason: changeReason,
+          entryWorkDate: updatedFresh.workDate,
+          entryStartHHMM: toHHMMUTC(updatedFresh.startTime),
+          entryEndHHMM: toHHMMUTC(updatedFresh.endTime),
+          reason: translatedChangeReason.text,
+          reasonSourceLanguage: translatedChangeReason.sourceLanguage,
+          reasonTranslations: translatedChangeReason.translations,
+          changeDescription: translatedChangeDescription.text,
+          changeDescriptionSourceLanguage: translatedChangeDescription.sourceLanguage,
+          changeDescriptionTranslations: translatedChangeDescription.translations,
           oldValues: oldSnapshot,
           newValues: newSnapshot,
         },
@@ -1367,6 +1437,7 @@ export async function PATCH(req: Request) {
         startTime: toHHMMUTC(updatedFresh.startTime),
         endTime: toHHMMUTC(updatedFresh.endTime),
         reason: changeReason,
+        changeDescription,
         companyId: session.companyId,
         companySubdomain: updatedFresh.user.company.subdomain,
       });
@@ -1423,6 +1494,7 @@ export async function DELETE(req: Request) {
   const raw = (await req.json().catch(() => null)) as unknown;
   const body: EntryBody = isRecord(raw) ? raw : {};
   const changeReason = getString(body.changeReason).trim();
+  const changeDescription = getString(body.changeDescription).trim();
 
   if (!id) {
     return NextResponse.json(
@@ -1432,7 +1504,14 @@ export async function DELETE(req: Request) {
   }
   if (isAdmin && !changeReason) {
     return NextResponse.json(
-      { error: "Löschgrund fehlt." },
+      { error: "Bitte gib den Grund der Löschung ein." },
+      { status: 400 }
+    );
+  }
+
+  if (isAdmin && !changeDescription) {
+    return NextResponse.json(
+      { error: "Bitte gib an, was gelöscht bzw. geändert wurde." },
       { status: 400 }
     );
   }
@@ -1498,17 +1577,39 @@ export async function DELETE(req: Request) {
 
   const oldSnapshot = buildWorkEntrySnapshot(entry);
   const deletedWorkDate = toIsoDateUTC(entry.workDate);
+  const translatedChangeReason = isAdmin
+    ? await buildTranslatedRequiredReportText(changeReason)
+    : null;
+
+  const translatedChangeDescription = isAdmin
+    ? await buildTranslatedRequiredReportText(changeDescription)
+    : null;
   const deletedStartTime = toHHMMUTC(entry.startTime);
   const deletedEndTime = toHHMMUTC(entry.endTime);
 
   if (isAdmin) {
+    if (!translatedChangeReason || !translatedChangeDescription) {
+      return NextResponse.json(
+        { error: "Löschreport konnte nicht vorbereitet werden." },
+        { status: 500 }
+      );
+    }
+
     await prisma.workEntryChangeReport.create({
       data: {
         workEntryId: entry.id,
         targetUserId: entry.userId,
         changedByUserId: session.userId,
         action: WorkEntryChangeAction.DELETE,
-        reason: changeReason,
+        entryWorkDate: entry.workDate,
+        entryStartHHMM: deletedStartTime,
+        entryEndHHMM: deletedEndTime,
+        reason: translatedChangeReason.text,
+        reasonSourceLanguage: translatedChangeReason.sourceLanguage,
+        reasonTranslations: translatedChangeReason.translations,
+        changeDescription: translatedChangeDescription.text,
+        changeDescriptionSourceLanguage: translatedChangeDescription.sourceLanguage,
+        changeDescriptionTranslations: translatedChangeDescription.translations,
         oldValues: oldSnapshot,
         newValues: Prisma.JsonNull,
       },
@@ -1523,6 +1624,7 @@ export async function DELETE(req: Request) {
       startTime: deletedStartTime,
       endTime: deletedEndTime,
       reason: changeReason,
+      changeDescription,
       companyId: session.companyId,
       companySubdomain: entry.user.company.subdomain,
     });

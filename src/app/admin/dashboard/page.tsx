@@ -800,6 +800,7 @@ export default function AdminDashboardPage() {
   const [editLocation, setEditLocation] = useState<string>("");
   const [editTravelMinutes, setEditTravelMinutes] = useState<string>("0");
   const [editChangeReason, setEditChangeReason] = useState<string>("");
+  const [editChangeDescription, setEditChangeDescription] = useState<string>("");
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsUserLabel, setDetailsUserLabel] = useState<string>("");
@@ -834,6 +835,7 @@ export default function AdminDashboardPage() {
   const [deleteDate, setDeleteDate] = useState<string>("");
   const [deleteTime, setDeleteTime] = useState<string>("");
   const [deleteChangeReason, setDeleteChangeReason] = useState<string>("");
+  const [deleteChangeDescription, setDeleteChangeDescription] = useState<string>("");
 
   const years = useMemo(() => {
     const now = new Date().getFullYear();
@@ -1274,6 +1276,7 @@ export default function AdminDashboardPage() {
     setEditLocation(it.location ?? "");
     setEditTravelMinutes(String(it.travelMinutes ?? 0));
     setEditChangeReason("");
+    setEditChangeDescription("");
     setEditOpen(true);
   }
 
@@ -1284,6 +1287,7 @@ export default function AdminDashboardPage() {
     setDeleteDate(it.date);
     setDeleteTime(`${it.startHHMM}–${it.endHHMM}`);
     setDeleteChangeReason("");
+    setDeleteChangeDescription("");
     setDeleteOpen(true);
   }
 
@@ -1329,6 +1333,11 @@ export default function AdminDashboardPage() {
       return;
     }
 
+    if (!editChangeDescription.trim()) {
+      setEditErr(t("changeDescriptionRequired"));
+      return;
+    }
+
     const travel = Number(editTravelMinutes.replace(",", "."));
     const travelMinutes = Number.isFinite(travel) ? Math.max(0, Math.round(travel)) : 0;
 
@@ -1343,6 +1352,7 @@ export default function AdminDashboardPage() {
           location: editLocation,
           travelMinutes,
           changeReason: editChangeReason.trim(),
+          changeDescription: editChangeDescription.trim(),
         }),
       });
 
@@ -1370,6 +1380,11 @@ export default function AdminDashboardPage() {
       return;
     }
 
+    if (!deleteChangeDescription.trim()) {
+      setDeleteErr(t("changeDescriptionRequired"));
+      return;
+    }
+
     setDeleteSaving(true);
     setDeleteErr("");
 
@@ -1382,6 +1397,7 @@ export default function AdminDashboardPage() {
         },
         body: JSON.stringify({
           changeReason: deleteChangeReason.trim(),
+          changeDescription: deleteChangeDescription.trim(),
         }),
       });
 
@@ -1396,6 +1412,7 @@ export default function AdminDashboardPage() {
       setDeleteOpen(false);
       setDeleteEntryId("");
       setDeleteChangeReason("");
+      setDeleteChangeDescription("");
       setReloadTick((x) => x + 1);
     } catch {
       setDeleteErr(t("deleteNetworkError"));
@@ -2076,6 +2093,27 @@ export default function AdminDashboardPage() {
               {t("changeReasonHint")}
             </div>
           </div>
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>
+              {t("changeDescription")} *
+            </div>
+            <textarea
+              value={editChangeDescription}
+              onChange={(e) => setEditChangeDescription(e.target.value)}
+              placeholder={t("changeDescriptionPlaceholder")}
+              style={{
+                width: "100%",
+                minHeight: 96,
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid var(--border)",
+                background: "var(--input-bg)",
+                color: "var(--text)",
+                outline: "none",
+                resize: "vertical",
+              }}
+            />
+          </div>
 
           {editErr ? <div style={{ color: "rgba(224,75,69,0.95)", fontWeight: 900 }}>{editErr}</div> : null}
         </div>
@@ -2147,6 +2185,28 @@ export default function AdminDashboardPage() {
               value={deleteChangeReason}
               onChange={(e) => setDeleteChangeReason(e.target.value)}
               placeholder={t("changeReasonPlaceholder")}
+              style={{
+                width: "100%",
+                minHeight: 110,
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid var(--border)",
+                background: "var(--input-bg)",
+                color: "var(--text)",
+                outline: "none",
+                resize: "vertical",
+              }}
+            />
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>
+              {t("changeDescription")} *
+            </div>
+            <textarea
+              value={deleteChangeDescription}
+              onChange={(e) => setDeleteChangeDescription(e.target.value)}
+              placeholder={t("deleteDescriptionPlaceholder")}
               style={{
                 width: "100%",
                 minHeight: 110,

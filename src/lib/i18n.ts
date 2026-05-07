@@ -2352,6 +2352,8 @@ export const KALENDER_DICTIONARY: Record<KalenderTextKey, Record<AppUiLanguage, 
 };
 
 export type ErfassungTextKey =
+  | "changedEntry"
+  | "changeDescription"
   | "loading"
   | "details"
   | "cancel"
@@ -3770,6 +3772,24 @@ export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage
     SQ: "Fushat e ndryshuara",
     KU: "Qadên hatine guhertin",
     RO: "Câmpuri modificate",
+  },
+  changedEntry: {
+    DE: "Geänderter Eintrag",
+    EN: "Changed entry",
+    IT: "Voce modificata",
+    TR: "Değiştirilen kayıt",
+    SQ: "Regjistrimi i ndryshuar",
+    KU: "Tomara hatî guhertin",
+    RO: "Înregistrare modificată",
+  },
+  changeDescription: {
+    DE: "Änderungen",
+    EN: "Changes",
+    IT: "Modifiche",
+    TR: "Değişiklikler",
+    SQ: "Ndryshimet",
+    KU: "Guherandin",
+    RO: "Modificări",
   },
   oldValue: {
     DE: "Vorher",
@@ -5524,6 +5544,10 @@ export const ADMIN_APPOINTMENTS_UI_TEXTS: Record<
   },
 };
 export type AdminDashboardTextKey =
+  | "changeDescription"
+  | "changeDescriptionRequired"
+  | "changeDescriptionPlaceholder"
+  | "deleteDescriptionPlaceholder"
   | "changeReason"
   | "changeReasonRequired"
   | "changeReasonPlaceholder"
@@ -6847,6 +6871,42 @@ export const ADMIN_DASHBOARD_UI_TEXTS: Record<
     SQ: "Ky raport ruhet dhe i shfaqet punonjësit.",
     KU: "Ev raport tê tomarkirin û ji karmend re tê nîşandan.",
     RO: "Acest raport este salvat și afișat angajatului.",
+  },
+  changeDescription: {
+    DE: "Was wurde geändert?",
+    EN: "What was changed?",
+    IT: "Cosa è stato modificato?",
+    TR: "Ne değiştirildi?",
+    SQ: "Çfarë u ndryshua?",
+    KU: "Çi hate guhertin?",
+    RO: "Ce a fost modificat?",
+  },
+  changeDescriptionRequired: {
+    DE: "Bitte gib an, was geändert wurde.",
+    EN: "Please specify what was changed.",
+    IT: "Indica cosa è stato modificato.",
+    TR: "Lütfen neyin değiştirildiğini belirtin.",
+    SQ: "Ju lutem tregoni çfarë u ndryshua.",
+    KU: "Ji kerema xwe binivîse ka çi hate guhertin.",
+    RO: "Te rugăm să specifici ce a fost modificat.",
+  },
+  changeDescriptionPlaceholder: {
+    DE: "z. B. Tätigkeit von „Baustelle vorbereiten“ zu „Fliesen verlegen“ geändert; Fahrtzeit von 20 auf 30 Minuten korrigiert",
+    EN: "e.g. activity changed from “prepare site” to “lay tiles”; travel time corrected from 20 to 30 minutes",
+    IT: "es. attività modificata da “preparazione cantiere” a “posa piastrelle”; tempo di viaggio corretto da 20 a 30 minuti",
+    TR: "örn. faaliyet “şantiye hazırlığı”ndan “fayans döşeme”ye değiştirildi; yol süresi 20 dakikadan 30 dakikaya düzeltildi",
+    SQ: "p.sh. aktiviteti u ndryshua nga “përgatitje kantieri” në “shtrim pllakash”; koha e udhëtimit u korrigjua nga 20 në 30 minuta",
+    KU: "mînak: çalakî ji “amadekirina şantiyê” bo “danîna tileyan” hate guhertin; dema rê ji 20 bo 30 deq hate rastkirin",
+    RO: "de ex. activitatea a fost schimbată din „pregătire șantier” în „montare plăci”; timpul de deplasare corectat de la 20 la 30 minute",
+  },
+  deleteDescriptionPlaceholder: {
+    DE: "z. B. Eintrag wurde gelöscht, weil er doppelt erfasst oder dem falschen Tag zugeordnet war",
+    EN: "e.g. entry was deleted because it was recorded twice or assigned to the wrong day",
+    IT: "es. voce eliminata perché registrata due volte o assegnata al giorno sbagliato",
+    TR: "örn. kayıt iki kez girildiği veya yanlış güne atandığı için silindi",
+    SQ: "p.sh. regjistrimi u fshi sepse ishte regjistruar dy herë ose ishte caktuar në ditën e gabuar",
+    KU: "mînak: tomar hate jêbirin ji ber ku du caran hate tomar kirin an bi roja şaş ve hate girêdan",
+    RO: "de ex. înregistrarea a fost ștearsă deoarece a fost introdusă de două ori sau atribuită zilei greșite",
   },
   deleteWorkTitle: {
     DE: "Arbeitszeiteintrag löschen",
