@@ -53,6 +53,12 @@ type WorkEntry = {
   user: { id: string; fullName: string };
 };
 
+type CreateWorkEntryResponse = {
+  entry: {
+    id: string;
+  };
+};
+
 type WorkEntryChangeAction = "UPDATE" | "DELETE";
 
 type WorkEntryChangeSnapshot = {
@@ -747,6 +753,16 @@ function isString(v: unknown): v is string {
   return typeof v === "string";
 }
 
+function isCreateWorkEntryResponse(value: unknown): value is CreateWorkEntryResponse {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const entry = value["entry"];
+
+  return isRecord(entry) && isString(entry["id"]);
+}
+
 function replaceTemplate(
   template: string,
   values: Record<string, string | number>
@@ -1358,6 +1374,8 @@ useEffect(() => {
         return;
       }
 
+      const createdEntryId = isCreateWorkEntryResponse(j) ? j.entry.id : "";
+
       setActivity("");
       setLocation("");
       setTravelMinutes("0");
@@ -1368,6 +1386,22 @@ useEffect(() => {
 
       await loadCorrectionRequests();
       await loadSelectedCorrectionStatus(workDate);
+
+      if (createdEntryId) {
+        const createdEntry = refreshedEntries.find((entry) => entry.id === createdEntryId);
+
+        if (createdEntry) {
+          const createdEntryYear = toYMD(createdEntry.workDate).slice(0, 4);
+
+          if (/^\d{4}$/.test(createdEntryYear)) {
+            setSelectedYear(createdEntryYear);
+          }
+
+          window.setTimeout(() => {
+            scrollToEntryInList(createdEntry);
+          }, 280);
+        }
+      }
     } catch {
       setError(t("networkSaveError"));
     } finally {
@@ -1441,7 +1475,7 @@ useEffect(() => {
     }
   }
 
-  function scrollToEntryFromPush(entry: WorkEntry) {
+  function scrollToEntryInList(entry: WorkEntry) {
     const monthKey = monthKeyFromWorkDate(entry.workDate);
     const dayKey = toYMD(entry.workDate);
 
@@ -1511,7 +1545,7 @@ useEffect(() => {
     }
 
     openedPushEntryIdRef.current = pushEntryIdParam;
-    scrollToEntryFromPush(targetEntry);
+    scrollToEntryInList(targetEntry);
   }, [pushEntryIdParam, loadingEntries, entries]);
 
   function openBreakInfoModal(dayBreak: DayBreak | null, date: string) {
