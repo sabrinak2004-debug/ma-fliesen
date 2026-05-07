@@ -391,24 +391,45 @@ function formatMinutesCompact(minutes: number) {
   return formatHM(mins);
 }
 
-function formatUnknownChangeValue(value: unknown): string {
-  if (value === null || value === undefined || value === "") {
-    return "—";
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Ja" : "Nein";
-  }
-
-  if (typeof value === "number") {
-    return String(value);
-  }
-
-  if (typeof value === "string") {
+function getDisplayChangeValue(value: unknown): unknown {
+  if (!isRecord(value)) {
     return value;
   }
 
-  return JSON.stringify(value);
+  const nestedValue = value["value"];
+
+  if (
+    typeof nestedValue === "string" ||
+    typeof nestedValue === "number" ||
+    typeof nestedValue === "boolean" ||
+    nestedValue === null
+  ) {
+    return nestedValue;
+  }
+
+  return value;
+}
+
+function formatUnknownChangeValue(value: unknown): string {
+  const displayValue = getDisplayChangeValue(value);
+
+  if (displayValue === null || displayValue === undefined || displayValue === "") {
+    return "—";
+  }
+
+  if (typeof displayValue === "boolean") {
+    return displayValue ? "Ja" : "Nein";
+  }
+
+  if (typeof displayValue === "number") {
+    return String(displayValue);
+  }
+
+  if (typeof displayValue === "string") {
+    return displayValue;
+  }
+
+  return JSON.stringify(displayValue);
 }
 
 function formatChangeReportDate(language: AppUiLanguage, iso: string): string {
@@ -454,18 +475,42 @@ const CHANGE_REPORT_FIELD_KEYS = [
 
 type ChangeReportFieldKey = (typeof CHANGE_REPORT_FIELD_KEYS)[number];
 
+function normalizeChangeCompareValue(value: unknown): string {
+  const displayValue = getDisplayChangeValue(value);
+
+  if (displayValue === null || displayValue === undefined) {
+    return "";
+  }
+
+  if (typeof displayValue === "string") {
+    return displayValue.trim();
+  }
+
+  if (typeof displayValue === "number" || typeof displayValue === "boolean") {
+    return String(displayValue);
+  }
+
+  return JSON.stringify(displayValue);
+}
+
 function getChangedReportFields(
   report: WorkEntryChangeReport
 ): ChangeReportFieldKey[] {
+  if (report.action === "DELETE") {
+    return [...CHANGE_REPORT_FIELD_KEYS].filter((key) => {
+      return normalizeChangeCompareValue(report.oldValues[key]) !== "";
+    });
+  }
+
   if (!report.newValues) {
-    return [...CHANGE_REPORT_FIELD_KEYS];
+    return [];
   }
 
   return CHANGE_REPORT_FIELD_KEYS.filter((key) => {
-    return (
-      JSON.stringify(report.oldValues[key]) !==
-      JSON.stringify(report.newValues?.[key])
-    );
+    const oldValue = normalizeChangeCompareValue(report.oldValues[key]);
+    const newValue = normalizeChangeCompareValue(report.newValues?.[key]);
+
+    return oldValue !== newValue;
   });
 }
 
