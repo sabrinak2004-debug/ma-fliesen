@@ -209,18 +209,7 @@ model WorkEntryChangeReport {
 
   action WorkEntryChangeAction
 
-  entryWorkDate  DateTime @db.Date
-  entryStartHHMM String
-  entryEndHHMM   String
-
-  reason                 String
-  reasonSourceLanguage   AppLanguage?
-  reasonTranslations     Json?
-
-  changeDescription                 String
-  changeDescriptionSourceLanguage   AppLanguage?
-  changeDescriptionTranslations     Json?
-
+  reason    String
   oldValues Json
   newValues Json?
 
@@ -229,7 +218,6 @@ model WorkEntryChangeReport {
   @@index([workEntryId])
   @@index([targetUserId, createdAt])
   @@index([changedByUserId, createdAt])
-  @@index([entryWorkDate])
   @@index([action])
 }
 

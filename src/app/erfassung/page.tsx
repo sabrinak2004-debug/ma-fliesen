@@ -72,11 +72,7 @@ type WorkEntryChangeSnapshot = {
 type WorkEntryChangeReport = {
   id: string;
   action: WorkEntryChangeAction;
-  entryWorkDate: string;
-  entryStartHHMM: string;
-  entryEndHHMM: string;
   reason: string;
-  changeDescription: string;
   createdAt: string;
   changedBy: {
     id: string;
@@ -102,11 +98,7 @@ function isWorkEntryChangeReport(value: unknown): value is WorkEntryChangeReport
   return (
     isString(value["id"]) &&
     (value["action"] === "UPDATE" || value["action"] === "DELETE") &&
-    isString(value["entryWorkDate"]) &&
-    isString(value["entryStartHHMM"]) &&
-    isString(value["entryEndHHMM"]) &&
     isString(value["reason"]) &&
-    isString(value["changeDescription"]) &&
     isString(value["createdAt"]) &&
     isRecord(changedBy) &&
     isString(changedBy["id"]) &&
@@ -911,11 +903,6 @@ function ErfassungPageInner() {
     return typeof value === "string" && value.trim() !== "" ? value.trim() : "";
   }, [searchParams]);
 
-  const focusEntryId = useMemo(() => {
-    const value = searchParams.get("focusEntryId");
-    return typeof value === "string" && value.trim() !== "" ? value.trim() : "";
-  }, [searchParams]);
-
   const syncDateParam = useMemo(() => {
     const value = searchParams.get("syncDate");
     return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
@@ -1542,16 +1529,6 @@ useEffect(() => {
 
   const groupedEntries = useMemo(() => groupByMonthThenDay(language, entries), [language, entries]);
 
-  const focusedEntry = useMemo(() => {
-    if (!focusEntryId) return null;
-
-    return entries.find((entry) => entry.id === focusEntryId) ?? null;
-  }, [entries, focusEntryId]);
-
-  const focusedEntryDay = focusedEntry ? toYMD(focusedEntry.workDate) : "";
-  const focusedEntryMonth = focusedEntryDay ? focusedEntryDay.slice(0, 7) : "";
-  const focusedEntryYear = focusedEntryDay ? focusedEntryDay.slice(0, 4) : "";
-
   const availableYears = useMemo(() => {
     const years = Array.from(
       new Set(
@@ -1627,38 +1604,13 @@ useEffect(() => {
     };
   }, [shouldShowBreakComputation, dayBreakMap, workDate, entries, t]);
 
-  useEffect(() => {
-    if (focusedEntryYear && availableYears.includes(focusedEntryYear)) {
-      setSelectedYear(focusedEntryYear);
-      return;
-    }
-
+    useEffect(() => {
     if (selectedYear !== "ALLE") return;
-
     const currentYear = String(new Date().getFullYear());
     if (availableYears.includes(currentYear)) {
       setSelectedYear(currentYear);
     }
-  }, [availableYears, focusedEntryYear, selectedYear]);
-
-  useEffect(() => {
-    if (!focusEntryId || loadingEntries) return;
-
-    const timer = window.setTimeout(() => {
-      const element = document.getElementById(`work-entry-${focusEntryId}`);
-
-      if (!element) return;
-
-      element.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }, 250);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [focusEntryId, loadingEntries, filteredGroupedEntries]);
+  }, [availableYears, selectedYear]);
 
   const editPreview = useMemo(() => {
     if (!edit) {
@@ -2265,7 +2217,7 @@ useEffect(() => {
           {filteredGroupedEntries.map((m) => (
             <details
               key={m.key}
-              open={m.key === currentMonthKey || m.key === focusedEntryMonth}
+              open={m.key === currentMonthKey}
               className="tenant-list-shell"
             >
               <summary
@@ -2299,7 +2251,6 @@ useEffect(() => {
                   return (
                     <details
                       key={`${m.key}-${d.date}`}
-                      open={d.date === focusedEntryDay}
                       className="tenant-list-shell-inner"
                       style={{
                         margin: "0 12px",
@@ -2372,16 +2323,7 @@ useEffect(() => {
                           return (
                             <div
                               key={e.id}
-                              id={`work-entry-${e.id}`}
                               className="tenant-entry-row"
-                              style={
-                                e.id === focusEntryId
-                                  ? {
-                                      outline: "2px solid var(--accent)",
-                                      boxShadow: "0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent)",
-                                    }
-                                  : undefined
-                              }
                             >
                               <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
                                 <div style={{ fontWeight: 1100, color: "var(--accent)" }}>
@@ -2829,12 +2771,6 @@ useEffect(() => {
                     <span style={{ color: "var(--muted)", fontSize: 12 }}>{t("changeReason")}</span>
                     <div style={{ whiteSpace: "pre-wrap", fontWeight: 800 }}>
                       {report.reason}
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ color: "var(--muted)", fontSize: 12 }}>{t("changeDescription")}</span>
-                    <div style={{ whiteSpace: "pre-wrap", fontWeight: 800 }}>
-                      {report.changeDescription}
                     </div>
                   </div>
                 </div>
