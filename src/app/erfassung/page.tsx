@@ -918,8 +918,6 @@ function ErfassungPageInner() {
     return typeof value === "string" && value.trim() !== "" ? value.trim() : "";
   }, [searchParams]);
 
-  const shouldOpenPushChangeReport = searchParams.get("showChanges") === "1";
-
   const hasAdminTaskBypassForSelectedDate =
     selectedCorrectionStatus?.adminTaskBypass?.active === true &&
     selectedCorrectionStatus.adminTaskBypass.workDate === workDate;
@@ -1355,6 +1353,18 @@ useEffect(() => {
     const monthKey = monthKeyFromWorkDate(entry.workDate);
     const dayKey = toYMD(entry.workDate);
 
+    document
+      .querySelectorAll<HTMLDetailsElement>("[data-entry-month]")
+      .forEach((details) => {
+        details.open = false;
+      });
+
+    document
+      .querySelectorAll<HTMLDetailsElement>("[data-entry-day]")
+      .forEach((details) => {
+        details.open = false;
+      });
+
     const monthDetails = document.querySelector<HTMLDetailsElement>(
       `[data-entry-month="${monthKey}"]`
     );
@@ -1390,7 +1400,7 @@ useEffect(() => {
       window.setTimeout(() => {
         setHighlightedEntryId((current) => (current === entry.id ? "" : current));
       }, 4500);
-    }, 180);
+    }, 220);
   }
 
   useEffect(() => {
@@ -1410,13 +1420,7 @@ useEffect(() => {
 
     openedPushEntryIdRef.current = pushEntryIdParam;
     scrollToEntryFromPush(targetEntry);
-
-    if (shouldOpenPushChangeReport) {
-      window.setTimeout(() => {
-        void openChangeReportsModal(targetEntry);
-      }, 450);
-    }
-  }, [pushEntryIdParam, shouldOpenPushChangeReport, loadingEntries, entries]);
+  }, [pushEntryIdParam, loadingEntries, entries]);
 
   function openBreakInfoModal(dayBreak: DayBreak | null, date: string) {
     setBreakInfoDate(date);

@@ -209,7 +209,7 @@ async function createAdminWorkEntryChangeNotification(args: {
       url: buildPushUrl(
         isDelete || !args.workEntryId
           ? "/aufgaben"
-          : `/erfassung?entryId=${encodeURIComponent(args.workEntryId)}&showChanges=1`
+          : `/erfassung?entryId=${encodeURIComponent(args.workEntryId)}`
       ),
     });
   } catch (error) {
