@@ -209,7 +209,10 @@ model WorkEntryChangeReport {
 
   action WorkEntryChangeAction
 
-  reason    String
+  reason               String
+  reasonSourceLanguage AppLanguage?
+  reasonTranslations   Json?
+
   oldValues Json
   newValues Json?
 

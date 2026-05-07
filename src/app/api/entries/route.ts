@@ -51,31 +51,65 @@ function formatEntryDateTimeForNotification(workDate: string, startTime: string,
   return `${workDate} · ${startTime}–${endTime}`;
 }
 
+function buildTranslatedSnapshotValue(args: {
+  value: string | null | undefined;
+  sourceLanguage: string | null | undefined;
+  translations: unknown;
+}): Prisma.InputJsonObject {
+  const translationMap = isTranslationMap(args.translations)
+    ? args.translations
+    : null;
+
+  return {
+    value: args.value ?? "",
+    sourceLanguage: args.sourceLanguage ? toSupportedLang(args.sourceLanguage) : null,
+    translations: translationMap,
+  };
+}
+
 function buildWorkEntrySnapshot(row: {
   workDate: Date;
   startTime: Date;
   endTime: Date;
   activity: string | null;
+  activitySourceLanguage?: string | null;
+  activityTranslations?: Prisma.JsonValue | null;
   location: string | null;
+  locationSourceLanguage?: string | null;
+  locationTranslations?: Prisma.JsonValue | null;
   travelMinutes: number | null;
   grossMinutes: number | null;
   breakMinutes: number | null;
   breakAuto: boolean | null;
   workMinutes: number | null;
   noteEmployee: string | null;
+  noteEmployeeSourceLanguage?: string | null;
+  noteEmployeeTranslations?: Prisma.JsonValue | null;
 }): Prisma.InputJsonObject {
   return {
     workDate: toIsoDateUTC(row.workDate),
     startTime: toHHMMUTC(row.startTime),
     endTime: toHHMMUTC(row.endTime),
-    activity: row.activity ?? "",
-    location: row.location ?? "",
+    activity: buildTranslatedSnapshotValue({
+      value: row.activity,
+      sourceLanguage: row.activitySourceLanguage,
+      translations: row.activityTranslations,
+    }),
+    location: buildTranslatedSnapshotValue({
+      value: row.location,
+      sourceLanguage: row.locationSourceLanguage,
+      translations: row.locationTranslations,
+    }),
     travelMinutes: row.travelMinutes ?? 0,
     grossMinutes: row.grossMinutes ?? 0,
     breakMinutes: row.breakMinutes ?? 0,
     breakAuto: row.breakAuto ?? false,
     workMinutes: row.workMinutes ?? 0,
-    noteEmployee: row.noteEmployee ?? "",
+    noteEmployee: buildTranslatedSnapshotValue({
+      value: row.noteEmployee,
+      sourceLanguage: row.noteEmployeeSourceLanguage,
+      translations: row.noteEmployeeTranslations,
+    }),
   };
 }
 
@@ -114,6 +148,7 @@ function getChangedSnapshotFields(
 
 async function createAdminWorkEntryChangeNotification(args: {
   targetUserId: string;
+  targetUserLanguage: string | null | undefined;
   changedByUserId: string;
   adminName: string;
   action: WorkEntryChangeAction;
@@ -121,14 +156,22 @@ async function createAdminWorkEntryChangeNotification(args: {
   startTime: string;
   endTime: string;
   reason: string;
+  reasonTranslations: unknown;
   companyId: string;
   companySubdomain?: string | null;
 }): Promise<void> {
+  const language = toAppUiLanguage(args.targetUserLanguage);
   const isDelete = args.action === WorkEntryChangeAction.DELETE;
 
   const title = isDelete
-    ? "Arbeitszeiteintrag wurde gelöscht"
-    : "Arbeitszeiteintrag wurde geändert";
+    ? translate(language, "entryDeleted", ERFASSUNG_DICTIONARY)
+    : translate(language, "entryUpdated", ERFASSUNG_DICTIONARY);
+
+  const translatedReason = getTranslatedText(
+    args.reason,
+    args.reasonTranslations,
+    language
+  );
 
   const dateLine = formatEntryDateTimeForNotification(
     args.workDate,
@@ -138,9 +181,9 @@ async function createAdminWorkEntryChangeNotification(args: {
 
   const description = [
     `${title}.`,
-    `Eintrag: ${dateLine}`,
-    `Durch: ${args.adminName}`,
-    `Grund: ${args.reason}`,
+    `${translate(language, "dateAndTime", ERFASSUNG_DICTIONARY)}: ${dateLine}`,
+    `${translate(language, "changedBy", ERFASSUNG_DICTIONARY)}: ${args.adminName}`,
+    `${translate(language, "changeReason", ERFASSUNG_DICTIONARY)}: ${translatedReason}`,
   ].join("\n");
 
   await prisma.task.create({
@@ -161,7 +204,7 @@ async function createAdminWorkEntryChangeNotification(args: {
       companyId: args.companyId,
       companySubdomain: args.companySubdomain ?? undefined,
       title,
-      body: `${dateLine}: ${args.reason}`,
+      body: `${dateLine}: ${translatedReason}`,
       url: buildPushUrl(isDelete ? "/aufgaben" : "/erfassung"),
     });
   } catch (error) {
@@ -188,7 +231,7 @@ function getNumber(v: unknown): number {
 
 type TranslationMap = Partial<Record<SupportedLang, string>>;
 
-function isTranslationMap(value: Prisma.JsonValue | null | undefined): value is TranslationMap {
+function isTranslationMap(value: unknown): value is TranslationMap {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }
@@ -214,7 +257,7 @@ function toSupportedLang(language: string | null | undefined): SupportedLang {
 
 function getTranslatedText(
   originalText: string | null | undefined,
-  translations: Prisma.JsonValue | null | undefined,
+  translations: unknown,
   language: string | null | undefined
 ): string {
   const fallback = originalText ?? "";
@@ -236,6 +279,34 @@ function toPrismaNullableJsonInput(
   }
 
   return value as Prisma.InputJsonValue;
+}
+
+async function translateReasonForStorage(reason: string): Promise<{
+  sourceLanguage: SupportedLang | null;
+  translations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput;
+}> {
+  if (!reason.trim()) {
+    return {
+      sourceLanguage: null,
+      translations: Prisma.JsonNull,
+    };
+  }
+
+  try {
+    const translationResult = await translateAllLanguages(reason);
+
+    return {
+      sourceLanguage: translationResult.sourceLanguage,
+      translations: toPrismaNullableJsonInput(translationResult.translations),
+    };
+  } catch (error) {
+    console.error("Translation for work entry change reason failed:", error);
+
+    return {
+      sourceLanguage: null,
+      translations: Prisma.JsonNull,
+    };
+  }
 }
 
 function toAppUiLanguage(value: string | null | undefined): AppUiLanguage {
@@ -1118,13 +1189,32 @@ export async function PATCH(req: Request) {
   const startTime = isAdmin ? toHHMMUTC(existing.startTime) : getString(body.startTime).trim();
   const endTime = isAdmin ? toHHMMUTC(existing.endTime) : getString(body.endTime).trim();
 
+  const submittedActivity = getString(body.activity).trim();
+  const submittedLocation = getString(body.location).trim();
+
+  const existingActivityInAdminLanguage = getTranslatedText(
+    existing.activity,
+    existing.activityTranslations,
+    session.language
+  );
+
+  const existingLocationInAdminLanguage = getTranslatedText(
+    existing.location,
+    existing.locationTranslations,
+    session.language
+  );
+
   const activity = isAdmin
-    ? getString(body.activity).trim() || (existing.activity ?? "")
-    : getString(body.activity).trim();
+    ? !submittedActivity || submittedActivity === existingActivityInAdminLanguage
+      ? existing.activity ?? ""
+      : submittedActivity
+    : submittedActivity;
 
   const location = isAdmin
-    ? getString(body.location).trim() || (existing.location ?? "")
-    : getString(body.location).trim();
+    ? !submittedLocation || submittedLocation === existingLocationInAdminLanguage
+      ? existing.location ?? ""
+      : submittedLocation
+    : submittedLocation;
 
   const noteEmployee = isAdmin
     ? existing.noteEmployee ?? ""
@@ -1315,6 +1405,7 @@ export async function PATCH(req: Request) {
           id: true,
           fullName: true,
           companyId: true,
+          language: true,
           company: {
             select: {
               subdomain: true,
@@ -1344,6 +1435,8 @@ export async function PATCH(req: Request) {
     const changedFields = getChangedSnapshotFields(oldSnapshot, newSnapshot);
 
     if (changedFields.length > 0) {
+      const translatedReason = await translateReasonForStorage(changeReason);
+
       await prisma.workEntryChangeReport.create({
         data: {
           workEntryId: updatedFresh.id,
@@ -1351,6 +1444,8 @@ export async function PATCH(req: Request) {
           changedByUserId: session.userId,
           action: WorkEntryChangeAction.UPDATE,
           reason: changeReason,
+          reasonSourceLanguage: translatedReason.sourceLanguage,
+          reasonTranslations: translatedReason.translations,
           oldValues: oldSnapshot,
           newValues: newSnapshot,
         },
@@ -1360,6 +1455,7 @@ export async function PATCH(req: Request) {
 
       await createAdminWorkEntryChangeNotification({
         targetUserId: updatedFresh.userId,
+        targetUserLanguage: updatedFresh.user.language,
         changedByUserId: session.userId,
         adminName: session.fullName,
         action: WorkEntryChangeAction.UPDATE,
@@ -1367,6 +1463,7 @@ export async function PATCH(req: Request) {
         startTime: toHHMMUTC(updatedFresh.startTime),
         endTime: toHHMMUTC(updatedFresh.endTime),
         reason: changeReason,
+        reasonTranslations: translatedReason.translations,
         companyId: session.companyId,
         companySubdomain: updatedFresh.user.company.subdomain,
       });
@@ -1445,6 +1542,7 @@ export async function DELETE(req: Request) {
           id: true,
           fullName: true,
           companyId: true,
+          language: true,
           company: {
             select: {
               subdomain: true,
@@ -1502,6 +1600,8 @@ export async function DELETE(req: Request) {
   const deletedEndTime = toHHMMUTC(entry.endTime);
 
   if (isAdmin) {
+    const translatedReason = await translateReasonForStorage(changeReason);
+
     await prisma.workEntryChangeReport.create({
       data: {
         workEntryId: entry.id,
@@ -1509,6 +1609,8 @@ export async function DELETE(req: Request) {
         changedByUserId: session.userId,
         action: WorkEntryChangeAction.DELETE,
         reason: changeReason,
+        reasonSourceLanguage: translatedReason.sourceLanguage,
+        reasonTranslations: translatedReason.translations,
         oldValues: oldSnapshot,
         newValues: Prisma.JsonNull,
       },
@@ -1516,6 +1618,7 @@ export async function DELETE(req: Request) {
 
     await createAdminWorkEntryChangeNotification({
       targetUserId: entry.userId,
+      targetUserLanguage: entry.user.language,
       changedByUserId: session.userId,
       adminName: session.fullName,
       action: WorkEntryChangeAction.DELETE,
@@ -1523,6 +1626,7 @@ export async function DELETE(req: Request) {
       startTime: deletedStartTime,
       endTime: deletedEndTime,
       reason: changeReason,
+      reasonTranslations: translatedReason.translations,
       companyId: session.companyId,
       companySubdomain: entry.user.company.subdomain,
     });

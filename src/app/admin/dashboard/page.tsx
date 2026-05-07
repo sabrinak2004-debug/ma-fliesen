@@ -1321,13 +1321,14 @@ export default function AdminDashboardPage() {
   async function saveEditWork() {
     if (!editEntryId) return;
 
-    setEditSaving(true);
     setEditErr("");
 
     if (!editChangeReason.trim()) {
       setEditErr(t("changeReasonRequired"));
       return;
     }
+
+    setEditSaving(true);
 
     const travel = Number(editTravelMinutes.replace(",", "."));
     const travelMinutes = Number.isFinite(travel) ? Math.max(0, Math.round(travel)) : 0;

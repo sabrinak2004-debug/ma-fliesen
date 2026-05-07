@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma, Role, WorkEntryChangeAction } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { type SupportedLang } from "@/lib/translate";
 
 type RouteContext = {
   params: Promise<{
@@ -21,6 +22,99 @@ type ChangeReportDTO = {
   oldValues: Prisma.JsonValue;
   newValues: Prisma.JsonValue | null;
 };
+
+type TranslationMap = Partial<Record<SupportedLang, string>>;
+
+const TRANSLATABLE_SNAPSHOT_FIELDS = new Set([
+  "activity",
+  "location",
+  "noteEmployee",
+]);
+
+function toSupportedLang(language: string | null | undefined): SupportedLang {
+  if (
+    language === "DE" ||
+    language === "EN" ||
+    language === "IT" ||
+    language === "TR" ||
+    language === "SQ" ||
+    language === "KU" ||
+    language === "RO"
+  ) {
+    return language;
+  }
+
+  return "DE";
+}
+
+function isJsonRecord(value: Prisma.JsonValue | null | undefined): value is Prisma.JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isTranslationMap(value: unknown): value is TranslationMap {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getTranslatedText(
+  originalText: string,
+  translations: unknown,
+  language: SupportedLang
+): string {
+  if (!isTranslationMap(translations)) {
+    return originalText;
+  }
+
+  const translated = translations[language];
+  return typeof translated === "string" && translated.trim() ? translated : originalText;
+}
+
+function translateSnapshotFieldValue(args: {
+  fieldKey: string;
+  value: Prisma.JsonValue | undefined;
+  language: SupportedLang;
+}): Prisma.JsonValue {
+  if (args.value === undefined) {
+    return null;
+  }
+
+  if (!TRANSLATABLE_SNAPSHOT_FIELDS.has(args.fieldKey)) {
+    return args.value;
+  }
+
+  if (!isJsonRecord(args.value)) {
+    return args.value;
+  }
+
+  const rawValue = args.value["value"];
+  const translations = args.value["translations"];
+
+  if (typeof rawValue !== "string") {
+    return args.value;
+  }
+
+  return getTranslatedText(rawValue, translations, args.language);
+}
+
+function translateSnapshotValues(
+  snapshot: Prisma.JsonValue,
+  language: SupportedLang
+): Prisma.JsonValue {
+  if (!isJsonRecord(snapshot)) {
+    return snapshot;
+  }
+
+  const translated: Prisma.JsonObject = {};
+
+  for (const [key, value] of Object.entries(snapshot)) {
+    translated[key] = translateSnapshotFieldValue({
+      fieldKey: key,
+      value,
+      language,
+    });
+  }
+
+  return translated;
+}
 
 export async function GET(
   _req: Request,
@@ -73,17 +167,26 @@ export async function GET(
     },
   });
 
+  const reportLanguage = toSupportedLang(session.language);
+
   const result: ChangeReportDTO[] = reports.map((report) => ({
     id: report.id,
     action: report.action,
-    reason: report.reason,
+    reason: getTranslatedText(
+      report.reason,
+      report.reasonTranslations,
+      reportLanguage
+    ),
     createdAt: report.createdAt.toISOString(),
     changedBy: {
       id: report.changedByUser.id,
       fullName: report.changedByUser.fullName,
     },
-    oldValues: report.oldValues,
-    newValues: report.newValues,
+    oldValues: translateSnapshotValues(report.oldValues, reportLanguage),
+    newValues:
+      report.newValues === null
+        ? null
+        : translateSnapshotValues(report.newValues, reportLanguage),
   }));
 
   return NextResponse.json({ reports: result });
