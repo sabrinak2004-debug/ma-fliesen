@@ -149,6 +149,7 @@ function getChangedSnapshotFields(
 async function createAdminWorkEntryChangeNotification(args: {
   targetUserId: string;
   targetUserLanguage: string | null | undefined;
+  workEntryId: string | null;
   changedByUserId: string;
   adminName: string;
   action: WorkEntryChangeAction;
@@ -205,7 +206,11 @@ async function createAdminWorkEntryChangeNotification(args: {
       companySubdomain: args.companySubdomain ?? undefined,
       title,
       body: `${dateLine}: ${translatedReason}`,
-      url: buildPushUrl(isDelete ? "/aufgaben" : "/erfassung"),
+      url: buildPushUrl(
+        isDelete || !args.workEntryId
+          ? "/aufgaben"
+          : `/erfassung?entryId=${encodeURIComponent(args.workEntryId)}&showChanges=1`
+      ),
     });
   } catch (error) {
     console.error("Push für Arbeitszeit-Änderungsreport fehlgeschlagen:", error);
@@ -1456,6 +1461,7 @@ export async function PATCH(req: Request) {
       await createAdminWorkEntryChangeNotification({
         targetUserId: updatedFresh.userId,
         targetUserLanguage: updatedFresh.user.language,
+        workEntryId: updatedFresh.id,
         changedByUserId: session.userId,
         adminName: session.fullName,
         action: WorkEntryChangeAction.UPDATE,
@@ -1619,6 +1625,7 @@ export async function DELETE(req: Request) {
     await createAdminWorkEntryChangeNotification({
       targetUserId: entry.userId,
       targetUserLanguage: entry.user.language,
+      workEntryId: null,
       changedByUserId: session.userId,
       adminName: session.fullName,
       action: WorkEntryChangeAction.DELETE,

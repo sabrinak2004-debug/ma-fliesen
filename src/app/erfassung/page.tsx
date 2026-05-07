@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Toast from "@/components/Toast";
@@ -881,6 +881,9 @@ function ErfassungPageInner() {
   const [changeReportsEntry, setChangeReportsEntry] = useState<WorkEntry | null>(null);
   const [changeReports, setChangeReports] = useState<WorkEntryChangeReport[]>([]);
 
+  const [highlightedEntryId, setHighlightedEntryId] = useState<string>("");
+  const openedPushEntryIdRef = useRef<string>("");
+
   const [breakInfoOpen, setBreakInfoOpen] = useState(false);
   const [breakInfoDate, setBreakInfoDate] = useState<string>("");
   const [breakInfoManualStart, setBreakInfoManualStart] = useState<string>("");
@@ -909,6 +912,13 @@ function ErfassungPageInner() {
       ? value
       : "";
   }, [searchParams]);
+
+  const pushEntryIdParam = useMemo(() => {
+    const value = searchParams.get("entryId");
+    return typeof value === "string" && value.trim() !== "" ? value.trim() : "";
+  }, [searchParams]);
+
+  const shouldOpenPushChangeReport = searchParams.get("showChanges") === "1";
 
   const hasAdminTaskBypassForSelectedDate =
     selectedCorrectionStatus?.adminTaskBypass?.active === true &&
@@ -1340,6 +1350,73 @@ useEffect(() => {
       setChangeReportsLoading(false);
     }
   }
+
+  function scrollToEntryFromPush(entry: WorkEntry) {
+    const monthKey = monthKeyFromWorkDate(entry.workDate);
+    const dayKey = toYMD(entry.workDate);
+
+    const monthDetails = document.querySelector<HTMLDetailsElement>(
+      `[data-entry-month="${monthKey}"]`
+    );
+
+    if (monthDetails) {
+      monthDetails.open = true;
+    }
+
+    const dayDetails = document.querySelector<HTMLDetailsElement>(
+      `[data-entry-day="${dayKey}"]`
+    );
+
+    if (dayDetails) {
+      dayDetails.open = true;
+    }
+
+    window.setTimeout(() => {
+      const entryElement = document.querySelector<HTMLElement>(
+        `[data-work-entry-id="${entry.id}"]`
+      );
+
+      if (!entryElement) {
+        return;
+      }
+
+      entryElement.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      setHighlightedEntryId(entry.id);
+
+      window.setTimeout(() => {
+        setHighlightedEntryId((current) => (current === entry.id ? "" : current));
+      }, 4500);
+    }, 180);
+  }
+
+  useEffect(() => {
+    if (!pushEntryIdParam || loadingEntries) {
+      return;
+    }
+
+    if (openedPushEntryIdRef.current === pushEntryIdParam) {
+      return;
+    }
+
+    const targetEntry = entries.find((entry) => entry.id === pushEntryIdParam);
+
+    if (!targetEntry) {
+      return;
+    }
+
+    openedPushEntryIdRef.current = pushEntryIdParam;
+    scrollToEntryFromPush(targetEntry);
+
+    if (shouldOpenPushChangeReport) {
+      window.setTimeout(() => {
+        void openChangeReportsModal(targetEntry);
+      }, 450);
+    }
+  }, [pushEntryIdParam, shouldOpenPushChangeReport, loadingEntries, entries]);
 
   function openBreakInfoModal(dayBreak: DayBreak | null, date: string) {
     setBreakInfoDate(date);
@@ -2219,6 +2296,7 @@ useEffect(() => {
               key={m.key}
               open={m.key === currentMonthKey}
               className="tenant-list-shell"
+              data-entry-month={m.key}
             >
               <summary
                 style={{
@@ -2252,6 +2330,7 @@ useEffect(() => {
                     <details
                       key={`${m.key}-${d.date}`}
                       className="tenant-list-shell-inner"
+                      data-entry-day={d.date}
                       style={{
                         margin: "0 12px",
                       }}
@@ -2324,6 +2403,18 @@ useEffect(() => {
                             <div
                               key={e.id}
                               className="tenant-entry-row"
+                              data-work-entry-id={e.id}
+                              style={{
+                                outline:
+                                  highlightedEntryId === e.id
+                                    ? "2px solid var(--accent)"
+                                    : "none",
+                                boxShadow:
+                                  highlightedEntryId === e.id
+                                    ? "0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent)"
+                                    : undefined,
+                                transition: "outline 180ms ease, box-shadow 180ms ease",
+                              }}
                             >
                               <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
                                 <div style={{ fontWeight: 1100, color: "var(--accent)" }}>
