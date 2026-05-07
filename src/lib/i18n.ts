@@ -503,7 +503,13 @@ export type TimeEntryCorrectionApiTextKey =
   | "approvedPushTitle"
   | "approvedPushBody"
   | "rejectedPushTitle"
-  | "rejectedPushBody";
+  | "rejectedPushBody"
+  | "newWorkEntryEditRequestPushTitle"
+  | "newWorkEntryEditRequestPushBody"
+  | "workEntryEditRequestApprovedPushTitle"
+  | "workEntryEditRequestApprovedPushBody"
+  | "workEntryEditRequestRejectedPushTitle"
+  | "workEntryEditRequestRejectedPushBody";
 
 export const TIME_ENTRY_CORRECTION_API_TEXTS: Record<
   TimeEntryCorrectionApiTextKey,
@@ -688,6 +694,60 @@ export const TIME_ENTRY_CORRECTION_API_TEXTS: Record<
     SQ: "Kërkesa jote për korrigjim u refuzua.",
     KU: "Daxwaza te ya rastkirinê hate redkirin.",
     RO: "Cererea ta de corecție a fost respinsă.",
+  },
+  newWorkEntryEditRequestPushTitle: {
+    DE: "Neue Änderungsanfrage",
+    EN: "New edit request",
+    IT: "Nuova richiesta di modifica",
+    TR: "Yeni değişiklik talebi",
+    SQ: "Kërkesë e re për ndryshim",
+    KU: "Daxwaza guherandinê ya nû",
+    RO: "Cerere nouă de modificare",
+  },
+  newWorkEntryEditRequestPushBody: {
+    DE: "{name} möchte einen Eintrag vom {dateLabel} ändern.",
+    EN: "{name} wants to edit an entry from {dateLabel}.",
+    IT: "{name} vuole modificare una voce del {dateLabel}.",
+    TR: "{name}, {dateLabel} tarihli bir kaydı değiştirmek istiyor.",
+    SQ: "{name} dëshiron të ndryshojë një regjistrim nga {dateLabel}.",
+    KU: "{name} dixwaze tomarek ji {dateLabel} biguherîne.",
+    RO: "{name} dorește să modifice o înregistrare din {dateLabel}.",
+  },
+  workEntryEditRequestApprovedPushTitle: {
+    DE: "Änderungsanfrage genehmigt",
+    EN: "Edit request approved",
+    IT: "Richiesta di modifica approvata",
+    TR: "Değişiklik talebi onaylandı",
+    SQ: "Kërkesa për ndryshim u miratua",
+    KU: "Daxwaza guherandinê hate pejirandin",
+    RO: "Cerere de modificare aprobată",
+  },
+  workEntryEditRequestApprovedPushBody: {
+    DE: "Deine Änderungsanfrage wurde genehmigt.",
+    EN: "Your edit request was approved.",
+    IT: "La tua richiesta di modifica è stata approvata.",
+    TR: "Değişiklik talebin onaylandı.",
+    SQ: "Kërkesa jote për ndryshim u miratua.",
+    KU: "Daxwaza te ya guherandinê hate pejirandin.",
+    RO: "Cererea ta de modificare a fost aprobată.",
+  },
+  workEntryEditRequestRejectedPushTitle: {
+    DE: "Änderungsanfrage abgelehnt",
+    EN: "Edit request rejected",
+    IT: "Richiesta di modifica rifiutata",
+    TR: "Değişiklik talebi reddedildi",
+    SQ: "Kërkesa për ndryshim u refuzua",
+    KU: "Daxwaza guherandinê hate redkirin",
+    RO: "Cerere de modificare respinsă",
+  },
+  workEntryEditRequestRejectedPushBody: {
+    DE: "Deine Änderungsanfrage wurde abgelehnt.",
+    EN: "Your edit request was rejected.",
+    IT: "La tua richiesta di modifica è stata rifiutata.",
+    TR: "Değişiklik talebin reddedildi.",
+    SQ: "Kërkesa jote për ndryshim u refuzua.",
+    KU: "Daxwaza te ya guherandinê hate redkirin.",
+    RO: "Cererea ta de modificare a fost respinsă.",
   },
 };
 

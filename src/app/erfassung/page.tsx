@@ -561,6 +561,7 @@ type EditForm = {
   workDate: string;
   startTime: string;
   endTime: string;
+  updatedAt: string;
   activity: string;
   location: string;
   travelMinutes: string;
@@ -853,6 +854,46 @@ function isPastWorkDate(dateYMD: string): boolean {
   return dateYMD < toIsoDateLocal(new Date());
 }
 
+function toBerlinDateYMDFromIso(iso: string): string {
+  const date = new Date(iso);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "0000";
+  const month = parts.find((part) => part.type === "month")?.value ?? "00";
+  const day = parts.find((part) => part.type === "day")?.value ?? "00";
+
+  return `${year}-${month}-${day}`;
+}
+
+function requiresEditRequestForEntry(entry: {
+  workDate: string;
+  updatedAt: string;
+}): boolean {
+  const today = toIsoDateLocal(new Date());
+  const workDateYMD = toYMD(entry.workDate);
+  const updatedDateYMD = toBerlinDateYMDFromIso(entry.updatedAt);
+
+  if (!workDateYMD || !updatedDateYMD) {
+    return false;
+  }
+
+  if (workDateYMD >= today) {
+    return false;
+  }
+
+  return updatedDateYMD < today;
+}
+
 function formatCorrectionRange(
   language: AppUiLanguage,
   startDate: string,
@@ -913,6 +954,8 @@ function ErfassungPageInner() {
   const [editOpen, setEditOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [editSuccess, setEditSuccess] = useState<string | null>(null);
+  const [editChangeReason, setEditChangeReason] = useState("");
   const [edit, setEdit] = useState<EditForm | null>(null);
 
   const [noteOpen, setNoteOpen] = useState(false);
@@ -1342,12 +1385,15 @@ useEffect(() => {
 
   function openEditModal(e: WorkEntry) {
     setEditError(null);
+    setEditSuccess(null);
+    setEditChangeReason("");
     setEdit({
       id: e.id,
       userFullName: e.user?.fullName ?? t("unknown"),
       workDate: toYMD(e.workDate),
       startTime: e.startTime,
       endTime: e.endTime,
+      updatedAt: e.updatedAt,
       activity: e.activity ?? "",
       location: e.location ?? "",
       travelMinutes: String(e.travelMinutes ?? 0),
@@ -1479,9 +1525,71 @@ useEffect(() => {
     setBreakInfoOpen(true);
   }
 
-  async function saveEdit() {
+  async function submitEditRequest() {
     if (!edit) return;
 
+    setEditError(null);
+    setEditSuccess(null);
+
+    if (!edit.activity.trim()) return setEditError(t("enterActivity"));
+    if (!edit.location.trim()) return setEditError(t("enterLocation"));
+    if (!edit.workDate || !edit.startTime || !edit.endTime) {
+      return setEditError(t("dateStartEndMissing"));
+    }
+
+    if (!editChangeReason.trim()) {
+      return setEditError(t("editRequestReasonRequired"));
+    }
+
+    setEditSaving(true);
+
+    try {
+      const response = await fetch("/api/work-entry-edit-requests", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workEntryId: edit.id,
+          requestedWorkDate: edit.workDate,
+          requestedStartTime: edit.startTime,
+          requestedEndTime: edit.endTime,
+          requestedActivity: edit.activity.trim(),
+          requestedLocation: edit.location.trim(),
+          requestedTravelMinutes: Number(edit.travelMinutes) || 0,
+          requestedNoteEmployee: edit.noteEmployee.trim(),
+          reason: editChangeReason.trim(),
+        }),
+      });
+
+      const json: unknown = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const message =
+          isRecord(json) && typeof json["error"] === "string"
+            ? json["error"]
+            : t("editRequestCreateFailed");
+
+        setEditError(message);
+        return;
+      }
+
+      setEditSuccess(t("editRequestSentSuccess"));
+      setEditChangeReason("");
+      await loadEntries();
+      window.dispatchEvent(new Event("admin-requests-changed"));
+    } catch {
+      setEditError(t("networkEditRequestError"));
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function saveEdit() {
+    if (!edit) return;
+    if (requiresEditRequestForEntry(edit)) {
+      await submitEditRequest();
+      return;
+    }
     setEditError(null);
     if (!edit.activity.trim()) return setEditError(t("enterActivity"));
     if (!edit.location.trim()) return setEditError(t("enterLocation"));
@@ -2972,11 +3080,13 @@ useEffect(() => {
       {/* ✅ EDIT MODAL */}
       <Modal
         open={editOpen}
-        title={t("editEntry")}
+        title={edit && requiresEditRequestForEntry(edit) ? t("editRequestTitle") : t("editEntry")}
         onClose={() => {
           setEditOpen(false);
           setEdit(null);
           setEditError(null);
+          setEditSuccess(null);
+          setEditChangeReason("");
         }}
         footer={
           <div className="modal-footer-actions">
@@ -2987,6 +3097,8 @@ useEffect(() => {
                 setEditOpen(false);
                 setEdit(null);
                 setEditError(null);
+                setEditSuccess(null);
+                setEditChangeReason("");
               }}
             >
               {t("cancel")}
@@ -2997,7 +3109,11 @@ useEffect(() => {
               onClick={saveEdit}
               disabled={editSaving}
             >
-              {editSaving ? t("saving") : t("saveChanges")}
+              {editSaving
+                ? t("saving")
+                : edit && requiresEditRequestForEntry(edit)
+                ? t("sendEditRequest")
+                : t("saveChanges")}
             </button>
           </div>
         }
@@ -3009,6 +3125,13 @@ useEffect(() => {
             <span className="tenant-status-text-danger" style={{ fontWeight: 700 }}>
               {editError}
             </span>
+            {editSuccess ? (
+              <div className="card tenant-status-card tenant-status-card-success" style={{ padding: 12 }}>
+                <span className="tenant-status-text-success" style={{ fontWeight: 700 }}>
+                  {editSuccess}
+                </span>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -3131,6 +3254,30 @@ useEffect(() => {
                 placeholder={t("notePlaceholder")}
               />
             </div>
+
+            {requiresEditRequestForEntry(edit) ? (
+              <>
+                <div className="card tenant-status-card tenant-status-card-warning" style={{ padding: 12 }}>
+                  <div className="tenant-status-text-warning" style={{ fontWeight: 800 }}>
+                    {t("editRequestRequiredForOldEntry")}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+                    {t("editRequestDescription")}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="label">{t("editRequestReason")} *</div>
+                  <textarea
+                    className="textarea"
+                    value={editChangeReason}
+                    onChange={(event) => setEditChangeReason(event.target.value)}
+                    placeholder={t("editRequestReasonPlaceholder")}
+                    required
+                  />
+                </div>
+              </>
+            ) : null}
 
             <div className="modal-grid-1">
               <div className="modal-field">
