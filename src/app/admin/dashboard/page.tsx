@@ -799,6 +799,7 @@ export default function AdminDashboardPage() {
   const [editActivity, setEditActivity] = useState<string>("");
   const [editLocation, setEditLocation] = useState<string>("");
   const [editTravelMinutes, setEditTravelMinutes] = useState<string>("0");
+  const [editChangeReason, setEditChangeReason] = useState<string>("");
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsUserLabel, setDetailsUserLabel] = useState<string>("");
@@ -824,6 +825,15 @@ export default function AdminDashboardPage() {
   const [noteDate, setNoteDate] = useState<string>("");
   const [noteTime, setNoteTime] = useState<string>("");
   const [noteText, setNoteText] = useState<string>("");
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteSaving, setDeleteSaving] = useState(false);
+  const [deleteErr, setDeleteErr] = useState<string>("");
+  const [deleteEntryId, setDeleteEntryId] = useState<string>("");
+  const [deleteUserLabel, setDeleteUserLabel] = useState<string>("");
+  const [deleteDate, setDeleteDate] = useState<string>("");
+  const [deleteTime, setDeleteTime] = useState<string>("");
+  const [deleteChangeReason, setDeleteChangeReason] = useState<string>("");
 
   const years = useMemo(() => {
     const now = new Date().getFullYear();
@@ -1263,7 +1273,18 @@ export default function AdminDashboardPage() {
     setEditActivity(it.activity ?? "");
     setEditLocation(it.location ?? "");
     setEditTravelMinutes(String(it.travelMinutes ?? 0));
+    setEditChangeReason("");
     setEditOpen(true);
+  }
+
+  function openDeleteWork(uName: string, it: AdminTimelineWork) {
+    setDeleteErr("");
+    setDeleteEntryId(it.id);
+    setDeleteUserLabel(uName);
+    setDeleteDate(it.date);
+    setDeleteTime(`${it.startHHMM}–${it.endHHMM}`);
+    setDeleteChangeReason("");
+    setDeleteOpen(true);
   }
 
   function openEmployeeNote(uName: string, it: AdminTimelineWork) {
@@ -1303,6 +1324,11 @@ export default function AdminDashboardPage() {
     setEditSaving(true);
     setEditErr("");
 
+    if (!editChangeReason.trim()) {
+      setEditErr(t("changeReasonRequired"));
+      return;
+    }
+
     const travel = Number(editTravelMinutes.replace(",", "."));
     const travelMinutes = Number.isFinite(travel) ? Math.max(0, Math.round(travel)) : 0;
 
@@ -1316,6 +1342,7 @@ export default function AdminDashboardPage() {
           activity: editActivity,
           location: editLocation,
           travelMinutes,
+          changeReason: editChangeReason.trim(),
         }),
       });
 
@@ -1335,26 +1362,45 @@ export default function AdminDashboardPage() {
     }
   }
 
-  async function deleteWorkEntry(entryId: string) {
-    const ok =
-      typeof window !== "undefined" ? window.confirm(t("deleteConfirm")) : false;
-    if (!ok) return;
+  async function confirmDeleteWorkEntry() {
+    if (!deleteEntryId) return;
+
+    if (!deleteChangeReason.trim()) {
+      setDeleteErr(t("changeReasonRequired"));
+      return;
+    }
+
+    setDeleteSaving(true);
+    setDeleteErr("");
 
     try {
-      const r = await fetch(`/api/entries?id=${encodeURIComponent(entryId)}`, {
+      const r = await fetch(`/api/entries?id=${encodeURIComponent(deleteEntryId)}`, {
         method: "DELETE",
         credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          changeReason: deleteChangeReason.trim(),
+        }),
       });
+
       const j: unknown = await r.json().catch(() => ({}));
+
       if (!r.ok) {
         const msg = isRecord(j) && isString(j["error"]) ? j["error"] : t("deleteFailed");
-        setErr(msg);
+        setDeleteErr(msg);
         return;
       }
 
+      setDeleteOpen(false);
+      setDeleteEntryId("");
+      setDeleteChangeReason("");
       setReloadTick((x) => x + 1);
     } catch {
-      setErr(t("deleteNetworkError"));
+      setDeleteErr(t("deleteNetworkError"));
+    } finally {
+      setDeleteSaving(false);
     }
   }
 
@@ -2006,7 +2052,120 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>
+              {t("changeReason")} *
+            </div>
+            <textarea
+              value={editChangeReason}
+              onChange={(e) => setEditChangeReason(e.target.value)}
+              placeholder={t("changeReasonPlaceholder")}
+              style={{
+                width: "100%",
+                minHeight: 96,
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid var(--border)",
+                background: "var(--input-bg)",
+                color: "var(--text)",
+                outline: "none",
+                resize: "vertical",
+              }}
+            />
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>
+              {t("changeReasonHint")}
+            </div>
+          </div>
+
           {editErr ? <div style={{ color: "rgba(224,75,69,0.95)", fontWeight: 900 }}>{editErr}</div> : null}
+        </div>
+      </Modal>
+
+      <Modal
+        open={deleteOpen}
+        onClose={() => (deleteSaving ? null : setDeleteOpen(false))}
+        title={t("deleteWorkTitle")}
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setDeleteOpen(false)}
+              disabled={deleteSaving}
+              className="btn"
+              style={{
+                cursor: deleteSaving ? "not-allowed" : "pointer",
+                opacity: deleteSaving ? 0.7 : 1,
+              }}
+            >
+              {t("cancel")}
+            </button>
+
+            <button
+              type="button"
+              onClick={confirmDeleteWorkEntry}
+              disabled={deleteSaving}
+              className="btn"
+              style={{
+                border: "1px solid rgba(224,75,69,0.35)",
+                background: "rgba(224,75,69,0.12)",
+                color: "rgba(224,75,69,0.98)",
+                cursor: deleteSaving ? "not-allowed" : "pointer",
+                opacity: deleteSaving ? 0.7 : 1,
+                fontWeight: 1000,
+              }}
+            >
+              {deleteSaving ? t("saving") : t("delete")}
+            </button>
+          </>
+        }
+        maxWidth={640}
+      >
+        <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("employee")}</div>
+            <div style={{ fontWeight: 1000 }}>{deleteUserLabel}</div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("dateAndTime")}</div>
+            <div style={{ fontWeight: 1000 }}>
+              {formatDate(deleteDate, language)} · {deleteTime}
+            </div>
+          </div>
+
+          <div className="tenant-status-card tenant-status-card-danger">
+            <div className="tenant-status-text-danger" style={{ fontWeight: 800 }}>
+              {t("deleteWorkReportHint")}
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>
+              {t("changeReason")} *
+            </div>
+            <textarea
+              value={deleteChangeReason}
+              onChange={(e) => setDeleteChangeReason(e.target.value)}
+              placeholder={t("changeReasonPlaceholder")}
+              style={{
+                width: "100%",
+                minHeight: 110,
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid var(--border)",
+                background: "var(--input-bg)",
+                color: "var(--text)",
+                outline: "none",
+                resize: "vertical",
+              }}
+            />
+          </div>
+
+          {deleteErr ? (
+            <div style={{ color: "rgba(224,75,69,0.95)", fontWeight: 900 }}>
+              {deleteErr}
+            </div>
+          ) : null}
         </div>
       </Modal>
 
@@ -2508,7 +2667,7 @@ export default function AdminDashboardPage() {
                                                       type="button"
                                                       onClick={(e) => {
                                                         e.stopPropagation();
-                                                        deleteWorkEntry(it.id);
+                                                        openDeleteWork(u.fullName, it);
                                                       }}
                                                       title={t("delete")}
                                                       style={{

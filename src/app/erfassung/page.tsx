@@ -8,7 +8,15 @@ import Modal from "@/components/Modal";
 import { translate, type AppUiLanguage } from "@/lib/i18n";
 import { type ErfassungTextKey, ERFASSUNG_DICTIONARY } from "@/lib/i18n";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPencil, faTrashCan, faPause, faInfo, faPenToSquare, faPlus } from "@fortawesome/free-solid-svg-icons";
+import {
+  faPencil,
+  faTrashCan,
+  faPause,
+  faInfo,
+  faPenToSquare,
+  faPlus,
+  faClockRotateLeft,
+} from "@fortawesome/free-solid-svg-icons";
 
 type MeResponse =
   | {
@@ -40,8 +48,72 @@ type WorkEntry = {
   breakMinutes: number;
   breakAuto: boolean;
   noteEmployee: string;
+  hasChangeReports: boolean;
   user: { id: string; fullName: string };
 };
+
+type WorkEntryChangeAction = "UPDATE" | "DELETE";
+
+type WorkEntryChangeSnapshot = {
+  [key: string]: unknown;
+  workDate?: unknown;
+  startTime?: unknown;
+  endTime?: unknown;
+  activity?: unknown;
+  location?: unknown;
+  travelMinutes?: unknown;
+  grossMinutes?: unknown;
+  breakMinutes?: unknown;
+  breakAuto?: unknown;
+  workMinutes?: unknown;
+  noteEmployee?: unknown;
+};
+
+type WorkEntryChangeReport = {
+  id: string;
+  action: WorkEntryChangeAction;
+  reason: string;
+  createdAt: string;
+  changedBy: {
+    id: string;
+    fullName: string;
+  };
+  oldValues: WorkEntryChangeSnapshot;
+  newValues: WorkEntryChangeSnapshot | null;
+};
+
+type WorkEntryChangeReportsResponse = {
+  reports: WorkEntryChangeReport[];
+};
+
+function isWorkEntryChangeSnapshot(value: unknown): value is WorkEntryChangeSnapshot {
+  return isRecord(value);
+}
+
+function isWorkEntryChangeReport(value: unknown): value is WorkEntryChangeReport {
+  if (!isRecord(value)) return false;
+
+  const changedBy = value["changedBy"];
+
+  return (
+    isString(value["id"]) &&
+    (value["action"] === "UPDATE" || value["action"] === "DELETE") &&
+    isString(value["reason"]) &&
+    isString(value["createdAt"]) &&
+    isRecord(changedBy) &&
+    isString(changedBy["id"]) &&
+    isString(changedBy["fullName"]) &&
+    isWorkEntryChangeSnapshot(value["oldValues"]) &&
+    (value["newValues"] === null || isWorkEntryChangeSnapshot(value["newValues"]))
+  );
+}
+
+function isWorkEntryChangeReportsResponse(value: unknown): value is WorkEntryChangeReportsResponse {
+  if (!isRecord(value)) return false;
+  const reports = value["reports"];
+
+  return Array.isArray(reports) && reports.every(isWorkEntryChangeReport);
+}
 
 type DayBreak = {
   id: string;
@@ -317,6 +389,112 @@ function formatMinutesCompact(minutes: number) {
   const mins = Math.max(0, Math.round(minutes));
   if (mins < 60) return `${mins} Min`;
   return formatHM(mins);
+}
+
+function formatUnknownChangeValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "Ja" : "Nein";
+  }
+
+  if (typeof value === "number") {
+    return String(value);
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return JSON.stringify(value);
+}
+
+function formatChangeReportDate(language: AppUiLanguage, iso: string): string {
+  const date = new Date(iso);
+
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
+
+  const locale =
+    language === "EN"
+      ? "en-GB"
+      : language === "IT"
+      ? "it-IT"
+      : language === "TR"
+      ? "tr-TR"
+      : language === "SQ"
+      ? "sq-AL"
+      : language === "KU"
+      ? "ku"
+      : language === "RO"
+      ? "ro-RO"
+      : "de-DE";
+
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "Europe/Berlin",
+  }).format(date);
+}
+
+const CHANGE_REPORT_FIELD_KEYS = [
+  "workDate",
+  "startTime",
+  "endTime",
+  "activity",
+  "location",
+  "travelMinutes",
+  "workMinutes",
+  "breakMinutes",
+  "noteEmployee",
+] as const;
+
+type ChangeReportFieldKey = (typeof CHANGE_REPORT_FIELD_KEYS)[number];
+
+function getChangedReportFields(
+  report: WorkEntryChangeReport
+): ChangeReportFieldKey[] {
+  if (!report.newValues) {
+    return [...CHANGE_REPORT_FIELD_KEYS];
+  }
+
+  return CHANGE_REPORT_FIELD_KEYS.filter((key) => {
+    return (
+      JSON.stringify(report.oldValues[key]) !==
+      JSON.stringify(report.newValues?.[key])
+    );
+  });
+}
+
+function getChangeFieldLabel(
+  language: AppUiLanguage,
+  key: ChangeReportFieldKey
+): string {
+  switch (key) {
+    case "workDate":
+      return translate(language, "date", ERFASSUNG_DICTIONARY);
+    case "startTime":
+      return translate(language, "start", ERFASSUNG_DICTIONARY);
+    case "endTime":
+      return translate(language, "end", ERFASSUNG_DICTIONARY);
+    case "activity":
+      return translate(language, "performedActivity", ERFASSUNG_DICTIONARY);
+    case "location":
+      return translate(language, "location", ERFASSUNG_DICTIONARY);
+    case "travelMinutes":
+      return translate(language, "travelMinutes", ERFASSUNG_DICTIONARY);
+    case "workMinutes":
+      return translate(language, "netWorkTime", ERFASSUNG_DICTIONARY);
+    case "breakMinutes":
+      return translate(language, "break", ERFASSUNG_DICTIONARY);
+    case "noteEmployee":
+      return translate(language, "note", ERFASSUNG_DICTIONARY);
+    default:
+      return key;
+  }
 }
 
 function hasCompleteTimeRange(startHHMM: string, endHHMM: string): boolean {
@@ -696,6 +874,12 @@ function ErfassungPageInner() {
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsEntry, setDetailsEntry] = useState<WorkEntry | null>(null);
+
+  const [changeReportsOpen, setChangeReportsOpen] = useState(false);
+  const [changeReportsLoading, setChangeReportsLoading] = useState(false);
+  const [changeReportsError, setChangeReportsError] = useState<string | null>(null);
+  const [changeReportsEntry, setChangeReportsEntry] = useState<WorkEntry | null>(null);
+  const [changeReports, setChangeReports] = useState<WorkEntryChangeReport[]>([]);
 
   const [breakInfoOpen, setBreakInfoOpen] = useState(false);
   const [breakInfoDate, setBreakInfoDate] = useState<string>("");
@@ -1126,6 +1310,35 @@ useEffect(() => {
   function openDetailsModal(e: WorkEntry) {
     setDetailsEntry(e);
     setDetailsOpen(true);
+  }
+
+  async function openChangeReportsModal(e: WorkEntry) {
+    setChangeReportsEntry(e);
+    setChangeReports([]);
+    setChangeReportsError(null);
+    setChangeReportsOpen(true);
+    setChangeReportsLoading(true);
+
+    try {
+      const response = await fetch(`/api/entries/${encodeURIComponent(e.id)}/change-reports`, {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data: unknown = await response.json().catch(() => ({}));
+
+      if (!response.ok || !isWorkEntryChangeReportsResponse(data)) {
+        setChangeReportsError(t("changeReportLoadFailed"));
+        return;
+      }
+
+      setChangeReports(data.reports);
+    } catch {
+      setChangeReportsError(t("changeReportLoadFailed"));
+    } finally {
+      setChangeReportsLoading(false);
+    }
   }
 
   function openBreakInfoModal(dayBreak: DayBreak | null, date: string) {
@@ -2166,6 +2379,17 @@ useEffect(() => {
                                   </button>
                                 ) : null}
 
+                                {e.hasChangeReports ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => openChangeReportsModal(e)}
+                                    title={t("changes")}
+                                    className="tenant-icon-button tenant-icon-button-info"
+                                  >
+                                    <FontAwesomeIcon icon={faClockRotateLeft} /> {t("changes")}
+                                  </button>
+                                ) : null}
+
                                 <button
                                   type="button"
                                   onClick={() => openEditModal(e)}
@@ -2457,6 +2681,150 @@ useEffect(() => {
                   limit: graceWorkdaysLimit,
                 })}
           </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={changeReportsOpen}
+        title={t("changeReportTitle")}
+        onClose={() => {
+          setChangeReportsOpen(false);
+          setChangeReportsEntry(null);
+          setChangeReports([]);
+          setChangeReportsError(null);
+        }}
+        footer={
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => {
+                setChangeReportsOpen(false);
+                setChangeReportsEntry(null);
+                setChangeReports([]);
+                setChangeReportsError(null);
+              }}
+            >
+              {t("close")}
+            </button>
+          </div>
+        }
+        maxWidth={760}
+      >
+        <div style={{ display: "grid", gap: 12 }}>
+          {changeReportsEntry ? (
+            <div className="tenant-status-card tenant-status-card-info" style={{ padding: 12 }}>
+              <div className="tenant-status-text-info" style={{ fontWeight: 800 }}>
+                {formatDateLocalized(language, toYMD(changeReportsEntry.workDate))} ·{" "}
+                {changeReportsEntry.startTime}–{changeReportsEntry.endTime}
+              </div>
+            </div>
+          ) : null}
+
+          {changeReportsLoading ? (
+            <div style={{ color: "var(--muted)" }}>{t("loadingChangeReports")}</div>
+          ) : null}
+
+          {changeReportsError ? (
+            <div className="card tenant-status-card tenant-status-card-danger" style={{ padding: 12 }}>
+              <span className="tenant-status-text-danger" style={{ fontWeight: 700 }}>
+                {changeReportsError}
+              </span>
+            </div>
+          ) : null}
+
+          {!changeReportsLoading && !changeReportsError && changeReports.length === 0 ? (
+            <div style={{ color: "var(--muted)" }}>{t("noChangeReports")}</div>
+          ) : null}
+
+          {changeReports.map((report) => {
+            const changedFields = getChangedReportFields(report);
+
+            return (
+              <div
+                key={report.id}
+                style={{
+                  display: "grid",
+                  gap: 10,
+                  padding: "12px 14px",
+                  borderRadius: 14,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ fontWeight: 1000 }}>
+                    {report.action === "DELETE" ? t("entryDeleted") : t("entryUpdated")}
+                  </div>
+                  <div style={{ color: "var(--muted)", fontSize: 12, fontWeight: 800 }}>
+                    {formatChangeReportDate(language, report.createdAt)}
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gap: 6 }}>
+                  <div>
+                    <span style={{ color: "var(--muted)", fontSize: 12 }}>{t("changedBy")}</span>
+                    <div style={{ fontWeight: 900 }}>{report.changedBy.fullName}</div>
+                  </div>
+
+                  <div>
+                    <span style={{ color: "var(--muted)", fontSize: 12 }}>{t("changeReason")}</span>
+                    <div style={{ whiteSpace: "pre-wrap", fontWeight: 800 }}>
+                      {report.reason}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gap: 8 }}>
+                  <div style={{ color: "var(--muted)", fontSize: 12, fontWeight: 900 }}>
+                    {t("changedFields")}
+                  </div>
+
+                  {changedFields.map((fieldKey) => (
+                    <div
+                      key={`${report.id}-${fieldKey}`}
+                      style={{
+                        display: "grid",
+                        gap: 6,
+                        padding: "10px 12px",
+                        borderRadius: 12,
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        background: "var(--input-bg)",
+                      }}
+                    >
+                      <div style={{ fontWeight: 1000 }}>
+                        {getChangeFieldLabel(language, fieldKey)}
+                      </div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 8,
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: 11, color: "var(--muted)" }}>{t("oldValue")}</div>
+                          <div style={{ whiteSpace: "pre-wrap" }}>
+                            {formatUnknownChangeValue(report.oldValues[fieldKey])}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div style={{ fontSize: 11, color: "var(--muted)" }}>{t("newValue")}</div>
+                          <div style={{ whiteSpace: "pre-wrap" }}>
+                            {report.newValues
+                              ? formatUnknownChangeValue(report.newValues[fieldKey])
+                              : "—"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </Modal>
 

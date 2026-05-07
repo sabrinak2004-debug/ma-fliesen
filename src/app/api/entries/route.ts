@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
-import { Prisma, Role, TaskRequiredAction, TaskStatus } from "@prisma/client";
+import {
+  Prisma,
+  Role,
+  TaskCategory,
+  TaskRequiredAction,
+  TaskStatus,
+  WorkEntryChangeAction,
+} from "@prisma/client";
+import { buildPushUrl, sendPushToUser } from "@/lib/webpush";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import {
@@ -37,6 +45,128 @@ function toHHMMUTC(d: Date) {
   const hh = String(d.getUTCHours()).padStart(2, "0");
   const mm = String(d.getUTCMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
+}
+
+function formatEntryDateTimeForNotification(workDate: string, startTime: string, endTime: string): string {
+  return `${workDate} · ${startTime}–${endTime}`;
+}
+
+function buildWorkEntrySnapshot(row: {
+  workDate: Date;
+  startTime: Date;
+  endTime: Date;
+  activity: string | null;
+  location: string | null;
+  travelMinutes: number | null;
+  grossMinutes: number | null;
+  breakMinutes: number | null;
+  breakAuto: boolean | null;
+  workMinutes: number | null;
+  noteEmployee: string | null;
+}): Prisma.InputJsonObject {
+  return {
+    workDate: toIsoDateUTC(row.workDate),
+    startTime: toHHMMUTC(row.startTime),
+    endTime: toHHMMUTC(row.endTime),
+    activity: row.activity ?? "",
+    location: row.location ?? "",
+    travelMinutes: row.travelMinutes ?? 0,
+    grossMinutes: row.grossMinutes ?? 0,
+    breakMinutes: row.breakMinutes ?? 0,
+    breakAuto: row.breakAuto ?? false,
+    workMinutes: row.workMinutes ?? 0,
+    noteEmployee: row.noteEmployee ?? "",
+  };
+}
+
+function getSnapshotValue(
+  snapshot: Prisma.InputJsonObject,
+  key: string
+): Prisma.InputJsonValue | null | undefined {
+  return snapshot[key];
+}
+
+function getChangedSnapshotFields(
+  oldSnapshot: Prisma.InputJsonObject,
+  newSnapshot: Prisma.InputJsonObject
+): string[] {
+  const keys = [
+    "workDate",
+    "startTime",
+    "endTime",
+    "activity",
+    "location",
+    "travelMinutes",
+    "grossMinutes",
+    "breakMinutes",
+    "breakAuto",
+    "workMinutes",
+    "noteEmployee",
+  ];
+
+  return keys.filter((key) => {
+    const oldValue = getSnapshotValue(oldSnapshot, key);
+    const newValue = getSnapshotValue(newSnapshot, key);
+
+    return JSON.stringify(oldValue) !== JSON.stringify(newValue);
+  });
+}
+
+async function createAdminWorkEntryChangeNotification(args: {
+  targetUserId: string;
+  changedByUserId: string;
+  adminName: string;
+  action: WorkEntryChangeAction;
+  workDate: string;
+  startTime: string;
+  endTime: string;
+  reason: string;
+  companyId: string;
+  companySubdomain?: string | null;
+}): Promise<void> {
+  const isDelete = args.action === WorkEntryChangeAction.DELETE;
+
+  const title = isDelete
+    ? "Arbeitszeiteintrag wurde gelöscht"
+    : "Arbeitszeiteintrag wurde geändert";
+
+  const dateLine = formatEntryDateTimeForNotification(
+    args.workDate,
+    args.startTime,
+    args.endTime
+  );
+
+  const description = [
+    `${title}.`,
+    `Eintrag: ${dateLine}`,
+    `Durch: ${args.adminName}`,
+    `Grund: ${args.reason}`,
+  ].join("\n");
+
+  await prisma.task.create({
+    data: {
+      assignedToUserId: args.targetUserId,
+      createdByUserId: args.changedByUserId,
+      title,
+      description,
+      category: TaskCategory.GENERAL,
+      status: TaskStatus.OPEN,
+      requiredAction: TaskRequiredAction.NONE,
+      referenceDate: dateOnly(args.workDate),
+    },
+  });
+
+  try {
+    await sendPushToUser(args.targetUserId, {
+      companyId: args.companyId,
+      companySubdomain: args.companySubdomain ?? undefined,
+      title,
+      body: `${dateLine}: ${args.reason}`,
+      url: buildPushUrl(isDelete ? "/aufgaben" : "/erfassung"),
+    });
+  } catch (error) {
+    console.error("Push für Arbeitszeit-Änderungsreport fehlgeschlagen:", error);
+  }
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -196,6 +326,7 @@ type EntryBody = {
   travelMinutes?: unknown;
   noteEmployee?: unknown;
   sourceTaskId?: unknown;
+  changeReason?: unknown;
 };
 
 type EntryDTO = {
@@ -211,6 +342,7 @@ type EntryDTO = {
   breakMinutes: number;
   breakAuto: boolean;
   noteEmployee: string;
+  hasChangeReports: boolean;
   user: { id: string; fullName: string };
 };
 
@@ -356,6 +488,7 @@ type WorkEntryRow = {
   noteEmployee: string | null;
   noteEmployeeSourceLanguage: string | null;
   noteEmployeeTranslations: Prisma.JsonValue | null;
+  hasChangeReports: boolean;
   user: {
     id: string;
     fullName: string;
@@ -559,6 +692,11 @@ export async function GET(req: Request) {
           fullName: true,
         },
       },
+      _count: {
+        select: {
+          changeReports: true,
+        },
+      },
     },
     orderBy: [{ workDate: "desc" }, { startTime: "desc" }],
   });
@@ -607,6 +745,7 @@ export async function GET(req: Request) {
     noteEmployee: row.noteEmployee ?? "",
     noteEmployeeSourceLanguage: row.noteEmployeeSourceLanguage ?? null,
     noteEmployeeTranslations: row.noteEmployeeTranslations ?? null,
+    hasChangeReports: row._count.changeReports > 0,
     user: {
       id: row.user.id,
       fullName: row.user.fullName,
@@ -643,6 +782,7 @@ export async function GET(req: Request) {
         row.noteEmployeeTranslations,
         session.language
       ),
+      hasChangeReports: row.hasChangeReports,
       user: {
         id: row.user.id,
         fullName: row.user.fullName,
@@ -876,6 +1016,7 @@ if (location) {
       createdFresh.noteEmployeeTranslations,
       session.language
     ),
+    hasChangeReports: false,
     user: { id: createdFresh.user.id, fullName: createdFresh.user.fullName },
   };
 
@@ -898,9 +1039,16 @@ export async function PATCH(req: Request) {
   const body: EntryBody = isRecord(raw) ? raw : {};
 
   const id = getString(body.id).trim();
+  const changeReason = getString(body.changeReason).trim();
   if (!id) {
     return NextResponse.json(
       { error: translateEntryText(language, "idMissing") },
+      { status: 400 }
+    );
+  }
+  if (isAdmin && !changeReason) {
+    return NextResponse.json(
+      { error: "Änderungsgrund fehlt." },
       { status: 400 }
     );
   }
@@ -914,6 +1062,12 @@ export async function PATCH(req: Request) {
           fullName: true,
           isActive: true,
           companyId: true,
+          language: true,
+          company: {
+            select: {
+              subdomain: true,
+            },
+          },
         },
       },
     },
@@ -1032,6 +1186,7 @@ export async function PATCH(req: Request) {
 
   const oldWorkDateYMD = toIsoDateUTC(existing.workDate);
   const oldUserId = existing.userId;
+  const oldSnapshot = buildWorkEntrySnapshot(existing);
 
   let nextNoteEmployeeSourceLanguage: SupportedLang | null =
     (existing.noteEmployeeSourceLanguage as SupportedLang | null) ?? null;
@@ -1159,6 +1314,17 @@ export async function PATCH(req: Request) {
         select: {
           id: true,
           fullName: true,
+          companyId: true,
+          company: {
+            select: {
+              subdomain: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          changeReports: true,
         },
       },
     },
@@ -1169,6 +1335,42 @@ export async function PATCH(req: Request) {
       { error: translateEntryText(language, "entryNotFound") },
       { status: 500 }
     );
+  }
+
+  let hasChangeReports = updatedFresh._count.changeReports > 0;
+
+  if (isAdmin) {
+    const newSnapshot = buildWorkEntrySnapshot(updatedFresh);
+    const changedFields = getChangedSnapshotFields(oldSnapshot, newSnapshot);
+
+    if (changedFields.length > 0) {
+      await prisma.workEntryChangeReport.create({
+        data: {
+          workEntryId: updatedFresh.id,
+          targetUserId: updatedFresh.userId,
+          changedByUserId: session.userId,
+          action: WorkEntryChangeAction.UPDATE,
+          reason: changeReason,
+          oldValues: oldSnapshot,
+          newValues: newSnapshot,
+        },
+      });
+
+      hasChangeReports = true;
+
+      await createAdminWorkEntryChangeNotification({
+        targetUserId: updatedFresh.userId,
+        changedByUserId: session.userId,
+        adminName: session.fullName,
+        action: WorkEntryChangeAction.UPDATE,
+        workDate: toIsoDateUTC(updatedFresh.workDate),
+        startTime: toHHMMUTC(updatedFresh.startTime),
+        endTime: toHHMMUTC(updatedFresh.endTime),
+        reason: changeReason,
+        companyId: session.companyId,
+        companySubdomain: updatedFresh.user.company.subdomain,
+      });
+    }
   }
 
   const entry: EntryDTO = {
@@ -1196,6 +1398,7 @@ export async function PATCH(req: Request) {
       updatedFresh.noteEmployeeTranslations,
       session.language
     ),
+    hasChangeReports,
     user: { id: updatedFresh.user.id, fullName: updatedFresh.user.fullName },
   };
 
@@ -1217,9 +1420,19 @@ export async function DELETE(req: Request) {
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
 
+  const raw = (await req.json().catch(() => null)) as unknown;
+  const body: EntryBody = isRecord(raw) ? raw : {};
+  const changeReason = getString(body.changeReason).trim();
+
   if (!id) {
     return NextResponse.json(
       { error: translateEntryText(language, "idMissing") },
+      { status: 400 }
+    );
+  }
+  if (isAdmin && !changeReason) {
+    return NextResponse.json(
+      { error: "Löschgrund fehlt." },
       { status: 400 }
     );
   }
@@ -1230,7 +1443,13 @@ export async function DELETE(req: Request) {
       user: {
         select: {
           id: true,
+          fullName: true,
           companyId: true,
+          company: {
+            select: {
+              subdomain: true,
+            },
+          },
         },
       },
     },
@@ -1275,6 +1494,38 @@ export async function DELETE(req: Request) {
 
       return NextResponse.json({ error: message }, { status: 403 });
     }
+  }
+
+  const oldSnapshot = buildWorkEntrySnapshot(entry);
+  const deletedWorkDate = toIsoDateUTC(entry.workDate);
+  const deletedStartTime = toHHMMUTC(entry.startTime);
+  const deletedEndTime = toHHMMUTC(entry.endTime);
+
+  if (isAdmin) {
+    await prisma.workEntryChangeReport.create({
+      data: {
+        workEntryId: entry.id,
+        targetUserId: entry.userId,
+        changedByUserId: session.userId,
+        action: WorkEntryChangeAction.DELETE,
+        reason: changeReason,
+        oldValues: oldSnapshot,
+        newValues: Prisma.JsonNull,
+      },
+    });
+
+    await createAdminWorkEntryChangeNotification({
+      targetUserId: entry.userId,
+      changedByUserId: session.userId,
+      adminName: session.fullName,
+      action: WorkEntryChangeAction.DELETE,
+      workDate: deletedWorkDate,
+      startTime: deletedStartTime,
+      endTime: deletedEndTime,
+      reason: changeReason,
+      companyId: session.companyId,
+      companySubdomain: entry.user.company.subdomain,
+    });
   }
 
   const deleted = await prisma.workEntry.delete({ where: { id } });

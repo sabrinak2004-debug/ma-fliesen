@@ -56,6 +56,8 @@ model AppUser {
   tasks                              Task[]                       @relation("TaskAssignedTo")
   createdTasks                       Task[]                       @relation("TaskCreatedBy")
   completedTasks                     Task[]                       @relation("TaskCompletedBy")
+  targetedWorkEntryChangeReports WorkEntryChangeReport[] @relation("WorkEntryChangeReportTargetUser")
+  createdWorkEntryChangeReports  WorkEntryChangeReport[] @relation("WorkEntryChangeReportChangedBy")
 
   // ✅ NEU: Upload-Relation
   uploadedPlanEntryDocuments PlanEntryDocument[] @relation("UploadedBy")
@@ -185,10 +187,38 @@ model WorkEntry {
   workMinutes   Int // Netto (Brutto - Pause)
   noteEmployee  String? // ✅ Notiz vom Mitarbeiter (für Admin sichtbar)
 
+  changeReports WorkEntryChangeReport[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([userId, workDate, startTime, endTime])
+}
+
+model WorkEntryChangeReport {
+  id String @id @default(uuid())
+
+  workEntryId String?
+  workEntry   WorkEntry? @relation(fields: [workEntryId], references: [id], onDelete: SetNull)
+
+  targetUserId String
+  targetUser   AppUser @relation("WorkEntryChangeReportTargetUser", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  changedByUserId String
+  changedByUser   AppUser @relation("WorkEntryChangeReportChangedBy", fields: [changedByUserId], references: [id], onDelete: Restrict)
+
+  action WorkEntryChangeAction
+
+  reason    String
+  oldValues Json
+  newValues Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([workEntryId])
+  @@index([targetUserId, createdAt])
+  @@index([changedByUserId, createdAt])
+  @@index([action])
 }
 
 model DayBreak {
@@ -511,4 +541,9 @@ enum AppLanguage {
   SQ
   KU
   RO
+}
+
+enum WorkEntryChangeAction {
+  UPDATE
+  DELETE
 }

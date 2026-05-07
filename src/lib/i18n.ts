@@ -2495,6 +2495,19 @@ export type ErfassungTextKey =
   | "legalBreakAutoApplied"
   | "timesheetFutureDateEditForbidden"
   | "timesheetOlderMissingEntriesFirst"
+  | "changes"
+  | "changeReportTitle"
+  | "changedBy"
+  | "changedAt"
+  | "changeReason"
+  | "changedFields"
+  | "oldValue"
+  | "newValue"
+  | "noChangeReports"
+  | "loadingChangeReports"
+  | "changeReportLoadFailed"
+  | "entryUpdated"
+  | "entryDeleted"
   | "timesheetLockedDayRequiresCorrection";
 
 export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage, string>> = {
@@ -3703,6 +3716,123 @@ export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage
     SQ: "Ndryshimi dështoi.",
     RO: "Editarea a eșuat.",
     KU: "Sererastkirin bi ser neket.",
+  },
+  changes: {
+    DE: "Änderungen",
+    EN: "Changes",
+    IT: "Modifiche",
+    TR: "Değişiklikler",
+    SQ: "Ndryshimet",
+    KU: "Guherandin",
+    RO: "Modificări",
+  },
+  changeReportTitle: {
+    DE: "Änderungsreport",
+    EN: "Change report",
+    IT: "Report modifiche",
+    TR: "Değişiklik raporu",
+    SQ: "Raporti i ndryshimeve",
+    KU: "Raporta guherandinan",
+    RO: "Raport modificări",
+  },
+  changedBy: {
+    DE: "Geändert durch",
+    EN: "Changed by",
+    IT: "Modificato da",
+    TR: "Değiştiren",
+    SQ: "Ndryshuar nga",
+    KU: "Ji aliyê kê ve hat guhertin",
+    RO: "Modificat de",
+  },
+  changedAt: {
+    DE: "Geändert am",
+    EN: "Changed at",
+    IT: "Modificato il",
+    TR: "Değişiklik tarihi",
+    SQ: "Ndryshuar më",
+    KU: "Dema guherandinê",
+    RO: "Modificat la",
+  },
+  changeReason: {
+    DE: "Grund der Änderung",
+    EN: "Reason for change",
+    IT: "Motivo della modifica",
+    TR: "Değişiklik nedeni",
+    SQ: "Arsyeja e ndryshimit",
+    KU: "Sedema guherandinê",
+    RO: "Motivul modificării",
+  },
+  changedFields: {
+    DE: "Geänderte Felder",
+    EN: "Changed fields",
+    IT: "Campi modificati",
+    TR: "Değişen alanlar",
+    SQ: "Fushat e ndryshuara",
+    KU: "Qadên hatine guhertin",
+    RO: "Câmpuri modificate",
+  },
+  oldValue: {
+    DE: "Vorher",
+    EN: "Before",
+    IT: "Prima",
+    TR: "Önce",
+    SQ: "Më parë",
+    KU: "Berê",
+    RO: "Înainte",
+  },
+  newValue: {
+    DE: "Nachher",
+    EN: "After",
+    IT: "Dopo",
+    TR: "Sonra",
+    SQ: "Më pas",
+    KU: "Piştre",
+    RO: "După",
+  },
+  noChangeReports: {
+    DE: "Für diesen Eintrag liegen keine Änderungsreports vor.",
+    EN: "There are no change reports for this entry.",
+    IT: "Non ci sono report modifiche per questa voce.",
+    TR: "Bu kayıt için değişiklik raporu yok.",
+    SQ: "Nuk ka raporte ndryshimesh për këtë regjistrim.",
+    KU: "Ji bo vê tomarê raporta guherandinê tune ye.",
+    RO: "Nu există rapoarte de modificare pentru această înregistrare.",
+  },
+  loadingChangeReports: {
+    DE: "Änderungsreports werden geladen...",
+    EN: "Loading change reports...",
+    IT: "Caricamento report modifiche...",
+    TR: "Değişiklik raporları yükleniyor...",
+    SQ: "Po ngarkohen raportet e ndryshimeve...",
+    KU: "Raportên guherandinan têne barkirin...",
+    RO: "Se încarcă rapoartele de modificare...",
+  },
+  changeReportLoadFailed: {
+    DE: "Änderungsreports konnten nicht geladen werden.",
+    EN: "Change reports could not be loaded.",
+    IT: "Impossibile caricare i report modifiche.",
+    TR: "Değişiklik raporları yüklenemedi.",
+    SQ: "Raportet e ndryshimeve nuk mund të ngarkoheshin.",
+    KU: "Raportên guherandinan nehatin barkirin.",
+    RO: "Rapoartele de modificare nu au putut fi încărcate.",
+  },
+  entryUpdated: {
+    DE: "Eintrag wurde bearbeitet",
+    EN: "Entry was edited",
+    IT: "La voce è stata modificata",
+    TR: "Kayıt düzenlendi",
+    SQ: "Regjistrimi u ndryshua",
+    KU: "Tomar hate sererastkirin",
+    RO: "Înregistrarea a fost editată",
+  },
+  entryDeleted: {
+    DE: "Eintrag wurde gelöscht",
+    EN: "Entry was deleted",
+    IT: "La voce è stata eliminata",
+    TR: "Kayıt silindi",
+    SQ: "Regjistrimi u fshi",
+    KU: "Tomar hate jêbirin",
+    RO: "Înregistrarea a fost ștearsă",
   },
   timesheetFutureDateEditForbidden: {
     DE: "Du kannst keine Einträge für zukünftige Tage bearbeiten.",
@@ -5394,6 +5524,12 @@ export const ADMIN_APPOINTMENTS_UI_TEXTS: Record<
   },
 };
 export type AdminDashboardTextKey =
+  | "changeReason"
+  | "changeReasonRequired"
+  | "changeReasonPlaceholder"
+  | "changeReasonHint"
+  | "deleteWorkTitle"
+  | "deleteWorkReportHint"
   | "activeLabel"
   | "loading"
   | "dashboardLoadError"
@@ -6675,6 +6811,60 @@ export const ADMIN_DASHBOARD_UI_TEXTS: Record<
     SQ: "Hap/mbyll",
     KU: "Veke/bigire",
     RO: "Extinde/restrânge",
+  },
+  changeReason: {
+    DE: "Grund / Report",
+    EN: "Reason / report",
+    IT: "Motivo / report",
+    TR: "Neden / rapor",
+    SQ: "Arsye / raport",
+    KU: "Sedem / raport",
+    RO: "Motiv / raport",
+  },
+  changeReasonRequired: {
+    DE: "Bitte gib einen Grund für die Änderung ein.",
+    EN: "Please enter a reason for the change.",
+    IT: "Inserisci un motivo per la modifica.",
+    TR: "Lütfen değişiklik için bir neden girin.",
+    SQ: "Ju lutem vendosni arsyen e ndryshimit.",
+    KU: "Ji kerema xwe sedema guherandinê binivîse.",
+    RO: "Te rugăm să introduci motivul modificării.",
+  },
+  changeReasonPlaceholder: {
+    DE: "z. B. Korrektur wegen falscher Tätigkeit, falschem Einsatzort oder nach Rücksprache mit dem Mitarbeiter",
+    EN: "e.g. correction due to wrong activity, wrong location, or after consulting the employee",
+    IT: "es. correzione per attività errata, luogo errato o dopo accordo con il dipendente",
+    TR: "örn. yanlış faaliyet, yanlış konum veya çalışanla görüşme sonrası düzeltme",
+    SQ: "p.sh. korrigjim për aktivitet të gabuar, vend të gabuar ose pas konsultimit me punonjësin",
+    KU: "mînak: rastkirin ji ber çalakiya şaş, cihê şaş an piştî axaftinê bi karmend re",
+    RO: "de ex. corectare din cauza activității greșite, locației greșite sau după consultarea angajatului",
+  },
+  changeReasonHint: {
+    DE: "Dieser Report wird gespeichert und dem Mitarbeiter angezeigt.",
+    EN: "This report is saved and shown to the employee.",
+    IT: "Questo report viene salvato e mostrato al dipendente.",
+    TR: "Bu rapor kaydedilir ve çalışana gösterilir.",
+    SQ: "Ky raport ruhet dhe i shfaqet punonjësit.",
+    KU: "Ev raport tê tomarkirin û ji karmend re tê nîşandan.",
+    RO: "Acest raport este salvat și afișat angajatului.",
+  },
+  deleteWorkTitle: {
+    DE: "Arbeitszeiteintrag löschen",
+    EN: "Delete work time entry",
+    IT: "Elimina voce orario di lavoro",
+    TR: "Çalışma süresi kaydını sil",
+    SQ: "Fshi regjistrimin e orarit të punës",
+    KU: "Tomara dema karê jê bibe",
+    RO: "Șterge înregistrarea timpului de lucru",
+  },
+  deleteWorkReportHint: {
+    DE: "Der Eintrag wird gelöscht. Der Löschreport bleibt zur Nachvollziehbarkeit gespeichert und wird dem Mitarbeiter als Aufgabe angezeigt.",
+    EN: "The entry will be deleted. The deletion report remains saved for traceability and is shown to the employee as a task.",
+    IT: "La voce sarà eliminata. Il report di eliminazione resta salvato per la tracciabilità e viene mostrato al dipendente come attività.",
+    TR: "Kayıt silinecek. Silme raporu izlenebilirlik için saklanır ve çalışana görev olarak gösterilir.",
+    SQ: "Regjistrimi do të fshihet. Raporti i fshirjes ruhet për gjurmueshmëri dhe i shfaqet punonjësit si detyrë.",
+    KU: "Tomar dê were jêbirin. Raporta jêbirinê ji bo şopandinê tê parastin û wek erk ji karmend re tê nîşandan.",
+    RO: "Înregistrarea va fi ștearsă. Raportul de ștergere rămâne salvat pentru trasabilitate și este afișat angajatului ca sarcină.",
   },
   remindMissingNotLoggedIn: {
     DE: "Nicht eingeloggt.",
