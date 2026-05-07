@@ -911,6 +911,11 @@ function ErfassungPageInner() {
     return typeof value === "string" && value.trim() !== "" ? value.trim() : "";
   }, [searchParams]);
 
+  const focusEntryId = useMemo(() => {
+    const value = searchParams.get("focusEntryId");
+    return typeof value === "string" && value.trim() !== "" ? value.trim() : "";
+  }, [searchParams]);
+
   const syncDateParam = useMemo(() => {
     const value = searchParams.get("syncDate");
     return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
@@ -1537,6 +1542,16 @@ useEffect(() => {
 
   const groupedEntries = useMemo(() => groupByMonthThenDay(language, entries), [language, entries]);
 
+  const focusedEntry = useMemo(() => {
+    if (!focusEntryId) return null;
+
+    return entries.find((entry) => entry.id === focusEntryId) ?? null;
+  }, [entries, focusEntryId]);
+
+  const focusedEntryDay = focusedEntry ? toYMD(focusedEntry.workDate) : "";
+  const focusedEntryMonth = focusedEntryDay ? focusedEntryDay.slice(0, 7) : "";
+  const focusedEntryYear = focusedEntryDay ? focusedEntryDay.slice(0, 4) : "";
+
   const availableYears = useMemo(() => {
     const years = Array.from(
       new Set(
@@ -1612,13 +1627,38 @@ useEffect(() => {
     };
   }, [shouldShowBreakComputation, dayBreakMap, workDate, entries, t]);
 
-    useEffect(() => {
+  useEffect(() => {
+    if (focusedEntryYear && availableYears.includes(focusedEntryYear)) {
+      setSelectedYear(focusedEntryYear);
+      return;
+    }
+
     if (selectedYear !== "ALLE") return;
+
     const currentYear = String(new Date().getFullYear());
     if (availableYears.includes(currentYear)) {
       setSelectedYear(currentYear);
     }
-  }, [availableYears, selectedYear]);
+  }, [availableYears, focusedEntryYear, selectedYear]);
+
+  useEffect(() => {
+    if (!focusEntryId || loadingEntries) return;
+
+    const timer = window.setTimeout(() => {
+      const element = document.getElementById(`work-entry-${focusEntryId}`);
+
+      if (!element) return;
+
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [focusEntryId, loadingEntries, filteredGroupedEntries]);
 
   const editPreview = useMemo(() => {
     if (!edit) {
@@ -2225,7 +2265,7 @@ useEffect(() => {
           {filteredGroupedEntries.map((m) => (
             <details
               key={m.key}
-              open={m.key === currentMonthKey}
+              open={m.key === currentMonthKey || m.key === focusedEntryMonth}
               className="tenant-list-shell"
             >
               <summary
@@ -2259,6 +2299,7 @@ useEffect(() => {
                   return (
                     <details
                       key={`${m.key}-${d.date}`}
+                      open={d.date === focusedEntryDay}
                       className="tenant-list-shell-inner"
                       style={{
                         margin: "0 12px",
@@ -2331,7 +2372,16 @@ useEffect(() => {
                           return (
                             <div
                               key={e.id}
+                              id={`work-entry-${e.id}`}
                               className="tenant-entry-row"
+                              style={
+                                e.id === focusEntryId
+                                  ? {
+                                      outline: "2px solid var(--accent)",
+                                      boxShadow: "0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent)",
+                                    }
+                                  : undefined
+                              }
                             >
                               <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
                                 <div style={{ fontWeight: 1100, color: "var(--accent)" }}>

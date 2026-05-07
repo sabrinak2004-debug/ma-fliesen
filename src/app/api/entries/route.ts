@@ -113,6 +113,7 @@ function getChangedSnapshotFields(
 }
 
 async function createAdminWorkEntryChangeNotification(args: {
+  workEntryId?: string;
   targetUserId: string;
   changedByUserId: string;
   adminName: string;
@@ -164,7 +165,11 @@ async function createAdminWorkEntryChangeNotification(args: {
       companySubdomain: args.companySubdomain ?? undefined,
       title,
       body: `${dateLine}: ${args.reason}`,
-      url: buildPushUrl(isDelete ? "/aufgaben" : "/erfassung"),
+      url: buildPushUrl(
+        isDelete
+          ? "/aufgaben"
+          : `/erfassung?focusEntryId=${encodeURIComponent(args.workEntryId ?? "")}`
+      ),
     });
   } catch (error) {
     console.error("Push für Arbeitszeit-Änderungsreport fehlgeschlagen:", error);
@@ -1429,6 +1434,7 @@ export async function PATCH(req: Request) {
       hasChangeReports = true;
 
       await createAdminWorkEntryChangeNotification({
+        workEntryId: updatedFresh.id,
         targetUserId: updatedFresh.userId,
         changedByUserId: session.userId,
         adminName: session.fullName,
