@@ -4056,6 +4056,7 @@ export type AdminTasksTextKey =
   | "open"
   | "completedAt"
   | "completedBy"
+  | "completionNote"
   | "noReviewRequired"
   | "workEntryRequired"
   | "vacationEntryRequired"
@@ -4420,6 +4421,15 @@ export const ADMIN_TASKS_UI_TEXTS: Record<
     SQ: "Përfunduar nga:",
     RO: "Finalizat de:",
     KU: "Temam kirin ji aliyê:",
+  },
+  completionNote: {
+    DE: "Notiz zur Erledigung:",
+    EN: "Completion note:",
+    IT: "Nota di completamento:",
+    TR: "Tamamlama notu:",
+    SQ: "Shënim për përfundimin:",
+    RO: "Notă de finalizare:",
+    KU: "Nota temamkirinê:",
   },
   noReviewRequired: {
     DE: "Keine Pflichtprüfung",

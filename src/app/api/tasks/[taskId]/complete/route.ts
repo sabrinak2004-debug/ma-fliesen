@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import {
   AbsenceRequestStatus,
+  Prisma,
   TaskRequiredAction,
   TaskStatus,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { sendPushToUser } from "@/lib/webpush";
+import { translateAllLanguages } from "@/lib/translate";
 import {
   ADMIN_TASKS_UI_TEXTS,
   translate,
@@ -58,6 +60,43 @@ type Params = {
     taskId: string;
   }>;
 };
+
+type CompleteTaskPayload = {
+  completionNote?: string;
+};
+
+function isCompleteTaskPayload(value: unknown): value is CompleteTaskPayload {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return (
+    record["completionNote"] === undefined ||
+    typeof record["completionNote"] === "string"
+  );
+}
+
+function normalizeCompletionNote(value: string | undefined): string | null {
+  const normalized = value?.trim() ?? "";
+
+  if (!normalized) {
+    return null;
+  }
+
+  return normalized.slice(0, 1000);
+}
+
+function toPrismaNullableJsonInput(
+  value: TranslationMap | null
+): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+  if (value === null) {
+    return Prisma.JsonNull;
+  }
+
+  return value as Prisma.InputJsonValue;
+}
 
 function translateAdminTaskText(
   language: AppUiLanguage,
@@ -273,7 +312,7 @@ async function hasRequiredActionBeenFulfilled(
 }
 
 export async function POST(
-  _req: Request,
+  req: Request,
   context: Params
 ): Promise<NextResponse> {
   const session = await getSession();
@@ -291,6 +330,11 @@ export async function POST(
     session.language === "RO"
       ? session.language
       : "DE";
+
+  const payloadUnknown: unknown = await req.json().catch(() => ({}));
+  const payload: CompleteTaskPayload = isCompleteTaskPayload(payloadUnknown)
+    ? payloadUnknown
+    : {};
 
   const { taskId } = await context.params;
 
@@ -380,12 +424,32 @@ export async function POST(
     );
   }
 
+  const completionNote =
+    existingTask.category === "GENERAL"
+      ? normalizeCompletionNote(payload.completionNote)
+      : null;
+
+  let completionNoteSourceLanguage: SupportedLang | null = null;
+  let completionNoteTranslations: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput =
+    Prisma.JsonNull;
+
+  if (completionNote) {
+    const translationResult = await translateAllLanguages(completionNote);
+    completionNoteSourceLanguage = translationResult.sourceLanguage;
+    completionNoteTranslations = toPrismaNullableJsonInput(
+      translationResult.translations
+    );
+  }
+
   const task = await prisma.task.update({
     where: { id: existingTask.id },
     data: {
       status: TaskStatus.COMPLETED,
       completedAt: new Date(),
       completedByUserId: session.userId,
+      completionNote,
+      completionNoteSourceLanguage,
+      completionNoteTranslations,
     },
     include: {
       assignedToUser: {
@@ -424,18 +488,23 @@ export async function POST(
   }
 
   return NextResponse.json({
-  task: {
-    ...task,
-    title: task.titleTranslations && typeof task.titleTranslations === "object"
-      ? (task.titleTranslations as Record<string, unknown>)[session.language] && typeof (task.titleTranslations as Record<string, unknown>)[session.language] === "string"
-        ? ((task.titleTranslations as Record<string, string>)[session.language] ?? task.title)
-        : task.title
-      : task.title,
-    description: task.descriptionTranslations && typeof task.descriptionTranslations === "object"
-      ? (task.descriptionTranslations as Record<string, unknown>)[session.language] && typeof (task.descriptionTranslations as Record<string, unknown>)[session.language] === "string"
-        ? ((task.descriptionTranslations as Record<string, string>)[session.language] ?? task.description)
-        : task.description
-      : task.description,
-  },
-});
+    task: {
+      ...task,
+      title: getTranslatedText(
+        task.title,
+        task.titleTranslations,
+        session.language
+      ),
+      description: getTranslatedText(
+        task.description,
+        task.descriptionTranslations,
+        session.language
+      ),
+      completionNote: getTranslatedText(
+        task.completionNote,
+        task.completionNoteTranslations,
+        session.language
+      ),
+    },
+  });
 }

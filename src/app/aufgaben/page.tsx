@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import Modal from "@/components/Modal";
 import { translate, type AppUiLanguage } from "@/lib/i18n";
 
 type TaskStatus = "OPEN" | "COMPLETED";
@@ -25,6 +26,7 @@ type TaskRow = {
   referenceStartDate: string | null;
   referenceEndDate: string | null;
   completedAt: string | null;
+  completionNote: string | null;
   createdAt: string;
   createdByUser: {
     id: string;
@@ -116,6 +118,13 @@ type AufgabenTextKey =
   | "missingEntriesModalHint"
   | "goToCapture"
   | "close"
+  | "generalTaskCompletionNoteTitle"
+  | "generalTaskCompletionNoteHint"
+  | "completionNoteLabel"
+  | "completionNotePlaceholder"
+  | "completeWithoutNote"
+  | "completeWithNote"
+  | "completionNote"
   | "monthJanuary"
   | "monthFebruary"
   | "monthMarch"
@@ -683,6 +692,69 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     KU: "Bigire",
     RO: "Închide",
   },
+  generalTaskCompletionNoteTitle: {
+    DE: "Allgemeine Aufgabe erledigen",
+    EN: "Complete general task",
+    IT: "Completa attività generale",
+    TR: "Genel görevi tamamla",
+    SQ: "Përfundo detyrën e përgjithshme",
+    KU: "Erka giştî temam bike",
+    RO: "Finalizați sarcina generală",
+  },
+  generalTaskCompletionNoteHint: {
+    DE: "Du kannst optional eine kurze Notiz hinzufügen. Die Aufgabe kann auch ohne Notiz erledigt werden.",
+    EN: "You can optionally add a short note. The task can also be completed without a note.",
+    IT: "Puoi aggiungere facoltativamente una breve nota. L'attività può essere completata anche senza nota.",
+    TR: "İsteğe bağlı olarak kısa bir not ekleyebilirsiniz. Görev not olmadan da tamamlanabilir.",
+    SQ: "Mund të shtoni opsionalisht një shënim të shkurtër. Detyra mund të përfundohet edhe pa shënim.",
+    KU: "Tu dikarî bi awayekî vebijarkî notek kurt lê zêde bikî. Erk bê not jî dikare were temamkirin.",
+    RO: "Puteți adăuga opțional o scurtă notă. Sarcina poate fi finalizată și fără notă.",
+  },
+  completionNoteLabel: {
+    DE: "Notiz zur Erledigung",
+    EN: "Completion note",
+    IT: "Nota di completamento",
+    TR: "Tamamlama notu",
+    SQ: "Shënim për përfundimin",
+    KU: "Nota temamkirinê",
+    RO: "Notă de finalizare",
+  },
+  completionNotePlaceholder: {
+    DE: "Optionale Notiz eingeben...",
+    EN: "Enter optional note...",
+    IT: "Inserisci una nota facoltativa...",
+    TR: "İsteğe bağlı not girin...",
+    SQ: "Vendosni një shënim opsional...",
+    KU: "Notek vebijarkî binivîse...",
+    RO: "Introduceți o notă opțională...",
+  },
+  completeWithoutNote: {
+    DE: "Ohne Notiz erledigen",
+    EN: "Complete without note",
+    IT: "Completa senza nota",
+    TR: "Not olmadan tamamla",
+    SQ: "Përfundo pa shënim",
+    KU: "Bê not temam bike",
+    RO: "Finalizați fără notă",
+  },
+  completeWithNote: {
+    DE: "Mit Notiz erledigen",
+    EN: "Complete with note",
+    IT: "Completa con nota",
+    TR: "Not ile tamamla",
+    SQ: "Përfundo me shënim",
+    KU: "Bi not temam bike",
+    RO: "Finalizați cu notă",
+  },
+  completionNote: {
+    DE: "Notiz:",
+    EN: "Note:",
+    IT: "Nota:",
+    TR: "Not:",
+    SQ: "Shënim:",
+    KU: "Not:",
+    RO: "Notă:",
+  },
   systemTaskWorkTimeSingleTitle: {
     DE: "Arbeitszeit für {date} nachtragen",
     EN: "Add work time for {date}",
@@ -769,6 +841,7 @@ function isTaskRow(v: unknown): v is TaskRow {
     (v["referenceStartDate"] === null || isString(v["referenceStartDate"])) &&
     (v["referenceEndDate"] === null || isString(v["referenceEndDate"])) &&
     (v["completedAt"] === null || isString(v["completedAt"])) &&
+    (v["completionNote"] === null || isString(v["completionNote"])) &&
     isString(v["createdAt"]) &&
     isRecord(createdByUser) &&
     isString(createdByUser["id"]) &&
@@ -1233,6 +1306,8 @@ export default function AufgabenPage() {
   const [missingWorkEntryAlert, setMissingWorkEntryAlert] =
     useState<MissingWorkEntryAlert | null>(null);
   const [showMissingWorkEntryModal, setShowMissingWorkEntryModal] = useState(false);
+  const [generalCompletionTask, setGeneralCompletionTask] = useState<TaskRow | null>(null);
+  const [generalCompletionNote, setGeneralCompletionNote] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -1356,7 +1431,10 @@ export default function AufgabenPage() {
       : `${fromText} ${translate(language, "until", AUFGABEN_DICTIONARY)} ${toText}`;
   }, [missingWorkEntryAlert, language]);
 
-  async function completeTask(taskId: string): Promise<void> {
+  async function completeTask(
+    taskId: string,
+    completionNote?: string
+  ): Promise<void> {
     setActionTaskId(taskId);
     setError("");
     setSuccess("");
@@ -1365,6 +1443,12 @@ export default function AufgabenPage() {
       const response = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/complete`, {
         method: "POST",
         credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          completionNote: completionNote?.trim() || undefined,
+        }),
       });
 
       const data: unknown = await response.json().catch(() => ({}));
@@ -1378,6 +1462,8 @@ export default function AufgabenPage() {
         return;
       }
 
+      setGeneralCompletionTask(null);
+      setGeneralCompletionNote("");
       setSuccess(t("taskCompletedSuccess"));
       await loadTasks();
     } catch {
@@ -1385,6 +1471,13 @@ export default function AufgabenPage() {
     } finally {
       setActionTaskId("");
     }
+  }
+
+  function openGeneralCompletionModal(task: TaskRow): void {
+    setError("");
+    setSuccess("");
+    setGeneralCompletionTask(task);
+    setGeneralCompletionNote("");
   }
 
   function renderTaskCard(task: TaskRow, allowComplete: boolean): React.ReactElement {
@@ -1452,6 +1545,19 @@ export default function AufgabenPage() {
             {t("completedOn")} {formatDateLocalized(language, task.completedAt)}
           </div>
         ) : null}
+        {!allowComplete && task.completionNote ? (
+          <div
+            className="tenant-soft-panel-strong"
+            style={{
+              color: "var(--text-soft)",
+              fontSize: 13,
+              lineHeight: 1.45,
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            <strong>{t("completionNote")}</strong> {task.completionNote}
+          </div>
+        ) : null}
 
         {localizedDescription ? (
           <div style={{ whiteSpace: "pre-wrap", color: "var(--text)" }}>
@@ -1486,7 +1592,11 @@ export default function AufgabenPage() {
 
             <button
               type="button"
-              onClick={() => void completeTask(task.id)}
+              onClick={() =>
+                task.category === "GENERAL"
+                  ? openGeneralCompletionModal(task)
+                  : void completeTask(task.id)
+              }
               disabled={actionTaskId === task.id}
               className="tenant-action-button"
             >
@@ -1631,7 +1741,107 @@ export default function AufgabenPage() {
             </div>
           )}
         </div>
+        <Modal
+          open={Boolean(generalCompletionTask)}
+          title={t("generalTaskCompletionNoteTitle")}
+          onClose={() => {
+            if (actionTaskId) return;
+            setGeneralCompletionTask(null);
+            setGeneralCompletionNote("");
+          }}
+          maxWidth={620}
+          disableBackdropClose={Boolean(actionTaskId)}
+          disableEscapeClose={Boolean(actionTaskId)}
+          footer={
+            generalCompletionTask ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGeneralCompletionTask(null);
+                    setGeneralCompletionNote("");
+                  }}
+                  disabled={Boolean(actionTaskId)}
+                  className="tenant-action-link"
+                >
+                  {t("close")}
+                </button>
 
+                <button
+                  type="button"
+                  onClick={() => void completeTask(generalCompletionTask.id)}
+                  disabled={actionTaskId === generalCompletionTask.id}
+                  className="tenant-action-link"
+                >
+                  {actionTaskId === generalCompletionTask.id
+                    ? t("checking")
+                    : t("completeWithoutNote")}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    void completeTask(generalCompletionTask.id, generalCompletionNote)
+                  }
+                  disabled={actionTaskId === generalCompletionTask.id}
+                  className="tenant-action-button"
+                >
+                  {actionTaskId === generalCompletionTask.id
+                    ? t("checking")
+                    : t("completeWithNote")}
+                </button>
+              </>
+            ) : null
+          }
+        >
+          {generalCompletionTask ? (
+            <div style={{ display: "grid", gap: 14 }}>
+              <div
+                style={{
+                  color: "var(--text-soft)",
+                  lineHeight: 1.5,
+                }}
+              >
+                {t("generalTaskCompletionNoteHint")}
+              </div>
+
+              <div
+                className="tenant-soft-panel-strong"
+                style={{
+                  color: "var(--text-soft)",
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                }}
+              >
+                {generalCompletionTask.title}
+              </div>
+
+              <label
+                style={{
+                  display: "grid",
+                  gap: 8,
+                  color: "var(--text-soft)",
+                  fontWeight: 900,
+                }}
+              >
+                {t("completionNoteLabel")}
+                <textarea
+                  value={generalCompletionNote}
+                  onChange={(event) => setGeneralCompletionNote(event.target.value)}
+                  placeholder={t("completionNotePlaceholder")}
+                  maxLength={1000}
+                  rows={4}
+                  className="textarea"
+                  style={{
+                    width: "100%",
+                    resize: "vertical",
+                    minHeight: 96,
+                  }}
+                />
+              </label>
+            </div>
+          ) : null}
+        </Modal>
         {showMissingWorkEntryModal && missingWorkEntryAlert ? (
           <div
             role="dialog"

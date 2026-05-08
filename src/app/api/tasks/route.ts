@@ -240,6 +240,11 @@ export async function GET(req: Request): Promise<NextResponse> {
             task.descriptionTranslations,
             session.language
           ),
+          completionNote: getTranslatedText(
+            task.completionNote,
+            task.completionNoteTranslations,
+            session.language
+          ),
         })),
       missingWorkEntryAlert,
     });

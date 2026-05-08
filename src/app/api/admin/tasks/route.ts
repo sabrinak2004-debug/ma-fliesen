@@ -342,6 +342,11 @@ export async function GET(): Promise<NextResponse> {
         task.descriptionTranslations,
         adminUser?.language ?? "DE"
       ),
+      completionNote: getTranslatedText(
+        task.completionNote,
+        task.completionNoteTranslations,
+        adminUser?.language ?? "DE"
+      ),
     })),
     employees,
   });

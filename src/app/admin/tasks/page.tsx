@@ -35,6 +35,7 @@ type TaskRow = {
   referenceStartDate: string | null;
   referenceEndDate: string | null;
   completedAt: string | null;
+  completionNote: string | null;
   createdAt: string;
   assignedToUser: {
     id: string;
@@ -147,6 +148,7 @@ function isTaskRow(v: unknown): v is TaskRow {
     (v["referenceStartDate"] === null || isString(v["referenceStartDate"])) &&
     (v["referenceEndDate"] === null || isString(v["referenceEndDate"])) &&
     (v["completedAt"] === null || isString(v["completedAt"])) &&
+    (v["completionNote"] === null || isString(v["completionNote"])) &&
     isString(v["createdAt"]) &&
     isRecord(assignedToUser) &&
     isString(assignedToUser["id"]) &&
@@ -894,6 +896,21 @@ export default function AdminTasksPage() {
                     {t("completedBy")}{" "}
                     {task.completedByUser?.fullName ?? t("dash")}
                   </div>
+
+                  {task.completionNote ? (
+                    <div
+                      className="tenant-soft-panel-strong"
+                      style={{
+                        color: "var(--text-soft)",
+                        fontSize: 13,
+                        lineHeight: 1.45,
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      <strong>{t("completionNote")}</strong>{" "}
+                      {task.completionNote}
+                    </div>
+                  ) : null}
 
                   {task.description ? (
                     <div style={{ whiteSpace: "pre-wrap", color: "var(--text)" }}>

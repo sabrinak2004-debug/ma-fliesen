@@ -560,6 +560,10 @@ model Task {
   dueAt              DateTime?
   completedAt        DateTime?
 
+  completionNote               String?
+  completionNoteSourceLanguage AppLanguage?
+  completionNoteTranslations   Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
