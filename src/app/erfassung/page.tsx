@@ -1483,10 +1483,13 @@ function ErfassungPageInner() {
     const syncLocation = searchParams.get("syncLocation");
 
     const hasSyncValues =
+    confirmMonthParam === "" &&
+    (
       syncDateParam !== "" ||
       (typeof syncActivity === "string" && syncActivity.trim() !== "") ||
       (typeof syncLocation === "string" && syncLocation.trim() !== "") ||
-      sourceTaskId !== "";
+      sourceTaskId !== ""
+    );
 
     if (!hasSyncValues) {
       return;
@@ -1507,7 +1510,7 @@ function ErfassungPageInner() {
     const nextWorkDate = syncDateParam || workDate;
     applyEntryTimeDefaultsForDate(nextWorkDate, entries);
     setShowSyncToast(true);
-  }, [searchParams, sourceTaskId, syncDateParam]);
+  }, [searchParams, sourceTaskId, syncDateParam, confirmMonthParam]);
 
 useEffect(() => {
   let alive = true;
@@ -1682,7 +1685,7 @@ useEffect(() => {
     options?: {
       canCloseAfterLoad?: boolean;
     }
-  ) => {
+  ): Promise<boolean> => {
     setMonthlyConfirmationLoading(true);
     setMonthlyConfirmationError(null);
 
@@ -1713,7 +1716,7 @@ useEffect(() => {
       if (!response.ok || !isMonthlyConfirmationStatusResponse(data)) {
         setMonthlyConfirmationData(null);
         setMonthlyConfirmationOpen(false);
-        return;
+        return false;
       }
 
       setMonthlyConfirmationData(data);
@@ -1724,9 +1727,12 @@ useEffect(() => {
         if (options?.canCloseAfterLoad) {
           setMonthlyConfirmationCanClose(true);
         }
-      } else {
-        setMonthlyConfirmationOpen(false);
+
+        return true;
       }
+
+      setMonthlyConfirmationOpen(false);
+      return false;
     } finally {
       setMonthlyConfirmationLoading(false);
     }
@@ -1755,8 +1761,8 @@ useEffect(() => {
       return;
     }
 
-    void loadMonthlyConfirmationStatus();
-  }, [me, loadMonthlyConfirmationStatus]);
+    void loadMonthlyConfirmationStatus(confirmMonthParam || undefined);
+  }, [me, confirmMonthParam, loadMonthlyConfirmationStatus]);
 
   useEffect(() => {
     void loadSelectedCorrectionStatus(workDate);
@@ -1830,7 +1836,14 @@ useEffect(() => {
 
       await loadCorrectionRequests();
       await loadSelectedCorrectionStatus(workDate);
-      await loadMonthlyConfirmationStatus(workDate.slice(0, 7));
+
+      const monthlyConfirmationOpened = await loadMonthlyConfirmationStatus(
+        workDate.slice(0, 7)
+      );
+
+      if (monthlyConfirmationOpened) {
+        return;
+      }
 
       if (createdEntryId) {
         const createdEntry = refreshedEntries.find((entry) => entry.id === createdEntryId);

@@ -1093,6 +1093,7 @@ function taskActionHref(task: TaskRow): string {
     const query = params.toString();
     return query ? `/erfassung?${query}` : "/erfassung";
   }
+
   if (task.category === "WORK_TIME") {
     const params = new URLSearchParams();
 
