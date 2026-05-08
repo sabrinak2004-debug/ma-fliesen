@@ -214,19 +214,6 @@ async function createAdminWorkEntryChangeNotification(args: {
     `${translate(language, "changeReason", ERFASSUNG_DICTIONARY)}: ${translatedReason}`,
   ].join("\n");
 
-  await prisma.task.create({
-    data: {
-      assignedToUserId: args.targetUserId,
-      createdByUserId: args.changedByUserId,
-      title,
-      description,
-      category: TaskCategory.GENERAL,
-      status: TaskStatus.OPEN,
-      requiredAction: TaskRequiredAction.NONE,
-      referenceDate: dateOnly(args.workDate),
-    },
-  });
-
   try {
     await sendPushToUser(args.targetUserId, {
       companyId: args.companyId,
@@ -234,9 +221,9 @@ async function createAdminWorkEntryChangeNotification(args: {
       title,
       body: `${dateLine}: ${translatedReason}`,
       url: buildPushUrl(
-        isDelete || !args.workEntryId
-          ? "/aufgaben"
-          : `/erfassung?entryId=${encodeURIComponent(args.workEntryId)}`
+        args.workEntryId
+          ? `/erfassung?entryId=${encodeURIComponent(args.workEntryId)}`
+          : "/erfassung"
       ),
     });
   } catch (error) {
