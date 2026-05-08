@@ -57,20 +57,14 @@ function toBerlinDateYMD(d: Date): string {
 }
 
 function requiresEmployeeEditRequestForEntry(args: {
-  workDateYMD: string;
-  updatedAt: Date;
+  createdAt: Date;
   now?: Date;
 }): boolean {
   const now = args.now ?? new Date();
   const todayYMD = berlinTodayYMD(now);
+  const createdYMD = toBerlinDateYMD(args.createdAt);
 
-  if (args.workDateYMD >= todayYMD) {
-    return false;
-  }
-
-  const lastEditedYMD = toBerlinDateYMD(args.updatedAt);
-
-  return lastEditedYMD < todayYMD;
+  return createdYMD !== todayYMD;
 }
 
 function toHHMMUTC(d: Date) {
@@ -442,6 +436,7 @@ type EntryDTO = {
   workDate: string;
   startTime: string;
   endTime: string;
+  createdAt: string;
   updatedAt: string;
   activity: string;
   location: string;
@@ -583,6 +578,7 @@ type WorkEntryRow = {
   workDate: Date;
   startTime: Date;
   endTime: Date;
+  createdAt: Date;
   updatedAt: Date;
   activity: string;
   activitySourceLanguage: string | null;
@@ -841,6 +837,7 @@ export async function GET(req: Request) {
     workDate: row.workDate,
     startTime: row.startTime,
     endTime: row.endTime,
+    createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     activity: row.activity ?? "",
     activitySourceLanguage: row.activitySourceLanguage ?? null,
@@ -873,6 +870,7 @@ export async function GET(req: Request) {
       workDate: toIsoDateUTC(row.workDate),
       startTime: toHHMMUTC(row.startTime),
       endTime: toHHMMUTC(row.endTime),
+      createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       activity: getTranslatedText(
         row.activity,
@@ -1108,6 +1106,7 @@ if (location) {
     workDate: toIsoDateUTC(createdFresh.workDate),
     startTime: toHHMMUTC(createdFresh.startTime),
     endTime: toHHMMUTC(createdFresh.endTime),
+    createdAt: createdFresh.createdAt.toISOString(),
     updatedAt: createdFresh.updatedAt.toISOString(),
     activity: getTranslatedText(
       createdFresh.activity,
@@ -1208,12 +1207,9 @@ export async function PATCH(req: Request) {
   }
 
   if (!isAdmin) {
-    const existingYMD = toIsoDateUTC(existing.workDate);
-
     if (
       requiresEmployeeEditRequestForEntry({
-        workDateYMD: existingYMD,
-        updatedAt: existing.updatedAt,
+        createdAt: existing.createdAt,
       })
     ) {
       return NextResponse.json(
@@ -1538,6 +1534,7 @@ export async function PATCH(req: Request) {
     workDate: toIsoDateUTC(updatedFresh.workDate),
     startTime: toHHMMUTC(updatedFresh.startTime),
     endTime: toHHMMUTC(updatedFresh.endTime),
+    createdAt: updatedFresh.createdAt.toISOString(),
     updatedAt: updatedFresh.updatedAt.toISOString(),
     activity: getTranslatedText(
       updatedFresh.activity,

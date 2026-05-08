@@ -40,6 +40,7 @@ type WorkEntry = {
   workDate: string; // YYYY-MM-DD
   startTime: string; // HH:MM
   endTime: string; // HH:MM
+  createdAt: string;
   updatedAt: string;
   activity: string;
   location: string;
@@ -567,6 +568,7 @@ type EditForm = {
   workDate: string;
   startTime: string;
   endTime: string;
+  createdAt: string;
   updatedAt: string;
   activity: string;
   location: string;
@@ -892,22 +894,16 @@ function toBerlinDateYMDFromIso(iso: string): string {
 }
 
 function requiresEditRequestForEntry(entry: {
-  workDate: string;
-  updatedAt: string;
+  createdAt: string;
 }): boolean {
   const today = toIsoDateLocal(new Date());
-  const workDateYMD = toYMD(entry.workDate);
-  const updatedDateYMD = toBerlinDateYMDFromIso(entry.updatedAt);
+  const createdDateYMD = toBerlinDateYMDFromIso(entry.createdAt);
 
-  if (!workDateYMD || !updatedDateYMD) {
-    return false;
+  if (!createdDateYMD) {
+    return true;
   }
 
-  if (workDateYMD >= today) {
-    return false;
-  }
-
-  return updatedDateYMD < today;
+  return createdDateYMD !== today;
 }
 
 function formatCorrectionRange(
@@ -1427,6 +1423,7 @@ useEffect(() => {
       workDate: toYMD(e.workDate),
       startTime: e.startTime,
       endTime: e.endTime,
+      createdAt: e.createdAt,
       updatedAt: e.updatedAt,
       activity: e.activity ?? "",
       location: e.location ?? "",
