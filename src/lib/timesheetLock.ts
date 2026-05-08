@@ -49,6 +49,9 @@ const MISSING_ENTRIES_RULES_BY_COMPANY_SUBDOMAIN: Readonly<
   demo: {
     activationStartYMD: "2026-05-01",
     useFirstBusinessDayOfMonth: false,
+    overridesByNormalizedFullName: {
+      "leonie hartmann": "2026-04-01",
+    },
   },
 };
 
