@@ -458,6 +458,18 @@ export async function POST(
           fullName: true,
         },
       },
+      attachments: {
+        orderBy: {
+          createdAt: "asc",
+        },
+        select: {
+          id: true,
+          fileName: true,
+          mimeType: true,
+          sizeBytes: true,
+          createdAt: true,
+        },
+      },
     },
   });
 
@@ -505,6 +517,14 @@ export async function POST(
         task.completionNoteTranslations,
         session.language
       ),
+      attachments: task.attachments.map((attachment) => ({
+        id: attachment.id,
+        fileName: attachment.fileName,
+        mimeType: attachment.mimeType,
+        sizeBytes: attachment.sizeBytes,
+        url: `/api/task-attachments/${encodeURIComponent(attachment.id)}/file`,
+        createdAt: attachment.createdAt.toISOString(),
+      })),
     },
   });
 }

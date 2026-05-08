@@ -419,6 +419,32 @@ type EntryBody = {
   changeReason?: unknown;
 };
 
+type AttachmentDTO = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+  createdAt: string;
+};
+
+function toWorkEntryAttachmentDTO(row: {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: Date;
+}): AttachmentDTO {
+  return {
+    id: row.id,
+    fileName: row.fileName,
+    mimeType: row.mimeType,
+    sizeBytes: row.sizeBytes,
+    url: `/api/work-entry-attachments/${encodeURIComponent(row.id)}/file`,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
 type EntryDTO = {
   id: string;
   workDate: string;
@@ -436,6 +462,7 @@ type EntryDTO = {
   noteEmployee: string;
   hasChangeReports: boolean;
   user: { id: string; fullName: string };
+  attachments: AttachmentDTO[];
 };
 
 type DayBreakDTO = {
@@ -587,6 +614,7 @@ type WorkEntryRow = {
     id: string;
     fullName: string;
   };
+  attachments: AttachmentDTO[];
 };
 
 async function syncDailyBreakAllocation(userId: string, workDateYMD: string) {
@@ -791,6 +819,18 @@ export async function GET(req: Request) {
           changeReports: true,
         },
       },
+      attachments: {
+        orderBy: {
+          createdAt: "asc",
+        },
+        select: {
+          id: true,
+          fileName: true,
+          mimeType: true,
+          sizeBytes: true,
+          createdAt: true,
+        },
+      },
     },
     orderBy: [{ workDate: "desc" }, { startTime: "desc" }],
   });
@@ -846,6 +886,7 @@ export async function GET(req: Request) {
       id: row.user.id,
       fullName: row.user.fullName,
     },
+    attachments: row.attachments.map(toWorkEntryAttachmentDTO),
   }));
 
   const patched = buildPatchedEntries(typedRows, dayBreakMap);
@@ -885,6 +926,7 @@ export async function GET(req: Request) {
         id: row.user.id,
         fullName: row.user.fullName,
       },
+      attachments: row.attachments,
     };
   });
 
@@ -1079,6 +1121,18 @@ if (location) {
           fullName: true,
         },
       },
+      attachments: {
+        orderBy: {
+          createdAt: "asc",
+        },
+        select: {
+          id: true,
+          fileName: true,
+          mimeType: true,
+          sizeBytes: true,
+          createdAt: true,
+        },
+      },
     },
   });
 
@@ -1118,6 +1172,7 @@ if (location) {
     ),
     hasChangeReports: false,
     user: { id: createdFresh.user.id, fullName: createdFresh.user.fullName },
+    attachments: createdFresh.attachments.map(toWorkEntryAttachmentDTO),
   };
 
   return NextResponse.json({ entry });
@@ -1464,6 +1519,18 @@ export async function PATCH(req: Request) {
           changeReports: true,
         },
       },
+      attachments: {
+        orderBy: {
+          createdAt: "asc",
+        },
+        select: {
+          id: true,
+          fileName: true,
+          mimeType: true,
+          sizeBytes: true,
+          createdAt: true,
+        },
+      },
     },
   });
 
@@ -1546,6 +1613,7 @@ export async function PATCH(req: Request) {
     ),
     hasChangeReports,
     user: { id: updatedFresh.user.id, fullName: updatedFresh.user.fullName },
+    attachments: updatedFresh.attachments.map(toWorkEntryAttachmentDTO),
   };
 
   return NextResponse.json({ entry });

@@ -2578,6 +2578,13 @@ export type ErfassungTextKey =
   | "editRequestCreateFailed"
   | "networkEditRequestError"
   | "sendEditRequest"
+  | "attachments"
+  | "addImages"
+  | "addFiles"
+  | "selectedFiles"
+  | "removeFile"
+  | "uploadedFiles"
+  | "fileUploadFailed"
   | "timesheetLockedDayRequiresCorrection";
 
 export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage, string>> = {
@@ -4020,6 +4027,69 @@ export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage
     SQ: "Dërgo kërkesën për ndryshim",
     KU: "Daxwaza guherandinê bişîne",
     RO: "Trimite cererea de modificare",
+  },
+  attachments: {
+    DE: "Bilder & Dateien",
+    EN: "Images & files",
+    IT: "Immagini e file",
+    TR: "Görseller ve dosyalar",
+    SQ: "Imazhe dhe skedarë",
+    KU: "Wêne û pel",
+    RO: "Imagini și fișiere",
+  },
+  addImages: {
+    DE: "Bilder aus Galerie hinzufügen",
+    EN: "Add images from gallery",
+    IT: "Aggiungi immagini dalla galleria",
+    TR: "Galeriden görsel ekle",
+    SQ: "Shto imazhe nga galeria",
+    KU: "Wêneyan ji galeriyê zêde bike",
+    RO: "Adaugă imagini din galerie",
+  },
+  addFiles: {
+    DE: "Dateien hinzufügen",
+    EN: "Add files",
+    IT: "Aggiungi file",
+    TR: "Dosya ekle",
+    SQ: "Shto skedarë",
+    KU: "Pelan zêde bike",
+    RO: "Adaugă fișiere",
+  },
+  selectedFiles: {
+    DE: "Ausgewählte Dateien",
+    EN: "Selected files",
+    IT: "File selezionati",
+    TR: "Seçilen dosyalar",
+    SQ: "Skedarët e zgjedhur",
+    KU: "Pelên hilbijartî",
+    RO: "Fișiere selectate",
+  },
+  removeFile: {
+    DE: "Entfernen",
+    EN: "Remove",
+    IT: "Rimuovi",
+    TR: "Kaldır",
+    SQ: "Hiq",
+    KU: "Rake",
+    RO: "Elimină",
+  },
+  uploadedFiles: {
+    DE: "Hochgeladene Dateien",
+    EN: "Uploaded files",
+    IT: "File caricati",
+    TR: "Yüklenen dosyalar",
+    SQ: "Skedarët e ngarkuar",
+    KU: "Pelên barkirî",
+    RO: "Fișiere încărcate",
+  },
+  fileUploadFailed: {
+    DE: "Dateien konnten nicht vollständig hochgeladen werden.",
+    EN: "Files could not be uploaded completely.",
+    IT: "Non è stato possibile caricare completamente i file.",
+    TR: "Dosyalar tamamen yüklenemedi.",
+    SQ: "Skedarët nuk mund të ngarkoheshin plotësisht.",
+    KU: "Pel bi tevahî nehatin barkirin.",
+    RO: "Fișierele nu au putut fi încărcate complet.",
   },
 };
 

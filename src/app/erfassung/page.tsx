@@ -52,6 +52,16 @@ type WorkEntry = {
   noteEmployee: string;
   hasChangeReports: boolean;
   user: { id: string; fullName: string };
+  attachments: AttachmentDTO[];
+};
+
+type AttachmentDTO = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+  createdAt: string;
 };
 
 type CreateWorkEntryResponse = {
@@ -424,6 +434,90 @@ function formatMinutesCompact(minutes: number) {
   const mins = Math.max(0, Math.round(minutes));
   if (mins < 60) return `${mins} Min`;
   return formatHM(mins);
+}
+
+function formatFileSize(sizeBytes: number): string {
+  if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {
+    return "0 KB";
+  }
+
+  if (sizeBytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
+  }
+
+  return `${(sizeBytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+}
+
+function mergeFiles(currentFiles: File[], selectedFiles: FileList | null): File[] {
+  if (!selectedFiles) {
+    return currentFiles;
+  }
+
+  const next = [...currentFiles];
+
+  for (const file of Array.from(selectedFiles)) {
+    const alreadyExists = next.some((existing) => {
+      return (
+        existing.name === file.name &&
+        existing.size === file.size &&
+        existing.lastModified === file.lastModified
+      );
+    });
+
+    if (!alreadyExists) {
+      next.push(file);
+    }
+  }
+
+  return next;
+}
+
+function isImageAttachment(attachment: AttachmentDTO): boolean {
+  return attachment.mimeType.startsWith("image/");
+}
+
+function AttachmentLinks({
+  attachments,
+  title,
+}: {
+  attachments: AttachmentDTO[];
+  title: string;
+}) {
+  if (attachments.length === 0) {
+    return null;
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 8 }}>
+      <div className="label">{title}</div>
+
+      <div style={{ display: "grid", gap: 8 }}>
+        {attachments.map((attachment) => (
+          <a
+            key={attachment.id}
+            href={attachment.url}
+            target="_blank"
+            rel="noreferrer"
+            className="tenant-action-link"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 10,
+              textDecoration: "none",
+            }}
+          >
+            <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+              {isImageAttachment(attachment) ? "🖼️ " : "📎 "}
+              {attachment.fileName}
+            </span>
+            <span style={{ flexShrink: 0, opacity: 0.8 }}>
+              {formatFileSize(attachment.sizeBytes)}
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function getDisplayChangeValue(value: unknown): unknown {
@@ -1273,6 +1367,9 @@ function ErfassungPageInner() {
   const [location, setLocation] = useState("");
   const [travelMinutes, setTravelMinutes] = useState<string>("0");
   const [noteEmployee, setNoteEmployee] = useState("");
+  const [entryFiles, setEntryFiles] = useState<File[]>([]);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [showSyncToast, setShowSyncToast] = useState(false);
 
   const [dayBreaks, setDayBreaks] = useState<DayBreak[]>([]);
@@ -1774,6 +1871,38 @@ useEffect(() => {
     setBreakError(null);
   }, [selectedDayBreak, workDate]);
 
+  async function uploadWorkEntryAttachments(
+    workEntryId: string,
+    files: File[]
+  ): Promise<string | null> {
+    if (files.length === 0) {
+      return null;
+    }
+
+    const formData = new FormData();
+    formData.set("workEntryId", workEntryId);
+
+    for (const file of files) {
+      formData.append("files", file);
+    }
+
+    const response = await fetch("/api/work-entry-attachments", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    const data: unknown = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return isRecord(data) && isString(data["error"])
+        ? data["error"]
+        : t("fileUploadFailed");
+    }
+
+    return null;
+  }
+
   async function saveEntry() {
     setError(null);
 
@@ -1826,10 +1955,19 @@ useEffect(() => {
 
       const createdEntryId = isCreateWorkEntryResponse(j) ? j.entry.id : "";
 
+      if (createdEntryId && entryFiles.length > 0) {
+        const uploadError = await uploadWorkEntryAttachments(createdEntryId, entryFiles);
+
+        if (uploadError) {
+          setError(uploadError);
+        }
+      }
+
       setActivity("");
       setLocation("");
       setTravelMinutes("0");
       setNoteEmployee("");
+      setEntryFiles([]);
 
       const refreshedEntries = await loadEntries();
       applyEntryTimeDefaultsForDate(workDate, refreshedEntries);
@@ -2887,6 +3025,102 @@ useEffect(() => {
           </div>
         </div>
 
+        <div style={{ marginBottom: 12 }}>
+          <div className="label">{t("attachments")}</div>
+
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            style={{ display: "none" }}
+            onChange={(event) => {
+              setEntryFiles((current) => mergeFiles(current, event.target.files));
+              event.target.value = "";
+            }}
+          />
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            multiple
+            style={{ display: "none" }}
+            onChange={(event) => {
+              setEntryFiles((current) => mergeFiles(current, event.target.files));
+              event.target.value = "";
+            }}
+          />
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+            >
+              {t("addImages")}
+            </button>
+
+            <button
+              className="btn"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {t("addFiles")}
+            </button>
+          </div>
+
+          {entryFiles.length > 0 ? (
+            <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 800 }}>
+                {t("selectedFiles")}
+              </div>
+
+              {entryFiles.map((file, index) => (
+                <div
+                  key={`${file.name}-${file.size}-${file.lastModified}`}
+                  className="tenant-soft-panel"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontWeight: 900,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {file.type.startsWith("image/") ? "🖼️ " : "📎 "}
+                      {file.name}
+                    </div>
+                    <div style={{ color: "var(--muted)", fontSize: 12 }}>
+                      {formatFileSize(file.size)}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="tenant-icon-button tenant-icon-button-danger"
+                    onClick={() => {
+                      setEntryFiles((current) =>
+                        current.filter((_, currentIndex) => currentIndex !== index)
+                      );
+                    }}
+                  >
+                    {t("removeFile")}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
         <div className="label" style={{ marginBottom: 12 }}>
           <div>
             <div className="label">{t("travelMinutes")}</div>
@@ -2913,6 +3147,7 @@ useEffect(() => {
               setLocation("");
               setTravelMinutes("0");
               setNoteEmployee("");
+              setEntryFiles([]);
               setError(null);
             }}
           >
@@ -3351,6 +3586,10 @@ useEffect(() => {
                 {formatMinutesCompact(detailsEntry.travelMinutes ?? 0)}
               </div>
             </div>
+            <AttachmentLinks
+              attachments={detailsEntry.attachments ?? []}
+              title={t("uploadedFiles")}
+            />
           </div>
         )}
       </Modal>
@@ -3443,7 +3682,7 @@ useEffect(() => {
                 {formatDateLocalized(language, toYMD(noteEntry.workDate))} · {noteEntry.startTime}–{noteEntry.endTime}
               </div>
             </div>
-
+            
             <div>
               <div className="label">{t("note")}</div>
               <div
@@ -3452,6 +3691,10 @@ useEffect(() => {
                 {noteEntry.noteEmployee.trim() || t("noNote")}
               </div>
             </div>
+            <AttachmentLinks
+              attachments={noteEntry.attachments ?? []}
+              title={t("uploadedFiles")}
+            />
           </div>
         )}
       </Modal>

@@ -25,6 +25,15 @@ type TaskRequiredAction =
   | "SICK_ENTRY_FOR_DATE"
   | "CONFIRM_MONTHLY_WORK_ENTRIES";
 
+type AttachmentDTO = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+  createdAt: string;
+};
+
 type TaskRow = {
   id: string;
   title: string;
@@ -51,6 +60,7 @@ type TaskRow = {
     id: string;
     fullName: string;
   } | null;
+  attachments: AttachmentDTO[];
 };
 
 type AdminTasksApiResponse = {
@@ -133,6 +143,19 @@ function isEmployeeOption(v: unknown): v is EmployeeOption {
   return isRecord(v) && isString(v["id"]) && isString(v["fullName"]);
 }
 
+function isAttachmentDTO(v: unknown): v is AttachmentDTO {
+  if (!isRecord(v)) return false;
+
+  return (
+    isString(v["id"]) &&
+    isString(v["fileName"]) &&
+    isString(v["mimeType"]) &&
+    typeof v["sizeBytes"] === "number" &&
+    isString(v["url"]) &&
+    isString(v["createdAt"])
+  );
+}
+
 function isTaskRow(v: unknown): v is TaskRow {
   if (!isRecord(v)) return false;
   const assignedToUser = v["assignedToUser"];
@@ -161,7 +184,9 @@ function isTaskRow(v: unknown): v is TaskRow {
     (completedByUser === null ||
       (isRecord(completedByUser) &&
         isString(completedByUser["id"]) &&
-        isString(completedByUser["fullName"])))
+        isString(completedByUser["fullName"]))) &&
+    Array.isArray(v["attachments"]) &&
+    v["attachments"].every(isAttachmentDTO)
   );
 }
 
@@ -196,6 +221,70 @@ function formatDate(value: string | null, language: AppUiLanguage): string {
     year: "numeric",
     timeZone: "Europe/Berlin",
   }).format(date);
+}
+
+function formatFileSize(sizeBytes: number): string {
+  if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {
+    return "0 KB";
+  }
+
+  if (sizeBytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
+  }
+
+  return `${(sizeBytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+}
+
+function isImageAttachment(attachment: AttachmentDTO): boolean {
+  return attachment.mimeType.startsWith("image/");
+}
+
+function AttachmentLinks({
+  attachments,
+  title,
+}: {
+  attachments: AttachmentDTO[];
+  title: string;
+}) {
+  if (attachments.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      className="tenant-soft-panel-strong"
+      style={{
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      <strong>{title}</strong>
+
+      {attachments.map((attachment) => (
+        <a
+          key={attachment.id}
+          href={attachment.url}
+          target="_blank"
+          rel="noreferrer"
+          className="tenant-action-link"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 10,
+            textDecoration: "none",
+          }}
+        >
+          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+            {isImageAttachment(attachment) ? "🖼️ " : "📎 "}
+            {attachment.fileName}
+          </span>
+          <span style={{ flexShrink: 0, opacity: 0.8 }}>
+            {formatFileSize(attachment.sizeBytes)}
+          </span>
+        </a>
+      ))}
+    </div>
+  );
 }
 
 function formatReferenceRange(
@@ -919,6 +1008,11 @@ export default function AdminTasksPage() {
                       {task.completionNote}
                     </div>
                   ) : null}
+
+                  <AttachmentLinks
+                    attachments={task.attachments}
+                    title="Hochgeladene Dateien"
+                  />
 
                   {task.description ? (
                     <div style={{ whiteSpace: "pre-wrap", color: "var(--text)" }}>

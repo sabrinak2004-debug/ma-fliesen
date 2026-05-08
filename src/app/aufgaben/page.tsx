@@ -15,6 +15,15 @@ type TaskRequiredAction =
   | "SICK_ENTRY_FOR_DATE"
   | "CONFIRM_MONTHLY_WORK_ENTRIES";
 
+type AttachmentDTO = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+  createdAt: string;
+};
+
 type TaskRow = {
   id: string;
   title: string;
@@ -36,6 +45,7 @@ type TaskRow = {
     id: string;
     fullName: string;
   } | null;
+  attachments: AttachmentDTO[];
 };
 
 type MissingWorkEntryAlert = {
@@ -137,6 +147,13 @@ type AufgabenTextKey =
   | "monthOctober"
   | "monthNovember"
   | "monthDecember"
+  | "attachments"
+  | "addImages"
+  | "addFiles"
+  | "selectedFiles"
+  | "removeFile"
+  | "uploadedFiles"
+  | "fileUploadFailed"
   | "systemTaskWorkTimeSingleTitle"
   | "systemTaskWorkTimeMultiTitle"
   | "systemTaskWorkTimeSingleDescription"
@@ -755,6 +772,69 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     KU: "Not:",
     RO: "Notă:",
   },
+  attachments: {
+    DE: "Bilder & Dateien",
+    EN: "Images & files",
+    IT: "Immagini e file",
+    TR: "Görseller ve dosyalar",
+    SQ: "Imazhe dhe skedarë",
+    KU: "Wêne û pel",
+    RO: "Imagini și fișiere",
+  },
+  addImages: {
+    DE: "Bilder aus Galerie hinzufügen",
+    EN: "Add images from gallery",
+    IT: "Aggiungi immagini dalla galleria",
+    TR: "Galeriden görsel ekle",
+    SQ: "Shto imazhe nga galeria",
+    KU: "Wêneyan ji galeriyê zêde bike",
+    RO: "Adaugă imagini din galerie",
+  },
+  addFiles: {
+    DE: "Dateien hinzufügen",
+    EN: "Add files",
+    IT: "Aggiungi file",
+    TR: "Dosya ekle",
+    SQ: "Shto skedarë",
+    KU: "Pelan zêde bike",
+    RO: "Adaugă fișiere",
+  },
+  selectedFiles: {
+    DE: "Ausgewählte Dateien",
+    EN: "Selected files",
+    IT: "File selezionati",
+    TR: "Seçilen dosyalar",
+    SQ: "Skedarët e zgjedhur",
+    KU: "Pelên hilbijartî",
+    RO: "Fișiere selectate",
+  },
+  removeFile: {
+    DE: "Entfernen",
+    EN: "Remove",
+    IT: "Rimuovi",
+    TR: "Kaldır",
+    SQ: "Hiq",
+    KU: "Rake",
+    RO: "Elimină",
+  },
+  uploadedFiles: {
+    DE: "Hochgeladene Dateien",
+    EN: "Uploaded files",
+    IT: "File caricati",
+    TR: "Yüklenen dosyalar",
+    SQ: "Skedarët e ngarkuar",
+    KU: "Pelên barkirî",
+    RO: "Fișiere încărcate",
+  },
+  fileUploadFailed: {
+    DE: "Dateien konnten nicht vollständig hochgeladen werden.",
+    EN: "Files could not be uploaded completely.",
+    IT: "Non è stato possibile caricare completamente i file.",
+    TR: "Dosyalar tamamen yüklenemedi.",
+    SQ: "Skedarët nuk mund të ngarkoheshin plotësisht.",
+    KU: "Pel bi tevahî nehatin barkirin.",
+    RO: "Fișierele nu au putut fi încărcate complet.",
+  },
   systemTaskWorkTimeSingleTitle: {
     DE: "Arbeitszeit für {date} nachtragen",
     EN: "Add work time for {date}",
@@ -824,6 +904,19 @@ function isTaskRequiredAction(v: unknown): v is TaskRequiredAction {
   );
 }
 
+function isAttachmentDTO(v: unknown): v is AttachmentDTO {
+  if (!isRecord(v)) return false;
+
+  return (
+    isString(v["id"]) &&
+    isString(v["fileName"]) &&
+    isString(v["mimeType"]) &&
+    typeof v["sizeBytes"] === "number" &&
+    isString(v["url"]) &&
+    isString(v["createdAt"])
+  );
+}
+
 function isTaskRow(v: unknown): v is TaskRow {
   if (!isRecord(v)) return false;
 
@@ -849,7 +942,9 @@ function isTaskRow(v: unknown): v is TaskRow {
     (completedByUser === null ||
       (isRecord(completedByUser) &&
         isString(completedByUser["id"]) &&
-        isString(completedByUser["fullName"])))
+        isString(completedByUser["fullName"]))) &&
+    Array.isArray(v["attachments"]) &&
+    v["attachments"].every(isAttachmentDTO)
   );
 }
 
@@ -952,6 +1047,94 @@ function formatDateLongLocalized(
     default:
       return `${day}. ${monthName}`;
   }
+}
+
+function formatFileSize(sizeBytes: number): string {
+  if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {
+    return "0 KB";
+  }
+
+  if (sizeBytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
+  }
+
+  return `${(sizeBytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+}
+
+function mergeFiles(currentFiles: File[], selectedFiles: FileList | null): File[] {
+  if (!selectedFiles) {
+    return currentFiles;
+  }
+
+  const next = [...currentFiles];
+
+  for (const file of Array.from(selectedFiles)) {
+    const alreadyExists = next.some((existing) => {
+      return (
+        existing.name === file.name &&
+        existing.size === file.size &&
+        existing.lastModified === file.lastModified
+      );
+    });
+
+    if (!alreadyExists) {
+      next.push(file);
+    }
+  }
+
+  return next;
+}
+
+function isImageAttachment(attachment: AttachmentDTO): boolean {
+  return attachment.mimeType.startsWith("image/");
+}
+
+function AttachmentLinks({
+  attachments,
+  title,
+}: {
+  attachments: AttachmentDTO[];
+  title: string;
+}) {
+  if (attachments.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      className="tenant-soft-panel-strong"
+      style={{
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      <strong>{title}</strong>
+
+      {attachments.map((attachment) => (
+        <a
+          key={attachment.id}
+          href={attachment.url}
+          target="_blank"
+          rel="noreferrer"
+          className="tenant-action-link"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 10,
+            textDecoration: "none",
+          }}
+        >
+          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+            {isImageAttachment(attachment) ? "🖼️ " : "📎 "}
+            {attachment.fileName}
+          </span>
+          <span style={{ flexShrink: 0, opacity: 0.8 }}>
+            {formatFileSize(attachment.sizeBytes)}
+          </span>
+        </a>
+      ))}
+    </div>
+  );
 }
 
 function formatReferenceRangeLocalized(
@@ -1308,6 +1491,9 @@ export default function AufgabenPage() {
   const [showMissingWorkEntryModal, setShowMissingWorkEntryModal] = useState(false);
   const [generalCompletionTask, setGeneralCompletionTask] = useState<TaskRow | null>(null);
   const [generalCompletionNote, setGeneralCompletionNote] = useState("");
+  const [generalCompletionFiles, setGeneralCompletionFiles] = useState<File[]>([]);
+  const generalImageInputRef = React.useRef<HTMLInputElement | null>(null);
+  const generalFileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -1431,9 +1617,42 @@ export default function AufgabenPage() {
       : `${fromText} ${translate(language, "until", AUFGABEN_DICTIONARY)} ${toText}`;
   }, [missingWorkEntryAlert, language]);
 
+  async function uploadTaskAttachments(
+    taskId: string,
+    files: File[]
+  ): Promise<string | null> {
+    if (files.length === 0) {
+      return null;
+    }
+
+    const formData = new FormData();
+    formData.set("taskId", taskId);
+
+    for (const file of files) {
+      formData.append("files", file);
+    }
+
+    const response = await fetch("/api/task-attachments", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    const data: unknown = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return isRecord(data) && isString(data["error"])
+        ? data["error"]
+        : t("fileUploadFailed");
+    }
+
+    return null;
+  }
+
   async function completeTask(
     taskId: string,
-    completionNote?: string
+    completionNote?: string,
+    files: File[] = []
   ): Promise<void> {
     setActionTaskId(taskId);
     setError("");
@@ -1462,8 +1681,18 @@ export default function AufgabenPage() {
         return;
       }
 
+      if (files.length > 0) {
+        const uploadError = await uploadTaskAttachments(taskId, files);
+
+        if (uploadError) {
+          setError(uploadError);
+          return;
+        }
+      }
+
       setGeneralCompletionTask(null);
       setGeneralCompletionNote("");
+      setGeneralCompletionFiles([]);
       setSuccess(t("taskCompletedSuccess"));
       await loadTasks();
     } catch {
@@ -1478,6 +1707,7 @@ export default function AufgabenPage() {
     setSuccess("");
     setGeneralCompletionTask(task);
     setGeneralCompletionNote("");
+    setGeneralCompletionFiles([]);
   }
 
   function renderTaskCard(task: TaskRow, allowComplete: boolean): React.ReactElement {
@@ -1557,6 +1787,13 @@ export default function AufgabenPage() {
           >
             <strong>{t("completionNote")}</strong> {task.completionNote}
           </div>
+        ) : null}
+
+        {!allowComplete ? (
+          <AttachmentLinks
+            attachments={task.attachments}
+            title={t("uploadedFiles")}
+          />
         ) : null}
 
         {localizedDescription ? (
@@ -1748,6 +1985,7 @@ export default function AufgabenPage() {
             if (actionTaskId) return;
             setGeneralCompletionTask(null);
             setGeneralCompletionNote("");
+            setGeneralCompletionFiles([]);
           }}
           maxWidth={620}
           disableBackdropClose={Boolean(actionTaskId)}
@@ -1760,6 +1998,7 @@ export default function AufgabenPage() {
                   onClick={() => {
                     setGeneralCompletionTask(null);
                     setGeneralCompletionNote("");
+                    setGeneralCompletionFiles([]);
                   }}
                   disabled={Boolean(actionTaskId)}
                   className="tenant-action-link"
@@ -1769,7 +2008,13 @@ export default function AufgabenPage() {
 
                 <button
                   type="button"
-                  onClick={() => void completeTask(generalCompletionTask.id)}
+                  onClick={() =>
+                    void completeTask(
+                      generalCompletionTask.id,
+                      undefined,
+                      generalCompletionFiles
+                    )
+                  }
                   disabled={actionTaskId === generalCompletionTask.id}
                   className="tenant-action-link"
                 >
@@ -1781,7 +2026,11 @@ export default function AufgabenPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    void completeTask(generalCompletionTask.id, generalCompletionNote)
+                    void completeTask(
+                      generalCompletionTask.id,
+                      generalCompletionNote,
+                      generalCompletionFiles
+                    )
                   }
                   disabled={actionTaskId === generalCompletionTask.id}
                   className="tenant-action-button"
@@ -1839,6 +2088,107 @@ export default function AufgabenPage() {
                   }}
                 />
               </label>
+              <div style={{ display: "grid", gap: 10 }}>
+                <div style={{ color: "var(--text-soft)", fontWeight: 900 }}>
+                  {t("attachments")}
+                </div>
+
+                <input
+                  ref={generalImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  style={{ display: "none" }}
+                  onChange={(event) => {
+                    setGeneralCompletionFiles((current) =>
+                      mergeFiles(current, event.target.files)
+                    );
+                    event.target.value = "";
+                  }}
+                />
+
+                <input
+                  ref={generalFileInputRef}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  multiple
+                  style={{ display: "none" }}
+                  onChange={(event) => {
+                    setGeneralCompletionFiles((current) =>
+                      mergeFiles(current, event.target.files)
+                    );
+                    event.target.value = "";
+                  }}
+                />
+
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    className="tenant-action-link"
+                    onClick={() => generalImageInputRef.current?.click()}
+                  >
+                    {t("addImages")}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="tenant-action-link"
+                    onClick={() => generalFileInputRef.current?.click()}
+                  >
+                    {t("addFiles")}
+                  </button>
+                </div>
+
+                {generalCompletionFiles.length > 0 ? (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <div style={{ color: "var(--muted)", fontSize: 12, fontWeight: 900 }}>
+                      {t("selectedFiles")}
+                    </div>
+
+                    {generalCompletionFiles.map((file, index) => (
+                      <div
+                        key={`${file.name}-${file.size}-${file.lastModified}`}
+                        className="tenant-soft-panel"
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          alignItems: "center",
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontWeight: 900,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {file.type.startsWith("image/") ? "🖼️ " : "📎 "}
+                            {file.name}
+                          </div>
+                          <div style={{ color: "var(--muted)", fontSize: 12 }}>
+                            {formatFileSize(file.size)}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="tenant-action-link"
+                          onClick={() => {
+                            setGeneralCompletionFiles((current) =>
+                              current.filter((_, currentIndex) => currentIndex !== index)
+                            );
+                          }}
+                        >
+                          {t("removeFile")}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
           ) : null}
         </Modal>

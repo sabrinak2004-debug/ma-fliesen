@@ -41,7 +41,8 @@ function isTaskRequiredAction(value: string): value is TaskRequiredAction {
     value === "NONE" ||
     value === "WORK_ENTRY_FOR_DATE" ||
     value === "VACATION_ENTRY_FOR_DATE" ||
-    value === "SICK_ENTRY_FOR_DATE"
+    value === "SICK_ENTRY_FOR_DATE" ||
+    value === "CONFIRM_MONTHLY_WORK_ENTRIES"
   );
 }
 
@@ -311,6 +312,18 @@ export async function GET(): Promise<NextResponse> {
             fullName: true,
           },
         },
+        attachments: {
+          orderBy: {
+            createdAt: "asc",
+          },
+          select: {
+            id: true,
+            fileName: true,
+            mimeType: true,
+            sizeBytes: true,
+            createdAt: true,
+          },
+        },
       },
     }),
     prisma.appUser.findMany({
@@ -347,6 +360,14 @@ export async function GET(): Promise<NextResponse> {
         task.completionNoteTranslations,
         adminUser?.language ?? "DE"
       ),
+      attachments: task.attachments.map((attachment) => ({
+        id: attachment.id,
+        fileName: attachment.fileName,
+        mimeType: attachment.mimeType,
+        sizeBytes: attachment.sizeBytes,
+        url: `/api/task-attachments/${encodeURIComponent(attachment.id)}/file`,
+        createdAt: attachment.createdAt.toISOString(),
+      })),
     })),
     employees,
   });
@@ -528,5 +549,13 @@ export async function POST(req: Request): Promise<NextResponse> {
     url: "/aufgaben",
   });
 
-  return NextResponse.json({ task }, { status: 201 });
+  return NextResponse.json(
+  {
+    task: {
+      ...task,
+      attachments: [],
+    },
+  },
+  { status: 201 }
+);
 }

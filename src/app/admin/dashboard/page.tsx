@@ -20,6 +20,14 @@ import UnpaidIcon from "@/components/icons/UnpaidIcon";
 /* =========================
    Types (Dashboard Timeline)
    ========================= */
+type AttachmentDTO = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+  createdAt: string;
+};
 
 type AdminTimelineWork = {
   type: "WORK";
@@ -34,6 +42,7 @@ type AdminTimelineWork = {
   breakAuto: boolean;
   workMinutes: number;
   noteEmployee: string | null;
+  attachments?: AttachmentDTO[];
 };
 
 type AdminTimelineAbsence = {
@@ -445,6 +454,64 @@ function formatMinutesCompact(minutes: number): string {
   return formatHM(mins);
 }
 
+function formatFileSize(sizeBytes: number): string {
+  if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {
+    return "0 KB";
+  }
+
+  if (sizeBytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
+  }
+
+  return `${(sizeBytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+}
+
+function isImageAttachment(attachment: AttachmentDTO): boolean {
+  return attachment.mimeType.startsWith("image/");
+}
+
+function AttachmentLinks({
+  attachments,
+  title,
+}: {
+  attachments: AttachmentDTO[];
+  title: string;
+}) {
+  if (attachments.length === 0) {
+    return null;
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 8 }}>
+      <div style={{ fontSize: 12, color: "var(--muted)" }}>{title}</div>
+
+      {attachments.map((attachment) => (
+        <a
+          key={attachment.id}
+          href={attachment.url}
+          target="_blank"
+          rel="noreferrer"
+          className="tenant-action-link"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 10,
+            textDecoration: "none",
+          }}
+        >
+          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+            {isImageAttachment(attachment) ? "🖼️ " : "📎 "}
+            {attachment.fileName}
+          </span>
+          <span style={{ flexShrink: 0, opacity: 0.8 }}>
+            {formatFileSize(attachment.sizeBytes)}
+          </span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function absenceTypeLabel(
   type: "VACATION" | "SICK",
   language: AppUiLanguage
@@ -809,6 +876,7 @@ export default function AdminDashboardPage() {
   const [detailsLocation, setDetailsLocation] = useState<string>("");
   const [detailsTravelMinutes, setDetailsTravelMinutes] = useState<number>(0);
   const [detailsWorkMinutes, setDetailsWorkMinutes] = useState<number>(0);
+  const [detailsAttachments, setDetailsAttachments] = useState<AttachmentDTO[]>([]);
 
   const [breakInfoOpen, setBreakInfoOpen] = useState(false);
   const [breakInfoUserLabel, setBreakInfoUserLabel] = useState<string>("");
@@ -825,6 +893,7 @@ export default function AdminDashboardPage() {
   const [noteDate, setNoteDate] = useState<string>("");
   const [noteTime, setNoteTime] = useState<string>("");
   const [noteText, setNoteText] = useState<string>("");
+  const [noteAttachments, setNoteAttachments] = useState<AttachmentDTO[]>([]);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteSaving, setDeleteSaving] = useState(false);
@@ -1292,6 +1361,7 @@ export default function AdminDashboardPage() {
     setNoteDate(it.date);
     setNoteTime(`${it.startHHMM}–${it.endHHMM}`);
     setNoteText(it.noteEmployee ?? "");
+    setNoteAttachments(it.attachments ?? []);
     setNoteOpen(true);
   }
 
@@ -1303,6 +1373,7 @@ export default function AdminDashboardPage() {
     setDetailsLocation(it.location ?? "");
     setDetailsTravelMinutes(it.travelMinutes ?? 0);
     setDetailsWorkMinutes(it.workMinutes ?? 0);
+    setDetailsAttachments(it.attachments ?? []);
     setDetailsOpen(true);
   }
 
@@ -1845,6 +1916,10 @@ export default function AdminDashboardPage() {
             <div style={{ fontSize: 12, color: "var(--muted)" }}>{t("travelTime")}</div>
             <div style={{ fontWeight: 1000 }}>{formatMinutesCompact(detailsTravelMinutes)}</div>
           </div>
+          <AttachmentLinks
+            attachments={detailsAttachments}
+            title="Hochgeladene Dateien"
+          />
         </div>
       </Modal>
 
@@ -1948,6 +2023,10 @@ export default function AdminDashboardPage() {
               {noteText.trim() ? noteText : t("noNoteAvailable")}
             </div>
           </div>
+          <AttachmentLinks
+            attachments={noteAttachments}
+            title="Hochgeladene Dateien"
+          />
         </div>
       </Modal>
 

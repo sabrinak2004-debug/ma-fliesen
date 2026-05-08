@@ -64,6 +64,8 @@ model AppUser {
 
   // ✅ NEU: Upload-Relation
   uploadedPlanEntryDocuments PlanEntryDocument[] @relation("UploadedBy")
+  uploadedWorkEntryAttachments WorkEntryAttachment[] @relation("WorkEntryAttachmentUploadedBy")
+  uploadedTaskAttachments      TaskAttachment[]      @relation("TaskAttachmentUploadedBy")
 
   @@unique([companyId, fullName])
   @@index([companyId])
@@ -192,6 +194,7 @@ model WorkEntry {
 
   changeReports WorkEntryChangeReport[]
   editRequests  WorkEntryEditRequest[]
+  attachments   WorkEntryAttachment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -564,6 +567,7 @@ model Task {
   completionNoteSourceLanguage AppLanguage?
   completionNoteTranslations   Json?
 
+  attachments TaskAttachment[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -575,6 +579,48 @@ model Task {
   @@index([referenceStartDate])
   @@index([referenceEndDate])
   @@index([dueAt])
+}
+
+model WorkEntryAttachment {
+  id String @id @default(uuid())
+
+  workEntryId String
+  workEntry   WorkEntry @relation(fields: [workEntryId], references: [id], onDelete: Cascade)
+
+  uploadedById String
+  uploadedBy   AppUser @relation("WorkEntryAttachmentUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  blobUrl      String
+  blobPathname String @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([workEntryId])
+  @@index([uploadedById])
+}
+
+model TaskAttachment {
+  id String @id @default(uuid())
+
+  taskId String
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  uploadedById String
+  uploadedBy   AppUser @relation("TaskAttachmentUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  blobUrl      String
+  blobPathname String @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@index([uploadedById])
 }
 
 enum Role {

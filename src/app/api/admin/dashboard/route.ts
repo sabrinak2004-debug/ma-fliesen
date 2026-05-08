@@ -66,6 +66,15 @@ type TimelineDayBreak = {
   effectiveMinutes: number;
 };
 
+type AttachmentDTO = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+  createdAt: string;
+};
+
 type WorkEntryMonthRow = {
   id: string;
   userId: string;
@@ -82,6 +91,7 @@ type WorkEntryMonthRow = {
   workMinutes: number | null;
   noteEmployee: string | null;
   noteEmployeeTranslations: Prisma.JsonValue | null;
+  attachments: AttachmentDTO[];
 };
 
 function buildPatchedDashboardEntries(
@@ -480,6 +490,18 @@ export async function GET(req: Request) {
       noteEmployee: true,
       noteEmployeeSourceLanguage: true,
       noteEmployeeTranslations: true,
+      attachments: {
+        orderBy: {
+          createdAt: "asc",
+        },
+        select: {
+          id: true,
+          fileName: true,
+          mimeType: true,
+          sizeBytes: true,
+          createdAt: true,
+        },
+      },
     },
   });
 
@@ -554,6 +576,14 @@ export async function GET(req: Request) {
     workMinutes: row.workMinutes ?? 0,
     noteEmployee: row.noteEmployee ?? null,
     noteEmployeeTranslations: row.noteEmployeeTranslations ?? null,
+    attachments: row.attachments.map((attachment) => ({
+      id: attachment.id,
+      fileName: attachment.fileName,
+      mimeType: attachment.mimeType,
+      sizeBytes: attachment.sizeBytes,
+      url: `/api/work-entry-attachments/${encodeURIComponent(attachment.id)}/file`,
+      createdAt: attachment.createdAt.toISOString(),
+    })),
   }));
 
   const patchedWorkEntries = buildPatchedDashboardEntries(typedWorkEntriesMonth, dayBreakMap);
@@ -573,6 +603,7 @@ export async function GET(req: Request) {
           breakAuto: boolean;
           workMinutes: number;
           noteEmployee: string | null;
+          attachments: AttachmentDTO[];
         }
       | {
         type: "VACATION" | "SICK";
@@ -625,6 +656,7 @@ export async function GET(req: Request) {
           workEntry.noteEmployeeTranslations,
           session.language
         ),
+        attachments: workEntry.attachments,
       });
     }
 
