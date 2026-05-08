@@ -1665,6 +1665,9 @@ useEffect(() => {
     }
   }, [sourceTaskId]);
 
+  const monthlyConfirmationWasRejected =
+    monthlyConfirmationData?.reason === "REJECTED_NEEDS_CONFIRMATION";
+
   const monthlyConfirmationMonthLabel = useMemo(() => {
     const year = monthlyConfirmationData?.year ?? Number(confirmMonthParam.slice(0, 4));
     const month = monthlyConfirmationData?.month ?? Number(confirmMonthParam.slice(5, 7));
@@ -3884,10 +3887,14 @@ useEffect(() => {
       <Modal
         open={monthlyConfirmationOpen && Boolean(monthlyConfirmationData)}
         title={getMonthlyConfirmationTitle(language, monthlyConfirmationMonthLabel)}
-        onClose={() => undefined}
-        disableBackdropClose
-        disableEscapeClose
-        hideCloseButton
+        onClose={() => {
+          if (monthlyConfirmationWasRejected) {
+            setMonthlyConfirmationOpen(false);
+          }
+        }}
+        disableBackdropClose={!monthlyConfirmationWasRejected}
+        disableEscapeClose={!monthlyConfirmationWasRejected}
+        hideCloseButton={!monthlyConfirmationWasRejected}
         maxWidth={860}
         zIndex={7000}
         footer={
