@@ -63,8 +63,9 @@ function requiresEmployeeEditRequestForEntry(args: {
   const now = args.now ?? new Date();
   const todayYMD = berlinTodayYMD(now);
   const createdYMD = toBerlinDateYMD(args.createdAt);
+  const firstBlockedDateYMD = toIsoDateUTC(addUtcDays(dateOnly(createdYMD), 3));
 
-  return createdYMD !== todayYMD;
+  return todayYMD >= firstBlockedDateYMD;
 }
 
 function toHHMMUTC(d: Date) {

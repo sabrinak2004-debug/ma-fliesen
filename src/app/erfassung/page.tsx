@@ -893,6 +893,26 @@ function toBerlinDateYMDFromIso(iso: string): string {
   return `${year}-${month}-${day}`;
 }
 
+function addDaysToYMD(dateYMD: string, days: number): string {
+  const [yearValue, monthValue, dayValue] = dateYMD.split("-");
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day)
+  ) {
+    return "";
+  }
+
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+
+  return toIsoDateLocal(date);
+}
+
 function requiresEditRequestForEntry(entry: {
   createdAt: string;
 }): boolean {
@@ -903,7 +923,13 @@ function requiresEditRequestForEntry(entry: {
     return true;
   }
 
-  return createdDateYMD !== today;
+  const firstBlockedDateYMD = addDaysToYMD(createdDateYMD, 3);
+
+  if (!firstBlockedDateYMD) {
+    return true;
+  }
+
+  return today >= firstBlockedDateYMD;
 }
 
 function formatCorrectionRange(
