@@ -498,11 +498,6 @@ type AttachmentPreview = {
   mimeType: string;
 };
 
-type PdfPreviewState = {
-  pageCount: number;
-  loadError: string;
-};
-
 function AttachmentLinks({
   attachments,
   title,
@@ -555,6 +550,161 @@ function AttachmentLinks({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function PdfAttachmentPreview({
+  url,
+  title,
+  loadingText,
+  errorText,
+}: {
+  url: string;
+  title: string;
+  loadingText: string;
+  errorText: string;
+}) {
+  const [objectUrl, setObjectUrl] = useState<string>("");
+  const [pageCount, setPageCount] = useState<number>(0);
+  const [loadError, setLoadError] = useState<string>("");
+
+  useEffect(() => {
+    let alive = true;
+    let createdObjectUrl = "";
+
+    setObjectUrl("");
+    setPageCount(0);
+    setLoadError("");
+
+    async function loadPdf(): Promise<void> {
+      try {
+        const response = await fetch(url, {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("PDF_LOAD_FAILED");
+        }
+
+        const blob = await response.blob();
+
+        if (!blob.type.includes("pdf") && blob.size === 0) {
+          throw new Error("PDF_EMPTY");
+        }
+
+        createdObjectUrl = URL.createObjectURL(blob);
+
+        if (!alive) {
+          URL.revokeObjectURL(createdObjectUrl);
+          return;
+        }
+
+        setObjectUrl(createdObjectUrl);
+      } catch {
+        if (!alive) return;
+        setLoadError(errorText);
+      }
+    }
+
+    void loadPdf();
+
+    return () => {
+      alive = false;
+
+      if (createdObjectUrl) {
+        URL.revokeObjectURL(createdObjectUrl);
+      }
+    };
+  }, [url, errorText]);
+
+  if (loadError) {
+    return (
+      <div
+        className="tenant-soft-panel-strong"
+        style={{
+          color: "var(--text-soft)",
+          fontWeight: 900,
+        }}
+      >
+        {loadError}
+      </div>
+    );
+  }
+
+  if (!objectUrl) {
+    return (
+      <div style={{ color: "var(--muted)", fontWeight: 900 }}>
+        {loadingText}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: 14,
+        maxHeight: "72svh",
+        overflowY: "auto",
+        overflowX: "hidden",
+        paddingRight: 4,
+      }}
+    >
+      <Document
+        file={objectUrl}
+        loading={
+          <div style={{ color: "var(--muted)", fontWeight: 900 }}>
+            {loadingText}
+          </div>
+        }
+        error={
+          <div
+            className="tenant-soft-panel-strong"
+            style={{
+              color: "var(--text-soft)",
+              fontWeight: 900,
+            }}
+          >
+            {errorText}
+          </div>
+        }
+        onLoadSuccess={({ numPages }: { numPages: number }) => {
+          setPageCount(numPages);
+        }}
+        onLoadError={() => {
+          setLoadError(errorText);
+        }}
+      >
+        <div style={{ display: "grid", gap: 16 }}>
+          {Array.from({ length: pageCount }, (_, index) => (
+            <div
+              key={`${title}-page-${index + 1}`}
+              style={{
+                display: "grid",
+                justifyContent: "center",
+                padding: 8,
+                borderRadius: 14,
+                background: "white",
+                overflow: "hidden",
+              }}
+            >
+              <PdfPage
+                pageNumber={index + 1}
+                width={
+                  typeof window === "undefined"
+                    ? 760
+                    : Math.min(window.innerWidth - 48, 760)
+                }
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+              />
+            </div>
+          ))}
+        </div>
+      </Document>
     </div>
   );
 }
@@ -1440,10 +1590,6 @@ function ErfassungPageInner() {
 
   const [attachmentPreview, setAttachmentPreview] =
     useState<AttachmentPreview | null>(null);
-  const [pdfPreviewState, setPdfPreviewState] = useState<PdfPreviewState>({
-    pageCount: 0,
-    loadError: "",
-  });
 
   const [changeReportsOpen, setChangeReportsOpen] = useState(false);
   const [changeReportsLoading, setChangeReportsLoading] = useState(false);
@@ -3612,92 +3758,12 @@ useEffect(() => {
               }}
             />
           ) : isPdfMimeType(attachmentPreview.mimeType) ? (
-            <div
-              style={{
-                display: "grid",
-                gap: 14,
-                maxHeight: "72svh",
-                overflowY: "auto",
-                overflowX: "hidden",
-                paddingRight: 4,
-              }}
-            >
-              {pdfPreviewState.loadError ? (
-                <div
-                  className="tenant-soft-panel-strong"
-                  style={{
-                    color: "var(--text-soft)",
-                    fontWeight: 900,
-                  }}
-                >
-                  {pdfPreviewState.loadError}
-                </div>
-              ) : null}
-
-              <Document
-                file={{
-                  url: attachmentPreview.url,
-                }}
-                options={{
-                  withCredentials: true,
-                }}
-                loading={
-                  <div style={{ color: "var(--muted)", fontWeight: 900 }}>
-                    {t("loading")}
-                  </div>
-                }
-                error={
-                  <div
-                    className="tenant-soft-panel-strong"
-                    style={{
-                      color: "var(--text-soft)",
-                      fontWeight: 900,
-                    }}
-                  >
-                    PDF konnte nicht geladen werden.
-                  </div>
-                }
-                onLoadSuccess={({ numPages }: { numPages: number }) => {
-                  setPdfPreviewState({
-                    pageCount: numPages,
-                    loadError: "",
-                  });
-                }}
-                onLoadError={() => {
-                  setPdfPreviewState({
-                    pageCount: 0,
-                    loadError: "PDF konnte nicht geladen werden.",
-                  });
-                }}
-              >
-                <div style={{ display: "grid", gap: 16 }}>
-                  {Array.from({ length: pdfPreviewState.pageCount }, (_, index) => (
-                    <div
-                      key={`${attachmentPreview.url}-page-${index + 1}`}
-                      style={{
-                        display: "grid",
-                        justifyContent: "center",
-                        padding: 8,
-                        borderRadius: 14,
-                        background: "white",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <PdfPage
-                        pageNumber={index + 1}
-                        width={
-                          typeof window === "undefined"
-                            ? 760
-                            : Math.min(window.innerWidth - 48, 760)
-                        }
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </Document>
-            </div>
+            <PdfAttachmentPreview
+              url={attachmentPreview.url}
+              title={attachmentPreview.title}
+              loadingText={t("loading")}
+              errorText="PDF konnte nicht geladen werden."
+            />
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
               <div
