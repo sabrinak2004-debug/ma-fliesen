@@ -1089,12 +1089,28 @@ function isImageAttachment(attachment: AttachmentDTO): boolean {
   return attachment.mimeType.startsWith("image/");
 }
 
+function isImageMimeType(mimeType: string): boolean {
+  return mimeType.startsWith("image/");
+}
+
+function isPdfMimeType(mimeType: string): boolean {
+  return mimeType === "application/pdf";
+}
+
+type AttachmentPreview = {
+  title: string;
+  url: string;
+  mimeType: string;
+};
+
 function AttachmentLinks({
   attachments,
   title,
+  onPreview,
 }: {
   attachments: AttachmentDTO[];
   title: string;
+  onPreview: (attachment: AttachmentDTO) => void;
 }) {
   if (attachments.length === 0) {
     return null;
@@ -1111,27 +1127,37 @@ function AttachmentLinks({
       <strong>{title}</strong>
 
       {attachments.map((attachment) => (
-        <a
+        <button
           key={attachment.id}
-          href={attachment.url}
-          target="_blank"
-          rel="noreferrer"
+          type="button"
+          onClick={() => onPreview(attachment)}
           className="tenant-action-link"
           style={{
             display: "flex",
             justifyContent: "space-between",
             gap: 10,
             textDecoration: "none",
+            width: "100%",
+            textAlign: "left",
+            cursor: "pointer",
           }}
         >
-          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span
+            style={{
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {isImageAttachment(attachment) ? "🖼️ " : "📎 "}
             {attachment.fileName}
           </span>
+
           <span style={{ flexShrink: 0, opacity: 0.8 }}>
             {formatFileSize(attachment.sizeBytes)}
           </span>
-        </a>
+        </button>
       ))}
     </div>
   );
@@ -1492,6 +1518,8 @@ export default function AufgabenPage() {
   const [generalCompletionTask, setGeneralCompletionTask] = useState<TaskRow | null>(null);
   const [generalCompletionNote, setGeneralCompletionNote] = useState("");
   const [generalCompletionFiles, setGeneralCompletionFiles] = useState<File[]>([]);
+  const [attachmentPreview, setAttachmentPreview] =
+    useState<AttachmentPreview | null>(null);
   const generalImageInputRef = React.useRef<HTMLInputElement | null>(null);
   const generalFileInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -1710,6 +1738,14 @@ export default function AufgabenPage() {
     setGeneralCompletionFiles([]);
   }
 
+function openAttachmentPreview(attachment: AttachmentDTO): void {
+  setAttachmentPreview({
+    title: attachment.fileName,
+    url: attachment.url,
+    mimeType: attachment.mimeType,
+  });
+}
+
   function renderTaskCard(task: TaskRow, allowComplete: boolean): React.ReactElement {
     const localizedTitle = localizeSystemTaskTitle(language, task.title);
     const localizedDescription = task.description
@@ -1793,6 +1829,7 @@ export default function AufgabenPage() {
           <AttachmentLinks
             attachments={task.attachments}
             title={t("uploadedFiles")}
+            onPreview={openAttachmentPreview}
           />
         ) : null}
 
@@ -1978,6 +2015,75 @@ export default function AufgabenPage() {
             </div>
           )}
         </div>
+        <Modal
+          open={attachmentPreview !== null}
+          onClose={() => setAttachmentPreview(null)}
+          title={attachmentPreview?.title ?? t("uploadedFiles")}
+          footer={
+            <button
+              type="button"
+              onClick={() => setAttachmentPreview(null)}
+              className="tenant-action-link"
+            >
+              {t("close")}
+            </button>
+          }
+          maxWidth={900}
+          zIndex={7000}
+        >
+          {attachmentPreview ? (
+            isImageMimeType(attachmentPreview.mimeType) ? (
+              <img
+                src={attachmentPreview.url}
+                alt={attachmentPreview.title}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  maxHeight: "72svh",
+                  objectFit: "contain",
+                  borderRadius: 14,
+                  background: "rgba(255,255,255,0.04)",
+                }}
+              />
+            ) : isPdfMimeType(attachmentPreview.mimeType) ? (
+              <iframe
+                src={attachmentPreview.url}
+                title={attachmentPreview.title}
+                style={{
+                  width: "100%",
+                  height: "72svh",
+                  border: "none",
+                  borderRadius: 14,
+                  background: "white",
+                }}
+              />
+            ) : (
+              <div style={{ display: "grid", gap: 12 }}>
+                <div
+                  className="tenant-soft-panel-strong"
+                  style={{
+                    color: "var(--text-soft)",
+                    fontWeight: 900,
+                  }}
+                >
+                  Diese Datei kann nicht direkt in der Vorschau angezeigt werden.
+                </div>
+
+                <a
+                  href={attachmentPreview.url}
+                  download={attachmentPreview.title}
+                  className="tenant-action-button"
+                  style={{
+                    justifySelf: "start",
+                    textDecoration: "none",
+                  }}
+                >
+                  Herunterladen
+                </a>
+              </div>
+            )
+          ) : null}
+        </Modal>
         <Modal
           open={Boolean(generalCompletionTask)}
           title={t("generalTaskCompletionNoteTitle")}
