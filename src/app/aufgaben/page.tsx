@@ -11,7 +11,8 @@ type TaskRequiredAction =
   | "NONE"
   | "WORK_ENTRY_FOR_DATE"
   | "VACATION_ENTRY_FOR_DATE"
-  | "SICK_ENTRY_FOR_DATE";
+  | "SICK_ENTRY_FOR_DATE"
+  | "CONFIRM_MONTHLY_WORK_ENTRIES";
 
 type TaskRow = {
   id: string;
@@ -83,11 +84,14 @@ type AufgabenTextKey =
   | "requiredWorkTime"
   | "requiredVacation"
   | "requiredSickness"
+  | "requiredMonthlyWorkConfirmation"
   | "taskActionWorkTime"
   | "taskActionVacation"
   | "taskActionSickness"
+  | "taskActionMonthlyWorkConfirmation"
   | "taskActionNone"
   | "openCapture"
+  | "openMonthlyConfirmation"
   | "openVacation"
   | "openSickness"
   | "openGeneric"
@@ -391,6 +395,15 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     KU: "Tomara nexweşiyê pêwist e",
     RO: "Înregistrare boală necesară",
   },
+  requiredMonthlyWorkConfirmation: {
+    DE: "Monatliche Arbeitszeitbestätigung erforderlich",
+    EN: "Monthly work time confirmation required",
+    IT: "Conferma mensile dell'orario di lavoro richiesta",
+    TR: "Aylık çalışma süresi onayı gerekli",
+    SQ: "Kërkohet konfirmimi mujor i kohës së punës",
+    KU: "Piştrastkirina mehane ya dema karê pêwist e",
+    RO: "Este necesară confirmarea lunară a timpului de lucru",
+  },
   taskActionWorkTime: {
     DE: "Bitte trage deine Arbeitszeit für {referenceText} ein, bevor du die Aufgabe als erledigt markierst.",
     EN: "Please enter your work time for {referenceText} before marking the task as completed.",
@@ -418,6 +431,15 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     KU: "Ji kerema xwe berî ku erkê temam bikî, nexweşiyê ji bo {referenceText} tomar bike an daxwaza guncaw bişîne.",
     RO: "Vă rugăm să înregistrați boala pentru {referenceText} sau să trimiteți cererea de concediu medical corespunzătoare înainte de a finaliza sarcina.",
   },
+  taskActionMonthlyWorkConfirmation: {
+    DE: "Bitte prüfe und bestätige deine Arbeitszeiteinträge für {referenceText}. Diese Bestätigung ersetzt die monatliche Unterschrift auf dem Stundenzettel.",
+    EN: "Please review and confirm your work time entries for {referenceText}. This confirmation replaces the monthly signature on the timesheet.",
+    IT: "Controlla e conferma le registrazioni dell'orario di lavoro per {referenceText}. Questa conferma sostituisce la firma mensile sul foglio ore.",
+    TR: "Lütfen {referenceText} için çalışma süresi kayıtlarınızı kontrol edip onaylayın. Bu onay, aylık zaman çizelgesi imzasının yerine geçer.",
+    SQ: "Ju lutem kontrolloni dhe konfirmoni regjistrimet e kohës së punës për {referenceText}. Ky konfirmim zëvendëson nënshkrimin mujor në fletën e orëve.",
+    KU: "Ji kerema xwe tomarên dema karê ji bo {referenceText} kontrol û piştrast bike. Ev piştrastkirin li şûna îmzeya mehane ya pelê demê tê.",
+    RO: "Vă rugăm să verificați și să confirmați înregistrările timpului de lucru pentru {referenceText}. Această confirmare înlocuiește semnătura lunară pe pontaj.",
+  },
   taskActionNone: {
     DE: "Bitte prüfe die Aufgabe und markiere sie erst als erledigt, wenn du sie wirklich abgeschlossen hast.",
     EN: "Please review the task and only mark it as completed once it is truly finished.",
@@ -435,6 +457,15 @@ const AUFGABEN_DICTIONARY: Record<AufgabenTextKey, Record<AppUiLanguage, string>
     SQ: "Te regjistrimi",
     KU: "Biçe tomarê",
     RO: "La înregistrare",
+  },
+  openMonthlyConfirmation: {
+    DE: "Arbeitszeiten bestätigen",
+    EN: "Confirm work times",
+    IT: "Conferma gli orari",
+    TR: "Çalışma saatlerini onayla",
+    SQ: "Konfirmo oraret e punës",
+    KU: "Demên karê piştrast bike",
+    RO: "Confirmați orele de lucru",
   },
   openVacation: {
     DE: "Zum Urlaub",
@@ -716,7 +747,8 @@ function isTaskRequiredAction(v: unknown): v is TaskRequiredAction {
     v === "NONE" ||
     v === "WORK_ENTRY_FOR_DATE" ||
     v === "VACATION_ENTRY_FOR_DATE" ||
-    v === "SICK_ENTRY_FOR_DATE"
+    v === "SICK_ENTRY_FOR_DATE" ||
+    v === "CONFIRM_MONTHLY_WORK_ENTRIES"
   );
 }
 
@@ -1040,10 +1072,27 @@ function requiredActionLabel(
       return translate(language, "requiredVacation", AUFGABEN_DICTIONARY);
     case "SICK_ENTRY_FOR_DATE":
       return translate(language, "requiredSickness", AUFGABEN_DICTIONARY);
+    case "CONFIRM_MONTHLY_WORK_ENTRIES":
+      return translate(language, "requiredMonthlyWorkConfirmation", AUFGABEN_DICTIONARY);
   }
 }
 
 function taskActionHref(task: TaskRow): string {
+  if (task.requiredAction === "CONFIRM_MONTHLY_WORK_ENTRIES") {
+    const startDate = task.referenceStartDate ?? task.referenceDate;
+    const monthKey = startDate ? startDate.slice(0, 7) : "";
+
+    const params = new URLSearchParams();
+
+    if (monthKey) {
+      params.set("confirmMonth", monthKey);
+    }
+
+    params.set("sourceTaskId", task.id);
+
+    const query = params.toString();
+    return query ? `/erfassung?${query}` : "/erfassung";
+  }
   if (task.category === "WORK_TIME") {
     const params = new URLSearchParams();
 
@@ -1131,6 +1180,11 @@ function taskActionText(language: AppUiLanguage, task: TaskRow): string {
     case "SICK_ENTRY_FOR_DATE":
       return replaceTemplate(
         translate(language, "taskActionSickness", AUFGABEN_DICTIONARY),
+        { referenceText }
+      );
+    case "CONFIRM_MONTHLY_WORK_ENTRIES":
+      return replaceTemplate(
+        translate(language, "taskActionMonthlyWorkConfirmation", AUFGABEN_DICTIONARY),
         { referenceText }
       );
     case "NONE":
@@ -1419,11 +1473,13 @@ export default function AufgabenPage() {
                 href={taskActionHref(task)}
                 className="tenant-action-link"
               >
-                {task.category === "WORK_TIME"
-                  ? t("openCapture")
-                  : task.category === "VACATION"
-                  ? t("openVacation")
-                  : t("openSickness")}
+                {task.requiredAction === "CONFIRM_MONTHLY_WORK_ENTRIES"
+                    ? t("openMonthlyConfirmation")
+                    : task.category === "WORK_TIME"
+                    ? t("openCapture")
+                    : task.category === "VACATION"
+                    ? t("openVacation")
+                    : t("openSickness")}
               </Link>
             ) : null}
 

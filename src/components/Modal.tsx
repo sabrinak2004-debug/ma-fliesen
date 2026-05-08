@@ -17,6 +17,8 @@ type ModalProps = {
   maxWidth?: number;
   zIndex?: number;
   disableBackdropClose?: boolean;
+  disableEscapeClose?: boolean;
+  hideCloseButton?: boolean;
   closeAriaLabel?: string;
 };
 
@@ -55,6 +57,8 @@ export default function Modal({
   maxWidth = 760,
   zIndex = 5000,
   disableBackdropClose = false,
+  disableEscapeClose = false,
+  hideCloseButton = false,
   closeAriaLabel,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -73,7 +77,7 @@ export default function Modal({
     if (!open) return;
 
     const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !disableEscapeClose) {
         onCloseRef.current();
       }
     };
@@ -165,21 +169,23 @@ export default function Modal({
             {title ?? ""}
           </div>
 
-          <button
-            type="button"
-            onClick={() => onCloseRef.current()}
-            aria-label={resolvedCloseAriaLabel}
-            className="app-modal-close-button"
-            style={{
-              width: 34,
-              height: 34,
-              minWidth: 34,
-              borderRadius: 10,
-              flex: "0 0 auto",
-            }}
-          >
-            ✕
-          </button>
+          {hideCloseButton ? null : (
+            <button
+              type="button"
+              onClick={() => onCloseRef.current()}
+              aria-label={resolvedCloseAriaLabel}
+              className="app-modal-close-button"
+              style={{
+                width: 34,
+                height: 34,
+                minWidth: 34,
+                borderRadius: 10,
+                flex: "0 0 auto",
+              }}
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         <div

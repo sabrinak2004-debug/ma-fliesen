@@ -60,6 +60,33 @@ type CreateWorkEntryResponse = {
   };
 };
 
+type MonthlyConfirmationEntry = {
+  id: string;
+  workDate: string;
+  startTime: string;
+  endTime: string;
+  activity: string;
+  location: string;
+  travelMinutes: number;
+  grossMinutes: number;
+  breakMinutes: number;
+  workMinutes: number;
+  noteEmployee: string;
+};
+
+type MonthlyConfirmationStatusResponse = {
+  ok: true;
+  shouldOpen: boolean;
+  reason: string;
+  year: number;
+  month: number;
+  lastWorkday: string;
+  requiredUntilAt?: string | null;
+  confirmationText?: string;
+  missingDates?: string[];
+  entries: MonthlyConfirmationEntry[];
+};
+
 type WorkEntryChangeAction = "UPDATE" | "DELETE";
 
 type WorkEntryChangeSnapshot = {
@@ -765,6 +792,48 @@ function isCreateWorkEntryResponse(value: unknown): value is CreateWorkEntryResp
   return isRecord(entry) && isString(entry["id"]);
 }
 
+function isMonthlyConfirmationEntry(value: unknown): value is MonthlyConfirmationEntry {
+  return (
+    isRecord(value) &&
+    isString(value["id"]) &&
+    isString(value["workDate"]) &&
+    isString(value["startTime"]) &&
+    isString(value["endTime"]) &&
+    isString(value["activity"]) &&
+    isString(value["location"]) &&
+    typeof value["travelMinutes"] === "number" &&
+    typeof value["grossMinutes"] === "number" &&
+    typeof value["breakMinutes"] === "number" &&
+    typeof value["workMinutes"] === "number" &&
+    isString(value["noteEmployee"])
+  );
+}
+
+function isMonthlyConfirmationStatusResponse(
+  value: unknown
+): value is MonthlyConfirmationStatusResponse {
+  return (
+    isRecord(value) &&
+    value["ok"] === true &&
+    typeof value["shouldOpen"] === "boolean" &&
+    isString(value["reason"]) &&
+    typeof value["year"] === "number" &&
+    typeof value["month"] === "number" &&
+    isString(value["lastWorkday"]) &&
+    Array.isArray(value["entries"]) &&
+    value["entries"].every(isMonthlyConfirmationEntry) &&
+    (
+      value["requiredUntilAt"] === undefined ||
+      value["requiredUntilAt"] === null ||
+      isString(value["requiredUntilAt"])
+    ) &&
+    (
+      value["confirmationText"] === undefined ||
+      isString(value["confirmationText"])
+    )
+  );
+}
+
 function replaceTemplate(
   template: string,
   values: Record<string, string | number>
@@ -973,6 +1042,209 @@ function formatCorrectionRange(
     : `${formattedStart} ${translate(language, "to", ERFASSUNG_DICTIONARY)} ${formattedEnd}`;
 }
 
+function getMonthlyConfirmationTitle(
+  language: AppUiLanguage,
+  monthLabel: string
+): string {
+  switch (language) {
+    case "EN":
+      return `Confirm work entries for ${monthLabel}`;
+    case "IT":
+      return `Conferma le registrazioni di lavoro per ${monthLabel}`;
+    case "TR":
+      return `${monthLabel} çalışma kayıtlarını onayla`;
+    case "SQ":
+      return `Konfirmo regjistrimet e punës për ${monthLabel}`;
+    case "KU":
+      return `Tomarên karê ji bo ${monthLabel} piştrast bike`;
+    case "RO":
+      return `Confirmați înregistrările de lucru pentru ${monthLabel}`;
+    case "DE":
+    default:
+      return `Arbeitszeiten für ${monthLabel} bestätigen`;
+  }
+}
+
+function getMonthlyConfirmationIntro(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Please review the entries listed below. They are initially collapsed and can be opened individually.";
+    case "IT":
+      return "Controlla le registrazioni elencate di seguito. All'inizio sono chiuse e possono essere aperte singolarmente.";
+    case "TR":
+      return "Lütfen aşağıdaki kayıtları kontrol edin. Kayıtlar başlangıçta kapalıdır ve tek tek açılabilir.";
+    case "SQ":
+      return "Ju lutem kontrolloni regjistrimet më poshtë. Ato janë fillimisht të mbyllura dhe mund të hapen veçmas.";
+    case "KU":
+      return "Ji kerema xwe tomarên jêrîn kontrol bike. Di destpêkê de girtî ne û dikarin yek bi yek bên vekirin.";
+    case "RO":
+      return "Vă rugăm să verificați înregistrările de mai jos. Inițial sunt pliate și pot fi deschise individual.";
+    case "DE":
+    default:
+      return "Bitte prüfe die unten aufgeführten Einträge. Sie sind zunächst eingeklappt und können einzeln geöffnet werden.";
+  }
+}
+
+function getMonthlyConfirmationLegalNotice(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "By confirming, you declare that the listed entries are correct to the best of your knowledge. Intentionally or negligently false information may have consequences.";
+    case "IT":
+      return "Con la conferma dichiari che le registrazioni elencate sono corrette secondo scienza e coscienza. Informazioni intenzionalmente o negligentemente errate possono avere conseguenze.";
+    case "TR":
+      return "Onaylayarak, listelenen kayıtların bildiğiniz kadarıyla doğru olduğunu beyan edersiniz. Kasıtlı veya ihmalkâr şekilde yanlış bilgi verilmesi sonuçlar doğurabilir.";
+    case "SQ":
+      return "Me konfirmimin deklaroni se regjistrimet e listuara janë të sakta sipas njohurive tuaja më të mira. Të dhënat qëllimisht ose nga pakujdesia të pasakta mund të kenë pasoja.";
+    case "KU":
+      return "Bi piştrastkirinê tu radigihînî ku tomarên lîstekirî li gor zanîna te rast in. Agahiyên bi qest an bi bêhişyarî şaş dikarin encamên xwe hebin.";
+    case "RO":
+      return "Prin confirmare declarați că înregistrările listate sunt corecte după cunoștința dumneavoastră. Informațiile false intenționate sau din neglijență pot avea consecințe.";
+    case "DE":
+    default:
+      return "Mit der Bestätigung erklärst du, dass die aufgeführten Einträge nach bestem Wissen und Gewissen korrekt sind. Vorsätzlich oder fahrlässig falsche Angaben können Konsequenzen haben.";
+  }
+}
+
+function getMonthlyConfirmationRejectReasonLabel(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Reason for rejection";
+    case "IT":
+      return "Motivo del rifiuto";
+    case "TR":
+      return "Reddetme nedeni";
+    case "SQ":
+      return "Arsyeja e refuzimit";
+    case "KU":
+      return "Sedema redkirinê";
+    case "RO":
+      return "Motivul respingerii";
+    case "DE":
+    default:
+      return "Grund der Ablehnung";
+  }
+}
+
+function getMonthlyConfirmationRejectReasonPlaceholder(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Please describe what still needs to be corrected.";
+    case "IT":
+      return "Descrivi cosa deve ancora essere corretto.";
+    case "TR":
+      return "Lütfen neyin düzeltilmesi gerektiğini açıklayın.";
+    case "SQ":
+      return "Ju lutem përshkruani çfarë duhet korrigjuar ende.";
+    case "KU":
+      return "Ji kerema xwe binivîse ka çi hêj divê were rastkirin.";
+    case "RO":
+      return "Vă rugăm să descrieți ce mai trebuie corectat.";
+    case "DE":
+    default:
+      return "Bitte beschreibe, was noch korrigiert werden muss.";
+  }
+}
+
+function getMonthlyConfirmationConfirmButton(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Confirm entries";
+    case "IT":
+      return "Conferma registrazioni";
+    case "TR":
+      return "Kayıtları onayla";
+    case "SQ":
+      return "Konfirmo regjistrimet";
+    case "KU":
+      return "Tomaran piştrast bike";
+    case "RO":
+      return "Confirmați înregistrările";
+    case "DE":
+    default:
+      return "Einträge bestätigen";
+  }
+}
+
+function getMonthlyConfirmationRejectButton(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Reject";
+    case "IT":
+      return "Rifiuta";
+    case "TR":
+      return "Reddet";
+    case "SQ":
+      return "Refuzo";
+    case "KU":
+      return "Red bike";
+    case "RO":
+      return "Respinge";
+    case "DE":
+    default:
+      return "Ablehnen";
+  }
+}
+
+function getMonthlyConfirmationRejectedTaskHint(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "After rejection, a task will be created. You must confirm the work entries by 22:00 today.";
+    case "IT":
+      return "Dopo il rifiuto verrà creata un'attività. Devi confermare le registrazioni entro le 22:00 di oggi.";
+    case "TR":
+      return "Reddettikten sonra bir görev oluşturulur. Çalışma kayıtlarını bugün saat 22:00'ye kadar onaylamalısınız.";
+    case "SQ":
+      return "Pas refuzimit krijohet një detyrë. Duhet t'i konfirmoni regjistrimet deri sot në orën 22:00.";
+    case "KU":
+      return "Piştî redkirinê erkek tê çêkirin. Divê tu tomarên karê heta îro saet 22:00 piştrast bikî.";
+    case "RO":
+      return "După respingere va fi creată o sarcină. Trebuie să confirmați înregistrările astăzi până la ora 22:00.";
+    case "DE":
+    default:
+      return "Nach der Ablehnung wird eine Aufgabe erstellt. Du musst die Arbeitszeiten spätestens heute bis 22:00 Uhr bestätigen.";
+  }
+}
+
+function getMonthlyConfirmationReasonRequired(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Please enter a reason for the rejection.";
+    case "IT":
+      return "Inserisci un motivo per il rifiuto.";
+    case "TR":
+      return "Lütfen reddetme nedeni girin.";
+    case "SQ":
+      return "Ju lutem shkruani një arsye për refuzimin.";
+    case "KU":
+      return "Ji kerema xwe sedema redkirinê binivîse.";
+    case "RO":
+      return "Vă rugăm să introduceți un motiv pentru respingere.";
+    case "DE":
+    default:
+      return "Bitte gib einen Grund für die Ablehnung an.";
+  }
+}
+
+function getMonthlyConfirmationError(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Monthly confirmation could not be processed.";
+    case "IT":
+      return "Impossibile elaborare la conferma mensile.";
+    case "TR":
+      return "Aylık onay işlenemedi.";
+    case "SQ":
+      return "Konfirmimi mujor nuk mund të përpunohej.";
+    case "KU":
+      return "Piştrastkirina mehane nehat xebitandin.";
+    case "RO":
+      return "Confirmarea lunară nu a putut fi procesată.";
+    case "DE":
+    default:
+      return "Monatsbestätigung konnte nicht verarbeitet werden.";
+  }
+}
+
 export default function Page() {
   return (
     <React.Suspense fallback={null}>
@@ -1061,6 +1333,13 @@ function ErfassungPageInner() {
     return typeof value === "string" && value.trim() !== "" ? value.trim() : "";
   }, [searchParams]);
 
+  const confirmMonthParam = useMemo(() => {
+    const value = searchParams.get("confirmMonth");
+    return typeof value === "string" && /^\d{4}-\d{2}$/.test(value)
+      ? value
+      : "";
+  }, [searchParams]);
+
   const syncDateParam = useMemo(() => {
     const value = searchParams.get("syncDate");
     return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
@@ -1102,6 +1381,14 @@ function ErfassungPageInner() {
     return t("syncPlanTaken");
   }, [sourceTaskId, syncDateParam, syncActivityParam, syncLocationParam, t]);
   const [loadingSelectedCorrectionStatus, setLoadingSelectedCorrectionStatus] = useState(false);
+
+  const [monthlyConfirmationOpen, setMonthlyConfirmationOpen] = useState(false);
+  const [monthlyConfirmationLoading, setMonthlyConfirmationLoading] = useState(false);
+  const [monthlyConfirmationSaving, setMonthlyConfirmationSaving] = useState(false);
+  const [monthlyConfirmationError, setMonthlyConfirmationError] = useState<string | null>(null);
+  const [monthlyConfirmationData, setMonthlyConfirmationData] =
+    useState<MonthlyConfirmationStatusResponse | null>(null);
+  const [monthlyConfirmationRejectReason, setMonthlyConfirmationRejectReason] = useState("");
 
   const grossPreviewMinutes = useMemo(() => minutesBetween(startTime, endTime), [startTime, endTime]);
   const isEntryPreviewActive = useMemo(() => {
@@ -1378,6 +1665,55 @@ useEffect(() => {
     }
   }, [sourceTaskId]);
 
+  const monthlyConfirmationMonthLabel = useMemo(() => {
+    const year = monthlyConfirmationData?.year ?? Number(confirmMonthParam.slice(0, 4));
+    const month = monthlyConfirmationData?.month ?? Number(confirmMonthParam.slice(5, 7));
+
+    if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+      return "";
+    }
+
+    return `${getMonthName(language, month)} ${year}`;
+  }, [monthlyConfirmationData, confirmMonthParam, language]);
+
+  const loadMonthlyConfirmationStatus = React.useCallback(async () => {
+    setMonthlyConfirmationLoading(true);
+    setMonthlyConfirmationError(null);
+
+    try {
+      const params = new URLSearchParams();
+
+      if (confirmMonthParam) {
+        params.set("month", confirmMonthParam);
+      }
+
+      const url = params.toString()
+        ? `/api/monthly-work-entry-confirmations/status?${params.toString()}`
+        : "/api/monthly-work-entry-confirmations/status";
+
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data: unknown = await response.json().catch(() => ({}));
+
+      if (!response.ok || !isMonthlyConfirmationStatusResponse(data)) {
+        setMonthlyConfirmationData(null);
+        return;
+      }
+
+      setMonthlyConfirmationData(data);
+
+      if (data.shouldOpen) {
+        setMonthlyConfirmationOpen(true);
+      }
+    } finally {
+      setMonthlyConfirmationLoading(false);
+    }
+  }, [confirmMonthParam]);
+
   function applyEntryTimeDefaultsForDate(
     nextWorkDate: string,
     nextEntries: WorkEntry[]
@@ -1395,6 +1731,15 @@ useEffect(() => {
       await loadCorrectionRequests();
     })();
   }, []);
+
+  useEffect(() => {
+    if (!me || !me.ok || me.session?.role !== "EMPLOYEE") {
+      return;
+    }
+
+    void loadMonthlyConfirmationStatus();
+  }, [me, loadMonthlyConfirmationStatus]);
+
   useEffect(() => {
     void loadSelectedCorrectionStatus(workDate);
   }, [workDate, sourceTaskId, loadSelectedCorrectionStatus]);
@@ -1467,6 +1812,7 @@ useEffect(() => {
 
       await loadCorrectionRequests();
       await loadSelectedCorrectionStatus(workDate);
+      await loadMonthlyConfirmationStatus();
 
       if (createdEntryId) {
         const createdEntry = refreshedEntries.find((entry) => entry.id === createdEntryId);
@@ -2060,6 +2406,107 @@ useEffect(() => {
     graceWorkdaysLimit,
     t,
   ]);
+
+  async function confirmMonthlyWorkEntries(): Promise<void> {
+    if (!monthlyConfirmationData) {
+      return;
+    }
+
+    setMonthlyConfirmationSaving(true);
+    setMonthlyConfirmationError(null);
+
+    try {
+      const response = await fetch("/api/monthly-work-entry-confirmations/confirm", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          year: monthlyConfirmationData.year,
+          month: monthlyConfirmationData.month,
+          sourceTaskId: sourceTaskId || null,
+        }),
+      });
+
+      const data: unknown = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const message =
+          isRecord(data) && isString(data["error"])
+            ? data["error"]
+            : getMonthlyConfirmationError(language);
+
+        setMonthlyConfirmationError(message);
+        return;
+      }
+
+      setMonthlyConfirmationOpen(false);
+      setMonthlyConfirmationData(null);
+      setMonthlyConfirmationRejectReason("");
+      await loadEntries();
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("tasks-changed"));
+      }
+    } catch {
+      setMonthlyConfirmationError(getMonthlyConfirmationError(language));
+    } finally {
+      setMonthlyConfirmationSaving(false);
+    }
+  }
+
+  async function rejectMonthlyWorkEntries(): Promise<void> {
+    if (!monthlyConfirmationData) {
+      return;
+    }
+
+    if (!monthlyConfirmationRejectReason.trim()) {
+      setMonthlyConfirmationError(getMonthlyConfirmationReasonRequired(language));
+      return;
+    }
+
+    setMonthlyConfirmationSaving(true);
+    setMonthlyConfirmationError(null);
+
+    try {
+      const response = await fetch("/api/monthly-work-entry-confirmations/reject", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          year: monthlyConfirmationData.year,
+          month: monthlyConfirmationData.month,
+          rejectionReason: monthlyConfirmationRejectReason.trim(),
+        }),
+      });
+
+      const data: unknown = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const message =
+          isRecord(data) && isString(data["error"])
+            ? data["error"]
+            : getMonthlyConfirmationError(language);
+
+        setMonthlyConfirmationError(message);
+        return;
+      }
+
+      setMonthlyConfirmationError(null);
+      await loadMonthlyConfirmationStatus();
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("tasks-changed"));
+      }
+    } catch {
+      setMonthlyConfirmationError(getMonthlyConfirmationError(language));
+    } finally {
+      setMonthlyConfirmationSaving(false);
+    }
+  }
 
   if (!meResolved) {
     return (
@@ -3429,6 +3876,178 @@ useEffect(() => {
           </div>
         )}
       </Modal>
+
+      <Modal
+        open={monthlyConfirmationOpen && Boolean(monthlyConfirmationData)}
+        title={getMonthlyConfirmationTitle(language, monthlyConfirmationMonthLabel)}
+        onClose={() => undefined}
+        disableBackdropClose
+        disableEscapeClose
+        hideCloseButton
+        maxWidth={860}
+        zIndex={7000}
+        footer={
+          <div className="modal-footer-actions">
+            <button
+              className="btn"
+              type="button"
+              onClick={rejectMonthlyWorkEntries}
+              disabled={monthlyConfirmationSaving || monthlyConfirmationLoading}
+            >
+              {getMonthlyConfirmationRejectButton(language)}
+            </button>
+
+            <button
+              className="btn btn-accent"
+              type="button"
+              onClick={confirmMonthlyWorkEntries}
+              disabled={monthlyConfirmationSaving || monthlyConfirmationLoading}
+            >
+              {monthlyConfirmationSaving
+                ? t("saving")
+                : getMonthlyConfirmationConfirmButton(language)}
+            </button>
+          </div>
+        }
+      >
+        {!monthlyConfirmationData ? null : (
+          <div style={{ display: "grid", gap: 14 }}>
+            {monthlyConfirmationError ? (
+              <div className="card tenant-status-card tenant-status-card-danger" style={{ padding: 12 }}>
+                <span className="tenant-status-text-danger" style={{ fontWeight: 800 }}>
+                  {monthlyConfirmationError}
+                </span>
+              </div>
+            ) : null}
+
+            <div className="card tenant-status-card tenant-status-card-info" style={{ padding: 12 }}>
+              <div className="tenant-status-text-info" style={{ fontWeight: 900, lineHeight: 1.45 }}>
+                {getMonthlyConfirmationIntro(language)}
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              {monthlyConfirmationData.entries.map((entry) => (
+                <details
+                  key={entry.id}
+                  className="tenant-list-shell-inner"
+                  style={{
+                    padding: 0,
+                  }}
+                >
+                  <summary
+                    style={{
+                      cursor: "pointer",
+                      listStyle: "none",
+                      padding: "12px 14px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      userSelect: "none",
+                    }}
+                  >
+                    <div style={{ display: "grid", gap: 4 }}>
+                      <div style={{ fontWeight: 1000 }}>
+                        {formatDateLocalized(language, entry.workDate)}
+                      </div>
+                      <div style={{ color: "var(--muted)", fontSize: 12 }}>
+                        {entry.startTime}–{entry.endTime} {t("oClock")}
+                      </div>
+                    </div>
+
+                    <div style={{ color: "var(--accent)", fontWeight: 1000 }}>
+                      {formatHM(entry.workMinutes)}
+                    </div>
+                  </summary>
+
+                  <div style={{ display: "grid", gap: 10, padding: "0 14px 14px" }}>
+                    <div>
+                      <div className="label">{t("performedActivity")}</div>
+                      <div className="input tenant-note-surface">
+                        {entry.activity.trim() || "—"}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="label">{t("location")}</div>
+                      <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                        {entry.location.trim() || "—"}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                        gap: 10,
+                      }}
+                    >
+                      <div>
+                        <div className="label">{t("gross")}</div>
+                        <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                          {formatHM(entry.grossMinutes)}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="label">{t("break")}</div>
+                        <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                          {formatPause(entry.breakMinutes)}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="label">{t("net")}</div>
+                        <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                          {formatHM(entry.workMinutes)}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="label">{t("travelMinutes")}</div>
+                        <div className="input" style={{ display: "flex", alignItems: "center", opacity: 0.9 }}>
+                          {formatMinutesCompact(entry.travelMinutes)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {entry.noteEmployee.trim() ? (
+                      <div>
+                        <div className="label">{t("note")}</div>
+                        <div className="input tenant-note-surface">
+                          {entry.noteEmployee}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </details>
+              ))}
+            </div>
+
+            <div className="card tenant-status-card tenant-status-card-warning" style={{ padding: 12 }}>
+              <div className="tenant-status-text-warning" style={{ fontWeight: 900, lineHeight: 1.5 }}>
+                {getMonthlyConfirmationLegalNotice(language)}
+              </div>
+            </div>
+
+            <div>
+              <div className="label">
+                {getMonthlyConfirmationRejectReasonLabel(language)}
+              </div>
+              <textarea
+                className="textarea"
+                value={monthlyConfirmationRejectReason}
+                onChange={(event) => setMonthlyConfirmationRejectReason(event.target.value)}
+                placeholder={getMonthlyConfirmationRejectReasonPlaceholder(language)}
+              />
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+                {getMonthlyConfirmationRejectedTaskHint(language)}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {showSyncToast && (
         <Toast message={syncToastMessage} />
       )}

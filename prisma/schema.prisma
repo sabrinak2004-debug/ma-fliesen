@@ -58,6 +58,7 @@ model AppUser {
   tasks                              Task[]                       @relation("TaskAssignedTo")
   createdTasks                       Task[]                       @relation("TaskCreatedBy")
   completedTasks                     Task[]                       @relation("TaskCompletedBy")
+  monthlyWorkEntryConfirmations      MonthlyWorkEntryConfirmation[] @relation("MonthlyWorkEntryConfirmationUser")
   targetedWorkEntryChangeReports WorkEntryChangeReport[] @relation("WorkEntryChangeReportTargetUser")
   createdWorkEntryChangeReports  WorkEntryChangeReport[] @relation("WorkEntryChangeReportChangedBy")
 
@@ -272,6 +273,41 @@ model WorkEntryEditRequest {
   @@index([workEntryId])
   @@index([decidedById])
   @@index([status, createdAt])
+}
+
+model MonthlyWorkEntryConfirmation {
+  id String @id @default(uuid())
+
+  userId String
+  user   AppUser @relation("MonthlyWorkEntryConfirmationUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  year  Int
+  month Int
+
+  status MonthlyWorkEntryConfirmationStatus @default(PENDING)
+
+  confirmedAt DateTime?
+  rejectedAt  DateTime?
+
+  rejectionReason String?
+  rejectionReasonSourceLanguage AppLanguage?
+  rejectionReasonTranslations   Json?
+
+  confirmationText String?
+  confirmationTextSourceLanguage AppLanguage?
+  confirmationTextTranslations   Json?
+
+  entrySnapshot Json
+
+  requiredUntilAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, year, month])
+  @@index([userId, status])
+  @@index([year, month])
+  @@index([requiredUntilAt])
 }
 
 model DayBreak {
@@ -521,6 +557,7 @@ model Task {
   referenceDate      DateTime? @db.Date
   referenceStartDate DateTime? @db.Date
   referenceEndDate   DateTime? @db.Date
+  dueAt              DateTime?
   completedAt        DateTime?
 
   createdAt DateTime @default(now())
@@ -533,6 +570,7 @@ model Task {
   @@index([referenceDate])
   @@index([referenceStartDate])
   @@index([referenceEndDate])
+  @@index([dueAt])
 }
 
 enum Role {
@@ -584,6 +622,7 @@ enum TaskRequiredAction {
   WORK_ENTRY_FOR_DATE
   VACATION_ENTRY_FOR_DATE
   SICK_ENTRY_FOR_DATE
+  CONFIRM_MONTHLY_WORK_ENTRIES
 }
 
 enum AppLanguage {
@@ -604,5 +643,11 @@ enum WorkEntryChangeAction {
 enum WorkEntryEditRequestStatus {
   PENDING
   APPROVED
+  REJECTED
+}
+
+enum MonthlyWorkEntryConfirmationStatus {
+  PENDING
+  CONFIRMED
   REJECTED
 }
