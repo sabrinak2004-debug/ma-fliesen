@@ -1678,11 +1678,17 @@ useEffect(() => {
   }, [monthlyConfirmationData, confirmMonthParam, language]);
 
   const loadMonthlyConfirmationStatus = React.useCallback(async (
-    explicitMonth?: string
+    explicitMonth?: string,
+    options?: {
+      canCloseAfterLoad?: boolean;
+    }
   ) => {
     setMonthlyConfirmationLoading(true);
     setMonthlyConfirmationError(null);
-    setMonthlyConfirmationCanClose(false);
+
+    if (!options?.canCloseAfterLoad) {
+      setMonthlyConfirmationCanClose(false);
+    }
 
     try {
       const params = new URLSearchParams();
@@ -1706,6 +1712,7 @@ useEffect(() => {
 
       if (!response.ok || !isMonthlyConfirmationStatusResponse(data)) {
         setMonthlyConfirmationData(null);
+        setMonthlyConfirmationOpen(false);
         return;
       }
 
@@ -1713,6 +1720,12 @@ useEffect(() => {
 
       if (data.shouldOpen) {
         setMonthlyConfirmationOpen(true);
+
+        if (options?.canCloseAfterLoad) {
+          setMonthlyConfirmationCanClose(true);
+        }
+      } else {
+        setMonthlyConfirmationOpen(false);
       }
     } finally {
       setMonthlyConfirmationLoading(false);
@@ -2502,12 +2515,13 @@ useEffect(() => {
       }
 
       setMonthlyConfirmationError(null);
-      setMonthlyConfirmationCanClose(true);
+
       await loadMonthlyConfirmationStatus(
-        `${monthlyConfirmationData.year}-${String(monthlyConfirmationData.month).padStart(2, "0")}`
+        `${monthlyConfirmationData.year}-${String(monthlyConfirmationData.month).padStart(2, "0")}`,
+        {
+          canCloseAfterLoad: true,
+        }
       );
-      setMonthlyConfirmationCanClose(true);
-      setMonthlyConfirmationOpen(true);
 
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("tasks-changed"));
@@ -3889,18 +3903,18 @@ useEffect(() => {
       </Modal>
 
       <Modal
-          open={monthlyConfirmationOpen && Boolean(monthlyConfirmationData)}
-          title={getMonthlyConfirmationTitle(language, monthlyConfirmationMonthLabel)}
-          onClose={() => {
-            if (monthlyConfirmationCanClose) {
-              setMonthlyConfirmationOpen(false);
-            }
-          }}
-          disableBackdropClose={!monthlyConfirmationCanClose}
-          disableEscapeClose={!monthlyConfirmationCanClose}
-          hideCloseButton={!monthlyConfirmationCanClose}
-          maxWidth={860}
-          zIndex={7000}
+        open={monthlyConfirmationOpen && Boolean(monthlyConfirmationData)}
+        title={getMonthlyConfirmationTitle(language, monthlyConfirmationMonthLabel)}
+        onClose={() => {
+          if (monthlyConfirmationCanClose) {
+            setMonthlyConfirmationOpen(false);
+          }
+        }}
+        disableBackdropClose={!monthlyConfirmationCanClose}
+        disableEscapeClose={!monthlyConfirmationCanClose}
+        hideCloseButton={!monthlyConfirmationCanClose}
+        maxWidth={860}
+        zIndex={7000}
         footer={
           <div className="modal-footer-actions">
             <button
