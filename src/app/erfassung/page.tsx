@@ -3635,7 +3635,12 @@ useEffect(() => {
               ) : null}
 
               <Document
-                file={attachmentPreview.url}
+                file={{
+                  url: attachmentPreview.url,
+                }}
+                options={{
+                  withCredentials: true,
+                }}
                 loading={
                   <div style={{ color: "var(--muted)", fontWeight: 900 }}>
                     {t("loading")}
