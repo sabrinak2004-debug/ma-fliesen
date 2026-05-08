@@ -470,12 +470,28 @@ function isImageAttachment(attachment: AttachmentDTO): boolean {
   return attachment.mimeType.startsWith("image/");
 }
 
+function isPdfAttachment(attachment: AttachmentDTO): boolean {
+  return attachment.mimeType === "application/pdf";
+}
+
+function isImageMimeType(mimeType: string): boolean {
+  return mimeType.startsWith("image/");
+}
+
+type AttachmentPreview = {
+  title: string;
+  url: string;
+  mimeType: string;
+};
+
 function AttachmentLinks({
   attachments,
   title,
+  onPreview,
 }: {
   attachments: AttachmentDTO[];
   title: string;
+  onPreview: (attachment: AttachmentDTO) => void;
 }) {
   if (attachments.length === 0) {
     return null;
@@ -486,27 +502,37 @@ function AttachmentLinks({
       <div style={{ fontSize: 12, color: "var(--muted)" }}>{title}</div>
 
       {attachments.map((attachment) => (
-        <a
+        <button
           key={attachment.id}
-          href={attachment.url}
-          target="_blank"
-          rel="noreferrer"
+          type="button"
+          onClick={() => onPreview(attachment)}
           className="tenant-action-link"
           style={{
             display: "flex",
             justifyContent: "space-between",
             gap: 10,
             textDecoration: "none",
+            width: "100%",
+            textAlign: "left",
+            cursor: "pointer",
           }}
         >
-          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span
+            style={{
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {isImageAttachment(attachment) ? "🖼️ " : "📎 "}
             {attachment.fileName}
           </span>
+
           <span style={{ flexShrink: 0, opacity: 0.8 }}>
             {formatFileSize(attachment.sizeBytes)}
           </span>
-        </a>
+        </button>
       ))}
     </div>
   );
@@ -894,6 +920,8 @@ export default function AdminDashboardPage() {
   const [noteTime, setNoteTime] = useState<string>("");
   const [noteText, setNoteText] = useState<string>("");
   const [noteAttachments, setNoteAttachments] = useState<AttachmentDTO[]>([]);
+  const [attachmentPreview, setAttachmentPreview] =
+    useState<AttachmentPreview | null>(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteSaving, setDeleteSaving] = useState(false);
@@ -1375,6 +1403,14 @@ export default function AdminDashboardPage() {
     setDetailsWorkMinutes(it.workMinutes ?? 0);
     setDetailsAttachments(it.attachments ?? []);
     setDetailsOpen(true);
+  }
+
+  function openAttachmentPreview(attachment: AttachmentDTO): void {
+    setAttachmentPreview({
+      title: attachment.fileName,
+      url: attachment.url,
+      mimeType: attachment.mimeType,
+    });
   }
 
   function openDayBreakInfo(uName: string, date: string, dayBreak: AdminDayBreak | null) {
@@ -1870,6 +1906,78 @@ export default function AdminDashboardPage() {
       </Modal>
 
       <Modal
+        open={attachmentPreview !== null}
+        onClose={() => setAttachmentPreview(null)}
+        title={attachmentPreview?.title ?? "Datei"}
+        footer={
+          <button
+            type="button"
+            onClick={() => setAttachmentPreview(null)}
+            className="btn"
+          >
+            {t("close")}
+          </button>
+        }
+        maxWidth={900}
+        zIndex={7000}
+      >
+        {attachmentPreview ? (
+          isImageMimeType(attachmentPreview.mimeType) ? (
+            <img
+              src={attachmentPreview.url}
+              alt={attachmentPreview.title}
+              style={{
+                display: "block",
+                width: "100%",
+                maxHeight: "72svh",
+                objectFit: "contain",
+                borderRadius: 14,
+                background: "rgba(255,255,255,0.04)",
+              }}
+            />
+          ) : attachmentPreview.mimeType === "application/pdf" ? (
+            <iframe
+              src={attachmentPreview.url}
+              title={attachmentPreview.title}
+              style={{
+                width: "100%",
+                height: "72svh",
+                border: "none",
+                borderRadius: 14,
+                background: "white",
+              }}
+            />
+          ) : (
+            <div style={{ display: "grid", gap: 12 }}>
+              <div
+                className="tenant-status-card"
+                style={{
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                }}
+              >
+                <div style={{ color: "var(--text)", fontWeight: 900 }}>
+                  Diese Datei kann nicht direkt in der Vorschau angezeigt werden.
+                </div>
+              </div>
+
+              <a
+                href={attachmentPreview.url}
+                download={attachmentPreview.title}
+                className="btn btn-accent"
+                style={{
+                  justifySelf: "start",
+                  textDecoration: "none",
+                }}
+              >
+                Herunterladen
+              </a>
+            </div>
+          )
+        ) : null}
+      </Modal>
+
+      <Modal
         open={detailsOpen}
         onClose={() => setDetailsOpen(false)}
         title={t("workDetailsTitle")}
@@ -1919,6 +2027,7 @@ export default function AdminDashboardPage() {
           <AttachmentLinks
             attachments={detailsAttachments}
             title="Hochgeladene Dateien"
+            onPreview={openAttachmentPreview}
           />
         </div>
       </Modal>
@@ -2026,6 +2135,7 @@ export default function AdminDashboardPage() {
           <AttachmentLinks
             attachments={noteAttachments}
             title="Hochgeladene Dateien"
+            onPreview={openAttachmentPreview}
           />
         </div>
       </Modal>

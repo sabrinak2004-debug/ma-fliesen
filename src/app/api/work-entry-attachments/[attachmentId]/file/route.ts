@@ -9,8 +9,15 @@ type RouteContext = {
   }>;
 };
 
-function encodeFileName(fileName: string): string {
-  return encodeURIComponent(fileName).replaceAll("%20", " ");
+function sanitizeFileName(fileName: string): string {
+  return fileName.replace(/[\r\n"]/g, "_");
+}
+
+function contentDispositionInline(fileName: string): string {
+  const safeFileName = sanitizeFileName(fileName);
+  const encodedFileName = encodeURIComponent(fileName);
+
+  return `inline; filename="${safeFileName}"; filename*=UTF-8''${encodedFileName}`;
 }
 
 export async function GET(
@@ -57,7 +64,7 @@ export async function GET(
   return new Response(blobResult.stream, {
     headers: {
       "Content-Type": attachment.mimeType,
-      "Content-Disposition": `inline; filename="${encodeFileName(attachment.fileName)}"`,
+      "Content-Disposition": contentDispositionInline(attachment.fileName),
       "Cache-Control": "private, max-age=300",
     },
   });
