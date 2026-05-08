@@ -1676,15 +1676,18 @@ useEffect(() => {
     return `${getMonthName(language, month)} ${year}`;
   }, [monthlyConfirmationData, confirmMonthParam, language]);
 
-  const loadMonthlyConfirmationStatus = React.useCallback(async () => {
+  const loadMonthlyConfirmationStatus = React.useCallback(async (
+    explicitMonth?: string
+  ) => {
     setMonthlyConfirmationLoading(true);
     setMonthlyConfirmationError(null);
 
     try {
       const params = new URLSearchParams();
+      const monthToCheck = explicitMonth || confirmMonthParam;
 
-      if (confirmMonthParam) {
-        params.set("month", confirmMonthParam);
+      if (monthToCheck && /^\d{4}-\d{2}$/.test(monthToCheck)) {
+        params.set("month", monthToCheck);
       }
 
       const url = params.toString()
@@ -1812,7 +1815,7 @@ useEffect(() => {
 
       await loadCorrectionRequests();
       await loadSelectedCorrectionStatus(workDate);
-      await loadMonthlyConfirmationStatus();
+      await loadMonthlyConfirmationStatus(workDate.slice(0, 7));
 
       if (createdEntryId) {
         const createdEntry = refreshedEntries.find((entry) => entry.id === createdEntryId);
@@ -2161,6 +2164,7 @@ useEffect(() => {
       await loadEntries();
       await loadCorrectionRequests();
       await loadSelectedCorrectionStatus(workDate);
+      await loadMonthlyConfirmationStatus(workDate.slice(0, 7));
     } catch {
       setBreakError(t("networkBreakSaveError"));
     } finally {
