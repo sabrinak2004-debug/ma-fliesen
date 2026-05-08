@@ -4061,6 +4061,7 @@ export type AdminTasksTextKey =
   | "workEntryRequired"
   | "vacationEntryRequired"
   | "sickEntryRequired"
+  | "monthlyWorkConfirmationRequired"
   | "categoryWorkTime"
   | "categoryVacation"
   | "categorySickness"
@@ -4466,6 +4467,15 @@ export const ADMIN_TASKS_UI_TEXTS: Record<
     SQ: "Kërkohet regjistrim i sëmundjes",
     RO: "Este necesară înregistrarea concediului medical",
     KU: "Tomarkirina nexweşiyê pêwîst e",
+  },
+  monthlyWorkConfirmationRequired: {
+    DE: "Monatliche Arbeitszeitbestätigung erforderlich",
+    EN: "Monthly work time confirmation required",
+    IT: "Conferma mensile dell'orario di lavoro richiesta",
+    TR: "Aylık çalışma süresi onayı gerekli",
+    SQ: "Kërkohet konfirmimi mujor i kohës së punës",
+    RO: "Este necesară confirmarea lunară a timpului de lucru",
+    KU: "Piştrastkirina mehane ya dema karê pêwîst e",
   },
   categoryWorkTime: {
     DE: "Arbeitszeit",

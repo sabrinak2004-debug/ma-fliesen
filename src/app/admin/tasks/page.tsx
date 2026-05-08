@@ -22,7 +22,8 @@ type TaskRequiredAction =
   | "NONE"
   | "WORK_ENTRY_FOR_DATE"
   | "VACATION_ENTRY_FOR_DATE"
-  | "SICK_ENTRY_FOR_DATE";
+  | "SICK_ENTRY_FOR_DATE"
+  | "CONFIRM_MONTHLY_WORK_ENTRIES";
 
 type TaskRow = {
   id: string;
@@ -123,7 +124,8 @@ function isTaskRequiredAction(v: unknown): v is TaskRequiredAction {
     v === "NONE" ||
     v === "WORK_ENTRY_FOR_DATE" ||
     v === "VACATION_ENTRY_FOR_DATE" ||
-    v === "SICK_ENTRY_FOR_DATE"
+    v === "SICK_ENTRY_FOR_DATE" ||
+    v === "CONFIRM_MONTHLY_WORK_ENTRIES"
   );
 }
 
@@ -313,6 +315,12 @@ function requiredActionLabel(
       return translate(language, "vacationEntryRequired", ADMIN_TASKS_UI_TEXTS);
     case "SICK_ENTRY_FOR_DATE":
       return translate(language, "sickEntryRequired", ADMIN_TASKS_UI_TEXTS);
+    case "CONFIRM_MONTHLY_WORK_ENTRIES":
+      return translate(
+        language,
+        "monthlyWorkConfirmationRequired",
+        ADMIN_TASKS_UI_TEXTS
+      );
   }
 }
 
