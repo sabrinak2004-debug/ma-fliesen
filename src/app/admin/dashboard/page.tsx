@@ -16,6 +16,14 @@ import { Download, ClipboardList, ClockAlert, TriangleAlert, UserRoundCheck, Cal
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPencil, faTrashCan, faInfo, faPenToSquare, faHammer } from "@fortawesome/free-solid-svg-icons";
 import UnpaidIcon from "@/components/icons/UnpaidIcon";
+import { Document, Page as PdfPage, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 /* =========================
    Types (Dashboard Timeline)
@@ -484,6 +492,11 @@ type AttachmentPreview = {
   mimeType: string;
 };
 
+type PdfPreviewState = {
+  pageCount: number;
+  loadError: string;
+};
+
 function AttachmentLinks({
   attachments,
   title,
@@ -922,6 +935,10 @@ export default function AdminDashboardPage() {
   const [noteAttachments, setNoteAttachments] = useState<AttachmentDTO[]>([]);
   const [attachmentPreview, setAttachmentPreview] =
     useState<AttachmentPreview | null>(null);
+  const [pdfPreviewState, setPdfPreviewState] = useState<PdfPreviewState>({
+    pageCount: 0,
+    loadError: "",
+  });
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteSaving, setDeleteSaving] = useState(false);

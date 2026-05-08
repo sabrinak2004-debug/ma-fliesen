@@ -17,6 +17,14 @@ import {
   faPlus,
   faClockRotateLeft,
 } from "@fortawesome/free-solid-svg-icons";
+import { Document, Page as PdfPage, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 type MeResponse =
   | {
@@ -476,12 +484,33 @@ function isImageAttachment(attachment: AttachmentDTO): boolean {
   return attachment.mimeType.startsWith("image/");
 }
 
+function isImageMimeType(mimeType: string): boolean {
+  return mimeType.startsWith("image/");
+}
+
+function isPdfMimeType(mimeType: string): boolean {
+  return mimeType === "application/pdf";
+}
+
+type AttachmentPreview = {
+  title: string;
+  url: string;
+  mimeType: string;
+};
+
+type PdfPreviewState = {
+  pageCount: number;
+  loadError: string;
+};
+
 function AttachmentLinks({
   attachments,
   title,
+  onPreview,
 }: {
   attachments: AttachmentDTO[];
   title: string;
+  onPreview: (attachment: AttachmentDTO) => void;
 }) {
   if (attachments.length === 0) {
     return null;
@@ -493,27 +522,37 @@ function AttachmentLinks({
 
       <div style={{ display: "grid", gap: 8 }}>
         {attachments.map((attachment) => (
-          <a
+          <button
             key={attachment.id}
-            href={attachment.url}
-            target="_blank"
-            rel="noreferrer"
+            type="button"
+            onClick={() => onPreview(attachment)}
             className="tenant-action-link"
             style={{
               display: "flex",
               justifyContent: "space-between",
               gap: 10,
               textDecoration: "none",
+              width: "100%",
+              textAlign: "left",
+              cursor: "pointer",
             }}
           >
-            <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+            <span
+              style={{
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
               {isImageAttachment(attachment) ? "🖼️ " : "📎 "}
               {attachment.fileName}
             </span>
+
             <span style={{ flexShrink: 0, opacity: 0.8 }}>
               {formatFileSize(attachment.sizeBytes)}
             </span>
-          </a>
+          </button>
         ))}
       </div>
     </div>
@@ -1399,6 +1438,13 @@ function ErfassungPageInner() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsEntry, setDetailsEntry] = useState<WorkEntry | null>(null);
 
+  const [attachmentPreview, setAttachmentPreview] =
+    useState<AttachmentPreview | null>(null);
+  const [pdfPreviewState, setPdfPreviewState] = useState<PdfPreviewState>({
+    pageCount: 0,
+    loadError: "",
+  });
+
   const [changeReportsOpen, setChangeReportsOpen] = useState(false);
   const [changeReportsLoading, setChangeReportsLoading] = useState(false);
   const [changeReportsError, setChangeReportsError] = useState<string | null>(null);
@@ -2041,6 +2087,14 @@ useEffect(() => {
   function openDetailsModal(e: WorkEntry) {
     setDetailsEntry(e);
     setDetailsOpen(true);
+  }
+
+  function openAttachmentPreview(attachment: AttachmentDTO): void {
+    setAttachmentPreview({
+      title: attachment.fileName,
+      url: attachment.url,
+      mimeType: attachment.mimeType,
+    });
   }
 
   async function openChangeReportsModal(e: WorkEntry) {
@@ -3525,8 +3579,148 @@ useEffect(() => {
           ))}
         </div>
       </div>
+      <Modal
+        open={attachmentPreview !== null}
+        onClose={() => setAttachmentPreview(null)}
+        title={attachmentPreview?.title ?? t("uploadedFiles")}
+        footer={
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => setAttachmentPreview(null)}
+            >
+              {t("close")}
+            </button>
+          </div>
+        }
+        maxWidth={900}
+        zIndex={7000}
+      >
+        {attachmentPreview ? (
+          isImageMimeType(attachmentPreview.mimeType) ? (
+            <img
+              src={attachmentPreview.url}
+              alt={attachmentPreview.title}
+              style={{
+                display: "block",
+                width: "100%",
+                maxHeight: "72svh",
+                objectFit: "contain",
+                borderRadius: 14,
+                background: "rgba(255,255,255,0.04)",
+              }}
+            />
+          ) : isPdfMimeType(attachmentPreview.mimeType) ? (
+            <div
+              style={{
+                display: "grid",
+                gap: 14,
+                maxHeight: "72svh",
+                overflowY: "auto",
+                overflowX: "hidden",
+                paddingRight: 4,
+              }}
+            >
+              {pdfPreviewState.loadError ? (
+                <div
+                  className="tenant-soft-panel-strong"
+                  style={{
+                    color: "var(--text-soft)",
+                    fontWeight: 900,
+                  }}
+                >
+                  {pdfPreviewState.loadError}
+                </div>
+              ) : null}
 
-            <Modal
+              <Document
+                file={attachmentPreview.url}
+                loading={
+                  <div style={{ color: "var(--muted)", fontWeight: 900 }}>
+                    {t("loading")}
+                  </div>
+                }
+                error={
+                  <div
+                    className="tenant-soft-panel-strong"
+                    style={{
+                      color: "var(--text-soft)",
+                      fontWeight: 900,
+                    }}
+                  >
+                    PDF konnte nicht geladen werden.
+                  </div>
+                }
+                onLoadSuccess={({ numPages }: { numPages: number }) => {
+                  setPdfPreviewState({
+                    pageCount: numPages,
+                    loadError: "",
+                  });
+                }}
+                onLoadError={() => {
+                  setPdfPreviewState({
+                    pageCount: 0,
+                    loadError: "PDF konnte nicht geladen werden.",
+                  });
+                }}
+              >
+                <div style={{ display: "grid", gap: 16 }}>
+                  {Array.from({ length: pdfPreviewState.pageCount }, (_, index) => (
+                    <div
+                      key={`${attachmentPreview.url}-page-${index + 1}`}
+                      style={{
+                        display: "grid",
+                        justifyContent: "center",
+                        padding: 8,
+                        borderRadius: 14,
+                        background: "white",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <PdfPage
+                        pageNumber={index + 1}
+                        width={
+                          typeof window === "undefined"
+                            ? 760
+                            : Math.min(window.innerWidth - 48, 760)
+                        }
+                        renderTextLayer={false}
+                        renderAnnotationLayer={false}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </Document>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 12 }}>
+              <div
+                className="tenant-soft-panel-strong"
+                style={{
+                  color: "var(--text-soft)",
+                  fontWeight: 900,
+                }}
+              >
+                Diese Datei kann nicht direkt in der Vorschau angezeigt werden.
+              </div>
+
+              <a
+                href={attachmentPreview.url}
+                download={attachmentPreview.title}
+                className="btn btn-accent"
+                style={{
+                  justifySelf: "start",
+                  textDecoration: "none",
+                }}
+              >
+                Herunterladen
+              </a>
+            </div>
+          )
+        ) : null}
+      </Modal>
+      <Modal
         open={detailsOpen}
         title={t("workTimeDetails")}
         onClose={() => {
@@ -3589,6 +3783,7 @@ useEffect(() => {
             <AttachmentLinks
               attachments={detailsEntry.attachments ?? []}
               title={t("uploadedFiles")}
+              onPreview={openAttachmentPreview}
             />
           </div>
         )}
@@ -3694,6 +3889,7 @@ useEffect(() => {
             <AttachmentLinks
               attachments={noteEntry.attachments ?? []}
               title={t("uploadedFiles")}
+              onPreview={openAttachmentPreview}
             />
           </div>
         )}

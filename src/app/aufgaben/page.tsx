@@ -5,6 +5,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { translate, type AppUiLanguage } from "@/lib/i18n";
+import { Document, Page as PdfPage, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 type TaskStatus = "OPEN" | "COMPLETED";
 type TaskCategory = "WORK_TIME" | "VACATION" | "SICKNESS" | "GENERAL";
@@ -1103,6 +1111,11 @@ type AttachmentPreview = {
   mimeType: string;
 };
 
+type PdfPreviewState = {
+  pageCount: number;
+  loadError: string;
+};
+
 function AttachmentLinks({
   attachments,
   title,
@@ -1520,6 +1533,10 @@ export default function AufgabenPage() {
   const [generalCompletionFiles, setGeneralCompletionFiles] = useState<File[]>([]);
   const [attachmentPreview, setAttachmentPreview] =
     useState<AttachmentPreview | null>(null);
+  const [pdfPreviewState, setPdfPreviewState] = useState<PdfPreviewState>({
+    pageCount: 0,
+    loadError: "",
+  });
   const generalImageInputRef = React.useRef<HTMLInputElement | null>(null);
   const generalFileInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -1739,6 +1756,11 @@ export default function AufgabenPage() {
   }
 
 function openAttachmentPreview(attachment: AttachmentDTO): void {
+  setPdfPreviewState({
+    pageCount: 0,
+    loadError: "",
+  });
+
   setAttachmentPreview({
     title: attachment.fileName,
     url: attachment.url,
@@ -2046,17 +2068,87 @@ function openAttachmentPreview(attachment: AttachmentDTO): void {
                 }}
               />
             ) : isPdfMimeType(attachmentPreview.mimeType) ? (
-              <iframe
-                src={attachmentPreview.url}
-                title={attachmentPreview.title}
+              <div
                 style={{
-                  width: "100%",
-                  height: "72svh",
-                  border: "none",
-                  borderRadius: 14,
-                  background: "white",
+                  display: "grid",
+                  gap: 14,
+                  maxHeight: "72svh",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  paddingRight: 4,
                 }}
-              />
+              >
+                {pdfPreviewState.loadError ? (
+                  <div
+                    className="tenant-soft-panel-strong"
+                    style={{
+                      color: "var(--text-soft)",
+                      fontWeight: 900,
+                    }}
+                  >
+                    {pdfPreviewState.loadError}
+                  </div>
+                ) : null}
+
+                <Document
+                  file={attachmentPreview.url}
+                  loading={
+                    <div style={{ color: "var(--muted)", fontWeight: 900 }}>
+                      {t("loading")}
+                    </div>
+                  }
+                  error={
+                    <div
+                      className="tenant-soft-panel-strong"
+                      style={{
+                        color: "var(--text-soft)",
+                        fontWeight: 900,
+                      }}
+                    >
+                      PDF konnte nicht geladen werden.
+                    </div>
+                  }
+                  onLoadSuccess={({ numPages }: { numPages: number }) => {
+                    setPdfPreviewState({
+                      pageCount: numPages,
+                      loadError: "",
+                    });
+                  }}
+                  onLoadError={() => {
+                    setPdfPreviewState({
+                      pageCount: 0,
+                      loadError: "PDF konnte nicht geladen werden.",
+                    });
+                  }}
+                >
+                  <div style={{ display: "grid", gap: 16 }}>
+                    {Array.from({ length: pdfPreviewState.pageCount }, (_, index) => (
+                      <div
+                        key={`${attachmentPreview.url}-page-${index + 1}`}
+                        style={{
+                          display: "grid",
+                          justifyContent: "center",
+                          padding: 8,
+                          borderRadius: 14,
+                          background: "white",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <PdfPage
+                          pageNumber={index + 1}
+                          width={
+                            typeof window === "undefined"
+                              ? 760
+                              : Math.min(window.innerWidth - 48, 760)
+                          }
+                          renderTextLayer={false}
+                          renderAnnotationLayer={false}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </Document>
+              </div>
             ) : (
               <div style={{ display: "grid", gap: 12 }}>
                 <div
