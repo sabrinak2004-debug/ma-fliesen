@@ -774,6 +774,34 @@ function replaceTemplate(
   }, template);
 }
 
+function getAdditionalEntryHintText(args: {
+  language: AppUiLanguage;
+  entryCount: number;
+  startTime: string;
+  endTime: string;
+}): string {
+  const entryLabel =
+    args.entryCount === 1 ? "ein Eintrag" : `${args.entryCount} Einträge`;
+
+  switch (args.language) {
+    case "EN":
+      return `There is already ${args.entryCount === 1 ? "one entry" : `${args.entryCount} entries`} for this day. The times have been preset for another possible assignment on this day: ${args.startTime}–${args.endTime}.`;
+    case "IT":
+      return `Per questo giorno è già presente ${args.entryCount === 1 ? "una registrazione" : `${args.entryCount} registrazioni`}. Gli orari sono stati preimpostati per un ulteriore possibile intervento in questo giorno: ${args.startTime}–${args.endTime}.`;
+    case "TR":
+      return `Bu gün için zaten ${args.entryCount === 1 ? "bir kayıt" : `${args.entryCount} kayıt`} var. Saatler, aynı gün içinde olası başka bir görev için önceden ayarlandı: ${args.startTime}–${args.endTime}.`;
+    case "SQ":
+      return `Për këtë ditë ekziston tashmë ${args.entryCount === 1 ? "një hyrje" : `${args.entryCount} hyrje`}. Orët janë paracaktuar për një angazhim tjetër të mundshëm në këtë ditë: ${args.startTime}–${args.endTime}.`;
+    case "KU":
+      return `Ji bo vê rojê jixwe ${args.entryCount === 1 ? "tometek" : `${args.entryCount} tomar`} heye. Dem ji bo karekî din ê gengaz di vê rojê de hatine amadekirin: ${args.startTime}–${args.endTime}.`;
+    case "RO":
+      return `Pentru această zi există deja ${args.entryCount === 1 ? "o înregistrare" : `${args.entryCount} înregistrări`}. Orele au fost presetate pentru o posibilă altă intervenție în această zi: ${args.startTime}–${args.endTime}.`;
+    case "DE":
+    default:
+      return `Für diesen Tag ist bereits ${entryLabel} vorhanden. Die Zeiten wurden für einen weiteren möglichen Einsatz an diesem Tag voreingestellt: ${args.startTime}–${args.endTime}.`;
+  }
+}
+
 function getMonthName(language: AppUiLanguage, month: number): string {
   const keys = [
     "monthJanuary",
@@ -1083,9 +1111,40 @@ function ErfassungPageInner() {
     });
   }, [startTime, endTime]);
 
-  const hasSavedEntriesForSelectedDay = useMemo(() => {
-    return entries.some((entry) => toYMD(entry.workDate) === workDate);
+  const entriesForSelectedDay = useMemo(() => {
+    return entries
+      .filter((entry) => toYMD(entry.workDate) === workDate)
+      .sort((a, b) => {
+        const startCompare = a.startTime.localeCompare(b.startTime);
+
+        if (startCompare !== 0) {
+          return startCompare;
+        }
+
+        return a.endTime.localeCompare(b.endTime);
+      });
   }, [entries, workDate]);
+
+  const hasSavedEntriesForSelectedDay = entriesForSelectedDay.length > 0;
+
+  const additionalEntryHintText = useMemo(() => {
+    if (!hasSavedEntriesForSelectedDay) {
+      return "";
+    }
+
+    return getAdditionalEntryHintText({
+      language,
+      entryCount: entriesForSelectedDay.length,
+      startTime,
+      endTime,
+    });
+  }, [
+    hasSavedEntriesForSelectedDay,
+    language,
+    entriesForSelectedDay.length,
+    startTime,
+    endTime,
+  ]);
 
   const shouldShowEntryComputation = useMemo(() => {
     return isEntryPreviewActive;
@@ -2233,6 +2292,26 @@ useEffect(() => {
                   ) : null}
                 </>
               )}
+            </div>
+          </div>
+        ) : null}
+
+        {additionalEntryHintText ? (
+          <div
+            className="card tenant-status-card tenant-status-card-info"
+            style={{
+              padding: 12,
+              marginBottom: 12,
+            }}
+          >
+            <div
+              className="tenant-status-text-info"
+              style={{
+                fontWeight: 800,
+                lineHeight: 1.45,
+              }}
+            >
+              {additionalEntryHintText}
             </div>
           </div>
         ) : null}
