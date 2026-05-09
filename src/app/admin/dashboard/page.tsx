@@ -580,7 +580,7 @@ function PdfAttachmentPreview({
 
         const blob = await response.blob();
 
-        if (!blob.type.includes("pdf") && blob.size === 0) {
+        if (blob.size === 0) {
           throw new Error("PDF_EMPTY");
         }
 
@@ -2095,16 +2095,11 @@ export default function AdminDashboardPage() {
               }}
             />
           ) : attachmentPreview.mimeType === "application/pdf" ? (
-            <iframe
-              src={attachmentPreview.url}
+            <PdfAttachmentPreview
+              url={attachmentPreview.url}
               title={attachmentPreview.title}
-              style={{
-                width: "100%",
-                height: "72svh",
-                border: "none",
-                borderRadius: 14,
-                background: "white",
-              }}
+              loadingText={t("loading")}
+              errorText="PDF konnte nicht geladen werden."
             />
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
