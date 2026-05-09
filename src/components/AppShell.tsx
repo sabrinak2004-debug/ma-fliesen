@@ -631,6 +631,7 @@ export default function AppShell({
   const desktopTopbarRef = useRef<HTMLDivElement | null>(null);
   const mobileTopbarRef = useRef<HTMLDivElement | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileTopbarCompact, setMobileTopbarCompact] = useState(false);
   const [languageSaving, setLanguageSaving] = useState(false);
   const [languageMessage, setLanguageMessage] = useState<string | null>(null);
   const [desktopTopbarCompact, setDesktopTopbarCompact] = useState(false);
@@ -715,7 +716,7 @@ export default function AppShell({
       window.removeEventListener("resize", updateCurtainBounds);
       window.removeEventListener("scroll", updateCurtainBounds);
     };
-  }, [desktopTopbarCompact]);
+  }, [desktopTopbarCompact, mobileTopbarCompact]);
 
   useEffect(() => {
     let alive = true;
@@ -796,18 +797,63 @@ export default function AppShell({
   }, []);
 
 useEffect(() => {
+  function getMobileScrollableDistance(): number {
+    const documentElement = document.documentElement;
+    const bodyElement = document.body;
+
+    const fullPageHeight = Math.max(
+      documentElement.scrollHeight,
+      bodyElement.scrollHeight,
+      documentElement.offsetHeight,
+      bodyElement.offsetHeight
+    );
+
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+
+    return Math.max(0, fullPageHeight - viewportHeight);
+  }
+
+  function hasEnoughMobileScrollForCompactTopbar(): boolean {
+    if (!window.matchMedia("(max-width: 767px)").matches) {
+      return true;
+    }
+
+    return getMobileScrollableDistance() > 200;
+  }
+
+  function getMobileCompactScrollTrigger(): number {
+    const scrollableDistance = getMobileScrollableDistance();
+
+    if (scrollableDistance <= 200) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    return Math.min(36, Math.max(8, scrollableDistance * 0.35));
+  }
+
   function handleScroll(): void {
-    setDesktopTopbarCompact(window.scrollY > 36);
+    const desktopScrolled = window.scrollY > 36;
+
+    setDesktopTopbarCompact(desktopScrolled);
+
+    if (!hasEnoughMobileScrollForCompactTopbar()) {
+      setMobileTopbarCompact(false);
+      return;
+    }
+
+    setMobileTopbarCompact(window.scrollY > getMobileCompactScrollTrigger());
   }
 
   handleScroll();
 
   window.addEventListener("scroll", handleScroll, { passive: true });
   window.addEventListener("resize", handleScroll);
+  window.visualViewport?.addEventListener("resize", handleScroll);
 
   return () => {
     window.removeEventListener("scroll", handleScroll);
     window.removeEventListener("resize", handleScroll);
+    window.visualViewport?.removeEventListener("resize", handleScroll);
   };
 }, []);
 
@@ -1226,7 +1272,9 @@ useEffect(() => {
           </div>
         </div>
         <div
-          className="md:hidden appshell-mobile-content-curtain"
+          className={`md:hidden appshell-mobile-content-curtain ${
+            mobileTopbarCompact ? "is-visible" : ""
+          }`}
           aria-hidden="true"
         />
 
