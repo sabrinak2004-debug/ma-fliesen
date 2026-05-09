@@ -10,6 +10,12 @@ import {
   translate,
   type AppUiLanguage,
 } from "@/lib/i18n";
+import Modal from "@/components/Modal";
+import { Document, Page as PdfPage, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 type EmployeeOption = {
   id: string;
@@ -239,12 +245,28 @@ function isImageAttachment(attachment: AttachmentDTO): boolean {
   return attachment.mimeType.startsWith("image/");
 }
 
+function isImageMimeType(mimeType: string): boolean {
+  return mimeType.startsWith("image/");
+}
+
+function isPdfMimeType(mimeType: string): boolean {
+  return mimeType === "application/pdf";
+}
+
+type AttachmentPreview = {
+  title: string;
+  url: string;
+  mimeType: string;
+};
+
 function AttachmentLinks({
   attachments,
   title,
+  onPreview,
 }: {
   attachments: AttachmentDTO[];
   title: string;
+  onPreview: (attachment: AttachmentDTO) => void;
 }) {
   if (attachments.length === 0) {
     return null;
@@ -261,28 +283,193 @@ function AttachmentLinks({
       <strong>{title}</strong>
 
       {attachments.map((attachment) => (
-        <a
+        <button
           key={attachment.id}
-          href={attachment.url}
-          target="_blank"
-          rel="noreferrer"
+          type="button"
+          onClick={() => onPreview(attachment)}
           className="tenant-action-link"
           style={{
             display: "flex",
             justifyContent: "space-between",
             gap: 10,
             textDecoration: "none",
+            width: "100%",
+            textAlign: "left",
+            cursor: "pointer",
           }}
         >
-          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span
+            style={{
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {isImageAttachment(attachment) ? "🖼️ " : "📎 "}
             {attachment.fileName}
           </span>
+
           <span style={{ flexShrink: 0, opacity: 0.8 }}>
             {formatFileSize(attachment.sizeBytes)}
           </span>
-        </a>
+        </button>
       ))}
+    </div>
+  );
+}
+
+function PdfAttachmentPreview({
+  url,
+  title,
+  loadingText,
+  errorText,
+}: {
+  url: string;
+  title: string;
+  loadingText: string;
+  errorText: string;
+}) {
+  const [objectUrl, setObjectUrl] = useState<string>("");
+  const [pageCount, setPageCount] = useState<number>(0);
+  const [loadError, setLoadError] = useState<string>("");
+
+  useEffect(() => {
+    let alive = true;
+    let createdObjectUrl = "";
+
+    setObjectUrl("");
+    setPageCount(0);
+    setLoadError("");
+
+    async function loadPdf(): Promise<void> {
+      try {
+        const response = await fetch(url, {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("PDF_LOAD_FAILED");
+        }
+
+        const blob = await response.blob();
+
+        if (blob.size === 0) {
+          throw new Error("PDF_EMPTY");
+        }
+
+        createdObjectUrl = URL.createObjectURL(blob);
+
+        if (!alive) {
+          URL.revokeObjectURL(createdObjectUrl);
+          return;
+        }
+
+        setObjectUrl(createdObjectUrl);
+      } catch {
+        if (!alive) return;
+        setLoadError(errorText);
+      }
+    }
+
+    void loadPdf();
+
+    return () => {
+      alive = false;
+
+      if (createdObjectUrl) {
+        URL.revokeObjectURL(createdObjectUrl);
+      }
+    };
+  }, [url, errorText]);
+
+  if (loadError) {
+    return (
+      <div
+        className="tenant-soft-panel-strong"
+        style={{
+          color: "var(--text-soft)",
+          fontWeight: 900,
+        }}
+      >
+        {loadError}
+      </div>
+    );
+  }
+
+  if (!objectUrl) {
+    return (
+      <div style={{ color: "var(--muted)", fontWeight: 900 }}>
+        {loadingText}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: 14,
+        maxHeight: "72svh",
+        overflowY: "auto",
+        overflowX: "hidden",
+        paddingRight: 4,
+      }}
+    >
+      <Document
+        file={objectUrl}
+        loading={
+          <div style={{ color: "var(--muted)", fontWeight: 900 }}>
+            {loadingText}
+          </div>
+        }
+        error={
+          <div
+            className="tenant-soft-panel-strong"
+            style={{
+              color: "var(--text-soft)",
+              fontWeight: 900,
+            }}
+          >
+            {errorText}
+          </div>
+        }
+        onLoadSuccess={({ numPages }: { numPages: number }) => {
+          setPageCount(numPages);
+        }}
+        onLoadError={() => {
+          setLoadError(errorText);
+        }}
+      >
+        <div style={{ display: "grid", gap: 16 }}>
+          {Array.from({ length: pageCount }, (_, index) => (
+            <div
+              key={`${title}-page-${index + 1}`}
+              style={{
+                display: "grid",
+                justifyContent: "center",
+                padding: 8,
+                borderRadius: 14,
+                background: "white",
+                overflow: "hidden",
+              }}
+            >
+              <PdfPage
+                pageNumber={index + 1}
+                width={
+                  typeof window === "undefined"
+                    ? 760
+                    : Math.min(window.innerWidth - 48, 760)
+                }
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+              />
+            </div>
+          ))}
+        </div>
+      </Document>
     </div>
   );
 }
@@ -480,10 +667,20 @@ export default function AdminTasksPage() {
 
   const [taskQuery, setTaskQuery] = useState("");
   const [taskCategoryFilter, setTaskCategoryFilter] = useState<"ALL" | TaskCategory>("ALL");
+  const [attachmentPreview, setAttachmentPreview] =
+    useState<AttachmentPreview | null>(null);
   const language: AppUiLanguage = session?.language ?? "DE";
 
   function t(key: keyof typeof ADMIN_TASKS_UI_TEXTS): string {
     return translate(language, key, ADMIN_TASKS_UI_TEXTS);
+  }
+
+  function openAttachmentPreview(attachment: AttachmentDTO): void {
+    setAttachmentPreview({
+      title: attachment.fileName,
+      url: attachment.url,
+      mimeType: attachment.mimeType,
+    });
   }
 
   async function loadData(): Promise<void> {
@@ -693,6 +890,72 @@ export default function AdminTasksPage() {
 
   return (
     <AppShell activeLabel={t("adminTasksActiveLabel")}>
+      <Modal
+        open={attachmentPreview !== null}
+        onClose={() => setAttachmentPreview(null)}
+        title={attachmentPreview?.title ?? "Hochgeladene Dateien"}
+        footer={
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => setAttachmentPreview(null)}
+            >
+              {t("close")}
+            </button>
+          </div>
+        }
+        maxWidth={900}
+        zIndex={7000}
+      >
+        {attachmentPreview ? (
+          isImageMimeType(attachmentPreview.mimeType) ? (
+            <img
+              src={attachmentPreview.url}
+              alt={attachmentPreview.title}
+              style={{
+                display: "block",
+                width: "100%",
+                maxHeight: "72svh",
+                objectFit: "contain",
+                borderRadius: 14,
+                background: "rgba(255,255,255,0.04)",
+              }}
+            />
+          ) : isPdfMimeType(attachmentPreview.mimeType) ? (
+            <PdfAttachmentPreview
+              url={attachmentPreview.url}
+              title={attachmentPreview.title}
+              loadingText={t("loading")}
+              errorText="PDF konnte nicht geladen werden."
+            />
+          ) : (
+            <div style={{ display: "grid", gap: 12 }}>
+              <div
+                className="tenant-soft-panel-strong"
+                style={{
+                  color: "var(--text-soft)",
+                  fontWeight: 900,
+                }}
+              >
+                Diese Datei kann nicht direkt in der Vorschau angezeigt werden.
+              </div>
+
+              <a
+                href={attachmentPreview.url}
+                download={attachmentPreview.title}
+                className="btn btn-accent"
+                style={{
+                  justifySelf: "start",
+                  textDecoration: "none",
+                }}
+              >
+                Herunterladen
+              </a>
+            </div>
+          )
+        ) : null}
+      </Modal>
       <div style={{ display: "grid", gap: 16 }}>
         <div className="card" style={{ padding: 18 }}>
           <div className="section-title" style={{ marginBottom: 12 }}>
@@ -1012,6 +1275,7 @@ export default function AdminTasksPage() {
                   <AttachmentLinks
                     attachments={task.attachments}
                     title="Hochgeladene Dateien"
+                    onPreview={openAttachmentPreview}
                   />
 
                   {task.description ? (

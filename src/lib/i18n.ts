@@ -4094,6 +4094,7 @@ export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage
 };
 
 export type AdminTasksTextKey =
+  | "close"
   | "adminTasksActiveLabel"
   | "loading"
   | "loadError"
@@ -4205,6 +4206,15 @@ export const ADMIN_TASKS_UI_TEXTS: Record<
   AdminTasksTextKey,
   Record<AppUiLanguage, string>
 > = {
+  close: {
+    DE: "Schließen",
+    EN: "Close",
+    IT: "Chiudi",
+    TR: "Kapat",
+    SQ: "Mbyll",
+    KU: "Bigire",
+    RO: "Închide",
+  },
   adminTasksActiveLabel: {
     DE: "Aufgaben verwalten",
     EN: "Manage tasks",
@@ -8537,6 +8547,7 @@ export const ADMIN_SICK_REQUESTS_UI_TEXTS: Record<
 };
 
 export type AdminUsersTextKey =
+  | "close"
   | "activeLabel"
   | "pageTitle"
   | "pageSubtitle"
