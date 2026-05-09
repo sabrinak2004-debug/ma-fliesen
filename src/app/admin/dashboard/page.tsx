@@ -515,26 +515,38 @@ function AttachmentLinks({
           style={{
             display: "flex",
             justifyContent: "space-between",
+            alignItems: "flex-start",
             gap: 10,
             textDecoration: "none",
             width: "100%",
+            maxWidth: "100%",
             textAlign: "left",
             cursor: "pointer",
+            minWidth: 0,
+            whiteSpace: "normal",
           }}
         >
           <span
             style={{
               minWidth: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
+              whiteSpace: "normal",
+              lineHeight: 1.35,
             }}
           >
             {isImageAttachment(attachment) ? "🖼️ " : "📎 "}
             {attachment.fileName}
           </span>
 
-          <span style={{ flexShrink: 0, opacity: 0.8 }}>
+          <span
+            style={{
+              flexShrink: 0,
+              opacity: 0.8,
+              whiteSpace: "nowrap",
+              paddingTop: 1,
+            }}
+          >
             {formatFileSize(attachment.sizeBytes)}
           </span>
         </button>
