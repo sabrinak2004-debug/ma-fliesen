@@ -419,10 +419,17 @@ model Absence {
   dayPortion   AbsenceDayPortion   @default(FULL_DAY)
   compensation AbsenceCompensation @default(PAID)
 
+  sickLeaveKind SickLeaveKind?
+  timeMode      AbsenceTimeMode @default(FULL_DAY)
+  startTime     DateTime?       @db.Time
+  endTime       DateTime?       @db.Time
+  paidMinutes   Int             @default(0)
+
   createdAt DateTime @default(now())
 
   @@unique([userId, absenceDate, type, dayPortion, compensation])
   @@index([userId, absenceDate])
+  @@index([userId, absenceDate, timeMode])
 }
 
 model AbsenceRequest {
@@ -436,6 +443,12 @@ model AbsenceRequest {
   dayPortion   AbsenceDayPortion    @default(FULL_DAY)
   status       AbsenceRequestStatus @default(PENDING)
   compensation AbsenceCompensation  @default(PAID)
+
+  sickLeaveKind SickLeaveKind?
+  timeMode      AbsenceTimeMode @default(FULL_DAY)
+  startTime     DateTime?       @db.Time
+  endTime       DateTime?       @db.Time
+  paidMinutes   Int             @default(0)
   
   paidVacationUnits   Int @default(0)
   unpaidVacationUnits Int @default(0)
@@ -653,6 +666,16 @@ enum TimeEntryCorrectionRequestStatus {
 enum AbsenceCompensation {
   PAID
   UNPAID
+}
+
+enum SickLeaveKind {
+  SICK_LEAVE
+  DOCTOR_APPOINTMENT
+}
+
+enum AbsenceTimeMode {
+  FULL_DAY
+  TIME_RANGE
 }
 
 enum TaskCategory {

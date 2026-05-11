@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import {
+  AbsenceTimeMode,
+  AbsenceType,
   Prisma,
   Role,
+  SickLeaveKind,
   TaskCategory,
   TaskRequiredAction,
   TaskStatus,
@@ -476,6 +479,14 @@ type DayBreakDTO = {
   effectiveMinutes: number;
 };
 
+type DoctorAppointmentDTO = {
+  id: string;
+  absenceDate: string;
+  startTime: string;
+  endTime: string;
+  paidMinutes: number;
+};
+
 async function findActiveCompanyUser(userId: string, companyId: string) {
   return prisma.appUser.findFirst({
     where: {
@@ -843,6 +854,34 @@ export async function GET(req: Request) {
     orderBy: [{ workDate: "desc" }],
   });
 
+  const doctorAppointmentRows = await prisma.absence.findMany({
+    where: {
+      ...userWhere,
+      type: AbsenceType.SICK,
+      sickLeaveKind: SickLeaveKind.DOCTOR_APPOINTMENT,
+      timeMode: AbsenceTimeMode.TIME_RANGE,
+      ...(from && to ? { absenceDate: { gte: from, lt: to } } : {}),
+    },
+    orderBy: [{ absenceDate: "desc" }, { startTime: "asc" }],
+    select: {
+      id: true,
+      absenceDate: true,
+      startTime: true,
+      endTime: true,
+      paidMinutes: true,
+    },
+  });
+
+  const doctorAppointments: DoctorAppointmentDTO[] = doctorAppointmentRows
+    .filter((row) => row.startTime && row.endTime && row.paidMinutes > 0)
+    .map((row) => ({
+      id: row.id,
+      absenceDate: toIsoDateUTC(row.absenceDate),
+      startTime: toHHMMUTC(row.startTime ?? new Date("1970-01-01T00:00:00.000Z")),
+      endTime: toHHMMUTC(row.endTime ?? new Date("1970-01-01T00:00:00.000Z")),
+      paidMinutes: row.paidMinutes,
+    }));
+
   const dayBreakMap = new Map<string, DayBreakDTO>();
 
   for (const row of dayBreakRows) {
@@ -932,7 +971,7 @@ export async function GET(req: Request) {
 
   const dayBreaks = Array.from(dayBreakMap.values()).sort((a, b) => (a.workDate === b.workDate ? 0 : a.workDate > b.workDate ? -1 : 1));
 
-  return NextResponse.json({ entries, dayBreaks });
+  return NextResponse.json({ entries, dayBreaks, doctorAppointments });
 }
 
 export async function POST(req: Request) {

@@ -17,6 +17,8 @@ import { CircleX } from 'lucide-react';
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AbsenceType = "VACATION" | "SICK";
+type SickLeaveKind = "SICK_LEAVE" | "DOCTOR_APPOINTMENT";
+type AbsenceTimeMode = "FULL_DAY" | "TIME_RANGE";
 
 type AbsenceRequestItem = {
   id: string;
@@ -24,6 +26,11 @@ type AbsenceRequestItem = {
   endDate: string;
   type: AbsenceType;
   status: RequestStatus;
+  sickLeaveKind: SickLeaveKind | null;
+  timeMode: AbsenceTimeMode;
+  startTime: string | null;
+  endTime: string | null;
+  paidMinutes: number;
   noteEmployee: string;
   createdAt: string;
   updatedAt: string;
@@ -115,6 +122,42 @@ function isAbsenceType(v: unknown): v is AbsenceType {
   return v === "VACATION" || v === "SICK";
 }
 
+function isSickLeaveKind(v: unknown): v is SickLeaveKind {
+  return v === "SICK_LEAVE" || v === "DOCTOR_APPOINTMENT";
+}
+
+function isAbsenceTimeMode(v: unknown): v is AbsenceTimeMode {
+  return v === "FULL_DAY" || v === "TIME_RANGE";
+}
+
+function formatMinutesAsHours(minutes: number): string {
+  const safeMinutes = Number.isFinite(minutes) ? Math.max(0, Math.round(minutes)) : 0;
+  const hours = Math.floor(safeMinutes / 60);
+  const rest = safeMinutes % 60;
+
+  return `${hours}h ${String(rest).padStart(2, "0")}min`;
+}
+
+function doctorAppointmentText(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Doctor appointment";
+    case "IT":
+      return "Visita medica";
+    case "TR":
+      return "Doktor randevusu";
+    case "SQ":
+      return "Takim te mjeku";
+    case "KU":
+      return "Hevdîtina bijîşk";
+    case "RO":
+      return "Programare la medic";
+    case "DE":
+    default:
+      return "Arzttermin";
+  }
+}
+
 function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
   if (!isRecord(v)) return false;
 
@@ -123,6 +166,11 @@ function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
   const endDate = getStringField(v, "endDate");
   const type = v["type"];
   const status = v["status"];
+  const sickLeaveKind = v["sickLeaveKind"];
+  const timeMode = v["timeMode"];
+  const startTime = v["startTime"];
+  const endTime = v["endTime"];
+  const paidMinutes = v["paidMinutes"];
   const noteEmployee = getStringField(v, "noteEmployee");
   const createdAt = getStringField(v, "createdAt");
   const updatedAt = getStringField(v, "updatedAt");
@@ -136,6 +184,12 @@ function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
     !endDate ||
     !isAbsenceType(type) ||
     !isRequestStatus(status) ||
+    !(sickLeaveKind === null || isSickLeaveKind(sickLeaveKind)) ||
+    !isAbsenceTimeMode(timeMode) ||
+    !(startTime === null || typeof startTime === "string") ||
+    !(endTime === null || typeof endTime === "string") ||
+    typeof paidMinutes !== "number" ||
+    !Number.isFinite(paidMinutes) ||
     noteEmployee === null ||
     !createdAt ||
     !updatedAt
@@ -498,6 +552,10 @@ export default function KrankheitsantraegePage() {
           type: "SICK",
           dayPortion: "FULL_DAY",
           compensation: "PAID",
+          sickLeaveKind: target.sickLeaveKind,
+          timeMode: target.timeMode,
+          startTime: target.startTime,
+          endTime: target.endTime,
         }),
       });
 
@@ -713,6 +771,8 @@ export default function KrankheitsantraegePage() {
     const isBusy = busyAction?.id === item.id;
     const isEditing = editingItemId === item.id;
     const days = countDaysInclusive(item.startDate, item.endDate);
+    const isDoctorAppointment = item.sickLeaveKind === "DOCTOR_APPOINTMENT";
+    const isTimeRange = isDoctorAppointment && item.timeMode === "TIME_RANGE";
 
     return (
       <div
@@ -734,7 +794,12 @@ export default function KrankheitsantraegePage() {
             </div>
 
             <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 14 }}>
-              <Stethoscope /> {t("sickLabel")} · {rangeLabel(item.startDate, item.endDate, language)} · {days} {days === 1 ? t("day") : t("days")}
+              <Stethoscope />{" "}
+              {isDoctorAppointment ? doctorAppointmentText(language) : t("sickLabel")} ·{" "}
+              {rangeLabel(item.startDate, item.endDate, language)}
+              {isTimeRange && item.startTime && item.endTime
+                ? ` · ${item.startTime}–${item.endTime} · ${formatMinutesAsHours(item.paidMinutes)}`
+                : ` · ${days} ${days === 1 ? t("day") : t("days")}`}
             </div>
 
             <div

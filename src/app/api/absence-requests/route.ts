@@ -4,8 +4,10 @@ import {
   AbsenceCompensation,
   AbsenceDayPortion,
   AbsenceRequestStatus,
+  AbsenceTimeMode,
   AbsenceType,
   Prisma,
+  SickLeaveKind,
 } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -27,6 +29,10 @@ type CreateAbsenceRequestBody = {
   dayPortion?: unknown;
   noteEmployee?: unknown;
   compensation?: unknown;
+  sickLeaveKind?: unknown;
+  timeMode?: unknown;
+  startTime?: unknown;
+  endTime?: unknown;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -55,6 +61,45 @@ function isAbsenceDayPortion(v: string): v is AbsenceDayPortion {
 
 function isAbsenceCompensation(v: string): v is AbsenceCompensation {
   return v === "PAID" || v === "UNPAID";
+}
+
+function isSickLeaveKind(v: string): v is SickLeaveKind {
+  return v === "SICK_LEAVE" || v === "DOCTOR_APPOINTMENT";
+}
+
+function isAbsenceTimeMode(v: string): v is AbsenceTimeMode {
+  return v === "FULL_DAY" || v === "TIME_RANGE";
+}
+
+function isHHMM(v: string): boolean {
+  return /^\d{2}:\d{2}$/.test(v);
+}
+
+function timeOnlyUTC(hhmm: string): Date {
+  return new Date(`1970-01-01T${hhmm}:00.000Z`);
+}
+
+function minutesBetweenHHMM(startHHMM: string, endHHMM: string): number {
+  if (!isHHMM(startHHMM) || !isHHMM(endHHMM)) {
+    return 0;
+  }
+
+  const [startHour, startMinute] = startHHMM.split(":").map(Number);
+  const [endHour, endMinute] = endHHMM.split(":").map(Number);
+
+  const startMinutes = startHour * 60 + startMinute;
+  const endMinutes = endHour * 60 + endMinute;
+
+  return Math.max(0, endMinutes - startMinutes);
+}
+
+function toHHMMUTC(date: Date | null): string | null {
+  if (!date) return null;
+
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+
+  return `${hours}:${minutes}`;
 }
 
 function dateOnlyUTC(yyyyMmDd: string): Date {
@@ -909,6 +954,11 @@ function mapRequest(
     dayPortion: AbsenceDayPortion;
     status: AbsenceRequestStatus;
     compensation: AbsenceCompensation;
+    sickLeaveKind: SickLeaveKind | null;
+    timeMode: AbsenceTimeMode;
+    startTime: Date | null;
+    endTime: Date | null;
+    paidMinutes: number;
     paidVacationUnits: number;
     unpaidVacationUnits: number;
     autoUnpaidBecauseNoBalance: boolean;
@@ -937,6 +987,11 @@ function mapRequest(
     dayPortion: r.dayPortion,
     status: r.status,
     compensation: r.compensation,
+    sickLeaveKind: r.sickLeaveKind,
+    timeMode: r.timeMode,
+    startTime: toHHMMUTC(r.startTime),
+    endTime: toHHMMUTC(r.endTime),
+    paidMinutes: r.paidMinutes,
     paidVacationUnits: r.paidVacationUnits,
     unpaidVacationUnits: r.unpaidVacationUnits,
     autoUnpaidBecauseNoBalance: r.autoUnpaidBecauseNoBalance,
@@ -1068,6 +1123,10 @@ export async function POST(req: Request) {
   const dayPortionRaw = getString(body.dayPortion).trim();
   const noteEmployee = getString(body.noteEmployee).trim();
   const compensationRaw = getString(body.compensation).trim();
+  const sickLeaveKindRaw = getString(body.sickLeaveKind).trim();
+  const timeModeRaw = getString(body.timeMode).trim();
+  const requestStartTimeRaw = getString(body.startTime).trim();
+  const requestEndTimeRaw = getString(body.endTime).trim();
 
   if (!isYYYYMMDD(startDate) || !isYYYYMMDD(endDate)) {
     return NextResponse.json(
@@ -1088,6 +1147,39 @@ export async function POST(req: Request) {
 
   const requestedCompensation: AbsenceCompensation =
     isAbsenceCompensation(compensationRaw) ? compensationRaw : AbsenceCompensation.PAID;
+
+  const requestedSickLeaveKind: SickLeaveKind | null =
+    typeRaw === "SICK"
+      ? isSickLeaveKind(sickLeaveKindRaw)
+        ? sickLeaveKindRaw
+        : SickLeaveKind.SICK_LEAVE
+      : null;
+
+  const requestedTimeMode: AbsenceTimeMode =
+    typeRaw === "SICK" &&
+    requestedSickLeaveKind === SickLeaveKind.DOCTOR_APPOINTMENT &&
+    isAbsenceTimeMode(timeModeRaw)
+      ? timeModeRaw
+      : AbsenceTimeMode.FULL_DAY;
+
+  const isDoctorAppointmentTimeRange =
+    typeRaw === "SICK" &&
+    requestedSickLeaveKind === SickLeaveKind.DOCTOR_APPOINTMENT &&
+    requestedTimeMode === AbsenceTimeMode.TIME_RANGE;
+
+  const finalStartTime =
+    isDoctorAppointmentTimeRange && isHHMM(requestStartTimeRaw)
+      ? timeOnlyUTC(requestStartTimeRaw)
+      : null;
+
+  const finalEndTime =
+    isDoctorAppointmentTimeRange && isHHMM(requestEndTimeRaw)
+      ? timeOnlyUTC(requestEndTimeRaw)
+      : null;
+
+  const paidMinutes = isDoctorAppointmentTimeRange
+    ? minutesBetweenHHMM(requestStartTimeRaw, requestEndTimeRaw)
+    : 0;
 
   let finalCompensation = requestedCompensation;
   let autoUnpaidBecauseNoBalance = false;
@@ -1120,6 +1212,29 @@ export async function POST(req: Request) {
       { ok: false, error: translateAbsenceRequestText(language, "sickOnlyFullDayRequested") },
       { status: 400 }
     );
+  }
+
+  if (isDoctorAppointmentTimeRange) {
+    if (startDate !== endDate) {
+      return NextResponse.json(
+        { ok: false, error: "Ein Arzttermin-Zeitraum darf nur für einen einzelnen Tag beantragt werden." },
+        { status: 400 }
+      );
+    }
+
+    if (!isHHMM(requestStartTimeRaw) || !isHHMM(requestEndTimeRaw)) {
+      return NextResponse.json(
+        { ok: false, error: "Bitte gib Startzeit und Endzeit für den Arzttermin an." },
+        { status: 400 }
+      );
+    }
+
+    if (paidMinutes <= 0) {
+      return NextResponse.json(
+        { ok: false, error: "Die Endzeit des Arzttermins muss nach der Startzeit liegen." },
+        { status: 400 }
+      );
+    }
   }
 
   if (typeRaw === "SICK" && finalCompensation !== AbsenceCompensation.PAID) {
@@ -1203,6 +1318,22 @@ export async function POST(req: Request) {
         gte: start,
         lte: end,
       },
+      OR: isDoctorAppointmentTimeRange
+        ? [
+            {
+              timeMode: AbsenceTimeMode.FULL_DAY,
+            },
+            {
+              timeMode: AbsenceTimeMode.TIME_RANGE,
+              startTime: {
+                lt: finalEndTime ?? undefined,
+              },
+              endTime: {
+                gt: finalStartTime ?? undefined,
+              },
+            },
+          ]
+        : undefined,
     },
     select: {
       id: true,
@@ -1229,6 +1360,22 @@ export async function POST(req: Request) {
       endDate: {
         gte: start,
       },
+      OR: isDoctorAppointmentTimeRange
+        ? [
+            {
+              timeMode: AbsenceTimeMode.FULL_DAY,
+            },
+            {
+              timeMode: AbsenceTimeMode.TIME_RANGE,
+              startTime: {
+                lt: finalEndTime ?? undefined,
+              },
+              endTime: {
+                gt: finalStartTime ?? undefined,
+              },
+            },
+          ]
+        : undefined,
     },
     select: {
       id: true,
@@ -1271,6 +1418,11 @@ export async function POST(req: Request) {
       dayPortion,
       status: AbsenceRequestStatus.PENDING,
       compensation: finalCompensation,
+      sickLeaveKind: requestedSickLeaveKind,
+      timeMode: requestedTimeMode,
+      startTime: finalStartTime,
+      endTime: finalEndTime,
+      paidMinutes,
       paidVacationUnits,
       unpaidVacationUnits,
       autoUnpaidBecauseNoBalance,

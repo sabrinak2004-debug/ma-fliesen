@@ -1,6 +1,12 @@
 import Holidays from "date-holidays";
 import { NextResponse } from "next/server";
-import { MonthlyWorkEntryConfirmationStatus, Role } from "@prisma/client";
+import {
+  AbsenceTimeMode,
+  AbsenceType,
+  MonthlyWorkEntryConfirmationStatus,
+  Role,
+  SickLeaveKind,
+} from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -10,6 +16,7 @@ import {
 
 type MonthlyConfirmationEntryDTO = {
   id: string;
+  kind: "WORK_ENTRY" | "DOCTOR_APPOINTMENT";
   workDate: string;
   startTime: string;
   endTime: string;
@@ -223,8 +230,30 @@ export async function GET(req: Request): Promise<NextResponse> {
     },
   });
 
-  const entries: MonthlyConfirmationEntryDTO[] = rows.map((entry) => ({
+  const doctorAppointmentRows = await prisma.absence.findMany({
+    where: {
+      userId: session.userId,
+      type: AbsenceType.SICK,
+      sickLeaveKind: SickLeaveKind.DOCTOR_APPOINTMENT,
+      timeMode: AbsenceTimeMode.TIME_RANGE,
+      absenceDate: {
+        gte: range.start,
+        lt: range.endExclusive,
+      },
+    },
+    orderBy: [{ absenceDate: "asc" }, { startTime: "asc" }],
+    select: {
+      id: true,
+      absenceDate: true,
+      startTime: true,
+      endTime: true,
+      paidMinutes: true,
+    },
+  });
+
+  const workEntries: MonthlyConfirmationEntryDTO[] = rows.map((entry) => ({
     id: entry.id,
+    kind: "WORK_ENTRY",
     workDate: toIsoDateUTC(entry.workDate),
     startTime: toHHMMUTC(entry.startTime),
     endTime: toHHMMUTC(entry.endTime),
@@ -236,6 +265,39 @@ export async function GET(req: Request): Promise<NextResponse> {
     workMinutes: entry.workMinutes,
     noteEmployee: entry.noteEmployee ?? "",
   }));
+
+  const doctorAppointments: MonthlyConfirmationEntryDTO[] =
+    doctorAppointmentRows
+      .filter((appointment) => appointment.startTime && appointment.endTime && appointment.paidMinutes > 0)
+      .map((appointment) => ({
+        id: appointment.id,
+        kind: "DOCTOR_APPOINTMENT",
+        workDate: toIsoDateUTC(appointment.absenceDate),
+        startTime: toHHMMUTC(appointment.startTime ?? new Date("1970-01-01T00:00:00.000Z")),
+        endTime: toHHMMUTC(appointment.endTime ?? new Date("1970-01-01T00:00:00.000Z")),
+        activity: "Arzttermin",
+        location: "—",
+        travelMinutes: 0,
+        grossMinutes: appointment.paidMinutes,
+        breakMinutes: 0,
+        workMinutes: appointment.paidMinutes,
+        noteEmployee: "",
+      }));
+
+  const entries: MonthlyConfirmationEntryDTO[] = [
+    ...workEntries,
+    ...doctorAppointments,
+  ].sort((a, b) => {
+    if (a.workDate !== b.workDate) {
+      return a.workDate < b.workDate ? -1 : 1;
+    }
+
+    if (a.startTime !== b.startTime) {
+      return a.startTime < b.startTime ? -1 : 1;
+    }
+
+    return 0;
+  });
 
   return NextResponse.json({
     ok: true,

@@ -77,6 +77,7 @@ type CreateWorkEntryResponse = {
 
 type MonthlyConfirmationEntry = {
   id: string;
+  kind?: "WORK_ENTRY" | "DOCTOR_APPOINTMENT";
   workDate: string;
   startTime: string;
   endTime: string;
@@ -174,6 +175,14 @@ type DayBreak = {
   legalMinutes: number;
   autoSupplementMinutes: number;
   effectiveMinutes: number;
+};
+
+type DoctorAppointmentDTO = {
+  id: string;
+  absenceDate: string;
+  startTime: string;
+  endTime: string;
+  paidMinutes: number;
 };
 
 type TimeEntryCorrectionRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -333,6 +342,28 @@ function formatHM(minutes: number) {
   const h = Math.floor(m / 60);
   const mm = m % 60;
   return `${h}h ${String(mm).padStart(2, "0")}min`;
+}
+
+function doctorAppointmentHint(language: AppUiLanguage, startTime: string, endTime: string, paidMinutes: number): string {
+  const formatted = formatHM(paidMinutes);
+
+  switch (language) {
+    case "EN":
+      return `Approved doctor appointment: ${startTime}–${endTime} are counted as paid time (${formatted}). Please enter only the remaining working time.`;
+    case "IT":
+      return `Visita medica approvata: ${startTime}–${endTime} vengono conteggiati come tempo retribuito (${formatted}). Inserisci solo il tempo di lavoro restante.`;
+    case "TR":
+      return `Onaylanmış doktor randevusu: ${startTime}–${endTime} ücretli süre olarak sayılır (${formatted}). Lütfen sadece kalan çalışma süresini girin.`;
+    case "SQ":
+      return `Takim i miratuar te mjeku: ${startTime}–${endTime} llogaritet si kohë e paguar (${formatted}). Ju lutem shënoni vetëm kohën e mbetur të punës.`;
+    case "KU":
+      return `Hevdîtina bijîşk a pejirandî: ${startTime}–${endTime} wekî demê dayîn tê hesibandin (${formatted}). Ji kerema xwe tenê dema karê mayî binivîse.`;
+    case "RO":
+      return `Programare medicală aprobată: ${startTime}–${endTime} este contabilizată ca timp plătit (${formatted}). Vă rugăm să introduceți doar timpul de lucru rămas.`;
+    case "DE":
+    default:
+      return `Genehmigter Arzttermin: ${startTime}–${endTime} wird als bezahlte Zeit berücksichtigt (${formatted}). Bitte trage nur die restliche Arbeitszeit ein.`;
+  }
 }
 
 /** Gruppierung Monat/Jahr */
@@ -1088,6 +1119,11 @@ function isMonthlyConfirmationEntry(value: unknown): value is MonthlyConfirmatio
   return (
     isRecord(value) &&
     isString(value["id"]) &&
+    (
+      value["kind"] === undefined ||
+      value["kind"] === "WORK_ENTRY" ||
+      value["kind"] === "DOCTOR_APPOINTMENT"
+    ) &&
     isString(value["workDate"]) &&
     isString(value["startTime"]) &&
     isString(value["endTime"]) &&
@@ -1377,6 +1413,26 @@ function getMonthlyConfirmationIntro(language: AppUiLanguage): string {
   }
 }
 
+function getMonthlyConfirmationDoctorAppointmentLabel(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Approved doctor appointment";
+    case "IT":
+      return "Visita medica approvata";
+    case "TR":
+      return "Onaylanmış doktor randevusu";
+    case "SQ":
+      return "Takim i miratuar te mjeku";
+    case "KU":
+      return "Hevdîtina bijîşk a pejirandî";
+    case "RO":
+      return "Programare medicală aprobată";
+    case "DE":
+    default:
+      return "Genehmigter Arzttermin";
+  }
+}
+
 function getMonthlyConfirmationLegalNotice(language: AppUiLanguage): string {
   switch (language) {
     case "EN":
@@ -1571,6 +1627,7 @@ function ErfassungPageInner() {
   const [showSyncToast, setShowSyncToast] = useState(false);
 
   const [dayBreaks, setDayBreaks] = useState<DayBreak[]>([]);
+  const [doctorAppointments, setDoctorAppointments] = useState<DoctorAppointmentDTO[]>([]);
   const [breakStartHHMM, setBreakStartHHMM] = useState("");
   const [breakEndHHMM, setBreakEndHHMM] = useState("");
   const [breakSaving, setBreakSaving] = useState(false);
@@ -1752,6 +1809,27 @@ function ErfassungPageInner() {
     return dayBreakMap.get(workDate) ?? null;
   }, [dayBreakMap, workDate]);
 
+  const doctorAppointmentsForSelectedDay = useMemo(() => {
+    return doctorAppointments.filter((appointment) => appointment.absenceDate === workDate);
+  }, [doctorAppointments, workDate]);
+
+  const paidDoctorAppointmentMinutesForSelectedDay = useMemo(() => {
+    return doctorAppointmentsForSelectedDay.reduce((sum, appointment) => {
+      return sum + Math.max(0, appointment.paidMinutes);
+    }, 0);
+  }, [doctorAppointmentsForSelectedDay]);
+
+  const paidDoctorAppointmentMinutesByDay = useMemo(() => {
+    const map = new Map<string, number>();
+
+    for (const appointment of doctorAppointments) {
+      const current = map.get(appointment.absenceDate) ?? 0;
+      map.set(appointment.absenceDate, current + Math.max(0, appointment.paidMinutes));
+    }
+
+    return map;
+  }, [doctorAppointments]);
+
   const currentBreakFormManualMinutes = useMemo(() => {
     return computeManualBreakMinutes(breakStartHHMM, breakEndHHMM);
   }, [breakStartHHMM, breakEndHHMM]);
@@ -1897,8 +1975,17 @@ useEffect(() => {
           ? ((j as { dayBreaks: DayBreak[] }).dayBreaks ?? [])
           : [];
 
+      const doctorAppointmentList =
+        typeof j === "object" &&
+        j !== null &&
+        "doctorAppointments" in j &&
+        Array.isArray((j as { doctorAppointments: unknown }).doctorAppointments)
+          ? ((j as { doctorAppointments: DoctorAppointmentDTO[] }).doctorAppointments ?? [])
+          : [];
+
       setEntries(entriesList);
       setDayBreaks(dayBreakList);
+      setDoctorAppointments(doctorAppointmentList);
 
       return entriesList;
     } finally {
@@ -3148,6 +3235,36 @@ useEffect(() => {
           </div>
         ) : null}
 
+        {doctorAppointmentsForSelectedDay.length > 0 ? (
+          <div
+            className="card tenant-status-card tenant-status-card-success"
+            style={{
+              padding: 12,
+              marginBottom: 12,
+            }}
+          >
+            <div style={{ display: "grid", gap: 6 }}>
+              {doctorAppointmentsForSelectedDay.map((appointment) => (
+                <div
+                  key={appointment.id}
+                  className="tenant-status-text-success"
+                  style={{
+                    fontWeight: 800,
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {doctorAppointmentHint(
+                    language,
+                    appointment.startTime,
+                    appointment.endTime,
+                    appointment.paidMinutes
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div className="row erfassung-time-row" style={{ marginBottom: 12 }}>
           <div className="erfassung-time-field">
             <div className="label">{t("start")}</div>
@@ -3549,7 +3666,8 @@ useEffect(() => {
                 {m.days.map((d) => {
                   const totals = dayTotalsMap.get(d.date);
                   const pauseMin = totals ? totals.effectiveBreak : 0;
-                  const netDay = totals ? totals.netDay : 0;
+                  const paidDoctorMinutes = paidDoctorAppointmentMinutesByDay.get(d.date) ?? 0;
+                  const netDay = (totals ? totals.netDay : 0) + paidDoctorMinutes;
 
                   return (
                     <details
@@ -4514,6 +4632,10 @@ useEffect(() => {
                         {formatDateLocalized(language, entry.workDate)}
                       </div>
                       <div style={{ color: "var(--muted)", fontSize: 12 }}>
+                        {entry.kind === "DOCTOR_APPOINTMENT"
+                          ? getMonthlyConfirmationDoctorAppointmentLabel(language)
+                          : null}
+                        {entry.kind === "DOCTOR_APPOINTMENT" ? " · " : ""}
                         {entry.startTime}–{entry.endTime} {t("oClock")}
                       </div>
                     </div>
@@ -4527,7 +4649,9 @@ useEffect(() => {
                     <div>
                       <div className="label">{t("performedActivity")}</div>
                       <div className="input tenant-note-surface">
-                        {entry.activity.trim() || "—"}
+                        {entry.kind === "DOCTOR_APPOINTMENT"
+                          ? getMonthlyConfirmationDoctorAppointmentLabel(language)
+                          : entry.activity.trim() || "—"}
                       </div>
                     </div>
 

@@ -5,8 +5,10 @@ import { getSession } from "@/lib/auth";
 import {
   AbsenceCompensation,
   AbsenceDayPortion,
+  AbsenceTimeMode,
   AbsenceType,
   Role,
+  SickLeaveKind,
 } from "@prisma/client";
 import {
   ADMIN_TASKS_UI_TEXTS,
@@ -85,6 +87,15 @@ function toIsoDateUTC(d: Date): string {
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function toHHMMUTC(date: Date | null): string | null {
+  if (!date) return null;
+
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+
+  return `${hours}:${minutes}`;
 }
 
 function eachDayInclusive(from: Date, to: Date): Date[] {
@@ -279,6 +290,11 @@ type AbsenceDTO = {
   type: "VACATION" | "SICK";
   dayPortion: "FULL_DAY" | "HALF_DAY";
   compensation: "PAID" | "UNPAID";
+  sickLeaveKind: SickLeaveKind | null;
+  timeMode: AbsenceTimeMode;
+  startTime: string | null;
+  endTime: string | null;
+  paidMinutes: number;
   user: { id: string; fullName: string };
 };
 
@@ -423,6 +439,11 @@ export async function GET(req: Request) {
     type: a.type === "SICK" ? "SICK" : "VACATION",
     dayPortion: a.dayPortion,
     compensation: a.compensation,
+    sickLeaveKind: a.sickLeaveKind,
+    timeMode: a.timeMode,
+    startTime: toHHMMUTC(a.startTime),
+    endTime: toHHMMUTC(a.endTime),
+    paidMinutes: a.paidMinutes,
     user: {
       id: a.user.id,
       fullName: a.user.fullName,

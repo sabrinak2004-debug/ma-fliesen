@@ -325,6 +325,7 @@ export async function getMissingRequiredWorkDates(
           gte: effectiveRangeStartDate,
           lt: rangeEndExclusive,
         },
+        timeMode: "FULL_DAY",
       },
       select: {
         absenceDate: true,

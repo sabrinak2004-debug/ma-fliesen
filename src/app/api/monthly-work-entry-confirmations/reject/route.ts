@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import {
+  AbsenceTimeMode,
+  AbsenceType,
   MonthlyWorkEntryConfirmationStatus,
   Role,
+  SickLeaveKind,
   TaskCategory,
   TaskRequiredAction,
   TaskStatus,
@@ -227,8 +230,31 @@ export async function POST(req: Request): Promise<NextResponse> {
     },
   });
 
-  const entrySnapshot = entries.map((entry) => ({
+  const doctorAppointmentRows = await prisma.absence.findMany({
+    where: {
+      userId: session.userId,
+      type: AbsenceType.SICK,
+      sickLeaveKind: SickLeaveKind.DOCTOR_APPOINTMENT,
+      timeMode: AbsenceTimeMode.TIME_RANGE,
+      absenceDate: {
+        gte: range.start,
+        lt: range.endExclusive,
+      },
+    },
+    orderBy: [{ absenceDate: "asc" }, { startTime: "asc" }],
+    select: {
+      id: true,
+      absenceDate: true,
+      startTime: true,
+      endTime: true,
+      paidMinutes: true,
+      createdAt: true,
+    },
+  });
+
+  const workEntrySnapshot = entries.map((entry) => ({
     id: entry.id,
+    kind: "WORK_ENTRY",
     workDate: toIsoDateUTC(entry.workDate),
     startTime: toHHMMUTC(entry.startTime),
     endTime: toHHMMUTC(entry.endTime),
@@ -242,6 +268,40 @@ export async function POST(req: Request): Promise<NextResponse> {
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),
   }));
+
+  const doctorAppointmentSnapshot = doctorAppointmentRows
+    .filter((appointment) => appointment.startTime && appointment.endTime && appointment.paidMinutes > 0)
+    .map((appointment) => ({
+      id: appointment.id,
+      kind: "DOCTOR_APPOINTMENT",
+      workDate: toIsoDateUTC(appointment.absenceDate),
+      startTime: toHHMMUTC(appointment.startTime ?? new Date("1970-01-01T00:00:00.000Z")),
+      endTime: toHHMMUTC(appointment.endTime ?? new Date("1970-01-01T00:00:00.000Z")),
+      activity: "Arzttermin",
+      location: "—",
+      travelMinutes: 0,
+      grossMinutes: appointment.paidMinutes,
+      breakMinutes: 0,
+      workMinutes: appointment.paidMinutes,
+      noteEmployee: "",
+      createdAt: appointment.createdAt.toISOString(),
+      updatedAt: appointment.createdAt.toISOString(),
+    }));
+
+  const entrySnapshot = [
+    ...workEntrySnapshot,
+    ...doctorAppointmentSnapshot,
+  ].sort((a, b) => {
+    if (a.workDate !== b.workDate) {
+      return a.workDate < b.workDate ? -1 : 1;
+    }
+
+    if (a.startTime !== b.startTime) {
+      return a.startTime < b.startTime ? -1 : 1;
+    }
+
+    return 0;
+  });
 
   const existingTask = await prisma.task.findFirst({
     where: {

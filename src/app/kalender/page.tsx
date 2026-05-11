@@ -39,6 +39,8 @@ type CalendarResponse = { ok: true; days: CalendarDay[] } | { ok: false; error: 
 type AbsenceType = "VACATION" | "SICK";
 type AbsenceDayPortion = "FULL_DAY" | "HALF_DAY";
 type AbsenceCompensation = "PAID" | "UNPAID";
+type SickLeaveKind = "SICK_LEAVE" | "DOCTOR_APPOINTMENT";
+type AbsenceTimeMode = "FULL_DAY" | "TIME_RANGE";
 
 type AbsenceDTO = {
   id: string;
@@ -46,6 +48,11 @@ type AbsenceDTO = {
   type: AbsenceType;
   dayPortion: AbsenceDayPortion;
   compensation: AbsenceCompensation;
+  sickLeaveKind: SickLeaveKind | null;
+  timeMode: AbsenceTimeMode;
+  startTime: string | null;
+  endTime: string | null;
+  paidMinutes: number;
   user: { id: string; fullName: string };
 };
 
@@ -75,6 +82,11 @@ type AbsenceRequestDTO = {
   dayPortion: AbsenceDayPortion;
   status: AbsenceRequestStatus;
   compensation: AbsenceCompensation;
+  sickLeaveKind: SickLeaveKind | null;
+  timeMode: AbsenceTimeMode;
+  startTime: string | null;
+  endTime: string | null;
+  paidMinutes: number;
   paidVacationUnits: number;
   unpaidVacationUnits: number;
   autoUnpaidBecauseNoBalance: boolean;
@@ -99,6 +111,11 @@ type AbsenceRequestBlock = {
   dayPortion: AbsenceDayPortion;
   status: AbsenceRequestStatus;
   compensation: AbsenceCompensation;
+  sickLeaveKind: SickLeaveKind | null;
+  timeMode: AbsenceTimeMode;
+  startTime: string | null;
+  endTime: string | null;
+  paidMinutes: number;
   paidVacationUnits: number;
   unpaidVacationUnits: number;
   autoUnpaidBecauseNoBalance: boolean;
@@ -181,6 +198,109 @@ function isAbsenceCompensation(v: unknown): v is AbsenceCompensation {
   return v === "PAID" || v === "UNPAID";
 }
 
+function isSickLeaveKind(v: unknown): v is SickLeaveKind {
+  return v === "SICK_LEAVE" || v === "DOCTOR_APPOINTMENT";
+}
+
+function isAbsenceTimeMode(v: unknown): v is AbsenceTimeMode {
+  return v === "FULL_DAY" || v === "TIME_RANGE";
+}
+
+function isHHMM(v: string): boolean {
+  return /^\d{2}:\d{2}$/.test(v);
+}
+
+function minutesBetweenHHMM(startHHMM: string, endHHMM: string): number {
+  if (!isHHMM(startHHMM) || !isHHMM(endHHMM)) {
+    return 0;
+  }
+
+  const [startHour, startMinute] = startHHMM.split(":").map(Number);
+  const [endHour, endMinute] = endHHMM.split(":").map(Number);
+
+  return Math.max(0, endHour * 60 + endMinute - (startHour * 60 + startMinute));
+}
+
+function doctorAppointmentLabel(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Doctor appointment";
+    case "IT":
+      return "Visita medica";
+    case "TR":
+      return "Doktor randevusu";
+    case "SQ":
+      return "Takim te mjeku";
+    case "KU":
+      return "Hevdîtina bijîşk";
+    case "RO":
+      return "Programare la medic";
+    case "DE":
+    default:
+      return "Arzttermin";
+  }
+}
+
+function doctorAppointmentQuestion(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Doctor appointment?";
+    case "IT":
+      return "Visita medica?";
+    case "TR":
+      return "Doktor randevusu mu?";
+    case "SQ":
+      return "Takim te mjeku?";
+    case "KU":
+      return "Hevdîtina bijîşk?";
+    case "RO":
+      return "Programare la medic?";
+    case "DE":
+    default:
+      return "Arzttermin?";
+  }
+}
+
+function timeRangeLabel(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Specific time period";
+    case "IT":
+      return "Periodo specifico";
+    case "TR":
+      return "Belirli zaman aralığı";
+    case "SQ":
+      return "Periudhë e caktuar";
+    case "KU":
+      return "Demekî diyar";
+    case "RO":
+      return "Interval orar";
+    case "DE":
+    default:
+      return "Bestimmter Zeitraum";
+  }
+}
+
+function fullDayLabel(language: AppUiLanguage): string {
+  switch (language) {
+    case "EN":
+      return "Full day";
+    case "IT":
+      return "Intera giornata";
+    case "TR":
+      return "Tam gün";
+    case "SQ":
+      return "Gjithë dita";
+    case "KU":
+      return "Hemû roj";
+    case "RO":
+      return "Toată ziua";
+    case "DE":
+    default:
+      return "Ganztägig";
+  }
+}
+
 function isCalendarDay(v: unknown): v is CalendarDay {
   if (!isRecord(v)) return false;
   const date = getStringField(v, "date");
@@ -247,9 +367,19 @@ function isAbsenceDTO(v: unknown): v is AbsenceDTO {
   const type = v["type"];
   const dayPortion = v["dayPortion"];
   const compensation = v["compensation"];
+  const sickLeaveKind = v["sickLeaveKind"];
+  const timeMode = v["timeMode"];
+  const startTime = v["startTime"];
+  const endTime = v["endTime"];
+  const paidMinutes = v["paidMinutes"];
   const user = v["user"];
 
-  if (!id || !absenceDate || !isAbsenceType(type) || !isAbsenceDayPortion(dayPortion)|| !isAbsenceCompensation(compensation)) {
+  if (!id || !absenceDate || !isAbsenceType(type) || !isAbsenceDayPortion(dayPortion)|| !isAbsenceCompensation(compensation)||!isAbsenceTimeMode(timeMode) ||
+    !(sickLeaveKind === null || isSickLeaveKind(sickLeaveKind)) ||
+    !(startTime === null || typeof startTime === "string") ||
+    !(endTime === null || typeof endTime === "string") ||
+    typeof paidMinutes !== "number" ||
+    !Number.isFinite(paidMinutes)) {
     return false;
   }
   if (!isRecord(user)) return false;
@@ -278,6 +408,11 @@ function isAbsenceRequestDTO(v: unknown): v is AbsenceRequestDTO {
   const type = v["type"];
   const dayPortion = v["dayPortion"];
   const compensation = v["compensation"];
+  const sickLeaveKind = v["sickLeaveKind"];
+  const timeMode = v["timeMode"];
+  const startTime = v["startTime"];
+  const endTime = v["endTime"];
+  const paidMinutes = v["paidMinutes"];
   const paidVacationUnits = v["paidVacationUnits"];
   const unpaidVacationUnits = v["unpaidVacationUnits"];
   const autoUnpaidBecauseNoBalance = getBooleanField(v, "autoUnpaidBecauseNoBalance");
@@ -297,6 +432,12 @@ function isAbsenceRequestDTO(v: unknown): v is AbsenceRequestDTO {
     !isAbsenceType(type) ||
     !isAbsenceDayPortion(dayPortion) ||
     !isAbsenceCompensation(compensation) ||
+    !(sickLeaveKind === null || isSickLeaveKind(sickLeaveKind)) ||
+    !isAbsenceTimeMode(timeMode) ||
+    !(startTime === null || typeof startTime === "string") ||
+    !(endTime === null || typeof endTime === "string") ||
+    typeof paidMinutes !== "number" ||
+    !Number.isFinite(paidMinutes) ||
     typeof paidVacationUnits !== "number" ||
     !Number.isFinite(paidVacationUnits) ||
     typeof unpaidVacationUnits !== "number" ||
@@ -799,6 +940,11 @@ function buildRequestBlocks(requests: AbsenceRequestDTO[]): AbsenceRequestBlock[
       dayPortion: r.dayPortion,
       status: r.status,
       compensation: r.compensation,
+      sickLeaveKind: r.sickLeaveKind,
+      timeMode: r.timeMode,
+      startTime: r.startTime,
+      endTime: r.endTime,
+      paidMinutes: r.paidMinutes,
       paidVacationUnits: r.paidVacationUnits,
       unpaidVacationUnits: r.unpaidVacationUnits,
       autoUnpaidBecauseNoBalance: r.autoUnpaidBecauseNoBalance,
@@ -1217,6 +1363,10 @@ function KalenderPageInner({
   const [absenceType, setAbsenceType] = useState<AbsenceType>("VACATION");
   const [absenceDayPortion, setAbsenceDayPortion] = useState<AbsenceDayPortion>("FULL_DAY");
   const [absenceCompensation, setAbsenceCompensation] = useState<AbsenceCompensation>("PAID");
+  const [sickLeaveKind, setSickLeaveKind] = useState<SickLeaveKind>("SICK_LEAVE");
+  const [absenceTimeMode, setAbsenceTimeMode] = useState<AbsenceTimeMode>("FULL_DAY");
+  const [absenceStartTime, setAbsenceStartTime] = useState<string>("09:00");
+  const [absenceEndTime, setAbsenceEndTime] = useState<string>("11:00");
   const [remainingPaidVacationDaysForMonth, setRemainingPaidVacationDaysForMonth] = useState<number>(0);
   const [compensationLockedBySystem, setCompensationLockedBySystem] = useState<boolean>(false);
   const [selectedRequestBlock, setSelectedRequestBlock] = useState<AbsenceRequestBlock | null>(null);
@@ -1776,6 +1926,10 @@ function KalenderPageInner({
     setAbsenceCompensation(
       prefill?.absenceCompensation ?? "PAID"
     );
+    setSickLeaveKind("SICK_LEAVE");
+    setAbsenceTimeMode("FULL_DAY");
+    setAbsenceStartTime("09:00");
+    setAbsenceEndTime("11:00");
     setCompensationLockedBySystem(false);
     setRequestNote("");
 
@@ -1895,6 +2049,10 @@ function KalenderPageInner({
     setAbsenceType("VACATION");
     setAbsenceDayPortion("FULL_DAY");
     setAbsenceCompensation("PAID");
+    setSickLeaveKind("SICK_LEAVE");
+    setAbsenceTimeMode("FULL_DAY");
+    setAbsenceStartTime("09:00");
+    setAbsenceEndTime("11:00");
     setCompensationLockedBySystem(false);
     setRequestNote("");
   }
@@ -1906,6 +2064,10 @@ function KalenderPageInner({
     setAbsenceType(block.type);
     setAbsenceDayPortion(block.dayPortion);
     setAbsenceCompensation(block.compensation);
+    setSickLeaveKind(block.sickLeaveKind ?? "SICK_LEAVE");
+    setAbsenceTimeMode(block.timeMode);
+    setAbsenceStartTime(block.startTime ?? "09:00");
+    setAbsenceEndTime(block.endTime ?? "11:00");
     setCompensationLockedBySystem(block.compensationLockedBySystem);
     setRequestNote(block.noteEmployee);
     setError(null);
@@ -1920,6 +2082,10 @@ function KalenderPageInner({
     setAbsenceType("VACATION");
     setAbsenceDayPortion("FULL_DAY");
     setAbsenceCompensation("PAID");
+    setSickLeaveKind("SICK_LEAVE");
+    setAbsenceTimeMode("FULL_DAY");
+    setAbsenceStartTime("09:00");
+    setAbsenceEndTime("11:00");
     setCompensationLockedBySystem(false);
     setRequestNote("");
   }
@@ -1939,6 +2105,27 @@ function KalenderPageInner({
     if (absenceType === "SICK" && absenceDayPortion !== "FULL_DAY") {
       setError(t("wholeDayOnlyForSick"));
       return;
+    }
+
+    if (
+      absenceType === "SICK" &&
+      sickLeaveKind === "DOCTOR_APPOINTMENT" &&
+      absenceTimeMode === "TIME_RANGE"
+    ) {
+      if (absenceStart !== absenceEnd) {
+        setError("Ein Arzttermin-Zeitraum darf nur für einen einzelnen Tag beantragt werden.");
+        return;
+      }
+
+      if (!isHHMM(absenceStartTime) || !isHHMM(absenceEndTime)) {
+        setError("Bitte gib Startzeit und Endzeit für den Arzttermin an.");
+        return;
+      }
+
+      if (minutesBetweenHHMM(absenceStartTime, absenceEndTime) <= 0) {
+        setError("Die Endzeit des Arzttermins muss nach der Startzeit liegen.");
+        return;
+      }
     }
 
     if (absenceDayPortion === "HALF_DAY" && absenceType !== "VACATION") {
@@ -1981,6 +2168,24 @@ function KalenderPageInner({
           dayPortion: absenceDayPortion,
           compensation: absenceCompensation,
           noteEmployee: requestNote.trim(),
+          sickLeaveKind: absenceType === "SICK" ? sickLeaveKind : null,
+          timeMode:
+            absenceType === "SICK" &&
+            sickLeaveKind === "DOCTOR_APPOINTMENT"
+              ? absenceTimeMode
+              : "FULL_DAY",
+          startTime:
+            absenceType === "SICK" &&
+            sickLeaveKind === "DOCTOR_APPOINTMENT" &&
+            absenceTimeMode === "TIME_RANGE"
+              ? absenceStartTime
+              : null,
+          endTime:
+            absenceType === "SICK" &&
+            sickLeaveKind === "DOCTOR_APPOINTMENT" &&
+            absenceTimeMode === "TIME_RANGE"
+              ? absenceEndTime
+              : null,
         }),
       });
 
@@ -3413,6 +3618,8 @@ function KalenderPageInner({
                   setAbsenceType("SICK");
                   setAbsenceDayPortion("FULL_DAY");
                   setAbsenceCompensation("PAID");
+                  setSickLeaveKind("SICK_LEAVE");
+                  setAbsenceTimeMode("FULL_DAY");
                 }}
                 disabled={!!selectedRequestBlock}
               >
@@ -3490,6 +3697,111 @@ function KalenderPageInner({
                     {t("halfVacationDay")}
                   </button>
                 </div>
+              </div>
+            ) : null}
+
+            {absenceType === "SICK" ? (
+              <div style={{ marginBottom: 12 }}>
+                <div className="label">{doctorAppointmentQuestion(language)}</div>
+
+                <div className="calendar-form-grid-2" style={{ marginTop: 6 }}>
+                  <button
+                    className={`btn ${
+                      sickLeaveKind === "SICK_LEAVE" ? "btn-type-active-sick" : ""
+                    }`}
+                    type="button"
+                    onClick={() => {
+                      setSickLeaveKind("SICK_LEAVE");
+                      setAbsenceTimeMode("FULL_DAY");
+                    }}
+                    disabled={!!selectedRequestBlock}
+                  >
+                    {t("absenceTypeSick")}
+                  </button>
+
+                  <button
+                    className={`btn ${
+                      sickLeaveKind === "DOCTOR_APPOINTMENT" ? "btn-type-active-sick" : ""
+                    }`}
+                    type="button"
+                    onClick={() => {
+                      setSickLeaveKind("DOCTOR_APPOINTMENT");
+                      setAbsenceTimeMode("TIME_RANGE");
+                      setAbsenceEnd(absenceStart);
+                    }}
+                    disabled={!!selectedRequestBlock}
+                  >
+                    {doctorAppointmentLabel(language)}
+                  </button>
+                </div>
+
+                {sickLeaveKind === "DOCTOR_APPOINTMENT" ? (
+                  <div style={{ marginTop: 12 }}>
+                    <div className="label">{t("scope")}</div>
+
+                    <div className="calendar-form-grid-2" style={{ marginTop: 6 }}>
+                      <button
+                        className={`btn ${
+                          absenceTimeMode === "FULL_DAY" ? "btn-type-active-sick" : ""
+                        }`}
+                        type="button"
+                        onClick={() => setAbsenceTimeMode("FULL_DAY")}
+                        disabled={!!selectedRequestBlock}
+                      >
+                        {fullDayLabel(language)}
+                      </button>
+
+                      <button
+                        className={`btn ${
+                          absenceTimeMode === "TIME_RANGE" ? "btn-type-active-sick" : ""
+                        }`}
+                        type="button"
+                        onClick={() => {
+                          setAbsenceTimeMode("TIME_RANGE");
+                          setAbsenceEnd(absenceStart);
+                        }}
+                        disabled={!!selectedRequestBlock}
+                      >
+                        {timeRangeLabel(language)}
+                      </button>
+                    </div>
+
+                    {absenceTimeMode === "TIME_RANGE" ? (
+                      <div
+                        className="calendar-form-grid-2"
+                        style={{
+                          marginTop: 12,
+                        }}
+                      >
+                        <div>
+                          <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                            {t("start")}
+                          </div>
+                          <input
+                            className="input"
+                            type="time"
+                            value={absenceStartTime}
+                            onChange={(e) => setAbsenceStartTime(e.target.value)}
+                            disabled={!!selectedRequestBlock}
+                          />
+                        </div>
+
+                        <div>
+                          <div className="label" style={{ fontSize: 12, opacity: 0.8 }}>
+                            {t("end")}
+                          </div>
+                          <input
+                            className="input"
+                            type="time"
+                            value={absenceEndTime}
+                            onChange={(e) => setAbsenceEndTime(e.target.value)}
+                            disabled={!!selectedRequestBlock}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
