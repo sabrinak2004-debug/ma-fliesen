@@ -3,8 +3,10 @@ import {
   AbsenceCompensation,
   AbsenceDayPortion,
   AbsenceRequestStatus,
+  AbsenceTimeMode,
   AbsenceType,
   Prisma,
+  SickLeaveKind,
 } from "@prisma/client";
 import type { SupportedLang } from "@/lib/translate";
 import { prisma } from "@/lib/prisma";
@@ -24,6 +26,15 @@ function toIsoDateUTC(d: Date): string {
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function toHHMMUTC(date: Date | null): string | null {
+  if (!date) return null;
+
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+
+  return `${hours}:${minutes}`;
 }
 
 type TranslationMap = Partial<Record<SupportedLang, string>>;
@@ -77,6 +88,11 @@ function mapRequest(
     dayPortion: AbsenceDayPortion;
     status: AbsenceRequestStatus;
     compensation: AbsenceCompensation;
+    sickLeaveKind: SickLeaveKind | null;
+    timeMode: AbsenceTimeMode;
+    startTime: Date | null;
+    endTime: Date | null;
+    paidMinutes: number;
     paidVacationUnits: number;
     unpaidVacationUnits: number;
     autoUnpaidBecauseNoBalance: boolean;
@@ -105,6 +121,11 @@ function mapRequest(
     dayPortion: r.dayPortion,
     status: r.status,
     compensation: r.compensation,
+    sickLeaveKind: r.sickLeaveKind,
+    timeMode: r.timeMode,
+    startTime: toHHMMUTC(r.startTime),
+    endTime: toHHMMUTC(r.endTime),
+    paidMinutes: r.paidMinutes,
     paidVacationUnits: r.paidVacationUnits,
     unpaidVacationUnits: r.unpaidVacationUnits,
     autoUnpaidBecauseNoBalance: r.autoUnpaidBecauseNoBalance,
