@@ -395,8 +395,8 @@ function translateTimesheetLockError(
     return translate(language, "timesheetLockedDayRequiresCorrection", ERFASSUNG_DICTIONARY);
   }
 
-  if (error.message.startsWith("TIME_ENTRY_OLDER_MISSING_ENTRIES_FIRST:")) {
-    const missingDate = error.message.slice("TIME_ENTRY_OLDER_MISSING_ENTRIES_FIRST:".length).trim();
+  if (error.message.startsWith("timesheetOlderMissingEntriesFirst:")) {
+    const missingDate = error.message.slice("timesheetOlderMissingEntriesFirst:".length).trim();
 
     return translate(language, "timesheetOlderMissingEntriesFirst", ERFASSUNG_DICTIONARY)
       .replace("{date}", formatDateForLanguage(language, missingDate || ""));
