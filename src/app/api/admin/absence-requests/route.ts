@@ -197,17 +197,24 @@ export async function GET(req: Request) {
     const monthStart = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
     const nextMonthStart = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
 
-    where.AND = [
-      ...(Array.isArray(where.AND) ? where.AND : []),
-      {
-        startDate: {
-          lt: nextMonthStart,
+    if (typeParam === "SICK") {
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        {
+          startDate: {
+            lt: nextMonthStart,
+          },
+          endDate: {
+            gte: monthStart,
+          },
         },
-        endDate: {
-          gte: monthStart,
-        },
-      },
-    ];
+      ];
+    } else {
+      where.createdAt = {
+        gte: monthStart,
+        lt: nextMonthStart,
+      };
+    }
   }
 
   const rebalanceYear = new Date().getUTCFullYear();
