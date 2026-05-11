@@ -153,16 +153,7 @@ export async function GET(req: Request) {
   const userIdParam = (searchParams.get("userId") ?? "").trim();
   const monthParam = (searchParams.get("month") ?? "").trim();
 
-  const where: {
-    type?: AbsenceType;
-    status?: AbsenceRequestStatus;
-    userId?: string;
-    createdAt?: {
-      gte: Date;
-      lt: Date;
-    };
-    user?: { companyId: string };
-  } = {
+  const where: Prisma.AbsenceRequestWhereInput = {
     user: {
       companyId: admin.companyId,
     },
@@ -206,10 +197,17 @@ export async function GET(req: Request) {
     const monthStart = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
     const nextMonthStart = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
 
-    where.createdAt = {
-      gte: monthStart,
-      lt: nextMonthStart,
-    };
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : []),
+      {
+        startDate: {
+          lt: nextMonthStart,
+        },
+        endDate: {
+          gte: monthStart,
+        },
+      },
+    ];
   }
 
   const rebalanceYear = new Date().getUTCFullYear();
