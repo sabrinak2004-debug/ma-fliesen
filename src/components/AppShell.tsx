@@ -32,7 +32,7 @@ import {
   faChartColumn,
   faListCheck,
   faStethoscope,
-  faLock
+  faSignature,
 } from "@fortawesome/free-solid-svg-icons";
 import { ClipboardCheck, SquarePen, TreePalm } from "lucide-react";
 import LockIcon from "@/components/icons/LockIcon";
@@ -1054,7 +1054,7 @@ useEffect(() => {
   {
     href: "/admin/monatsbestaetigungen",
     labelKey: "monthlyConfirmations",
-    icon: <ClipboardCheck />,
+    icon: <FontAwesomeIcon icon={faSignature} />,
   },
   {
     href: "/admin/tasks",
