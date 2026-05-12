@@ -6,20 +6,14 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import Holidays from "date-holidays";
 import { formatGermanDateTime } from "@/lib/time";
+import {
+  getVacationBalanceSnapshotForMonth,
+  rebalanceAutoUnpaidVacationRequestsForYear,
+} from "@/app/api/absence-requests/route";
 
 /** === Payroll Settings (anpassen falls nötig) === */
 const STANDARD_DAY_HOURS = 8; // Referenzwert für Urlaub/Krankheit/Feiertag in Stunden
 const ROUND_TO_MINUTES = 15; // z.B. 15 = Viertelstunde (0,25h), 5 = 5-Minuten, 1 = Minuten-genau
-
-const ANNUAL_VACATION_DAYS = 30;
-const MONTHLY_VACATION_ACCRUAL_DAYS = ANNUAL_VACATION_DAYS / 12;
-
-function getAccruedVacationDaysUntilMonth(monthOneBased: number): number {
-  return Math.min(
-    ANNUAL_VACATION_DAYS,
-    monthOneBased * MONTHLY_VACATION_ACCRUAL_DAYS
-  );
-}
 
 function getPeriodEndInfo(
   rangeISO?: { fromISO: string; toISO: string; state: string }
@@ -88,16 +82,112 @@ type AbsenceWithUser = Prisma.AbsenceGetPayload<{
   include: { user: true };
 }>;
 
+type VacationPayrollMeta = {
+  userId: string;
+  entitlementDays: number | null;
+  remainingVacationDays: number | null;
+};
+
 type LoadDataResult = {
   entries: WorkEntryWithUser[];
   absences: AbsenceWithUser[];
   vacationYtdAbsences: AbsenceWithUser[];
+  vacationPayrollMeta: VacationPayrollMeta[];
 };
 
 function getSessionUserId(session: unknown): string | null {
   if (typeof session !== "object" || session === null) return null;
   const s = session as SessionLike;
   return s.userId ?? s.user?.id ?? null;
+}
+
+function getEffectiveRebalanceDate(periodEnd: Date | null): Date {
+  const now = new Date();
+
+  if (!periodEnd || periodEnd > now) {
+    return now;
+  }
+
+  return periodEnd;
+}
+
+async function getEmployeeIdsForExport(
+  userId: string | null,
+  companyId: string
+): Promise<string[]> {
+  if (userId) {
+    return [userId];
+  }
+
+  const employees = await prisma.appUser.findMany({
+    where: {
+      companyId,
+      role: "EMPLOYEE",
+      isActive: true,
+    },
+    select: {
+      id: true,
+    },
+    orderBy: {
+      fullName: "asc",
+    },
+  });
+
+  return employees.map((employee) => employee.id);
+}
+
+async function rebalanceVacationForExportPeriod(
+  userId: string | null,
+  companyId: string,
+  periodEnd: Date | null
+): Promise<void> {
+  if (!periodEnd) {
+    return;
+  }
+
+  const employeeIds = await getEmployeeIdsForExport(userId, companyId);
+  const effectiveDate = getEffectiveRebalanceDate(periodEnd);
+  const rebalanceYear = periodEnd.getUTCFullYear();
+
+  for (const employeeId of employeeIds) {
+    await rebalanceAutoUnpaidVacationRequestsForYear(
+      employeeId,
+      rebalanceYear,
+      effectiveDate
+    );
+  }
+}
+
+async function buildVacationPayrollMetaForExport(
+  userId: string | null,
+  companyId: string,
+  periodEnd: Date | null
+): Promise<VacationPayrollMeta[]> {
+  if (!periodEnd) {
+    return [];
+  }
+
+  const employeeIds = await getEmployeeIdsForExport(userId, companyId);
+  const year = periodEnd.getUTCFullYear();
+  const month = periodEnd.getUTCMonth() + 1;
+
+  const result: VacationPayrollMeta[] = [];
+
+  for (const employeeId of employeeIds) {
+    const snapshot = await getVacationBalanceSnapshotForMonth(
+      employeeId,
+      year,
+      month
+    );
+
+    result.push({
+      userId: employeeId,
+      entitlementDays: snapshot.accruedVacationDays,
+      remainingVacationDays: snapshot.remainingPaidVacationDays,
+    });
+  }
+
+  return result;
 }
 
 function csvEscape(value: unknown): string {
@@ -223,6 +313,14 @@ async function loadData(
   userId: string | null,
   companyId: string
 ): Promise<LoadDataResult> {
+  const periodEnd = to ?? null;
+
+  await rebalanceVacationForExportPeriod(
+    userId,
+    companyId,
+    periodEnd
+  );
+
   const entriesWhere =
     from || to || userId
       ? {
@@ -259,8 +357,6 @@ async function loadData(
           },
         };
 
-  const periodEnd = to ?? null;
-
   const vacationYtdWhere =
     periodEnd
       ? {
@@ -276,6 +372,12 @@ async function loadData(
           },
         }
       : null;
+
+  const vacationPayrollMeta = await buildVacationPayrollMetaForExport(
+    userId,
+    companyId,
+    periodEnd
+  );
 
   const [entries, absences, vacationYtdAbsences] = await Promise.all([
     prisma.workEntry.findMany({
@@ -297,7 +399,12 @@ async function loadData(
       : Promise.resolve<AbsenceWithUser[]>([]),
   ]);
 
-  return { entries, absences, vacationYtdAbsences };
+  return {
+    entries,
+    absences,
+    vacationYtdAbsences,
+    vacationPayrollMeta,
+  };
 }
 
 type Loaded = LoadDataResult;
@@ -471,8 +578,6 @@ function buildPayrollCsv(
   lines.push(["Export erstellt am", formatGermanDateTime(new Date())]);
   lines.push([]);
 
-  const periodEndInfo = getPeriodEndInfo(rangeISO);
-
   const vacationMetaByUser = new Map<
     string,
     {
@@ -481,27 +586,20 @@ function buildPayrollCsv(
     }
   >();
 
+  for (const meta of data.vacationPayrollMeta) {
+    vacationMetaByUser.set(meta.userId, {
+      entitlementDays: meta.entitlementDays,
+      remainingVacationDays: meta.remainingVacationDays,
+    });
+  }
+
   for (const b of blocks) {
-    if (!periodEndInfo) {
+    if (!vacationMetaByUser.has(b.userId)) {
       vacationMetaByUser.set(b.userId, {
         entitlementDays: null,
         remainingVacationDays: null,
       });
-      continue;
     }
-
-    const entitlementDays = getAccruedVacationDaysUntilMonth(periodEndInfo.month);
-    const usedVacationDaysYtd = sumPaidVacationDaysFromAbsences(b.vacationYtdAbsences);
-
-    const remainingVacationDays = Math.max(
-      0,
-      entitlementDays - usedVacationDaysYtd
-    );
-
-    vacationMetaByUser.set(b.userId, {
-      entitlementDays,
-      remainingVacationDays,
-    });
   }
 
   for (const b of blocks) {
@@ -722,33 +820,45 @@ function buildPayrollCsv(
       });
     }
 
-for (const a of b.absences) {
-  const d = dateOnly(a.absenceDate);
-  const h = holidayMap.get(d);
+    for (const a of b.absences) {
+      const d = dateOnly(a.absenceDate);
+      const h = holidayMap.get(d);
 
-  const createdAt =
-    a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+      const createdAt =
+        a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
 
-  details.push({
-    sortKey: `${d}T99:90`,
-    cols: [
-      d,
-      weekdayShortDE(d),
-      a.type === "SICK" ? "KRANK" : "URLAUB",
-      h?.name ?? "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      formatGermanDateTime(createdAt),
-    ],
-  });
-}
+      const absenceMinutes =
+        a.compensation === AbsenceCompensation.PAID
+          ? getAbsenceMinutes(a.dayPortion)
+          : 0;
+
+      const absenceTypeLabel =
+        a.type === AbsenceType.SICK
+          ? "KRANK"
+          : a.compensation === AbsenceCompensation.PAID
+            ? "URLAUB BEZAHLT"
+            : "URLAUB UNBEZAHLT";
+
+      details.push({
+        sortKey: `${d}T99:90`,
+        cols: [
+          d,
+          weekdayShortDE(d),
+          absenceTypeLabel,
+          h?.name ?? "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          absenceMinutes,
+          "",
+          "",
+          "",
+          formatGermanDateTime(createdAt),
+        ],
+      });
+    }
 
     if (rangeISO) {
       for (const d of allDaysInRange) {
