@@ -23,10 +23,12 @@ import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 import {
   ADMIN_TASKS_UI_TEXTS,
   ERFASSUNG_DICTIONARY,
+  normalizeAppUiLanguage,
   translate,
   type AdminTasksTextKey,
   type AppUiLanguage,
 } from "@/lib/i18n";
+import Holidays from "date-holidays";
 
 function dateOnly(yyyyMmDd: string) {
   const [year, month, day] = yyyyMmDd.split("-").map(Number);
@@ -974,6 +976,54 @@ export async function GET(req: Request) {
   return NextResponse.json({ entries, dayBreaks, doctorAppointments });
 }
 
+function isYmdDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function getPublicHolidayNameInBadenWuerttemberg(workDate: string): string | null {
+  if (!isYmdDate(workDate)) {
+    return null;
+  }
+
+  const [yearText] = workDate.split("-");
+  const year = Number(yearText);
+
+  if (!Number.isInteger(year)) {
+    return null;
+  }
+
+  const holidays = new Holidays("DE", "BW");
+
+  const match = holidays.getHolidays(year).find((holiday) => {
+    return holiday.type === "public" && holiday.date.slice(0, 10) === workDate;
+  });
+
+  return match?.name ?? null;
+}
+
+function replaceTemplate(
+  template: string,
+  values: Record<string, string | number>
+): string {
+  return Object.entries(values).reduce((result, [key, value]) => {
+    return result.replaceAll(`{${key}}`, String(value));
+  }, template);
+}
+
+function getHolidayWorkEntryBlockedMessage(
+  languageValue: unknown,
+  holidayName: string
+): string {
+  const language = normalizeAppUiLanguage(languageValue);
+
+  return replaceTemplate(
+    translate(language, "holidayWorkEntryBlocked", ERFASSUNG_DICTIONARY),
+    {
+      holidayName,
+    }
+  );
+}
+
 export async function POST(req: Request) {
   const session = await getSession();
   const language = toAppUiLanguage(session?.language);
@@ -1001,6 +1051,18 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: translateEntryText(language, "invalidData") },
       { status: 400 }
+    );
+  }
+
+  const holidayName = getPublicHolidayNameInBadenWuerttemberg(workDate);
+
+  if (holidayName) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: getHolidayWorkEntryBlockedMessage(session.language, holidayName),
+      },
+      { status: 409 }
     );
   }
 

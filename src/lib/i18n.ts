@@ -2587,7 +2587,8 @@ export type ErfassungTextKey =
   | "removeFile"
   | "uploadedFiles"
   | "fileUploadFailed"
-  | "timesheetLockedDayRequiresCorrection";
+  | "timesheetLockedDayRequiresCorrection"
+  | "holidayWorkEntryBlocked";
 
 export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage, string>> = {
   loading: {
@@ -3957,6 +3958,15 @@ export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage
     SQ: "Kjo ditë e kaluar është e bllokuar. Ju lutem dërgoni një kërkesë korrigjimi që admini ta miratojë.",
     RO: "Această zi trecută este blocată. Te rugăm să trimiți o cerere de corectare pentru ca adminul să o poată aproba.",
     KU: "Ev roja borî hatiye girtin. Ji kerema xwe daxwaza rastkirinê bişîne da ku admin wê veke.",
+  },
+  holidayWorkEntryBlocked: {
+    DE: "Für diesen Tag kann kein Arbeitszeiteintrag erstellt werden, da in Baden-Württemberg ein Feiertag ist ({holidayName}). Der Feiertag wird automatisch berücksichtigt und bezahlt, wenn an diesem Tag nicht gearbeitet wird.",
+    EN: "No work entry can be created for this day because it is a public holiday in Baden-Württemberg ({holidayName}). The public holiday is automatically taken into account and paid if no work is performed on that day.",
+    IT: "Per questo giorno non è possibile creare una registrazione di lavoro perché in Baden-Württemberg è un giorno festivo ({holidayName}). Il giorno festivo viene considerato automaticamente e pagato se in quel giorno non viene svolto lavoro.",
+    TR: "Bu gün için çalışma kaydı oluşturulamaz, çünkü Baden-Württemberg’de resmi tatildir ({holidayName}). O gün çalışma yapılmazsa resmi tatil otomatik olarak dikkate alınır ve ödenir.",
+    SQ: "Për këtë ditë nuk mund të krijohet regjistrim pune, sepse në Baden-Württemberg është ditë feste zyrtare ({holidayName}). Festa zyrtare merret automatikisht parasysh dhe paguhet nëse atë ditë nuk punohet.",
+    KU: "Ji bo vê rojê tomarê karê nikare were çêkirin, ji ber ku li Baden-Württemberg cejna fermî ye ({holidayName}). Ev cejna fermî bixweber tê hesibandin û heke di vê rojê de kar neyê kirin, tê dayîn.",
+    RO: "Pentru această zi nu poate fi creată o înregistrare de lucru, deoarece este sărbătoare legală în Baden-Württemberg ({holidayName}). Sărbătoarea legală este luată automat în considerare și plătită dacă în acea zi nu se lucrează.",
   },
   editRequestRequiredForOldEntry: {
     DE: "Dieser Eintrag ist gesperrt. Bitte stelle eine Änderungsanfrage, damit der Admin die Änderung prüfen kann.",
