@@ -1852,8 +1852,15 @@ useEffect(() => {
             <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
               {resturlaubLoading
                 ? t("loadingVacationAccount")
-                : `${formatVacationDays(reservedPaidVacationDays)} ${t("usedOfAccrued")} ${formatVacationDays(accruedVacationDays)} ${t("days")}`}
+                : showFilteredEmployeeResturlaub
+                  ? `${formatVacationDays(reservedPaidVacationDays)} ${t("approvedPaidOfAccrued")} ${formatVacationDays(accruedVacationDays)} ${t("days")} ${t("paid")}`
+                  : `${formatVacationDays(usedVacationDaysYtd)} ${t("usedOfAccrued")} ${formatVacationDays(accruedVacationDays)} ${t("days")}`}
             </div>
+            {showFilteredEmployeeResturlaub ? (
+              <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
+                {t("alreadyTaken")} {formatVacationDays(usedVacationDaysYtd)} {t("days")}
+              </div>
+            ) : null}
 
             <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
               {t("asOf")} {formatMonthLabel(`${selectedResturlaubYear}-${selectedResturlaubMonth}`, language)}

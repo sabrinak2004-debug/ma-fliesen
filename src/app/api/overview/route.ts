@@ -42,94 +42,6 @@ function absencePortionMinutes(dayPortion: AbsenceDayPortion): number {
   return absencePortionValue(dayPortion) * DAILY_TARGET_MINUTES;
 }
 
-function getBadenWuerttembergNonWorkingHolidaySetForYears(
-  startYear: number,
-  endYear: number
-): Set<string> {
-  const holidays = new Holidays("DE", "BW");
-  const result = new Set<string>();
-
-  for (let year = startYear; year <= endYear; year += 1) {
-    for (const holiday of holidays.getHolidays(year)) {
-      if (holiday.type === "public") {
-        result.add(holiday.date.slice(0, 10));
-      }
-    }
-  }
-
-  return result;
-}
-
-function buildEffectiveVacationDays(
-  startDate: Date,
-  endDate: Date,
-  dayPortion: AbsenceDayPortion
-): Date[] {
-  const holidaySet = getBadenWuerttembergNonWorkingHolidaySetForYears(
-    startDate.getUTCFullYear(),
-    endDate.getUTCFullYear()
-  );
-
-  if (dayPortion === AbsenceDayPortion.HALF_DAY) {
-    if (!isWeekdayUtcDate(startDate) || holidaySet.has(isoDayUTC(startDate))) {
-      return [];
-    }
-
-    return [new Date(startDate)];
-  }
-
-  const days: Date[] = [];
-  const current = new Date(startDate);
-
-  while (current <= endDate) {
-    if (isWeekdayUtcDate(current) && !holidaySet.has(isoDayUTC(current))) {
-      days.push(new Date(current));
-    }
-
-    current.setUTCDate(current.getUTCDate() + 1);
-  }
-
-  return days;
-}
-
-function getPaidVacationUnitsOverwrittenBySickness(
-  request: {
-    startDate: Date;
-    endDate: Date;
-    dayPortion: AbsenceDayPortion;
-    paidVacationUnits: number;
-  },
-  sickAbsenceDates: Set<string>
-): number {
-  const vacationDays = buildEffectiveVacationDays(
-    request.startDate,
-    request.endDate,
-    request.dayPortion
-  );
-
-  let remainingPaidUnits = request.paidVacationUnits;
-  let overwrittenPaidUnits = 0;
-
-  for (const day of vacationDays) {
-    if (remainingPaidUnits <= 0) {
-      break;
-    }
-
-    const dayUnits =
-      request.dayPortion === AbsenceDayPortion.HALF_DAY ? 1 : 2;
-
-    const paidUnitsForDay = Math.min(remainingPaidUnits, dayUnits);
-
-    if (sickAbsenceDates.has(isoDayUTC(day))) {
-      overwrittenPaidUnits += paidUnitsForDay;
-    }
-
-    remainingPaidUnits -= paidUnitsForDay;
-  }
-
-  return overwrittenPaidUnits;
-}
-
 function paidAbsenceMinutes(row: {
   dayPortion: AbsenceDayPortion;
   timeMode: AbsenceTimeMode;
@@ -244,7 +156,7 @@ export async function GET(req: Request) {
   const to = buildNextMonthStartUtc(year, monthNumber);
 
   const yearFrom = new Date(Date.UTC(year, 0, 1));
-  const selectedMonthEnd = new Date(to.getTime() - 1);
+  const vacationBalanceToExclusive = buildNextMonthStartUtc(year, monthNumber);
 
   const holidaySet = getHolidaySetForMonth(year, month);
   const workingDaysInMonth = countWorkingDaysWithoutHolidays(year, monthNumber, holidaySet);
@@ -264,11 +176,13 @@ export async function GET(req: Request) {
     orderBy: { fullName: "asc" },
   });
 
+  const rebalanceYear = new Date().getUTCFullYear();
+
   for (const user of users) {
     await rebalanceAutoUnpaidVacationRequestsForYear(
       user.id,
-      year,
-      selectedMonthEnd
+      rebalanceYear,
+      new Date()
     );
   }
 
@@ -334,39 +248,12 @@ export async function GET(req: Request) {
       },
       createdAt: {
         gte: yearFrom,
-        lte: selectedMonthEnd,
+        lt: vacationBalanceToExclusive,
       },
     },
     select: {
       userId: true,
-      startDate: true,
-      endDate: true,
-      dayPortion: true,
       paidVacationUnits: true,
-      status: true,
-    },
-  });
-
-  const yearSickAbsences = await prisma.absence.findMany({
-    where: {
-      ...(isAdmin
-        ? {
-            user: {
-              companyId: session.companyId,
-              role: Role.EMPLOYEE,
-              isActive: true,
-            },
-          }
-        : { userId: session.userId }),
-      type: AbsenceType.SICK,
-      absenceDate: {
-        gte: yearFrom,
-        lt: new Date(Date.UTC(year + 1, 0, 1)),
-      },
-    },
-    select: {
-      userId: true,
-      absenceDate: true,
     },
   });
 
@@ -380,12 +267,6 @@ export async function GET(req: Request) {
   const byUser = await Promise.all(users.map(async (user) => {
     const userEntries = entries.filter((entry) => entry.userId === user.id);
     const userAbsences = absences.filter((absence) => absence.userId === user.id);
-
-    const userSickAbsenceDates = new Set(
-      yearSickAbsences
-        .filter((absence) => absence.userId === user.id)
-        .map((absence) => isoDayUTC(absence.absenceDate))
-    );
 
     const dayMap = new Map<string, DayAgg>();
 
@@ -454,21 +335,9 @@ export async function GET(req: Request) {
 
     const accruedVacationDays = getAccruedVacationDaysUntilMonth(monthNumber);
 
-    const reservedPaidVacationUnits = yearVacationRequests
+    const reservedPaidVacationDays = yearVacationRequests
       .filter((row) => row.userId === user.id)
-      .reduce((sum, row) => {
-        const overwrittenPaidUnits =
-          row.status === "APPROVED"
-            ? getPaidVacationUnitsOverwrittenBySickness(
-                row,
-                userSickAbsenceDates
-              )
-            : 0;
-
-        return sum + Math.max(0, row.paidVacationUnits - overwrittenPaidUnits);
-      }, 0);
-
-    const reservedPaidVacationDays = reservedPaidVacationUnits / 2;
+      .reduce((sum, row) => sum + row.paidVacationUnits / 2, 0);
 
     const usedVacationDaysYtd = reservedPaidVacationDays;
 
