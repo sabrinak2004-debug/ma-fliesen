@@ -156,7 +156,7 @@ export async function GET(req: Request) {
   const to = buildNextMonthStartUtc(year, monthNumber);
 
   const yearFrom = new Date(Date.UTC(year, 0, 1));
-  const vacationBalanceToExclusive = buildNextMonthStartUtc(year, monthNumber);
+  const selectedMonthEnd = new Date(to.getTime() - 1);
 
   const holidaySet = getHolidaySetForMonth(year, month);
   const workingDaysInMonth = countWorkingDaysWithoutHolidays(year, monthNumber, holidaySet);
@@ -176,13 +176,11 @@ export async function GET(req: Request) {
     orderBy: { fullName: "asc" },
   });
 
-  const rebalanceYear = new Date().getUTCFullYear();
-
   for (const user of users) {
     await rebalanceAutoUnpaidVacationRequestsForYear(
       user.id,
-      rebalanceYear,
-      new Date()
+      year,
+      selectedMonthEnd
     );
   }
 
@@ -248,7 +246,7 @@ export async function GET(req: Request) {
       },
       createdAt: {
         gte: yearFrom,
-        lt: vacationBalanceToExclusive,
+        lte: selectedMonthEnd,
       },
     },
     select: {
