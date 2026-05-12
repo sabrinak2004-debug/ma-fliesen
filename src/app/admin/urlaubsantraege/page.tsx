@@ -31,6 +31,7 @@ type AbsenceRequestItem = {
   unpaidVacationUnits: number;
   autoUnpaidBecauseNoBalance: boolean;
   compensationLockedBySystem: boolean;
+  overwrittenBySickDates: string[];
   noteEmployee: string;
   createdAt: string;
   updatedAt: string;
@@ -173,6 +174,7 @@ function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
   const unpaidVacationUnits = v["unpaidVacationUnits"];
   const autoUnpaidBecauseNoBalance = v["autoUnpaidBecauseNoBalance"];
   const compensationLockedBySystem = v["compensationLockedBySystem"];
+  const overwrittenBySickDatesRaw = v["overwrittenBySickDates"];
   const noteEmployee = getStringField(v, "noteEmployee");
   const createdAt = getStringField(v, "createdAt");
   const updatedAt = getStringField(v, "updatedAt");
@@ -193,6 +195,8 @@ function isAbsenceRequestItem(v: unknown): v is AbsenceRequestItem {
     !Number.isFinite(unpaidVacationUnits) ||
     typeof autoUnpaidBecauseNoBalance !== "boolean" ||
     typeof compensationLockedBySystem !== "boolean" ||
+    !Array.isArray(overwrittenBySickDatesRaw) ||
+    !overwrittenBySickDatesRaw.every((date) => typeof date === "string") ||
     !isRequestStatus(status) ||
     noteEmployee === null ||
     !createdAt ||
@@ -533,6 +537,51 @@ function adminHolidayExclusionHint(
   };
 
   return `${labels[language]} ${dates.join(", ")}`;
+}
+
+function adminSickOverwriteHint(
+  language: AppUiLanguage,
+  dates: string[]
+): string {
+  const sortedDates = dates.slice().sort();
+  const formattedDates = sortedDates
+    .map((date) => formatDateLocalized(date, language))
+    .join(", ");
+
+  const daysText = formatVacationDays(sortedDates.length);
+
+  const labels: Record<AppUiLanguage, string> = {
+    DE:
+      sortedDates.length === 1
+        ? `Hinweis: 1 Tag aus diesem genehmigten Urlaub wurde durch Krankheit überschrieben: ${formattedDates}. Dieser Tag wird nicht mehr als Urlaubstag gezählt.`
+        : `Hinweis: ${daysText} Tage aus diesem genehmigten Urlaub wurden durch Krankheit überschrieben: ${formattedDates}. Diese Tage werden nicht mehr als Urlaubstage gezählt.`,
+    EN:
+      sortedDates.length === 1
+        ? `Note: 1 day from this approved vacation was overwritten by sickness: ${formattedDates}. This day is no longer counted as vacation.`
+        : `Note: ${daysText} days from this approved vacation were overwritten by sickness: ${formattedDates}. These days are no longer counted as vacation.`,
+    IT:
+      sortedDates.length === 1
+        ? `Nota: 1 giorno di queste ferie approvate è stato sovrascritto da malattia: ${formattedDates}. Questo giorno non viene più conteggiato come ferie.`
+        : `Nota: ${daysText} giorni di queste ferie approvate sono stati sovrascritti da malattia: ${formattedDates}. Questi giorni non vengono più conteggiati come ferie.`,
+    TR:
+      sortedDates.length === 1
+        ? `Not: Bu onaylanmış izinden 1 gün hastalık nedeniyle değiştirildi: ${formattedDates}. Bu gün artık izin günü olarak sayılmaz.`
+        : `Not: Bu onaylanmış izinden ${daysText} gün hastalık nedeniyle değiştirildi: ${formattedDates}. Bu günler artık izin günü olarak sayılmaz.`,
+    SQ:
+      sortedDates.length === 1
+        ? `Shënim: 1 ditë nga ky pushim i miratuar u zëvendësua nga sëmundja: ${formattedDates}. Kjo ditë nuk llogaritet më si ditë pushimi.`
+        : `Shënim: ${daysText} ditë nga ky pushim i miratuar u zëvendësuan nga sëmundja: ${formattedDates}. Këto ditë nuk llogariten më si ditë pushimi.`,
+    KU:
+      sortedDates.length === 1
+        ? `Têbînî: 1 roj ji vê bêhnvedana pejirandî bi nexweşiyê hate guhertin: ${formattedDates}. Ev roj êdî wekî roja bêhnvedanê nayê hesibandin.`
+        : `Têbînî: ${daysText} roj ji vê bêhnvedana pejirandî bi nexweşiyê hatin guhertin: ${formattedDates}. Ev roj êdî wekî rojên bêhnvedanê nayên hesibandin.`,
+    RO:
+      sortedDates.length === 1
+        ? `Notă: 1 zi din acest concediu aprobat a fost suprascrisă de boală: ${formattedDates}. Această zi nu mai este numărată ca zi de concediu.`
+        : `Notă: ${daysText} zile din acest concediu aprobat au fost suprascrise de boală: ${formattedDates}. Aceste zile nu mai sunt numărate ca zile de concediu.`,
+  };
+
+  return labels[language];
 }
 
 function adminRequestHintText(
@@ -1383,6 +1432,12 @@ useEffect(() => {
     const isEditing = editingItemId === item.id;
     const requestedDays = totalRequestedVacationDays(item);
     const excludedHolidayDates = getExcludedVacationHolidayDatesForRequest(item);
+    const overwrittenBySickDates =
+      item.status === "APPROVED" ? item.overwrittenBySickDates : [];
+    const sickOverwriteHintText =
+      overwrittenBySickDates.length > 0
+        ? adminSickOverwriteHint(language, overwrittenBySickDates)
+        : null;
     const requestHintText = adminRequestHintText(
       item,
       language,
@@ -1433,6 +1488,12 @@ useEffect(() => {
             {requestHintText ? (
               <div className="admin-workflow-mixed-hint">
                 {requestHintText}
+              </div>
+            ) : null}
+
+            {sickOverwriteHintText ? (
+              <div className="admin-workflow-mixed-hint">
+                {sickOverwriteHintText}
               </div>
             ) : null}
 
