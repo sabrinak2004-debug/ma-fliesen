@@ -1011,7 +1011,7 @@ useEffect(() => {
     {
       href: "/meine-bestaetigungen",
       labelKey: "myConfirmations",
-      icon: <ClipboardCheck />,
+      icon: <FontAwesomeIcon icon={faSignature} />,
     },
   ];
 
