@@ -129,6 +129,10 @@ type WorkEntryChangeReport = {
     id: string;
     fullName: string;
   };
+  approvedBy: {
+    id: string;
+    fullName: string;
+  } | null;
   oldValues: WorkEntryChangeSnapshot;
   newValues: WorkEntryChangeSnapshot | null;
 };
@@ -145,6 +149,7 @@ function isWorkEntryChangeReport(value: unknown): value is WorkEntryChangeReport
   if (!isRecord(value)) return false;
 
   const changedBy = value["changedBy"];
+  const approvedBy = value["approvedBy"];
 
   return (
     isString(value["id"]) &&
@@ -154,6 +159,14 @@ function isWorkEntryChangeReport(value: unknown): value is WorkEntryChangeReport
     isRecord(changedBy) &&
     isString(changedBy["id"]) &&
     isString(changedBy["fullName"]) &&
+    (
+      approvedBy === null ||
+      (
+        isRecord(approvedBy) &&
+        isString(approvedBy["id"]) &&
+        isString(approvedBy["fullName"])
+      )
+    ) &&
     isWorkEntryChangeSnapshot(value["oldValues"]) &&
     (value["newValues"] === null || isWorkEntryChangeSnapshot(value["newValues"]))
   );
@@ -4271,10 +4284,28 @@ useEffect(() => {
                 </div>
 
                 <div style={{ display: "grid", gap: 6 }}>
-                  <div>
-                    <span style={{ color: "var(--muted)", fontSize: 12 }}>{t("changedBy")}</span>
-                    <div style={{ fontWeight: 900 }}>{report.changedBy.fullName}</div>
-                  </div>
+                  {report.approvedBy ? (
+                    <>
+                      <div>
+                        <span style={{ color: "var(--muted)", fontSize: 12 }}>
+                          {t("changedByEmployee")}
+                        </span>
+                        <div style={{ fontWeight: 900 }}>{report.changedBy.fullName}</div>
+                      </div>
+
+                      <div>
+                        <span style={{ color: "var(--muted)", fontSize: 12 }}>
+                          {t("approvedBy")}
+                        </span>
+                        <div style={{ fontWeight: 900 }}>{report.approvedBy.fullName}</div>
+                      </div>
+                    </>
+                  ) : (
+                    <div>
+                      <span style={{ color: "var(--muted)", fontSize: 12 }}>{t("changedBy")}</span>
+                      <div style={{ fontWeight: 900 }}>{report.changedBy.fullName}</div>
+                    </div>
+                  )}
 
                   <div>
                     <span style={{ color: "var(--muted)", fontSize: 12 }}>{t("changeReason")}</span>

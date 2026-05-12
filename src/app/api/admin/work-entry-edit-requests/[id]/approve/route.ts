@@ -340,7 +340,8 @@ export async function POST(_req: Request, context: RouteContext) {
     data: {
       workEntryId: updatedFresh.id,
       targetUserId: updatedFresh.userId,
-      changedByUserId: admin.id,
+      changedByUserId: request.userId,
+      approvedByUserId: admin.id,
       action: WorkEntryChangeAction.UPDATE,
       reason: request.reason,
       reasonSourceLanguage: request.reasonSourceLanguage,

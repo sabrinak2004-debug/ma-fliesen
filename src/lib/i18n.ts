@@ -2558,6 +2558,8 @@ export type ErfassungTextKey =
   | "changes"
   | "changeReportTitle"
   | "changedBy"
+  | "changedByEmployee"
+  | "approvedBy"
   | "changedAt"
   | "changeReason"
   | "changedFields"
@@ -3820,6 +3822,24 @@ export const ERFASSUNG_DICTIONARY: Record<ErfassungTextKey, Record<AppUiLanguage
     SQ: "Ndryshuar nga",
     KU: "Ji aliyê kê ve hat guhertin",
     RO: "Modificat de",
+  },
+  changedByEmployee: {
+    DE: "Geändert von",
+    EN: "Changed by",
+    IT: "Modificato da",
+    TR: "Değiştiren",
+    SQ: "Ndryshuar nga",
+    KU: "Ji aliyê kê ve hat guhertin",
+    RO: "Modificat de",
+  },
+  approvedBy: {
+    DE: "Genehmigt von",
+    EN: "Approved by",
+    IT: "Approvato da",
+    TR: "Onaylayan",
+    SQ: "Miratuar nga",
+    KU: "Ji aliyê kê ve hate pejirandin",
+    RO: "Aprobat de",
   },
   changedAt: {
     DE: "Geändert am",

@@ -61,6 +61,7 @@ model AppUser {
   monthlyWorkEntryConfirmations      MonthlyWorkEntryConfirmation[] @relation("MonthlyWorkEntryConfirmationUser")
   targetedWorkEntryChangeReports WorkEntryChangeReport[] @relation("WorkEntryChangeReportTargetUser")
   createdWorkEntryChangeReports  WorkEntryChangeReport[] @relation("WorkEntryChangeReportChangedBy")
+  approvedWorkEntryChangeReports WorkEntryChangeReport[] @relation("WorkEntryChangeReportApprovedBy")
 
   // ✅ NEU: Upload-Relation
   uploadedPlanEntryDocuments PlanEntryDocument[] @relation("UploadedBy")
@@ -214,6 +215,9 @@ model WorkEntryChangeReport {
   changedByUserId String
   changedByUser   AppUser @relation("WorkEntryChangeReportChangedBy", fields: [changedByUserId], references: [id], onDelete: Restrict)
 
+  approvedByUserId String?
+  approvedByUser   AppUser? @relation("WorkEntryChangeReportApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+
   action WorkEntryChangeAction
 
   reason               String
@@ -228,6 +232,7 @@ model WorkEntryChangeReport {
   @@index([workEntryId])
   @@index([targetUserId, createdAt])
   @@index([changedByUserId, createdAt])
+  @@index([approvedByUserId, createdAt])
   @@index([action])
 }
 

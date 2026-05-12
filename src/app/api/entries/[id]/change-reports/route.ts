@@ -19,6 +19,10 @@ type ChangeReportDTO = {
     id: string;
     fullName: string;
   };
+  approvedBy: {
+    id: string;
+    fullName: string;
+  } | null;
   oldValues: Prisma.JsonValue;
   newValues: Prisma.JsonValue | null;
 };
@@ -164,6 +168,12 @@ export async function GET(
           fullName: true,
         },
       },
+      approvedByUser: {
+        select: {
+          id: true,
+          fullName: true,
+        },
+      },
     },
   });
 
@@ -182,6 +192,12 @@ export async function GET(
       id: report.changedByUser.id,
       fullName: report.changedByUser.fullName,
     },
+    approvedBy: report.approvedByUser
+      ? {
+          id: report.approvedByUser.id,
+          fullName: report.approvedByUser.fullName,
+        }
+      : null,
     oldValues: translateSnapshotValues(report.oldValues, reportLanguage),
     newValues:
       report.newValues === null
