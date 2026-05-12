@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
-import { MonthlyWorkEntryConfirmationStatus, Prisma, Role } from "@prisma/client";
+import {
+  AbsenceTimeMode,
+  AbsenceType,
+  MonthlyWorkEntryConfirmationStatus,
+  Prisma,
+  Role,
+  SickLeaveKind,
+} from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -52,6 +59,26 @@ function isSnapshotEntryKind(value: unknown): value is SnapshotEntryKind {
   return value === "WORK_ENTRY" || value === "DOCTOR_APPOINTMENT";
 }
 
+function toIsoDateUTC(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function toHHMMUTC(date: Date): string {
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+function getMonthRange(year: number, month: number): {
+  start: Date;
+  endExclusive: Date;
+} {
+  return {
+    start: new Date(Date.UTC(year, month - 1, 1)),
+    endExclusive: new Date(Date.UTC(year, month, 1)),
+  };
+}
+
 function parseSnapshotEntry(value: unknown): MonthlyConfirmationSnapshotEntry | null {
   if (!isRecord(value)) {
     return null;
@@ -100,6 +127,110 @@ function parseEntrySnapshot(value: Prisma.JsonValue): MonthlyConfirmationSnapsho
     .filter((entry): entry is MonthlyConfirmationSnapshotEntry => entry !== null);
 }
 
+async function buildLiveSnapshotForUser(params: {
+  userId: string;
+  year: number;
+  month: number;
+}): Promise<MonthlyConfirmationSnapshotEntry[]> {
+  const range = getMonthRange(params.year, params.month);
+
+  const entries = await prisma.workEntry.findMany({
+    where: {
+      userId: params.userId,
+      workDate: {
+        gte: range.start,
+        lt: range.endExclusive,
+      },
+    },
+    orderBy: [{ workDate: "asc" }, { startTime: "asc" }],
+    select: {
+      id: true,
+      workDate: true,
+      startTime: true,
+      endTime: true,
+      activity: true,
+      location: true,
+      travelMinutes: true,
+      grossMinutes: true,
+      breakMinutes: true,
+      workMinutes: true,
+      noteEmployee: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  const doctorAppointments = await prisma.absence.findMany({
+    where: {
+      userId: params.userId,
+      type: AbsenceType.SICK,
+      sickLeaveKind: SickLeaveKind.DOCTOR_APPOINTMENT,
+      timeMode: AbsenceTimeMode.TIME_RANGE,
+      absenceDate: {
+        gte: range.start,
+        lt: range.endExclusive,
+      },
+    },
+    orderBy: [{ absenceDate: "asc" }, { startTime: "asc" }],
+    select: {
+      id: true,
+      absenceDate: true,
+      startTime: true,
+      endTime: true,
+      paidMinutes: true,
+      createdAt: true,
+    },
+  });
+
+  const workEntrySnapshot: MonthlyConfirmationSnapshotEntry[] = entries.map((entry) => ({
+    id: entry.id,
+    kind: "WORK_ENTRY",
+    workDate: toIsoDateUTC(entry.workDate),
+    startTime: toHHMMUTC(entry.startTime),
+    endTime: toHHMMUTC(entry.endTime),
+    activity: entry.activity,
+    location: entry.location,
+    travelMinutes: entry.travelMinutes,
+    grossMinutes: entry.grossMinutes,
+    breakMinutes: entry.breakMinutes,
+    workMinutes: entry.workMinutes,
+    noteEmployee: entry.noteEmployee ?? "",
+    createdAt: entry.createdAt.toISOString(),
+    updatedAt: entry.updatedAt.toISOString(),
+  }));
+
+  const doctorAppointmentSnapshot: MonthlyConfirmationSnapshotEntry[] = doctorAppointments
+    .filter((appointment) => appointment.startTime && appointment.endTime && appointment.paidMinutes > 0)
+    .map((appointment) => ({
+      id: appointment.id,
+      kind: "DOCTOR_APPOINTMENT",
+      workDate: toIsoDateUTC(appointment.absenceDate),
+      startTime: toHHMMUTC(appointment.startTime ?? new Date("1970-01-01T00:00:00.000Z")),
+      endTime: toHHMMUTC(appointment.endTime ?? new Date("1970-01-01T00:00:00.000Z")),
+      activity: "Arzttermin",
+      location: "—",
+      travelMinutes: 0,
+      grossMinutes: appointment.paidMinutes,
+      breakMinutes: 0,
+      workMinutes: appointment.paidMinutes,
+      noteEmployee: "",
+      createdAt: appointment.createdAt.toISOString(),
+      updatedAt: appointment.createdAt.toISOString(),
+    }));
+
+  return [...workEntrySnapshot, ...doctorAppointmentSnapshot].sort((a, b) => {
+    if (a.workDate !== b.workDate) {
+      return a.workDate < b.workDate ? -1 : 1;
+    }
+
+    if (a.startTime !== b.startTime) {
+      return a.startTime < b.startTime ? -1 : 1;
+    }
+
+    return 0;
+  });
+}
+
 export async function GET(): Promise<NextResponse> {
   const session = await getSession();
 
@@ -135,19 +266,33 @@ export async function GET(): Promise<NextResponse> {
     },
   });
 
-  const confirmations: MonthlyConfirmationHistoryItem[] = rows.map((row) => ({
-    id: row.id,
-    year: row.year,
-    month: row.month,
-    status: row.status,
-    confirmedAt: row.confirmedAt?.toISOString() ?? null,
-    rejectedAt: row.rejectedAt?.toISOString() ?? null,
-    rejectionReason: row.rejectionReason,
-    confirmationText: row.confirmationText,
-    requiredUntilAt: row.requiredUntilAt?.toISOString() ?? null,
-    updatedAt: row.updatedAt.toISOString(),
-    entries: parseEntrySnapshot(row.entrySnapshot),
-  }));
+  const confirmations: MonthlyConfirmationHistoryItem[] = await Promise.all(
+    rows.map(async (row) => {
+      const snapshotEntries = parseEntrySnapshot(row.entrySnapshot);
+      const entries =
+        snapshotEntries.length > 0
+          ? snapshotEntries
+          : await buildLiveSnapshotForUser({
+              userId: session.userId,
+              year: row.year,
+              month: row.month,
+            });
+
+      return {
+        id: row.id,
+        year: row.year,
+        month: row.month,
+        status: row.status,
+        confirmedAt: row.confirmedAt?.toISOString() ?? null,
+        rejectedAt: row.rejectedAt?.toISOString() ?? null,
+        rejectionReason: row.rejectionReason,
+        confirmationText: row.confirmationText,
+        requiredUntilAt: row.requiredUntilAt?.toISOString() ?? null,
+        updatedAt: row.updatedAt.toISOString(),
+        entries,
+      };
+    })
+  );
 
   return NextResponse.json({
     ok: true,
