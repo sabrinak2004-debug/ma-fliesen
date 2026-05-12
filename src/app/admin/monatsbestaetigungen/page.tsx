@@ -6,6 +6,8 @@ import AppShell from "@/components/AppShell";
 import Modal from "@/components/Modal";
 import { translate, type AppUiLanguage } from "@/lib/i18n";
 import { CircleCheckBig, CircleX, ClipboardCheck } from "lucide-react";
+import { faSignature } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 type ConfirmationStatus = "PENDING" | "CONFIRMED" | "REJECTED";
 
@@ -526,13 +528,13 @@ export default function AdminMonatsbestaetigungenPage() {
             <div className="small">{t("openKpi")}</div>
             <div className="big">{pendingItems.length}</div>
           </div>
-          <div className="admin-workflow-kpi-icon"><ClipboardCheck /></div>
+          <div className="admin-workflow-kpi-icon"><FontAwesomeIcon icon={faSignature} /></div>
         </div>
       </div>
 
       <div className="card card-olive admin-workflow-filter-shell">
         <div className="section-title admin-workflow-filter-title">
-          <span className="admin-workflow-filter-icon"><ClipboardCheck /></span>
+          <span className="admin-workflow-filter-icon"><FontAwesomeIcon icon={faSignature} /></span>
           {t("pageTitle")}
         </div>
 
