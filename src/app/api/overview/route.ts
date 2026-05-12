@@ -156,7 +156,7 @@ export async function GET(req: Request) {
   const to = buildNextMonthStartUtc(year, monthNumber);
 
   const yearFrom = new Date(Date.UTC(year, 0, 1));
-  const vacationBalanceToExclusive = buildNextMonthStartUtc(year, monthNumber);
+  const yearToExclusive = buildNextMonthStartUtc(year, monthNumber);
 
   const holidaySet = getHolidaySetForMonth(year, month);
   const workingDaysInMonth = countWorkingDaysWithoutHolidays(year, monthNumber, holidaySet);
@@ -231,6 +231,22 @@ export async function GET(req: Request) {
     },
   });
 
+  const yearVacationAbsences = await prisma.absence.findMany({
+    where: {
+      ...(isAdmin
+        ? {
+            user: {
+              companyId: session.companyId,
+              role: Role.EMPLOYEE,
+              isActive: true,
+            },
+          }
+        : { userId: session.userId }),
+      type: AbsenceType.VACATION,
+      absenceDate: { gte: yearFrom, lt: yearToExclusive },
+    },
+  });
+
   const yearVacationRequests = await prisma.absenceRequest.findMany({
     where: {
       ...(isAdmin
@@ -243,13 +259,9 @@ export async function GET(req: Request) {
           }
         : { userId: session.userId }),
       type: AbsenceType.VACATION,
-      status: {
-        in: ["PENDING", "APPROVED"],
-      },
-      createdAt: {
-        gte: yearFrom,
-        lt: vacationBalanceToExclusive,
-      },
+      status: "APPROVED",
+      startDate: { lt: new Date(Date.UTC(year + 1, 0, 1)) },
+      endDate: { gte: yearFrom },
     },
     select: {
       userId: true,
@@ -267,6 +279,9 @@ export async function GET(req: Request) {
   const byUser = await Promise.all(users.map(async (user) => {
     const userEntries = entries.filter((entry) => entry.userId === user.id);
     const userAbsences = absences.filter((absence) => absence.userId === user.id);
+    const userYearVacationAbsences = yearVacationAbsences.filter(
+      (absence) => absence.userId === user.id
+    );
 
     const dayMap = new Map<string, DayAgg>();
 
@@ -335,16 +350,15 @@ export async function GET(req: Request) {
 
     const accruedVacationDays = getAccruedVacationDaysUntilMonth(monthNumber);
 
+    const usedVacationDaysYtd = userYearVacationAbsences
+      .filter((row) => row.compensation === AbsenceCompensation.PAID)
+      .reduce((sum, row) => sum + absencePortionValue(row.dayPortion), 0);
+
     const reservedPaidVacationDays = yearVacationRequests
       .filter((row) => row.userId === user.id)
       .reduce((sum, row) => sum + row.paidVacationUnits / 2, 0);
 
-    const usedVacationDaysYtd = reservedPaidVacationDays;
-
-    const remainingVacationDays = Math.max(
-      0,
-      accruedVacationDays - reservedPaidVacationDays
-    );
+    const remainingVacationDays = accruedVacationDays - reservedPaidVacationDays;
 
     const paidHolidayMinutes = countHolidayWeekdays(holidaySet) * DAILY_TARGET_MINUTES;
 
