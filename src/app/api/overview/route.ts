@@ -11,7 +11,10 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { computeDayBreakFromGross } from "@/lib/breaks";
 import { berlinTodayYMD, getMissingRequiredWorkDates } from "@/lib/timesheetLock";
-import { rebalanceAutoUnpaidVacationRequestsForYear } from "@/app/api/absence-requests/route";
+import {
+  getVacationBalanceSnapshotForMonth,
+  rebalanceAutoUnpaidVacationRequestsForYear,
+} from "@/app/api/absence-requests/route";
 
 function isoDayUTC(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -24,15 +27,6 @@ type DayAgg = {
 
 const ANNUAL_VACATION_DAYS = 30;
 const DAILY_TARGET_MINUTES = 8 * 60;
-
-const MONTHLY_VACATION_ACCRUAL_DAYS = ANNUAL_VACATION_DAYS / 12;
-
-function getAccruedVacationDaysUntilMonth(monthOneBased: number): number {
-  return Math.min(
-    ANNUAL_VACATION_DAYS,
-    monthOneBased * MONTHLY_VACATION_ACCRUAL_DAYS
-  );
-}
 
 function absencePortionValue(dayPortion: AbsenceDayPortion): number {
   return dayPortion === AbsenceDayPortion.HALF_DAY ? 0.5 : 1;
@@ -155,9 +149,6 @@ export async function GET(req: Request) {
   const from = buildMonthStartUtc(year, monthNumber);
   const to = buildNextMonthStartUtc(year, monthNumber);
 
-  const yearFrom = new Date(Date.UTC(year, 0, 1));
-  const vacationBalanceToExclusive = buildNextMonthStartUtc(year, monthNumber);
-
   const holidaySet = getHolidaySetForMonth(year, month);
   const workingDaysInMonth = countWorkingDaysWithoutHolidays(year, monthNumber, holidaySet);
   const baseTargetMinutes = workingDaysInMonth * DAILY_TARGET_MINUTES;
@@ -228,32 +219,6 @@ export async function GET(req: Request) {
           }
         : { userId: session.userId }),
       absenceDate: { gte: from, lt: to },
-    },
-  });
-
-  const yearVacationRequests = await prisma.absenceRequest.findMany({
-    where: {
-      ...(isAdmin
-        ? {
-            user: {
-              companyId: session.companyId,
-              role: Role.EMPLOYEE,
-              isActive: true,
-            },
-          }
-        : { userId: session.userId }),
-      type: AbsenceType.VACATION,
-      status: {
-        in: ["PENDING", "APPROVED"],
-      },
-      createdAt: {
-        gte: yearFrom,
-        lt: vacationBalanceToExclusive,
-      },
-    },
-    select: {
-      userId: true,
-      paidVacationUnits: true,
     },
   });
 
@@ -333,18 +298,16 @@ export async function GET(req: Request) {
       0
     );
 
-    const accruedVacationDays = getAccruedVacationDaysUntilMonth(monthNumber);
-
-    const reservedPaidVacationDays = yearVacationRequests
-      .filter((row) => row.userId === user.id)
-      .reduce((sum, row) => sum + row.paidVacationUnits / 2, 0);
-
-    const usedVacationDaysYtd = reservedPaidVacationDays;
-
-    const remainingVacationDays = Math.max(
-      0,
-      accruedVacationDays - reservedPaidVacationDays
+    const vacationBalance = await getVacationBalanceSnapshotForMonth(
+      user.id,
+      year,
+      monthNumber
     );
+
+    const accruedVacationDays = vacationBalance.accruedVacationDays;
+    const reservedPaidVacationDays = vacationBalance.reservedPaidVacationDays;
+    const usedVacationDaysYtd = reservedPaidVacationDays;
+    const remainingVacationDays = vacationBalance.remainingPaidVacationDays;
 
     const paidHolidayMinutes = countHolidayWeekdays(holidaySet) * DAILY_TARGET_MINUTES;
 

@@ -12,6 +12,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { buildPushUrl, sendPushToUser } from "@/lib/webpush";
+import { rebalanceAutoUnpaidVacationRequestsForYear } from "@/app/api/absence-requests/route";
 import {
   ADMIN_ABSENCE_REQUESTS_API_TEXTS,
   normalizeAppUiLanguage,
@@ -964,13 +965,17 @@ export async function POST(req: Request, context: RouteContext) {
     };
   });
 
-  if (finalType === AbsenceType.SICK) {
-    await import("@/app/api/absence-requests/route").then((mod) =>
-      mod.rebalanceAutoUnpaidVacationRequestsForYear(
-        existing.userId,
-        finalStartDate.getUTCFullYear(),
-        new Date()
-      )
+  const rebalanceYears = new Set<number>([
+    existing.createdAt.getUTCFullYear(),
+    finalStartDate.getUTCFullYear(),
+    new Date().getUTCFullYear(),
+  ]);
+
+  for (const rebalanceYear of rebalanceYears) {
+    await rebalanceAutoUnpaidVacationRequestsForYear(
+      existing.userId,
+      rebalanceYear,
+      new Date()
     );
   }
 

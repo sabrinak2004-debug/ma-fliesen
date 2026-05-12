@@ -363,12 +363,22 @@ type VacationUnitsSnapshot = {
   totalUnits: number;
 };
 
+export type VacationBalanceSnapshot = {
+  accruedVacationDays: number;
+  reservedPaidVacationDays: number;
+  remainingPaidVacationDays: number;
+};
+
 function startOfUtcYear(year: number): Date {
   return new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
 }
 
 function startOfNextUtcYear(year: number): Date {
   return new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
+}
+
+function startOfNextUtcMonth(year: number, monthOneBased: number): Date {
+  return new Date(Date.UTC(year, monthOneBased, 1, 0, 0, 0, 0));
 }
 
 function endOfUtcDay(date: Date): Date {
@@ -446,6 +456,87 @@ function getStoredUnpaidVacationUnits(request: VacationRequestBalanceRow): numbe
   );
 
   return request.compensation === AbsenceCompensation.UNPAID ? totalUnits : 0;
+}
+
+export async function getVacationBalanceSnapshotForMonth(
+  userId: string,
+  year: number,
+  monthOneBased: number
+): Promise<VacationBalanceSnapshot> {
+  const yearStart = startOfUtcYear(year);
+  const nextMonthStart = startOfNextUtcMonth(year, monthOneBased);
+
+  const accruedUnits = Math.round(
+    Math.min(
+      ANNUAL_VACATION_DAYS,
+      monthOneBased * MONTHLY_VACATION_ACCRUAL_DAYS
+    ) * 2
+  );
+
+  const vacationRequests = await prisma.absenceRequest.findMany({
+    where: {
+      userId,
+      type: AbsenceType.VACATION,
+      status: {
+        in: [AbsenceRequestStatus.PENDING, AbsenceRequestStatus.APPROVED],
+      },
+      createdAt: {
+        gte: yearStart,
+        lt: nextMonthStart,
+      },
+    },
+    select: {
+      startDate: true,
+      endDate: true,
+      dayPortion: true,
+      compensation: true,
+      paidVacationUnits: true,
+      unpaidVacationUnits: true,
+      autoUnpaidBecauseNoBalance: true,
+      createdAt: true,
+    },
+    orderBy: [
+      { createdAt: "asc" },
+      { startDate: "asc" },
+      { endDate: "asc" },
+    ],
+  });
+
+  let remainingUnits = accruedUnits;
+  let reservedPaidUnits = 0;
+
+  for (const request of vacationRequests) {
+    const isManualUnpaid =
+      request.compensation === AbsenceCompensation.UNPAID &&
+      !request.autoUnpaidBecauseNoBalance;
+
+    if (isManualUnpaid) {
+      continue;
+    }
+
+    const storedTotalUnits =
+      request.paidVacationUnits + request.unpaidVacationUnits;
+
+    const requestedUnits =
+      storedTotalUnits > 0
+        ? storedTotalUnits
+        : getRequestVacationUnits(
+            request.startDate,
+            request.endDate,
+            request.dayPortion
+          );
+
+    const paidUnitsForSnapshot = Math.min(remainingUnits, requestedUnits);
+
+    reservedPaidUnits += paidUnitsForSnapshot;
+    remainingUnits = Math.max(0, remainingUnits - paidUnitsForSnapshot);
+  }
+
+  return {
+    accruedVacationDays: accruedUnits / 2,
+    reservedPaidVacationDays: reservedPaidUnits / 2,
+    remainingPaidVacationDays: Math.max(0, remainingUnits / 2),
+  };
 }
 
 function getAbsenceDayValue(dayPortion: AbsenceDayPortion): number {
@@ -990,47 +1081,13 @@ async function getRemainingPaidVacationDaysForMonth(
   year: number,
   month: number
 ): Promise<number> {
-  const monthEnd = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
-  const yearStart = startOfUtcYear(year);
-  const nextYearStart = startOfNextUtcYear(year);
-
-  const vacationRequests = await prisma.absenceRequest.findMany({
-    where: {
-      userId,
-      type: AbsenceType.VACATION,
-      status: {
-        in: [AbsenceRequestStatus.PENDING, AbsenceRequestStatus.APPROVED],
-      },
-      createdAt: {
-        gte: yearStart,
-        lt: nextYearStart,
-        lte: monthEnd,
-      },
-    },
-    select: {
-      compensation: true,
-      paidVacationUnits: true,
-      autoUnpaidBecauseNoBalance: true,
-    },
-  });
-
-  const accruedUnits = Math.round(
-    Math.min(ANNUAL_VACATION_DAYS, month * MONTHLY_VACATION_ACCRUAL_DAYS) * 2
+  const snapshot = await getVacationBalanceSnapshotForMonth(
+    userId,
+    year,
+    month
   );
 
-  const reservedPaidUnits = vacationRequests.reduce((sum, request) => {
-    const isManualUnpaid =
-      request.compensation === AbsenceCompensation.UNPAID &&
-      !request.autoUnpaidBecauseNoBalance;
-
-    if (isManualUnpaid) {
-      return sum;
-    }
-
-    return sum + request.paidVacationUnits;
-  }, 0);
-
-  return Math.max(0, (accruedUnits - reservedPaidUnits) / 2);
+  return snapshot.remainingPaidVacationDays;
 }
 
 function mapRequest(
@@ -1154,11 +1211,19 @@ export async function GET(req: Request) {
     now
   );
 
+  const balanceYear = monthParam
+    ? Number(monthParam.slice(0, 4))
+    : currentBerlinYearMonth.year;
+
+  const balanceMonth = monthParam
+    ? Number(monthParam.slice(5, 7))
+    : currentBerlinYearMonth.month;
+
   const remainingPaidVacationDaysForMonth =
     await getRemainingPaidVacationDaysForMonth(
       session.userId,
-      currentBerlinYearMonth.year,
-      currentBerlinYearMonth.month
+      balanceYear,
+      balanceMonth
     );
 
   const requests = await prisma.absenceRequest.findMany({
