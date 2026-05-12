@@ -28,6 +28,8 @@ type CalendarDay = {
   hasWork: boolean;
   hasVacation: boolean;
   hasSick: boolean;
+  hasDoctorAppointment: boolean;
+  doctorAppointmentPreview: string | null;
   hasPlan: boolean;
   planPreview: string | null;
   hasHoliday: boolean;
@@ -221,6 +223,58 @@ function minutesBetweenHHMM(startHHMM: string, endHHMM: string): number {
   return Math.max(0, endHour * 60 + endMinute - (startHour * 60 + startMinute));
 }
 
+const DAILY_TARGET_MINUTES = 8 * 60;
+
+function isDoctorAppointmentTimeRangeAbsence(absence: AbsenceDTO): boolean {
+  return (
+    absence.type === "SICK" &&
+    absence.sickLeaveKind === "DOCTOR_APPOINTMENT" &&
+    absence.timeMode === "TIME_RANGE"
+  );
+}
+
+function absenceDayValue(absence: AbsenceDTO): number {
+  if (isDoctorAppointmentTimeRangeAbsence(absence)) {
+    return Math.max(0, absence.paidMinutes) / DAILY_TARGET_MINUTES;
+  }
+
+  return absence.dayPortion === "HALF_DAY" ? 0.5 : 1;
+}
+
+function formatAbsenceDayValue(
+  language: AppUiLanguage,
+  value: number
+): string {
+  const rounded = Math.round(value * 100) / 100;
+
+  const formatted = rounded.toLocaleString(
+    language === "DE" ? "de-DE" : "en-US",
+    {
+      minimumFractionDigits: Number.isInteger(rounded) ? 0 : 2,
+      maximumFractionDigits: 2,
+    }
+  );
+
+  const label = translate(
+    language,
+    Math.abs(rounded) === 1 ? "dayLabel" : "daysLabel",
+    KALENDER_DICTIONARY
+  );
+
+  return `${formatted} ${label}`;
+}
+
+function formatPaidMinutesAsHM(minutes: number): string {
+  const safeMinutes = Number.isFinite(minutes)
+    ? Math.max(0, Math.round(minutes))
+    : 0;
+
+  const hours = Math.floor(safeMinutes / 60);
+  const mins = safeMinutes % 60;
+
+  return `${hours}h ${String(mins).padStart(2, "0")}min`;
+}
+
 function doctorAppointmentLabel(language: AppUiLanguage): string {
   switch (language) {
     case "EN":
@@ -307,6 +361,12 @@ function isCalendarDay(v: unknown): v is CalendarDay {
   const hasWork = getBooleanField(v, "hasWork");
   const hasVacation = getBooleanField(v, "hasVacation");
   const hasSick = getBooleanField(v, "hasSick");
+  const hasDoctorAppointment = getBooleanField(v, "hasDoctorAppointment");
+  const doctorAppointmentPreviewRaw = v["doctorAppointmentPreview"];
+  const doctorAppointmentPreview =
+    doctorAppointmentPreviewRaw === null || typeof doctorAppointmentPreviewRaw === "string"
+      ? doctorAppointmentPreviewRaw
+      : undefined;
   const hasPlan = getBooleanField(v, "hasPlan");
   const planPreviewRaw = v["planPreview"];
   const planPreview =
@@ -321,6 +381,8 @@ function isCalendarDay(v: unknown): v is CalendarDay {
     typeof hasWork === "boolean" &&
     typeof hasVacation === "boolean" &&
     typeof hasSick === "boolean" &&
+    typeof hasDoctorAppointment === "boolean" &&
+    (doctorAppointmentPreview === null || typeof doctorAppointmentPreview === "string") &&
     typeof hasPlan === "boolean" &&
     typeof hasHoliday === "boolean" &&
     (planPreview === null || typeof planPreview === "string") &&
@@ -1142,17 +1204,28 @@ function requestBlockLabel(
     );
   }
 
+  const isDoctorAppointmentTimeRange =
+    b.type === "SICK" &&
+    b.sickLeaveKind === "DOCTOR_APPOINTMENT" &&
+    b.timeMode === "TIME_RANGE";
+
   const name = isVacation
     ? translate(language, "vacationRequest", KALENDER_DICTIONARY)
-    : translate(language, "sicknessRequest", KALENDER_DICTIONARY);
+    : isDoctorAppointmentTimeRange
+      ? doctorAppointmentLabel(language)
+      : translate(language, "sicknessRequest", KALENDER_DICTIONARY);
 
   const span = b.start === b.end ? b.start : `${b.start}–${b.end}`;
+  const timeRange =
+    isDoctorAppointmentTimeRange && b.startTime && b.endTime
+      ? ` · ${b.startTime}–${b.endTime}`
+      : "";
 
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
       {icon}
       <span>
-        {name} ({span})
+        {name} ({span}{timeRange})
       </span>
     </span>
   );
@@ -3454,28 +3527,57 @@ function KalenderPageInner({
 
                     {confirmedAbsencesForSelectedDay
                       .filter((a) => a.type === "SICK")
-                      .map((a) => (
-                        <div key={a.id} className="card" style={{ padding: 12 }}>
-                          <div
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 8,
-                              fontWeight: 900,
-                            }}
-                          >
-                            <FontAwesomeIcon icon={faStethoscope} />
-                            <span>
-                              {a.dayPortion === "HALF_DAY"
-                                ? t("sickConfirmedHalfDay")
-                                : t("sickConfirmedFullDay")}
-                            </span>
+                      .map((a) => {
+                        const isDoctorAppointmentTimeRange =
+                          isDoctorAppointmentTimeRangeAbsence(a);
+
+                        const confirmedSickLabel = isDoctorAppointmentTimeRange
+                          ? doctorAppointmentLabel(language)
+                          : a.dayPortion === "HALF_DAY"
+                            ? t("sickConfirmedHalfDay")
+                            : t("sickConfirmedFullDay");
+
+                        const timeRangeText =
+                          isDoctorAppointmentTimeRange && a.startTime && a.endTime
+                            ? `${a.startTime}–${a.endTime} · ${formatPaidMinutesAsHM(a.paidMinutes)}`
+                            : "";
+
+                        const dayValueText = isDoctorAppointmentTimeRange
+                          ? formatAbsenceDayValue(language, absenceDayValue(a))
+                          : "";
+
+                        return (
+                          <div key={a.id} className="card" style={{ padding: 12 }}>
+                            <div
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 8,
+                                fontWeight: 900,
+                              }}
+                            >
+                              <FontAwesomeIcon icon={faStethoscope} />
+                              <span>{confirmedSickLabel}</span>
+                            </div>
+
+                            {timeRangeText ? (
+                              <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                                {timeRangeText}
+                              </div>
+                            ) : null}
+
+                            {dayValueText ? (
+                              <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                                {dayValueText}
+                              </div>
+                            ) : null}
+
+                            <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
+                              {t("alreadyConfirmedRegistered")}
+                            </div>
                           </div>
-                          <div style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-                            {t("alreadyConfirmedRegistered")}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                   </div>
                 )}
               </div>

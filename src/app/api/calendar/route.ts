@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { Prisma, Role } from "@prisma/client";
+import {
+  AbsenceTimeMode,
+  AbsenceType,
+  Prisma,
+  Role,
+  SickLeaveKind,
+} from "@prisma/client";
 import Holidays from "date-holidays";
 import { toHHMMUTC } from "@/lib/time";
 
@@ -252,6 +258,47 @@ type PlanPreviewItem = {
   noteEmployeeTranslations: Prisma.JsonValue | null;
 };
 
+type DoctorAppointmentPreviewItem = {
+  startTime: Date | null;
+  endTime: Date | null;
+  paidMinutes: number;
+};
+
+function formatMinutesCompact(minutes: number): string {
+  const safeMinutes = Number.isFinite(minutes)
+    ? Math.max(0, Math.round(minutes))
+    : 0;
+
+  const hours = Math.floor(safeMinutes / 60);
+  const mins = safeMinutes % 60;
+
+  if (hours <= 0) {
+    return `${mins} min`;
+  }
+
+  return `${hours}h ${String(mins).padStart(2, "0")}min`;
+}
+
+function doctorAppointmentLabel(language: string | null | undefined): string {
+  switch (toSupportedLang(language)) {
+    case "EN":
+      return "Doctor appointment";
+    case "IT":
+      return "Visita medica";
+    case "TR":
+      return "Doktor randevusu";
+    case "SQ":
+      return "Takim te mjeku";
+    case "KU":
+      return "Hevdîtina bijîşk";
+    case "RO":
+      return "Programare la medic";
+    case "DE":
+    default:
+      return "Arzttermin";
+  }
+}
+
 function getTranslatedText(
   originalText: string | null | undefined,
   translations: Prisma.JsonValue | null | undefined,
@@ -401,8 +448,49 @@ if (me.role === Role.ADMIN && userIdParam) {
   ]);
 
   const workSet = new Set(entries.map((e) => toIsoDateUTC(e.workDate)));
-  const vacSet = new Set(absences.filter((a) => a.type === "VACATION").map((a) => toIsoDateUTC(a.absenceDate)));
-  const sickSet = new Set(absences.filter((a) => a.type === "SICK").map((a) => toIsoDateUTC(a.absenceDate)));
+  const vacSet = new Set(
+    absences
+      .filter((a) => a.type === AbsenceType.VACATION)
+      .map((a) => toIsoDateUTC(a.absenceDate))
+  );
+
+  const sickFullDaySet = new Set(
+    absences
+      .filter(
+        (a) =>
+          a.type === AbsenceType.SICK &&
+          !(
+            a.sickLeaveKind === SickLeaveKind.DOCTOR_APPOINTMENT &&
+            a.timeMode === AbsenceTimeMode.TIME_RANGE
+          )
+      )
+      .map((a) => toIsoDateUTC(a.absenceDate))
+  );
+
+  const doctorAppointmentMap = new Map<string, DoctorAppointmentPreviewItem[]>();
+
+  for (const absence of absences) {
+    if (
+      absence.type !== AbsenceType.SICK ||
+      absence.sickLeaveKind !== SickLeaveKind.DOCTOR_APPOINTMENT ||
+      absence.timeMode !== AbsenceTimeMode.TIME_RANGE
+    ) {
+      continue;
+    }
+
+    const key = toIsoDateUTC(absence.absenceDate);
+    const list = doctorAppointmentMap.get(key) ?? [];
+
+    list.push({
+      startTime: absence.startTime,
+      endTime: absence.endTime,
+      paidMinutes: absence.paidMinutes,
+    });
+
+    doctorAppointmentMap.set(key, list);
+  }
+
+  const doctorAppointmentSet = new Set(doctorAppointmentMap.keys());
 
   const planMap = new Map<string, PlanPreviewItem[]>();
   for (const p of planEntries) {
@@ -460,11 +548,32 @@ if (me.role === Role.ADMIN && userIdParam) {
 
     const holiday = holidayMap.get(date);
 
+    const doctorAppointments = doctorAppointmentMap.get(date) ?? [];
+    const doctorAppointmentPreview =
+      doctorAppointments.length === 0
+        ? null
+        : doctorAppointments
+            .slice(0, 2)
+            .map((item) => {
+              const label = doctorAppointmentLabel(session.language);
+
+              if (item.startTime && item.endTime) {
+                return `${label} ${toHHMMUTC(item.startTime)}–${toHHMMUTC(
+                  item.endTime
+                )} · ${formatMinutesCompact(item.paidMinutes)}`;
+              }
+
+              return `${label} · ${formatMinutesCompact(item.paidMinutes)}`;
+            })
+            .join(" | ");
+
     return {
       date,
       hasWork: workSet.has(date) || planSet.has(date),
       hasVacation: vacSet.has(date),
-      hasSick: sickSet.has(date),
+      hasSick: sickFullDaySet.has(date),
+      hasDoctorAppointment: doctorAppointmentSet.has(date),
+      doctorAppointmentPreview,
       hasPlan: planSet.has(date),
       planPreview,
       hasHoliday: !!holiday,
