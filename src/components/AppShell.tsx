@@ -34,7 +34,7 @@ import {
   faStethoscope,
   faLock
 } from "@fortawesome/free-solid-svg-icons";
-import { SquarePen, TreePalm } from "lucide-react";
+import { ClipboardCheck, SquarePen, TreePalm } from "lucide-react";
 import LockIcon from "@/components/icons/LockIcon";
 import MultiUserDashboardIcon from "@/components/icons/MultiUserDashboardIcon";
 import ErfassungsIcon from "@/components/icons/ErfassungsIcon";
@@ -206,6 +206,8 @@ type AppShellTextKey =
   | "sickRequests"
   | "correctionRequests"
   | "editRequests"
+  | "monthlyConfirmations"
+  | "myConfirmations"
   | "passwordReset"
   | "menuOpen"
   | "menuClose"
@@ -322,6 +324,24 @@ const APP_SHELL_TEXTS: Record<AppShellTextKey, Record<AppUiLanguage, string>> = 
     SQ: "Kërkesat për ndryshim",
     KU: "Daxwazên guherandinê",
     RO: "Cereri de modificare",
+  },
+  monthlyConfirmations: {
+    DE: "Monatsbestätigungen",
+    EN: "Monthly Confirmations",
+    IT: "Conferme mensili",
+    TR: "Aylık onaylar",
+    SQ: "Konfirmimet mujore",
+    KU: "Piştrastkirinên mehane",
+    RO: "Confirmări lunare",
+  },
+  myConfirmations: {
+    DE: "Meine Bestätigungen",
+    EN: "My Confirmations",
+    IT: "Le mie conferme",
+    TR: "Onaylarım",
+    SQ: "Konfirmimet e mia",
+    KU: "Piştrastkirinên min",
+    RO: "Confirmările mele",
   },
   passwordReset: {
     DE: "Passwort-Reset",
@@ -510,6 +530,10 @@ function resolvePageLabelKey(
     return "tasks";
   }
 
+  if (pathname === "/meine-bestaetigungen" || pathname.startsWith("/meine-bestaetigungen/")) {
+    return "myConfirmations";
+  }
+
   if (pathname === "/admin/dashboard" || pathname.startsWith("/admin/dashboard/")) {
     return "dashboard";
   }
@@ -536,6 +560,10 @@ function resolvePageLabelKey(
 
   if (pathname === "/admin/aenderungsanfragen" || pathname.startsWith("/admin/aenderungsanfragen/")) {
     return "editRequests";
+  }
+
+  if (pathname === "/admin/monatsbestaetigungen" || pathname.startsWith("/admin/monatsbestaetigungen/")) {
+    return "monthlyConfirmations";
   }
 
   if (pathname === "/admin/tasks" || pathname.startsWith("/admin/tasks/")) {
@@ -980,6 +1008,11 @@ useEffect(() => {
       labelKey: "tasks",
       icon: <FontAwesomeIcon icon={faListCheck} />,
     },
+    {
+      href: "/meine-bestaetigungen",
+      labelKey: "myConfirmations",
+      icon: <ClipboardCheck />,
+    },
   ];
 
   const adminNavItems: NavItem[] = [
@@ -1017,6 +1050,11 @@ useEffect(() => {
     href: "/admin/aenderungsanfragen",
     labelKey: "editRequests",
     icon: <SquarePen strokeWidth={2} />,
+  },
+  {
+    href: "/admin/monatsbestaetigungen",
+    labelKey: "monthlyConfirmations",
+    icon: <ClipboardCheck />,
   },
   {
     href: "/admin/tasks",
