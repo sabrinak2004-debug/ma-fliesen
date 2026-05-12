@@ -220,11 +220,11 @@ function buildEffectiveAbsenceDays(
   );
 
   if (dayPortion === AbsenceDayPortion.HALF_DAY) {
-    if (
-      type === AbsenceType.VACATION &&
-      (!isUtcWeekday(startDate) ||
-        isBadenWuerttembergNonWorkingHolidayUtc(startDate, holidaySet))
-    ) {
+    if (isBadenWuerttembergNonWorkingHolidayUtc(startDate, holidaySet)) {
+      return [];
+    }
+
+    if (type === AbsenceType.VACATION && !isUtcWeekday(startDate)) {
       return [];
     }
 
@@ -236,15 +236,13 @@ function buildEffectiveAbsenceDays(
 
   while (current <= endDate) {
     const copy = new Date(current);
+    const isHoliday = isBadenWuerttembergNonWorkingHolidayUtc(copy, holidaySet);
 
-    if (type === AbsenceType.VACATION) {
-      if (
-        isUtcWeekday(copy) &&
-        !isBadenWuerttembergNonWorkingHolidayUtc(copy, holidaySet)
-      ) {
-        out.push(copy);
-      }
-    } else {
+    if (!isHoliday && type === AbsenceType.VACATION && isUtcWeekday(copy)) {
+      out.push(copy);
+    }
+
+    if (!isHoliday && type === AbsenceType.SICK) {
       out.push(copy);
     }
 
@@ -356,6 +354,13 @@ type VacationRequestBalanceRow = {
 type VacationAbsenceBalanceRow = {
   absenceDate: Date;
   dayPortion: AbsenceDayPortion;
+  compensation?: AbsenceCompensation;
+};
+
+type VacationUnitsSnapshot = {
+  paidUnits: number;
+  unpaidUnits: number;
+  totalUnits: number;
 };
 
 function startOfUtcYear(year: number): Date {
@@ -449,6 +454,43 @@ function getAbsenceDayValue(dayPortion: AbsenceDayPortion): number {
 
 function getAbsenceDayUnits(dayPortion: AbsenceDayPortion): number {
   return dayPortion === AbsenceDayPortion.HALF_DAY ? 1 : 2;
+}
+
+function getFinalApprovedVacationUnitsForRequest(
+  request: {
+    startDate: Date;
+    endDate: Date;
+  },
+  rows: VacationAbsenceBalanceRow[]
+): VacationUnitsSnapshot {
+  return rows.reduce<VacationUnitsSnapshot>(
+    (sum, row) => {
+      if (row.absenceDate < request.startDate || row.absenceDate > request.endDate) {
+        return sum;
+      }
+
+      const units = getAbsenceDayUnits(row.dayPortion);
+
+      if (row.compensation === AbsenceCompensation.UNPAID) {
+        return {
+          paidUnits: sum.paidUnits,
+          unpaidUnits: sum.unpaidUnits + units,
+          totalUnits: sum.totalUnits + units,
+        };
+      }
+
+      return {
+        paidUnits: sum.paidUnits + units,
+        unpaidUnits: sum.unpaidUnits,
+        totalUnits: sum.totalUnits + units,
+      };
+    },
+    {
+      paidUnits: 0,
+      unpaidUnits: 0,
+      totalUnits: 0,
+    }
+  );
 }
 
 function sumApprovedPaidVacationUnitsUntil(
@@ -689,15 +731,51 @@ export async function rebalanceAutoUnpaidVacationRequestsForYear(
     ],
   });
 
+  const approvedVacationAbsences = await prisma.absence.findMany({
+    where: {
+      userId,
+      type: AbsenceType.VACATION,
+      absenceDate: {
+        gte: yearStart,
+        lt: nextYearStart,
+      },
+    },
+    select: {
+      absenceDate: true,
+      dayPortion: true,
+      compensation: true,
+    },
+  });
+
   let remainingAccruedUnits = accruedUnits;
 
   const updates = requests
     .map((request) => {
-      const requestedUnits = getRequestVacationUnits(
+      const theoreticalRequestedUnits = getRequestVacationUnits(
         request.startDate,
         request.endDate,
         request.dayPortion
       );
+
+      const finalApprovedUnits =
+        request.status === AbsenceRequestStatus.APPROVED
+          ? getFinalApprovedVacationUnitsForRequest(
+              request,
+              approvedVacationAbsences
+            )
+          : {
+              paidUnits: 0,
+              unpaidUnits: 0,
+              totalUnits: 0,
+            };
+
+      const preserveApprovedAbsenceRows =
+        request.status === AbsenceRequestStatus.APPROVED &&
+        finalApprovedUnits.totalUnits !== theoreticalRequestedUnits;
+
+      const requestedUnits = preserveApprovedAbsenceRows
+        ? finalApprovedUnits.totalUnits
+        : theoreticalRequestedUnits;
 
       const isManualUnpaid =
         request.compensation === AbsenceCompensation.UNPAID &&
@@ -707,8 +785,13 @@ export async function rebalanceAutoUnpaidVacationRequestsForYear(
         return null;
       }
 
-      const nextPaidUnits = Math.min(remainingAccruedUnits, requestedUnits);
-      const nextUnpaidUnits = Math.max(0, requestedUnits - nextPaidUnits);
+      const nextPaidUnits = preserveApprovedAbsenceRows
+        ? finalApprovedUnits.paidUnits
+        : Math.min(remainingAccruedUnits, requestedUnits);
+
+      const nextUnpaidUnits = preserveApprovedAbsenceRows
+        ? finalApprovedUnits.unpaidUnits
+        : Math.max(0, requestedUnits - nextPaidUnits);
 
       remainingAccruedUnits = Math.max(
         0,
@@ -749,6 +832,7 @@ export async function rebalanceAutoUnpaidVacationRequestsForYear(
         nextUnpaidUnits,
         nextAutoUnpaidBecauseNoBalance,
         nextCompensationLockedBySystem,
+        preserveApprovedAbsenceRows,
       };
     })
     .filter(
@@ -766,6 +850,7 @@ export async function rebalanceAutoUnpaidVacationRequestsForYear(
         nextUnpaidUnits: number;
         nextAutoUnpaidBecauseNoBalance: boolean;
         nextCompensationLockedBySystem: boolean;
+        preserveApprovedAbsenceRows: boolean;
       } => value !== null
     );
 
@@ -786,7 +871,10 @@ export async function rebalanceAutoUnpaidVacationRequestsForYear(
         },
       });
 
-      if (update.status === AbsenceRequestStatus.APPROVED) {
+      if (
+        update.status === AbsenceRequestStatus.APPROVED &&
+        !update.preserveApprovedAbsenceRows
+      ) {
         await tx.absence.deleteMany({
           where: {
             userId: update.userId,
@@ -1318,6 +1406,11 @@ export async function POST(req: Request) {
         gte: start,
         lte: end,
       },
+      ...(typeRaw === AbsenceType.SICK
+        ? {
+            type: AbsenceType.SICK,
+          }
+        : {}),
       OR: isDoctorAppointmentTimeRange
         ? [
             {

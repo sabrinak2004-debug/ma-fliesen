@@ -6,6 +6,7 @@ import {
   AbsenceRequestStatus,
   AbsenceTimeMode,
   AbsenceType,
+  Prisma,
   SickLeaveKind,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -143,11 +144,11 @@ function buildEffectiveAbsenceDays(
   );
 
   if (dayPortion === AbsenceDayPortion.HALF_DAY) {
-    if (
-      type === AbsenceType.VACATION &&
-      (!isUtcWeekday(startDate) ||
-        isBadenWuerttembergNonWorkingHolidayUtc(startDate, holidaySet))
-    ) {
+    if (isBadenWuerttembergNonWorkingHolidayUtc(startDate, holidaySet)) {
+      return [];
+    }
+
+    if (type === AbsenceType.VACATION && !isUtcWeekday(startDate)) {
       return [];
     }
 
@@ -159,15 +160,13 @@ function buildEffectiveAbsenceDays(
 
   while (current <= endDate) {
     const copy = new Date(current);
+    const isHoliday = isBadenWuerttembergNonWorkingHolidayUtc(copy, holidaySet);
 
-    if (type === AbsenceType.VACATION) {
-      if (
-        isUtcWeekday(copy) &&
-        !isBadenWuerttembergNonWorkingHolidayUtc(copy, holidaySet)
-      ) {
-        out.push(copy);
-      }
-    } else {
+    if (!isHoliday && type === AbsenceType.VACATION && isUtcWeekday(copy)) {
+      out.push(copy);
+    }
+
+    if (!isHoliday && type === AbsenceType.SICK) {
       out.push(copy);
     }
 
@@ -229,10 +228,6 @@ function getVacationDaysForRange(
 
 function getDayPortionValue(dayPortion: AbsenceDayPortion): number {
   return dayPortion === AbsenceDayPortion.HALF_DAY ? 0.5 : 1;
-}
-
-function getDayPortionUnits(dayPortion: AbsenceDayPortion): number {
-  return dayPortion === AbsenceDayPortion.HALF_DAY ? 1 : 2;
 }
 
 function translateAdminAbsenceRequestText(
@@ -379,6 +374,85 @@ function buildApprovedVacationCompensationPushLabel(
   }
 
   return getCompensationLabel(language, fallbackCompensation);
+}
+
+function getDayPortionUnits(dayPortion: AbsenceDayPortion): number {
+  return dayPortion === AbsenceDayPortion.HALF_DAY ? 1 : 2;
+}
+
+async function refreshApprovedVacationRequestUnitsAfterSickOverwrite(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  fromDate: Date,
+  toDate: Date
+): Promise<void> {
+  const affectedVacationRequests = await tx.absenceRequest.findMany({
+    where: {
+      userId,
+      type: AbsenceType.VACATION,
+      status: AbsenceRequestStatus.APPROVED,
+      startDate: {
+        lte: toDate,
+      },
+      endDate: {
+        gte: fromDate,
+      },
+    },
+    select: {
+      id: true,
+      startDate: true,
+      endDate: true,
+    },
+  });
+
+  for (const request of affectedVacationRequests) {
+    const remainingVacationAbsences = await tx.absence.findMany({
+      where: {
+        userId,
+        type: AbsenceType.VACATION,
+        absenceDate: {
+          gte: request.startDate,
+          lte: request.endDate,
+        },
+      },
+      select: {
+        dayPortion: true,
+        compensation: true,
+      },
+    });
+
+    const paidVacationUnits = remainingVacationAbsences.reduce((sum, absence) => {
+      if (absence.compensation !== AbsenceCompensation.PAID) {
+        return sum;
+      }
+
+      return sum + getDayPortionUnits(absence.dayPortion);
+    }, 0);
+
+    const unpaidVacationUnits = remainingVacationAbsences.reduce((sum, absence) => {
+      if (absence.compensation !== AbsenceCompensation.UNPAID) {
+        return sum;
+      }
+
+      return sum + getDayPortionUnits(absence.dayPortion);
+    }, 0);
+
+    await tx.absenceRequest.update({
+      where: {
+        id: request.id,
+      },
+      data: {
+        paidVacationUnits,
+        unpaidVacationUnits,
+        compensation:
+          paidVacationUnits > 0
+            ? AbsenceCompensation.PAID
+            : AbsenceCompensation.UNPAID,
+        autoUnpaidBecauseNoBalance: unpaidVacationUnits > 0,
+        compensationLockedBySystem: unpaidVacationUnits > 0,
+      },
+    });
+  }
 }
 
 function buildVacationAbsenceRowsWithSplit(
@@ -664,6 +738,11 @@ export async function POST(req: Request, context: RouteContext) {
         gte: finalStartDate,
         lte: finalEndDate,
       },
+      ...(finalType === AbsenceType.SICK
+        ? {
+            type: AbsenceType.SICK,
+          }
+        : {}),
       OR: finalIsDoctorAppointmentTimeRange
         ? [
             {
@@ -708,6 +787,16 @@ export async function POST(req: Request, context: RouteContext) {
     finalType,
     finalDayPortion
   );
+
+  if (finalType === AbsenceType.SICK && days.length === 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Der Zeitraum enthält nur Feiertage. Es werden keine Krankheitstage eingetragen.",
+      },
+      { status: 400 }
+    );
+  }
 
   if (finalType === AbsenceType.VACATION && days.length === 0) {
     return NextResponse.json(
@@ -845,6 +934,25 @@ export async function POST(req: Request, context: RouteContext) {
             paidMinutes: finalIsDoctorAppointmentTimeRange ? finalPaidMinutes : 0,
           }));
 
+    if (finalType === AbsenceType.SICK && absenceRows.length > 0) {
+      await tx.absence.deleteMany({
+        where: {
+          userId: existing.userId,
+          type: AbsenceType.VACATION,
+          absenceDate: {
+            in: absenceRows.map((row) => row.absenceDate),
+          },
+        },
+      });
+
+      await refreshApprovedVacationRequestUnitsAfterSickOverwrite(
+        tx,
+        existing.userId,
+        finalStartDate,
+        finalEndDate
+      );
+    }
+
     const createdAbsences = await tx.absence.createMany({
       data: absenceRows,
       skipDuplicates: true,
@@ -855,6 +963,16 @@ export async function POST(req: Request, context: RouteContext) {
       createdAbsences,
     };
   });
+
+  if (finalType === AbsenceType.SICK) {
+    await import("@/app/api/absence-requests/route").then((mod) =>
+      mod.rebalanceAutoUnpaidVacationRequestsForYear(
+        existing.userId,
+        finalStartDate.getUTCFullYear(),
+        new Date()
+      )
+    );
+  }
 
   const startDate = toIsoDateUTC(finalStartDate);
   const endDate = toIsoDateUTC(finalEndDate);

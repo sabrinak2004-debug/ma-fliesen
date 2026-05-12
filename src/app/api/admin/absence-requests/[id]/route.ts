@@ -52,18 +52,6 @@ function toIsoDateUTC(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function eachDateInclusive(startDate: Date, endDate: Date): Date[] {
-  const result: Date[] = [];
-  const cursor = new Date(startDate.getTime());
-
-  while (cursor.getTime() <= endDate.getTime()) {
-    result.push(new Date(cursor.getTime()));
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-
-  return result;
-}
-
 function isAbsenceType(v: string): v is AbsenceType {
   return v === "VACATION" || v === "SICK";
 }
@@ -118,11 +106,11 @@ function buildEffectiveAbsenceDays(
   );
 
   if (dayPortion === AbsenceDayPortion.HALF_DAY) {
-    if (
-      type === AbsenceType.VACATION &&
-      (!isUtcWeekday(startDate) ||
-        isBadenWuerttembergNonWorkingHolidayUtc(startDate, holidaySet))
-    ) {
+    if (isBadenWuerttembergNonWorkingHolidayUtc(startDate, holidaySet)) {
+      return [];
+    }
+
+    if (type === AbsenceType.VACATION && !isUtcWeekday(startDate)) {
       return [];
     }
 
@@ -134,15 +122,13 @@ function buildEffectiveAbsenceDays(
 
   while (current <= endDate) {
     const copy = new Date(current);
+    const isHoliday = isBadenWuerttembergNonWorkingHolidayUtc(copy, holidaySet);
 
-    if (type === AbsenceType.VACATION) {
-      if (
-        isUtcWeekday(copy) &&
-        !isBadenWuerttembergNonWorkingHolidayUtc(copy, holidaySet)
-      ) {
-        out.push(copy);
-      }
-    } else {
+    if (!isHoliday && type === AbsenceType.VACATION && isUtcWeekday(copy)) {
+      out.push(copy);
+    }
+
+    if (!isHoliday && type === AbsenceType.SICK) {
       out.push(copy);
     }
 
@@ -544,7 +530,12 @@ export async function DELETE(_req: Request, context: RouteContext) {
           });
         }
       } else {
-        const dates = eachDateInclusive(existing.startDate, existing.endDate);
+        const dates = buildEffectiveAbsenceDays(
+          existing.startDate,
+          existing.endDate,
+          existing.type,
+          existing.dayPortion
+        );
 
         await tx.absence.deleteMany({
           where: {

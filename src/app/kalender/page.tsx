@@ -794,6 +794,33 @@ function dateInRange(date: string, start: string, end: string): boolean {
   return start <= date && date <= end;
 }
 
+function getRequestedSickDays(
+  start: string,
+  end: string
+): number {
+  if (!start || !end || end < start) {
+    return 0;
+  }
+
+  const startDate = ymdToDateLocal(start);
+  const endDate = ymdToDateLocal(end);
+
+  let count = 0;
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    const ymd = toYMDLocal(current);
+
+    if (!isBadenWuerttembergNonWorkingHolidayYMD(ymd)) {
+      count += 1;
+    }
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  return count;
+}
+
 function getRequestedVacationDays(
   start: string,
   end: string,
@@ -901,6 +928,32 @@ function isBadenWuerttembergNonWorkingHolidayYMD(ymd: string): boolean {
   return getBadenWuerttembergNonWorkingHolidaySet(year).has(ymd);
 }
 
+function getExcludedSickHolidayDates(
+  start: string,
+  end: string
+): string[] {
+  if (!start || !end || end < start) {
+    return [];
+  }
+
+  const startDate = ymdToDateLocal(start);
+  const endDate = ymdToDateLocal(end);
+  const excludedDates: string[] = [];
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    const ymd = toYMDLocal(current);
+
+    if (isBadenWuerttembergNonWorkingHolidayYMD(ymd)) {
+      excludedDates.push(ymd);
+    }
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  return excludedDates;
+}
+
 function getExcludedVacationHolidayDates(
   start: string,
   end: string,
@@ -973,6 +1026,44 @@ function holidayExclusionHint(
       dates.length === 1
         ? "Această sărbătoare legală nu este numărată automat ca zi de vacanță:"
         : "Aceste sărbători legale nu sunt numărate automat ca zile de vacanță:",
+  };
+
+  return `${labels[language]} ${dates.join(", ")}`;
+}
+
+function sickHolidayExclusionHint(
+  language: AppUiLanguage,
+  dates: string[]
+): string {
+  const labels: Record<AppUiLanguage, string> = {
+    DE:
+      dates.length === 1
+        ? "Dieser gesetzliche Feiertag wird automatisch nicht als Krankheitstag eingetragen:"
+        : "Diese gesetzlichen Feiertage werden automatisch nicht als Krankheitstage eingetragen:",
+    EN:
+      dates.length === 1
+        ? "This public holiday is automatically not recorded as a sick day:"
+        : "These public holidays are automatically not recorded as sick days:",
+    IT:
+      dates.length === 1
+        ? "Questo giorno festivo legale non viene registrato automaticamente come giorno di malattia:"
+        : "Questi giorni festivi legali non vengono registrati automaticamente come giorni di malattia:",
+    TR:
+      dates.length === 1
+        ? "Bu resmî tatil otomatik olarak hastalık günü olarak kaydedilmez:"
+        : "Bu resmî tatiller otomatik olarak hastalık günü olarak kaydedilmez:",
+    SQ:
+      dates.length === 1
+        ? "Kjo festë zyrtare nuk regjistrohet automatikisht si ditë sëmundjeje:"
+        : "Këto festa zyrtare nuk regjistrohen automatikisht si ditë sëmundjeje:",
+    KU:
+      dates.length === 1
+        ? "Ev cejna fermî bixweber wekî roja nexweşiyê nayê tomar kirin:"
+        : "Ev cejnên fermî bixweber wekî rojên nexweşiyê nayên tomar kirin:",
+    RO:
+      dates.length === 1
+        ? "Această sărbătoare legală nu este înregistrată automat ca zi de boală:"
+        : "Aceste sărbători legale nu sunt înregistrate automat ca zile de boală:",
   };
 
   return `${labels[language]} ${dates.join(", ")}`;
@@ -1498,6 +1589,17 @@ function KalenderPageInner({
     );
   }, [absenceStart, absenceEnd, absenceType, absenceDayPortion]);
 
+  const excludedSickHolidayDatesPreview = useMemo(() => {
+    if (absenceType !== "SICK") {
+      return [];
+    }
+
+    return getExcludedSickHolidayDates(
+      absenceStart,
+      absenceEnd
+    );
+  }, [absenceStart, absenceEnd, absenceType]);
+
   const [dayAppointments, setDayAppointments] = useState<CalendarEventDTO[]>([]);
   const [apptLoading, setApptLoading] = useState(false);
   const [apptError, setApptError] = useState<string | null>(null);
@@ -1802,8 +1904,15 @@ function KalenderPageInner({
 
   const confirmedAbsencesForSelectedDay = useMemo(() => {
     if (!selectedDate || isAdmin) return [];
+
+    const selectedDayInfo = dayMap.get(selectedDate);
+
+    if (selectedDayInfo?.hasHoliday) {
+      return [];
+    }
+
     return monthAbsences.filter((a) => a.absenceDate === selectedDate);
-  }, [monthAbsences, selectedDate, isAdmin]);
+  }, [dayMap, monthAbsences, selectedDate, isAdmin]);
 
   const grid = useMemo(() => {
     const [y, m] = ym.split("-").map(Number);
@@ -2226,6 +2335,17 @@ function KalenderPageInner({
 
     if (absenceType === "SICK" && absenceCompensation !== "PAID") {
       setError(t("sickCannotBeUnpaid"));
+      return;
+    }
+
+    if (
+      absenceType === "SICK" &&
+      sickLeaveKind !== "DOCTOR_APPOINTMENT" &&
+      getRequestedSickDays(absenceStart, absenceEnd) <= 0
+    ) {
+      setError(
+        "Der Zeitraum enthält nur Feiertage. Es werden keine Krankheitstage eingetragen."
+      );
       return;
     }
 
@@ -3804,6 +3924,24 @@ function KalenderPageInner({
 
             {absenceType === "SICK" ? (
               <div style={{ marginBottom: 12 }}>
+                {!selectedRequestBlock &&
+                sickLeaveKind !== "DOCTOR_APPOINTMENT" &&
+                excludedSickHolidayDatesPreview.length > 0 ? (
+                  <div
+                    className="card calendar-status-card calendar-status-card-neutral"
+                    style={{
+                      marginBottom: 10,
+                      fontSize: 13,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {sickHolidayExclusionHint(
+                      language,
+                      excludedSickHolidayDatesPreview
+                    )}
+                  </div>
+                ) : null}
+
                 <div className="label">{doctorAppointmentQuestion(language)}</div>
 
                 <div className="calendar-form-grid-2" style={{ marginTop: 6 }}>

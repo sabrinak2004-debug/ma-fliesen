@@ -567,16 +567,18 @@ if (me.role === Role.ADMIN && userIdParam) {
             })
             .join(" | ");
 
+    const hasHoliday = !!holiday;
+
     return {
       date,
-      hasWork: workSet.has(date) || planSet.has(date),
-      hasVacation: vacSet.has(date),
-      hasSick: sickFullDaySet.has(date),
-      hasDoctorAppointment: doctorAppointmentSet.has(date),
-      doctorAppointmentPreview,
-      hasPlan: planSet.has(date),
-      planPreview,
-      hasHoliday: !!holiday,
+      hasWork: !hasHoliday && (workSet.has(date) || planSet.has(date)),
+      hasVacation: !hasHoliday && !sickFullDaySet.has(date) && vacSet.has(date),
+      hasSick: !hasHoliday && sickFullDaySet.has(date),
+      hasDoctorAppointment: !hasHoliday && doctorAppointmentSet.has(date),
+      doctorAppointmentPreview: hasHoliday ? null : doctorAppointmentPreview,
+      hasPlan: !hasHoliday && planSet.has(date),
+      planPreview: hasHoliday ? null : planPreview,
+      hasHoliday,
       holidayName: holiday?.name ?? null,
     };
   });

@@ -150,11 +150,11 @@ function buildEffectiveAbsenceDays(
   );
 
   if (dayPortion === AbsenceDayPortion.HALF_DAY) {
-    if (
-      type === AbsenceType.VACATION &&
-      (!isUtcWeekday(startDate) ||
-        isBadenWuerttembergNonWorkingHolidayUtc(startDate, holidaySet))
-    ) {
+    if (isBadenWuerttembergNonWorkingHolidayUtc(startDate, holidaySet)) {
+      return [];
+    }
+
+    if (type === AbsenceType.VACATION && !isUtcWeekday(startDate)) {
       return [];
     }
 
@@ -166,15 +166,13 @@ function buildEffectiveAbsenceDays(
 
   while (current <= endDate) {
     const copy = new Date(current);
+    const isHoliday = isBadenWuerttembergNonWorkingHolidayUtc(copy, holidaySet);
 
-    if (type === AbsenceType.VACATION) {
-      if (
-        isUtcWeekday(copy) &&
-        !isBadenWuerttembergNonWorkingHolidayUtc(copy, holidaySet)
-      ) {
-        out.push(copy);
-      }
-    } else {
+    if (!isHoliday && type === AbsenceType.VACATION && isUtcWeekday(copy)) {
+      out.push(copy);
+    }
+
+    if (!isHoliday && type === AbsenceType.SICK) {
       out.push(copy);
     }
 
@@ -656,15 +654,29 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = await prisma.absence.createMany({
-    data: days.map((d) => ({
-      userId: targetUserId,
-      absenceDate: d,
-      type: typeStr,
-      dayPortion,
-      compensation,
-    })),
-    skipDuplicates: true,
+  const result = await prisma.$transaction(async (tx) => {
+    if (typeStr === AbsenceType.SICK && days.length > 0) {
+      await tx.absence.deleteMany({
+        where: {
+          userId: targetUserId,
+          type: AbsenceType.VACATION,
+          absenceDate: {
+            in: days,
+          },
+        },
+      });
+    }
+
+    return tx.absence.createMany({
+      data: days.map((d) => ({
+        userId: targetUserId,
+        absenceDate: d,
+        type: typeStr,
+        dayPortion,
+        compensation,
+      })),
+      skipDuplicates: true,
+    });
   });
 
   return okJson({
@@ -991,6 +1003,18 @@ export async function PATCH(req: Request) {
             dayPortion: newDayPortion,
             compensation: newCompensation,
           }));
+
+    if (newTypeStr === AbsenceType.SICK && newRows.length > 0) {
+      await p.absence.deleteMany({
+        where: {
+          userId: targetUserId,
+          type: AbsenceType.VACATION,
+          absenceDate: {
+            in: newRows.map((row) => row.absenceDate),
+          },
+        },
+      });
+    }
 
     const created = await p.absence.createMany({
       data: newRows,
