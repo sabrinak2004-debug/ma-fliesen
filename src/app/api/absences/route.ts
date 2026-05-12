@@ -311,6 +311,18 @@ type AbsenceUserSummary = {
   totalDays: number;
 };
 
+function absenceDayValueForSummary(absence: AbsenceDTO): number {
+  if (
+    absence.type === "SICK" &&
+    absence.sickLeaveKind === SickLeaveKind.DOCTOR_APPOINTMENT &&
+    absence.timeMode === AbsenceTimeMode.TIME_RANGE
+  ) {
+    return Math.max(0, absence.paidMinutes) / (8 * 60);
+  }
+
+  return absence.dayPortion === "HALF_DAY" ? 0.5 : 1;
+}
+
 function okJson(data: unknown, init?: ResponseInit) {
   return NextResponse.json(data, init);
 }
@@ -484,7 +496,7 @@ export async function GET(req: Request) {
       unpaidVacationDays: 0,
     };
 
-    const value = a.dayPortion === "HALF_DAY" ? 0.5 : 1;
+    const value = absenceDayValueForSummary(a);
 
     if (a.type === "SICK") {
       cur.sickDays += value;

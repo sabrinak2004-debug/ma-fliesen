@@ -32,6 +32,11 @@ type Absence = {
   type: "VACATION" | "SICK";
   dayPortion: AbsenceDayPortion;
   compensation: AbsenceCompensation;
+  sickLeaveKind: "SICK_LEAVE" | "DOCTOR_APPOINTMENT" | null;
+  timeMode: "FULL_DAY" | "TIME_RANGE";
+  startTime: string | null;
+  endTime: string | null;
+  paidMinutes: number;
   user: { id: string; fullName: string };
 };
 
@@ -1114,10 +1119,35 @@ type AbsenceBlock = {
   to: string; // YYYY-MM-DD
   days: number;
   dayPortion: AbsenceDayPortion;
+  sickLeaveKind: "SICK_LEAVE" | "DOCTOR_APPOINTMENT" | null;
+  timeMode: "FULL_DAY" | "TIME_RANGE";
+  startTime: string | null;
+  endTime: string | null;
+  paidMinutes: number;
 };
 
-function absenceDayValue(dayPortion: AbsenceDayPortion): number {
-  return dayPortion === "HALF_DAY" ? 0.5 : 1;
+function absenceDayValue(absence: Absence): number {
+  if (
+    absence.type === "SICK" &&
+    absence.sickLeaveKind === "DOCTOR_APPOINTMENT" &&
+    absence.timeMode === "TIME_RANGE"
+  ) {
+    return Math.max(0, absence.paidMinutes) / (8 * 60);
+  }
+
+  return absence.dayPortion === "HALF_DAY" ? 0.5 : 1;
+}
+
+function absenceTimeRangeLabel(absence: Pick<AbsenceBlock, "timeMode" | "startTime" | "endTime" | "paidMinutes">): string {
+  if (
+    absence.timeMode !== "TIME_RANGE" ||
+    !absence.startTime ||
+    !absence.endTime
+  ) {
+    return "";
+  }
+
+  return `${absence.startTime}–${absence.endTime} · ${formatMinutesAsHM(absence.paidMinutes)}`;
 }
 
 function formatDayCountLocalized(language: AppUiLanguage, days: number): string {
@@ -1153,9 +1183,14 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
   let curType: Absence["type"] = sortedAbsences[0].type;
   let curCompensation: AbsenceCompensation = sortedAbsences[0].compensation;
   let curDayPortion: AbsenceDayPortion = sortedAbsences[0].dayPortion;
+  let curSickLeaveKind = sortedAbsences[0].sickLeaveKind;
+  let curTimeMode = sortedAbsences[0].timeMode;
+  let curStartTime = sortedAbsences[0].startTime;
+  let curEndTime = sortedAbsences[0].endTime;
+  let curPaidMinutes = sortedAbsences[0].paidMinutes;
   let curFrom = sortedAbsences[0].absenceDate;
   let curTo = sortedAbsences[0].absenceDate;
-  let curDays = absenceDayValue(sortedAbsences[0].dayPortion);
+  let curDays = absenceDayValue(sortedAbsences[0]);
 
   const isNextDay = (prev: string, next: string) => {
   const p = toUTCDateFromISO(prev);
@@ -1180,20 +1215,32 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
         to: curTo,
         days: curDays,
         dayPortion: curDayPortion,
+        sickLeaveKind: curSickLeaveKind,
+        timeMode: curTimeMode,
+        startTime: curStartTime,
+        endTime: curEndTime,
+        paidMinutes: curPaidMinutes,
       });
 
       curType = a.type;
       curCompensation = a.compensation;
       curDayPortion = a.dayPortion;
+      curSickLeaveKind = a.sickLeaveKind;
+      curTimeMode = a.timeMode;
+      curStartTime = a.startTime;
+      curEndTime = a.endTime;
+      curPaidMinutes = a.paidMinutes;
       curFrom = a.absenceDate;
       curTo = a.absenceDate;
-      curDays = absenceDayValue(a.dayPortion);
+      curDays = absenceDayValue(a);
       continue;
     }
 
     const mayMergeFullDays =
       curDayPortion === "FULL_DAY" &&
       a.dayPortion === "FULL_DAY" &&
+      curTimeMode === "FULL_DAY" &&
+      a.timeMode === "FULL_DAY" &&
       a.type === curType &&
       a.compensation === curCompensation &&
       isNextDay(curTo, a.absenceDate);
@@ -1205,21 +1252,31 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
     }
 
     res.push({
-      user,
-      type: curType,
-      compensation: curCompensation,
-      from: curFrom,
-      to: curTo,
-      days: curDays,
-      dayPortion: curDayPortion,
-    });
+        user,
+        type: curType,
+        compensation: curCompensation,
+        from: curFrom,
+        to: curTo,
+        days: curDays,
+        dayPortion: curDayPortion,
+        sickLeaveKind: curSickLeaveKind,
+        timeMode: curTimeMode,
+        startTime: curStartTime,
+        endTime: curEndTime,
+        paidMinutes: curPaidMinutes,
+      });
 
     curType = a.type;
     curCompensation = a.compensation;
     curDayPortion = a.dayPortion;
+    curSickLeaveKind = a.sickLeaveKind;
+    curTimeMode = a.timeMode;
+    curStartTime = a.startTime;
+    curEndTime = a.endTime;
+    curPaidMinutes = a.paidMinutes;
     curFrom = a.absenceDate;
     curTo = a.absenceDate;
-    curDays = absenceDayValue(a.dayPortion);
+    curDays = absenceDayValue(a);
   }
 
   res.push({
@@ -1230,7 +1287,12 @@ function buildBlocksForSingleUser(sortedAbsences: Absence[]): AbsenceBlock[] {
     to: curTo,
     days: curDays,
     dayPortion: curDayPortion,
-  });
+    sickLeaveKind: curSickLeaveKind,
+    timeMode: curTimeMode,
+    startTime: curStartTime,
+    endTime: curEndTime,
+    paidMinutes: curPaidMinutes,
+      });
 
   return res;
 }
@@ -1509,7 +1571,7 @@ export default function UebersichtPage() {
 
     return monthAbsences.reduce((sum, a) => {
       if (a.type === "VACATION" && a.compensation === "UNPAID") {
-        return sum + absenceDayValue(a.dayPortion);
+        return sum + absenceDayValue(a);
       }
       return sum;
     }, 0);
@@ -1574,7 +1636,7 @@ export default function UebersichtPage() {
         const cur =
         map.get(key) ?? { userId: key, name, minutes: 0, km: 0, entries: 0, vac: 0, sick: 0, unpaidVac: 0 };
 
-        const value = absenceDayValue(a.dayPortion);
+        const value = absenceDayValue(a);
 
         if (a.type === "VACATION" && a.compensation === "UNPAID") cur.unpaidVac += value;
         if (a.type === "VACATION" && a.compensation === "PAID") cur.vac += value;
@@ -2228,10 +2290,14 @@ const resetAbsFilters = (): void => {
         ) : (
           <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
             {filteredBlocks.map((b) => {
+              const timeRangeText = absenceTimeRangeLabel(b);
+
               const title =
-                b.from === b.to
-                  ? formatDateLocalized(language, b.from)
-                  : `${formatDateLocalized(language, b.from)} – ${formatDateLocalized(language, b.to)}`;
+                timeRangeText
+                  ? `${formatDateLocalized(language, b.from)} · ${timeRangeText}`
+                  : b.from === b.to
+                    ? formatDateLocalized(language, b.from)
+                    : `${formatDateLocalized(language, b.from)} – ${formatDateLocalized(language, b.to)}`;
 
               const isSick = b.type === "SICK";
               const isUnpaidVacation = b.type === "VACATION" && b.compensation === "UNPAID";
