@@ -55,6 +55,11 @@ type AdminTimelineAbsence = {
   date: string; // YYYY-MM-DD
   dayPortion: "FULL_DAY" | "HALF_DAY";
   compensation: "PAID" | "UNPAID";
+  sickLeaveKind: "SICK_LEAVE" | "DOCTOR_APPOINTMENT" | null;
+  timeMode: "FULL_DAY" | "TIME_RANGE";
+  startTime: string | null;
+  endTime: string | null;
+  paidMinutes: number;
 };
 
 type AdminTimelineItem = AdminTimelineWork | AdminTimelineAbsence;
@@ -789,6 +794,11 @@ type AbsenceRange = {
   to: string;
   dayPortion: "FULL_DAY" | "HALF_DAY";
   days: number;
+  sickLeaveKind: "SICK_LEAVE" | "DOCTOR_APPOINTMENT" | null;
+  timeMode: "FULL_DAY" | "TIME_RANGE";
+  startTime: string | null;
+  endTime: string | null;
+  paidMinutes: number;
 };
 
 function addDaysIso(iso: string, days: number): string {
@@ -803,6 +813,26 @@ function addDaysIso(iso: string, days: number): string {
 
 function absenceDayValue(dayPortion: "FULL_DAY" | "HALF_DAY"): number {
   return dayPortion === "HALF_DAY" ? 0.5 : 1;
+}
+
+function absenceTimelineDayValue(item: AdminTimelineAbsence): number {
+  if (item.timeMode === "TIME_RANGE") {
+    return Math.max(0, item.paidMinutes) / (8 * 60);
+  }
+
+  return absenceDayValue(item.dayPortion);
+}
+
+function absenceTimeRangeLabel(item: AdminTimelineAbsence): string {
+  if (
+    item.timeMode !== "TIME_RANGE" ||
+    !item.startTime ||
+    !item.endTime
+  ) {
+    return "";
+  }
+
+  return `${item.startTime}–${item.endTime} · ${formatHM(item.paidMinutes)}`;
 }
 
 function formatDayCount(days: number, language: AppUiLanguage): string {
@@ -843,7 +873,12 @@ function groupAbsenceRanges(items: AdminTimelineItem[]): AbsenceRange[] {
         from: it.date,
         to: it.date,
         dayPortion: it.dayPortion,
-        days: absenceDayValue(it.dayPortion),
+        days: absenceTimelineDayValue(it),
+        sickLeaveKind: it.sickLeaveKind,
+        timeMode: it.timeMode,
+        startTime: it.startTime,
+        endTime: it.endTime,
+        paidMinutes: it.paidMinutes,
       });
       continue;
     }
@@ -855,6 +890,8 @@ function groupAbsenceRanges(items: AdminTimelineItem[]): AbsenceRange[] {
       last.compensation === (it.compensation ?? "PAID") &&
       last.dayPortion === "FULL_DAY" &&
       it.dayPortion === "FULL_DAY" &&
+      last.timeMode === "FULL_DAY" &&
+      it.timeMode === "FULL_DAY" &&
       it.date === expectedNext;
 
     if (mayMergeFullDays) {
@@ -869,7 +906,12 @@ function groupAbsenceRanges(items: AdminTimelineItem[]): AbsenceRange[] {
       from: it.date,
       to: it.date,
       dayPortion: it.dayPortion,
-      days: absenceDayValue(it.dayPortion),
+      days: absenceTimelineDayValue(it),
+      sickLeaveKind: it.sickLeaveKind,
+      timeMode: it.timeMode,
+      startTime: it.startTime,
+      endTime: it.endTime,
+      paidMinutes: it.paidMinutes,
     });
   }
 
@@ -3064,12 +3106,29 @@ export default function AdminDashboardPage() {
                                     {sickRanges.map((r, idx) => {
                                       const from = formatDate(r.from, language);
                                       const to = formatDate(r.to, language);
+                                      const timeRangeText =
+                                        r.timeMode === "TIME_RANGE"
+                                          ? absenceTimeRangeLabel({
+                                              type: r.type,
+                                              date: r.from,
+                                              dayPortion: r.dayPortion,
+                                              compensation: r.compensation,
+                                              sickLeaveKind: r.sickLeaveKind,
+                                              timeMode: r.timeMode,
+                                              startTime: r.startTime,
+                                              endTime: r.endTime,
+                                              paidMinutes: r.paidMinutes,
+                                            })
+                                          : "";
+
                                       const text =
-                                        r.dayPortion === "HALF_DAY"
-                                          ? `${from} · ${formatDayCount(r.days, language)}`
-                                          : r.from === r.to
-                                          ? `${from} · ${formatDayCount(r.days, language)}`
-                                          : `${from}–${to} · ${formatDayCount(r.days, language)}`;
+                                        timeRangeText
+                                          ? `${from} · ${timeRangeText} · ${formatDayCount(r.days, language)}`
+                                          : r.dayPortion === "HALF_DAY"
+                                            ? `${from} · ${formatDayCount(r.days, language)}`
+                                            : r.from === r.to
+                                              ? `${from} · ${formatDayCount(r.days, language)}`
+                                              : `${from}–${to} · ${formatDayCount(r.days, language)}`;
 
                                       return (
                                         <div

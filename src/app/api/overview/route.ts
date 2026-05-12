@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { AbsenceCompensation, AbsenceDayPortion, AbsenceType, Role } from "@prisma/client";
+import {
+  AbsenceCompensation,
+  AbsenceDayPortion,
+  AbsenceTimeMode,
+  AbsenceType,
+  Role,
+} from "@prisma/client";
 import Holidays from "date-holidays";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
@@ -34,6 +40,30 @@ function absencePortionValue(dayPortion: AbsenceDayPortion): number {
 
 function absencePortionMinutes(dayPortion: AbsenceDayPortion): number {
   return absencePortionValue(dayPortion) * DAILY_TARGET_MINUTES;
+}
+
+function paidAbsenceMinutes(row: {
+  dayPortion: AbsenceDayPortion;
+  timeMode: AbsenceTimeMode;
+  paidMinutes: number;
+}): number {
+  if (row.timeMode === AbsenceTimeMode.TIME_RANGE) {
+    return Math.max(0, row.paidMinutes);
+  }
+
+  return absencePortionMinutes(row.dayPortion);
+}
+
+function paidAbsenceDayValue(row: {
+  dayPortion: AbsenceDayPortion;
+  timeMode: AbsenceTimeMode;
+  paidMinutes: number;
+}): number {
+  if (row.timeMode === AbsenceTimeMode.TIME_RANGE) {
+    return paidAbsenceMinutes(row) / DAILY_TARGET_MINUTES;
+  }
+
+  return absencePortionValue(row.dayPortion);
 }
 
 function isWeekdayUtcDate(d: Date): boolean {
@@ -294,7 +324,7 @@ export async function GET(req: Request) {
     );
 
     const sickDays = paidSickAbsences.reduce(
-      (sum, row) => sum + absencePortionValue(row.dayPortion),
+      (sum, row) => sum + paidAbsenceDayValue(row),
       0
     );
 
@@ -304,7 +334,7 @@ export async function GET(req: Request) {
     );
 
     const sickMinutes = paidSickAbsences.reduce(
-      (sum, row) => sum + absencePortionMinutes(row.dayPortion),
+      (sum, row) => sum + paidAbsenceMinutes(row),
       0
     );
 

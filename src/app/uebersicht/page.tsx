@@ -2051,7 +2051,7 @@ const resetAbsFilters = (): void => {
         <div className="card kpi">
           <div>
             <div className="small">{t("sickDays")}</div>
-            <div className="big">{sickDays}</div>
+            <div className="big">{String(sickDays).replace(".", ",")}</div>
           </div>
           <div className="app-kpi-icon">
             <SickDaysIcon

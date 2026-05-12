@@ -8,7 +8,13 @@ import {
   isWorkEntryRequiredOnDateForUserMeta,
 } from "@/lib/timesheetLock";
 import { computeDayBreakFromGross } from "@/lib/breaks";
-import { Role, AbsenceType, Prisma } from "@prisma/client";
+import {
+  AbsenceTimeMode,
+  AbsenceType,
+  Prisma,
+  Role,
+  SickLeaveKind,
+} from "@prisma/client";
 import type { SupportedLang } from "@/lib/translate";
 
 function dateOnlyLocalIso(d: Date) {
@@ -50,6 +56,24 @@ function lastDayOfMonth(ym: string) {
 
 function toHHMMUTC(d: Date) {
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+function toHHMMUTCNullable(d: Date | null): string | null {
+  if (!d) return null;
+
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+function isDoctorAppointmentTimeRange(absence: {
+  type: AbsenceType;
+  sickLeaveKind: SickLeaveKind | null;
+  timeMode: AbsenceTimeMode;
+}): boolean {
+  return (
+    absence.type === AbsenceType.SICK &&
+    absence.sickLeaveKind === SickLeaveKind.DOCTOR_APPOINTMENT &&
+    absence.timeMode === AbsenceTimeMode.TIME_RANGE
+  );
 }
 
 function absenceTypeToApi(type: AbsenceType): "VACATION" | "SICK" {
@@ -320,6 +344,11 @@ export async function GET(req: Request) {
   select: {
     userId: true,
     type: true,
+    sickLeaveKind: true,
+    timeMode: true,
+    startTime: true,
+    endTime: true,
+    paidMinutes: true,
     user: {
       select: {
         fullName: true,
@@ -335,11 +364,13 @@ export async function GET(req: Request) {
   ],
 });
 
-  const absentTodayEmployees: DashboardAbsenceRow[] = absencesTodayRows.map((row) => ({
-    userId: row.userId,
-    fullName: row.user.fullName,
-    type: absenceTypeToApi(row.type),
-  }));
+  const absentTodayEmployees: DashboardAbsenceRow[] = absencesTodayRows
+    .filter((row) => !isDoctorAppointmentTimeRange(row))
+    .map((row) => ({
+      userId: row.userId,
+      fullName: row.user.fullName,
+      type: absenceTypeToApi(row.type),
+    }));
 
   const absentTodaySet = new Set(absentTodayEmployees.map((row) => row.userId));
 
@@ -543,6 +574,11 @@ export async function GET(req: Request) {
       type: true,
       dayPortion: true,
       compensation: true,
+      sickLeaveKind: true,
+      timeMode: true,
+      startTime: true,
+      endTime: true,
+      paidMinutes: true,
     },
   });
 
@@ -610,6 +646,11 @@ export async function GET(req: Request) {
         date: string;
         dayPortion: "FULL_DAY" | "HALF_DAY";
         compensation: "PAID" | "UNPAID";
+        sickLeaveKind: "SICK_LEAVE" | "DOCTOR_APPOINTMENT" | null;
+        timeMode: "FULL_DAY" | "TIME_RANGE";
+        startTime: string | null;
+        endTime: string | null;
+        paidMinutes: number;
       }
     > = [];
 
@@ -676,6 +717,19 @@ export async function GET(req: Request) {
         date,
         dayPortion: absence.dayPortion === "HALF_DAY" ? "HALF_DAY" : "FULL_DAY",
         compensation: absence.compensation === "UNPAID" ? "UNPAID" : "PAID",
+        sickLeaveKind:
+          absence.sickLeaveKind === SickLeaveKind.DOCTOR_APPOINTMENT
+            ? "DOCTOR_APPOINTMENT"
+            : absence.sickLeaveKind === SickLeaveKind.SICK_LEAVE
+              ? "SICK_LEAVE"
+              : null,
+        timeMode:
+          absence.timeMode === AbsenceTimeMode.TIME_RANGE
+            ? "TIME_RANGE"
+            : "FULL_DAY",
+        startTime: toHHMMUTCNullable(absence.startTime),
+        endTime: toHHMMUTCNullable(absence.endTime),
+        paidMinutes: Math.max(0, absence.paidMinutes ?? 0),
       });
     }
 
