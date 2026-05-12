@@ -79,35 +79,6 @@ function getTranslatedText(
   return typeof translated === "string" && translated.trim() ? translated : fallback;
 }
 
-function eachDateYmdInclusive(startDate: Date, endDate: Date): string[] {
-  const result: string[] = [];
-  const cursor = new Date(startDate.getTime());
-
-  while (cursor <= endDate) {
-    result.push(toIsoDateUTC(cursor));
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-
-  return result;
-}
-
-function getOverwrittenVacationDatesForRequest(
-  request: {
-    startDate: Date;
-    endDate: Date;
-    type: AbsenceType;
-  },
-  sickDateSet: Set<string>
-): string[] {
-  if (request.type !== AbsenceType.VACATION) {
-    return [];
-  }
-
-  return eachDateYmdInclusive(request.startDate, request.endDate).filter((date) =>
-    sickDateSet.has(date)
-  );
-}
-
 function mapRequest(
   r: {
     id: string;
@@ -139,7 +110,6 @@ function mapRequest(
       id: string;
       fullName: string;
     } | null;
-    overwrittenBySickDates?: string[];
   },
   language: string | null | undefined
 ) {
@@ -178,7 +148,6 @@ function mapRequest(
           fullName: r.decidedBy.fullName,
         }
       : null,
-    overwrittenBySickDates: r.overwrittenBySickDates ?? [],
   };
 }
 
@@ -313,56 +282,6 @@ export async function GET(req: Request) {
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
   });
 
-  const vacationRequests = requests.filter(
-    (request) =>
-      request.type === AbsenceType.VACATION &&
-      request.status === AbsenceRequestStatus.APPROVED
-  );
-
-  const sickDateSetByUser = new Map<string, Set<string>>();
-
-  if (vacationRequests.length > 0) {
-    const minVacationStart = vacationRequests.reduce((minDate, request) => {
-      return request.startDate < minDate ? request.startDate : minDate;
-    }, vacationRequests[0].startDate);
-
-    const maxVacationEnd = vacationRequests.reduce((maxDate, request) => {
-      return request.endDate > maxDate ? request.endDate : maxDate;
-    }, vacationRequests[0].endDate);
-
-    const sickAbsences = await prisma.absence.findMany({
-      where: {
-        user: {
-          companyId: admin.companyId,
-        },
-        type: AbsenceType.SICK,
-        absenceDate: {
-          gte: minVacationStart,
-          lte: maxVacationEnd,
-        },
-        ...(userIdParam ? { userId: userIdParam } : {}),
-      },
-      select: {
-        userId: true,
-        absenceDate: true,
-      },
-    });
-
-    for (const sickAbsence of sickAbsences) {
-      const set = sickDateSetByUser.get(sickAbsence.userId) ?? new Set<string>();
-      set.add(toIsoDateUTC(sickAbsence.absenceDate));
-      sickDateSetByUser.set(sickAbsence.userId, set);
-    }
-  }
-
-  const requestsWithSickOverwriteInfo = requests.map((request) => ({
-    ...request,
-    overwrittenBySickDates: getOverwrittenVacationDatesForRequest(
-      request,
-      sickDateSetByUser.get(request.userId) ?? new Set<string>()
-    ),
-  }));
-
   const grouped = {
     pending: requests.filter((r) => r.status === AbsenceRequestStatus.PENDING),
     approved: requests.filter((r) => r.status === AbsenceRequestStatus.APPROVED),
@@ -371,19 +290,19 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    requests: requestsWithSickOverwriteInfo.map((request) =>
+    requests: requests.map((request) =>
       mapRequest(request, adminUser?.language ?? "DE")
     ),
     grouped: {
-      pending: requestsWithSickOverwriteInfo
-        .filter((request) => request.status === AbsenceRequestStatus.PENDING)
-        .map((request) => mapRequest(request, adminUser?.language ?? "DE")),
-      approved: requestsWithSickOverwriteInfo
-        .filter((request) => request.status === AbsenceRequestStatus.APPROVED)
-        .map((request) => mapRequest(request, adminUser?.language ?? "DE")),
-      rejected: requestsWithSickOverwriteInfo
-        .filter((request) => request.status === AbsenceRequestStatus.REJECTED)
-        .map((request) => mapRequest(request, adminUser?.language ?? "DE")),
+      pending: grouped.pending.map((request) =>
+        mapRequest(request, adminUser?.language ?? "DE")
+      ),
+      approved: grouped.approved.map((request) =>
+        mapRequest(request, adminUser?.language ?? "DE")
+      ),
+      rejected: grouped.rejected.map((request) =>
+        mapRequest(request, adminUser?.language ?? "DE")
+      ),
     },
   });
 }
