@@ -7,8 +7,12 @@ import {
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
+import {
+  berlinTodayYMD,
+  ensureTimeEntryUnlockRange,
+  getMissingRequiredWorkDates,
+} from "@/lib/timesheetLock";
 import { sendPushToUser } from "@/lib/webpush";
-import { ensureTimeEntryUnlockRange } from "@/lib/timesheetLock";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 import {
   ADMIN_TASKS_UI_TEXTS,
@@ -193,6 +197,46 @@ function normalizeReferenceRange(args: {
     referenceDate: startDate,
     referenceStartDate: startDate,
     referenceEndDate: endDate,
+  };
+}
+
+async function getMissingWorkEntryReferenceRange(args: {
+  userId: string;
+  companyId: string;
+}): Promise<{
+  referenceDate: Date;
+  referenceStartDate: Date;
+  referenceEndDate: Date;
+} | null> {
+  const todayYMD = berlinTodayYMD();
+
+  const missingDates = await getMissingRequiredWorkDates(
+    args.userId,
+    todayYMD,
+    {
+      includeUntilDate: true,
+      companyId: args.companyId,
+    }
+  );
+
+  if (missingDates.length === 0) {
+    return null;
+  }
+
+  const firstMissingDate = missingDates[0];
+  const lastMissingDate = missingDates[missingDates.length - 1];
+
+  const referenceStartDate = parseReferenceDate(firstMissingDate);
+  const referenceEndDate = parseReferenceDate(lastMissingDate);
+
+  if (!referenceStartDate || !referenceEndDate) {
+    return null;
+  }
+
+  return {
+    referenceDate: referenceStartDate,
+    referenceStartDate,
+    referenceEndDate,
   };
 }
 
@@ -438,12 +482,12 @@ export async function POST(req: Request): Promise<NextResponse> {
     );
   }
 
-  const normalizedReferenceRange = normalizeReferenceRange({
+  const parsedReferenceRange = normalizeReferenceRange({
     referenceStartDateRaw,
     referenceEndDateRaw,
   });
 
-  if (!normalizedReferenceRange) {
+  if (!parsedReferenceRange) {
     return NextResponse.json(
       { error: tTask(adminLanguage, "invalidReferenceRange") },
       { status: 400 }
@@ -481,6 +525,34 @@ export async function POST(req: Request): Promise<NextResponse> {
       { error: tTask(adminLanguage, "tasksOnlyForEmployees") },
       { status: 400 }
     );
+  }
+
+  let normalizedReferenceRange = parsedReferenceRange;
+
+  if (
+    categoryRaw === TaskCategory.WORK_TIME &&
+    requiredActionRaw === TaskRequiredAction.WORK_ENTRY_FOR_DATE &&
+    !normalizedReferenceRange.referenceDate &&
+    !normalizedReferenceRange.referenceStartDate &&
+    !normalizedReferenceRange.referenceEndDate
+  ) {
+    const missingWorkEntryReferenceRange =
+      await getMissingWorkEntryReferenceRange({
+        userId: assignedUser.id,
+        companyId: admin.companyId,
+      });
+
+    if (!missingWorkEntryReferenceRange) {
+      return NextResponse.json(
+        {
+          error:
+            "Für diese Arbeitszeit-Aufgabe gibt es aktuell keine fehlenden Arbeitseinträge.",
+        },
+        { status: 400 }
+      );
+    }
+
+    normalizedReferenceRange = missingWorkEntryReferenceRange;
   }
 
   let titleSourceLanguage: SupportedLang | null = null;
