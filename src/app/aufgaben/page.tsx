@@ -1674,6 +1674,7 @@ function sortTasksByDateDesc(tasks: TaskRow[]): TaskRow[] {
 
 export default function AufgabenPage() {
   const [language, setLanguage] = useState<AppUiLanguage>("DE");
+  const [languageLoaded, setLanguageLoaded] = useState(false);
   const t = React.useCallback(
     (key: AufgabenTextKey): string =>
       translate(language, key, AUFGABEN_DICTIONARY),
@@ -1715,6 +1716,10 @@ export default function AufgabenPage() {
         }
       } catch {
         if (!alive) return;
+      } finally {
+        if (alive) {
+          setLanguageLoaded(true);
+        }
       }
     })();
 
@@ -1778,8 +1783,12 @@ export default function AufgabenPage() {
   }, [t]);
 
   useEffect(() => {
+    if (!languageLoaded) {
+      return;
+    }
+
     void loadTasks();
-  }, [loadTasks]);
+  }, [languageLoaded, loadTasks]);
 
   const openTasks = useMemo(
     () => sortTasksByDateDesc(tasks.filter((task) => task.status === "OPEN")),

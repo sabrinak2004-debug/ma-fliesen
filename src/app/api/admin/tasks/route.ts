@@ -571,12 +571,27 @@ export async function POST(req: Request): Promise<NextResponse> {
   });
 
   return NextResponse.json(
-  {
-    task: {
-      ...task,
-      attachments: [],
+    {
+      task: {
+        ...task,
+        title: getTranslatedText(
+          task.title,
+          task.titleTranslations,
+          adminLanguage
+        ),
+        description: getTranslatedText(
+          task.description,
+          task.descriptionTranslations,
+          adminLanguage
+        ),
+        completionNote: getTranslatedText(
+          task.completionNote,
+          task.completionNoteTranslations,
+          adminLanguage
+        ),
+        attachments: [],
+      },
     },
-  },
-  { status: 201 }
-);
+    { status: 201 }
+  );
 }
