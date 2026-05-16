@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import {
   AbsenceRequestStatus,
+  AbsenceType,
   Prisma,
   TaskRequiredAction,
   TaskStatus,
 } from "@prisma/client";
+import Holidays from "date-holidays";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { sendPushToUser } from "@/lib/webpush";
@@ -137,6 +139,108 @@ function addUtcDays(date: Date, days: number): Date {
   return copy;
 }
 
+function isWeekdayUTC(date: Date): boolean {
+  const day = date.getUTCDay();
+  return day >= 1 && day <= 5;
+}
+
+function getPublicHolidaySetForRange(startDate: Date, endDate: Date): Set<string> {
+  const holidays = new Holidays("DE", "BW");
+  const result = new Set<string>();
+
+  for (
+    let year = startDate.getUTCFullYear();
+    year <= endDate.getUTCFullYear();
+    year += 1
+  ) {
+    for (const holiday of holidays.getHolidays(year)) {
+      if (holiday.type === "public") {
+        result.add(holiday.date.slice(0, 10));
+      }
+    }
+  }
+
+  return result;
+}
+
+function isRelevantTaskDay(date: Date, holidaySet: ReadonlySet<string>): boolean {
+  const ymd = toIsoDateUTC(date);
+
+  if (!isWeekdayUTC(date)) {
+    return false;
+  }
+
+  if (holidaySet.has(ymd)) {
+    return false;
+  }
+
+  return true;
+}
+
+async function hasAbsenceOrRequestForDate(args: {
+  userId: string;
+  date: Date;
+  type: AbsenceType;
+}): Promise<boolean> {
+  const nextDay = addUtcDays(args.date, 1);
+
+  const [absence, request] = await Promise.all([
+    prisma.absence.findFirst({
+      where: {
+        userId: args.userId,
+        type: args.type,
+        absenceDate: {
+          gte: args.date,
+          lt: nextDay,
+        },
+      },
+      select: {
+        id: true,
+      },
+    }),
+    prisma.absenceRequest.findFirst({
+      where: {
+        userId: args.userId,
+        type: args.type,
+        status: {
+          in: [AbsenceRequestStatus.PENDING, AbsenceRequestStatus.APPROVED],
+        },
+        startDate: {
+          lte: args.date,
+        },
+        endDate: {
+          gte: args.date,
+        },
+      },
+      select: {
+        id: true,
+      },
+    }),
+  ]);
+
+  return Boolean(absence || request);
+}
+
+async function hasBlockingAbsenceForWorkEntryTask(args: {
+  userId: string;
+  date: Date;
+}): Promise<boolean> {
+  const [hasVacation, hasSick] = await Promise.all([
+    hasAbsenceOrRequestForDate({
+      userId: args.userId,
+      date: args.date,
+      type: AbsenceType.VACATION,
+    }),
+    hasAbsenceOrRequestForDate({
+      userId: args.userId,
+      date: args.date,
+      type: AbsenceType.SICK,
+    }),
+  ]);
+
+  return hasVacation || hasSick;
+}
+
 function getTaskReferenceRange(args: {
   referenceDate: Date | null;
   referenceStartDate: Date | null;
@@ -178,6 +282,7 @@ async function hasRequiredActionBeenFulfilled(
 
   const rangeStartYmd = toIsoDateUTC(range.startDate);
   const rangeEndYmd = toIsoDateUTC(range.endDate);
+  const holidaySet = getPublicHolidaySetForRange(range.startDate, range.endDate);
 
   if (requiredAction === "WORK_ENTRY_FOR_DATE") {
     for (
@@ -185,6 +290,19 @@ async function hasRequiredActionBeenFulfilled(
       current <= startOfDayUTC(rangeEndYmd);
       current = addUtcDays(current, 1)
     ) {
+      if (!isRelevantTaskDay(current, holidaySet)) {
+        continue;
+      }
+
+      const hasAbsence = await hasBlockingAbsenceForWorkEntryTask({
+        userId,
+        date: current,
+      });
+
+      if (hasAbsence) {
+        continue;
+      }
+
       const nextDay = addUtcDays(current, 1);
 
       const workEntry = await prisma.workEntry.findFirst({
@@ -214,43 +332,27 @@ async function hasRequiredActionBeenFulfilled(
       current <= startOfDayUTC(rangeEndYmd);
       current = addUtcDays(current, 1)
     ) {
-      const nextDay = addUtcDays(current, 1);
+      if (!isRelevantTaskDay(current, holidaySet)) {
+        continue;
+      }
 
-      const [absence, request] = await Promise.all([
-        prisma.absence.findFirst({
-          where: {
-            userId,
-            type: "VACATION",
-            absenceDate: {
-              gte: current,
-              lt: nextDay,
-            },
-          },
-          select: {
-            id: true,
-          },
-        }),
-        prisma.absenceRequest.findFirst({
-          where: {
-            userId,
-            type: "VACATION",
-            status: {
-              in: [AbsenceRequestStatus.PENDING, AbsenceRequestStatus.APPROVED],
-            },
-            startDate: {
-              lte: current,
-            },
-            endDate: {
-              gte: current,
-            },
-          },
-          select: {
-            id: true,
-          },
-        }),
-      ]);
+      const hasSick = await hasAbsenceOrRequestForDate({
+        userId,
+        date: current,
+        type: AbsenceType.SICK,
+      });
 
-      if (!absence && !request) {
+      if (hasSick) {
+        continue;
+      }
+
+      const hasVacation = await hasAbsenceOrRequestForDate({
+        userId,
+        date: current,
+        type: AbsenceType.VACATION,
+      });
+
+      if (!hasVacation) {
         return false;
       }
     }
@@ -264,43 +366,27 @@ async function hasRequiredActionBeenFulfilled(
       current <= startOfDayUTC(rangeEndYmd);
       current = addUtcDays(current, 1)
     ) {
-      const nextDay = addUtcDays(current, 1);
+      if (!isRelevantTaskDay(current, holidaySet)) {
+        continue;
+      }
 
-      const [absence, request] = await Promise.all([
-        prisma.absence.findFirst({
-          where: {
-            userId,
-            type: "SICK",
-            absenceDate: {
-              gte: current,
-              lt: nextDay,
-            },
-          },
-          select: {
-            id: true,
-          },
-        }),
-        prisma.absenceRequest.findFirst({
-          where: {
-            userId,
-            type: "SICK",
-            status: {
-              in: [AbsenceRequestStatus.PENDING, AbsenceRequestStatus.APPROVED],
-            },
-            startDate: {
-              lte: current,
-            },
-            endDate: {
-              gte: current,
-            },
-          },
-          select: {
-            id: true,
-          },
-        }),
-      ]);
+      const hasVacation = await hasAbsenceOrRequestForDate({
+        userId,
+        date: current,
+        type: AbsenceType.VACATION,
+      });
 
-      if (!absence && !request) {
+      if (hasVacation) {
+        continue;
+      }
+
+      const hasSick = await hasAbsenceOrRequestForDate({
+        userId,
+        date: current,
+        type: AbsenceType.SICK,
+      });
+
+      if (!hasSick) {
         return false;
       }
     }
