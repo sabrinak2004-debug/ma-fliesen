@@ -1,6 +1,7 @@
 // src/lib/timesheetLock.ts
 
 import Holidays from "date-holidays";
+import { Role, TaskRequiredAction, TaskStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 function parseIsoDateToUtc(ymd: string): Date {
@@ -422,6 +423,55 @@ export async function hasActiveTimeEntryUnlock(
   return true;
 }
 
+async function hasOpenAdminWorkEntryTaskForDate(args: {
+  userId: string;
+  workDateYMD: string;
+  companyId?: string;
+}): Promise<boolean> {
+  const workDate = parseIsoDateToUtc(args.workDateYMD);
+
+  const task = await prisma.task.findFirst({
+    where: {
+      assignedToUserId: args.userId,
+      status: TaskStatus.OPEN,
+      category: "WORK_TIME",
+      requiredAction: TaskRequiredAction.WORK_ENTRY_FOR_DATE,
+      assignedToUser: {
+        ...(args.companyId ? { companyId: args.companyId } : {}),
+      },
+      createdByUser: {
+        role: Role.ADMIN,
+        ...(args.companyId ? { companyId: args.companyId } : {}),
+      },
+      OR: [
+        {
+          referenceStartDate: {
+            lte: workDate,
+          },
+          referenceEndDate: {
+            gte: workDate,
+          },
+        },
+        {
+          referenceStartDate: {
+            lte: workDate,
+          },
+          referenceEndDate: null,
+          referenceDate: null,
+        },
+        {
+          referenceDate: workDate,
+        },
+      ],
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return Boolean(task);
+}
+
 export async function consumeTimeEntryUnlock(
   _userId: string,
   _workDateYMD: string
@@ -445,6 +495,16 @@ export async function assertEmployeeMayEditDate(args: {
 
   if (args.workDateYMD > today) {
     throw new Error("TIME_ENTRY_FUTURE_DATE_EDIT_FORBIDDEN");
+  }
+
+  const hasTaskUnlock = await hasOpenAdminWorkEntryTaskForDate({
+    userId: args.userId,
+    workDateYMD: args.workDateYMD,
+    companyId: args.companyId,
+  });
+
+  if (hasTaskUnlock) {
+    return;
   }
 
   const previousDateYMD = isoDayUTC(
