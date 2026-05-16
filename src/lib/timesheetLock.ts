@@ -1,7 +1,7 @@
 // src/lib/timesheetLock.ts
 
 import Holidays from "date-holidays";
-import { Role, TaskRequiredAction, TaskStatus } from "@prisma/client";
+import { Prisma, Role, TaskRequiredAction, TaskStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 function parseIsoDateToUtc(ymd: string): Date {
@@ -423,6 +423,66 @@ export async function hasActiveTimeEntryUnlock(
   return true;
 }
 
+export async function ensureTimeEntryUnlockRange(args: {
+  userId: string;
+  startDateYMD: string;
+  endDateYMD: string;
+  companyId?: string;
+}): Promise<void> {
+  const startDate = parseIsoDateToUtc(args.startDateYMD);
+  const endDate = parseIsoDateToUtc(args.endDateYMD);
+
+  if (endDate < startDate) {
+    return;
+  }
+
+  const user = await prisma.appUser.findFirst({
+    where: {
+      id: args.userId,
+      ...(args.companyId ? { companyId: args.companyId } : {}),
+      isActive: true,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!user) {
+    return;
+  }
+
+  const updates: Prisma.PrismaPromise<unknown>[] = [];
+
+  for (
+    let current = new Date(startDate.getTime());
+    current <= endDate;
+    current = addUtcDays(current, 1)
+  ) {
+    updates.push(
+      prisma.timeEntryUnlock.upsert({
+        where: {
+          userId_workDate: {
+            userId: args.userId,
+            workDate: current,
+          },
+        },
+        update: {
+          usedAt: null,
+          expiresAt: null,
+        },
+        create: {
+          userId: args.userId,
+          workDate: current,
+          usedAt: null,
+          expiresAt: null,
+        },
+      })
+    );
+  }
+
+  await prisma.$transaction(updates);
+}
+
 async function hasOpenAdminWorkEntryTaskForDate(args: {
   userId: string;
   workDateYMD: string;
@@ -497,6 +557,17 @@ export async function assertEmployeeMayEditDate(args: {
     throw new Error("TIME_ENTRY_FUTURE_DATE_EDIT_FORBIDDEN");
   }
 
+  const hasStoredUnlock = await hasActiveTimeEntryUnlock(
+    args.userId,
+    args.workDateYMD,
+    now,
+    args.companyId
+  );
+
+  if (hasStoredUnlock) {
+    return;
+  }
+
   const hasTaskUnlock = await hasOpenAdminWorkEntryTaskForDate({
     userId: args.userId,
     workDateYMD: args.workDateYMD,
@@ -538,14 +609,5 @@ export async function assertEmployeeMayEditDate(args: {
     return;
   }
 
-  const hasUnlock = await hasActiveTimeEntryUnlock(
-    args.userId,
-    args.workDateYMD,
-    now,
-    args.companyId
-  );
-
-  if (!hasUnlock) {
-    throw new Error("TIME_ENTRY_LOCKED_DAY_REQUIRES_CORRECTION");
-  }
+  throw new Error("TIME_ENTRY_LOCKED_DAY_REQUIRES_CORRECTION");
 }

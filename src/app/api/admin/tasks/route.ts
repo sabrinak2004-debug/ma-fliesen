@@ -8,6 +8,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { sendPushToUser } from "@/lib/webpush";
+import { ensureTimeEntryUnlockRange } from "@/lib/timesheetLock";
 import { translateAllLanguages, type SupportedLang } from "@/lib/translate";
 import {
   ADMIN_TASKS_UI_TEXTS,
@@ -538,6 +539,26 @@ export async function POST(req: Request): Promise<NextResponse> {
       },
     },
   });
+
+  if (
+    task.category === TaskCategory.WORK_TIME &&
+    task.requiredAction === TaskRequiredAction.WORK_ENTRY_FOR_DATE
+  ) {
+    const referenceRange = getTaskReferenceRange({
+      referenceDate: task.referenceDate,
+      referenceStartDate: task.referenceStartDate,
+      referenceEndDate: task.referenceEndDate,
+    });
+
+    if (referenceRange) {
+      await ensureTimeEntryUnlockRange({
+        userId: assignedUser.id,
+        startDateYMD: referenceRange.startDate,
+        endDateYMD: referenceRange.endDate,
+        companyId: admin.companyId,
+      });
+    }
+  }
 
   await sendPushToUser(assignedUser.id, {
     title: tTask(assignedUser.language ?? "DE", "newTaskPushTitle"),
